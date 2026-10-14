@@ -33588,8 +33588,11 @@ type CasesCaseCloseSyncReason1 = string
 // CasesCaseDescription The description for the case.
 type CasesCaseDescription = string
 
-// CasesCaseExtendedFields Case field values keyed by storage key. Keys follow the `<field_name>_as_<storage_type>` convention (for example `priority_as_keyword`) and map to the owner's global (library-wide) fields plus, when a template is applied to the case, that template's fields. On update, the keys provided are merged into the stored map; unlisted keys are left untouched. To discover the writable keys, use the get case fields API (`GET /api/cases/fields`).
+// CasesCaseExtendedFields Case field values keyed by storage key (for example, `priority_as_keyword`). Keys are validated against the fields exposed by the case's active template and global field library. On update, provided keys are merged into the stored map; unlisted keys are left untouched. Template-linked fields require the `xpack.cases.templates.enabled` setting (enabled by default); global fields are always available. Use the get case fields API to discover valid keys.
 type CasesCaseExtendedFields map[string]string
+
+// CasesCaseExtendedFieldsLabels A read-only, response-only map from active field definition storage keys to their human-readable labels. Entries reflect currently applicable global and template field definitions — not every stored `extended_fields` key is guaranteed a label, because values retained after switching templates may have no matching current definition. Only populated by the get case and search cases endpoints; absent on create, update, push, and comment responses. Including this field in a write request returns a 400 error.
+type CasesCaseExtendedFieldsLabels map[string]string
 
 // CasesCaseObservable A single observable attached to a case.
 type CasesCaseObservable struct {
@@ -33641,7 +33644,8 @@ type CasesCaseResponseGetCase struct {
 	CreatedAt time.Time                            `json:"created_at"`
 	CreatedBy CasesCaseResponseCreatedByProperties `json:"created_by"`
 
-	// CustomFields Custom field values for the case.
+	// CustomFields Deprecated. Use `extended_fields` instead. Custom field values for the case.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	CustomFields *[]struct {
 		// Key The unique identifier for the custom field. The key value must exist in the case configuration settings.
 		Key *string `json:"key,omitempty"`
@@ -33655,9 +33659,15 @@ type CasesCaseResponseGetCase struct {
 	Description string `json:"description"`
 
 	// Duration The elapsed time from the creation of the case to its closure (in seconds). If the case has not been closed, the duration is set to null. If the case was closed after less than half a second, the duration is rounded down to zero.
-	Duration        *int                  `json:"duration,omitempty"`
-	ExternalService *CasesExternalService `json:"external_service,omitempty"`
-	Id              string                `json:"id"`
+	Duration *int `json:"duration,omitempty"`
+
+	// ExtendedFields The case's stored field values, keyed by storage key (for example `priority_as_keyword`).
+	ExtendedFields *map[string]string `json:"extended_fields,omitempty"`
+
+	// ExtendedFieldsLabels A read-only, response-only map from active field definition storage keys to their human-readable labels. Entries reflect currently applicable global and template field definitions — not every stored `extended_fields` key is guaranteed a label, because values retained after switching templates may have no matching current definition. Only populated by the get case and search cases endpoints; absent on create, update, push, and comment responses. Including this field in a write request returns a 400 error.
+	ExtendedFieldsLabels *CasesCaseExtendedFieldsLabels `json:"extended_fields_labels,omitempty"`
+	ExternalService      *CasesExternalService          `json:"external_service,omitempty"`
+	Id                   string                         `json:"id"`
 
 	// IncrementalId A monotonically increasing number assigned to each case, unique per space. This value is generated asynchronously after the case is created and may not be present immediately in the response.
 	IncrementalId *int `json:"incremental_id,omitempty"`
@@ -33728,7 +33738,8 @@ type CasesCaseResponseProperties struct {
 	CreatedAt time.Time                                   `json:"created_at"`
 	CreatedBy CasesCaseResponseCreatedByProperties        `json:"created_by"`
 
-	// CustomFields Custom field values for the case.
+	// CustomFields Deprecated. Use `extended_fields` instead. Custom field values for the case.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	CustomFields *[]struct {
 		// Key The unique identifier for the custom field. The key value must exist in the case configuration settings.
 		Key *string `json:"key,omitempty"`
@@ -33745,9 +33756,12 @@ type CasesCaseResponseProperties struct {
 	Duration *int `json:"duration,omitempty"`
 
 	// ExtendedFields The case's stored field values, keyed by storage key (for example `priority_as_keyword`).
-	ExtendedFields  *map[string]string    `json:"extended_fields,omitempty"`
-	ExternalService *CasesExternalService `json:"external_service,omitempty"`
-	Id              string                `json:"id"`
+	ExtendedFields *map[string]string `json:"extended_fields,omitempty"`
+
+	// ExtendedFieldsLabels A read-only, response-only map from active field definition storage keys to their human-readable labels. Entries reflect currently applicable global and template field definitions — not every stored `extended_fields` key is guaranteed a label, because values retained after switching templates may have no matching current definition. Only populated by the get case and search cases endpoints; absent on create, update, push, and comment responses. Including this field in a write request returns a 400 error.
+	ExtendedFieldsLabels *CasesCaseExtendedFieldsLabels `json:"extended_fields_labels,omitempty"`
+	ExternalService      *CasesExternalService          `json:"external_service,omitempty"`
+	Id                   string                         `json:"id"`
 
 	// IncrementalId A monotonically increasing number assigned to each case, unique per space. This value is generated asynchronously after the case is created and may not be present immediately in the response.
 	IncrementalId *int `json:"incremental_id,omitempty"`
@@ -34027,7 +34041,8 @@ type CasesCreateCaseRequest struct {
 	Category  *CasesCaseCategory               `json:"category,omitempty"`
 	Connector CasesCreateCaseRequest_Connector `json:"connector"`
 
-	// CustomFields Custom field values for a case. Any optional custom fields that are not specified in the request are set to null.
+	// CustomFields Custom field values for a case. Omitted optional fields default to null. Deprecated: use `extended_fields` instead.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	CustomFields *[]struct {
 		// Key The unique identifier for the custom field. The key value must exist in the case configuration settings.
 		Key string `json:"key"`
@@ -34042,7 +34057,7 @@ type CasesCreateCaseRequest struct {
 	// Description The description for the case.
 	Description CasesCaseDescription `json:"description"`
 
-	// ExtendedFields Case field values keyed by storage key. Keys follow the `<field_name>_as_<storage_type>` convention (for example `priority_as_keyword`) and map to the owner's global (library-wide) fields plus, when a template is applied to the case, that template's fields. On update, the keys provided are merged into the stored map; unlisted keys are left untouched. To discover the writable keys, use the get case fields API (`GET /api/cases/fields`).
+	// ExtendedFields Case field values keyed by storage key (for example, `priority_as_keyword`). Keys are validated against the fields exposed by the case's active template and global field library. On update, provided keys are merged into the stored map; unlisted keys are left untouched. Template-linked fields require the `xpack.cases.templates.enabled` setting (enabled by default); global fields are always available. Use the get case fields API to discover valid keys.
 	ExtendedFields *CasesCaseExtendedFields `json:"extended_fields,omitempty"`
 
 	// Owner The application that owns the cases: Stack Management, Observability, or Elastic Security.
@@ -34707,7 +34722,8 @@ type CasesSetCaseConfigurationRequest struct {
 		Type CasesConnectorTypes `json:"type"`
 	} `json:"connector"`
 
-	// CustomFields Custom fields case configuration.
+	// CustomFields Custom fields case configuration. Deprecated. Use the field library (`/api/cases/field_definitions`) to manage field definitions and `extended_fields` on case create/update to set field values.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	CustomFields *[]struct {
 		// DefaultValue A default value for the custom field. If the `type` is `text`, the default value must be a string. If the `type` is `toggle`, the default value must be boolean.
 		DefaultValue *CasesSetCaseConfigurationRequest_CustomFields_DefaultValue `json:"defaultValue,omitempty"`
@@ -34729,7 +34745,10 @@ type CasesSetCaseConfigurationRequest struct {
 	ExtractObservables *bool `json:"extractObservables,omitempty"`
 
 	// Owner The application that owns the cases: Stack Management, Observability, or Elastic Security.
-	Owner     CasesOwner      `json:"owner"`
+	Owner CasesOwner `json:"owner"`
+
+	// Templates Configuration-embedded templates. Deprecated: use the templates API (`GET /api/cases/templates`) and case `extended_fields` instead.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	Templates *CasesTemplates `json:"templates,omitempty"`
 
 	// WorkflowTags Workflow tags that limit which workflows appear in Cases workflow selectors. An empty array shows all workflows.
@@ -34862,7 +34881,7 @@ type CasesTemplateWriteRequest struct {
 	Tags *CasesTemplateTags `json:"tags,omitempty"`
 }
 
-// CasesTemplates defines model for Cases_templates.
+// CasesTemplates Configuration-embedded templates. Deprecated: use the templates API (`GET /api/cases/templates`) and case `extended_fields` instead.
 type CasesTemplates = []struct {
 	CaseFields *struct {
 		// Assignees An array containing users that are assigned to the case.
@@ -34991,7 +35010,8 @@ type CasesUpdateCaseConfigurationRequest struct {
 		Type CasesConnectorTypes `json:"type"`
 	} `json:"connector,omitempty"`
 
-	// CustomFields Custom fields case configuration.
+	// CustomFields Custom fields case configuration. Deprecated. Use the field library (`/api/cases/field_definitions`) to manage field definitions and `extended_fields` on case create/update to set field values.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 	CustomFields *[]struct {
 		// DefaultValue A default value for the custom field. If the `type` is `text`, the default value must be a string. If the `type` is `toggle`, the default value must be boolean.
 		DefaultValue *CasesUpdateCaseConfigurationRequest_CustomFields_DefaultValue `json:"defaultValue,omitempty"`
@@ -35010,8 +35030,11 @@ type CasesUpdateCaseConfigurationRequest struct {
 	} `json:"customFields,omitempty"`
 
 	// ExtractObservables Indicates whether observables (for example, IPs, hashes, and URLs) are automatically extracted from case comments and events.
-	ExtractObservables *bool           `json:"extractObservables,omitempty"`
-	Templates          *CasesTemplates `json:"templates,omitempty"`
+	ExtractObservables *bool `json:"extractObservables,omitempty"`
+
+	// Templates Configuration-embedded templates. Deprecated: use the templates API (`GET /api/cases/templates`) and case `extended_fields` instead.
+	// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
+	Templates *CasesTemplates `json:"templates,omitempty"`
 
 	// Version The version of the connector. To retrieve the version value, use the get configuration API.
 	Version string `json:"version"`
@@ -35048,7 +35071,8 @@ type CasesUpdateCaseRequest struct {
 		CloseReason *CasesCaseCloseSyncReason               `json:"closeReason,omitempty"`
 		Connector   *CasesUpdateCaseRequest_Cases_Connector `json:"connector,omitempty"`
 
-		// CustomFields Custom field values for a case. Any optional custom fields that are not specified in the request are set to null.
+		// CustomFields Custom field values for a case. Omitted optional fields default to null. Deprecated: use `extended_fields` instead.
+		// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 		CustomFields *[]struct {
 			// Key The unique identifier for the custom field. The key value must exist in the case configuration settings.
 			Key string `json:"key"`
@@ -35063,7 +35087,7 @@ type CasesUpdateCaseRequest struct {
 		// Description The description for the case.
 		Description *CasesCaseDescription `json:"description,omitempty"`
 
-		// ExtendedFields Case field values keyed by storage key. Keys follow the `<field_name>_as_<storage_type>` convention (for example `priority_as_keyword`) and map to the owner's global (library-wide) fields plus, when a template is applied to the case, that template's fields. On update, the keys provided are merged into the stored map; unlisted keys are left untouched. To discover the writable keys, use the get case fields API (`GET /api/cases/fields`).
+		// ExtendedFields Case field values keyed by storage key (for example, `priority_as_keyword`). Keys are validated against the fields exposed by the case's active template and global field library. On update, provided keys are merged into the stored map; unlisted keys are left untouched. Template-linked fields require the `xpack.cases.templates.enabled` setting (enabled by default); global fields are always available. Use the get case fields API to discover valid keys.
 		ExtendedFields *CasesCaseExtendedFields `json:"extended_fields,omitempty"`
 
 		// Id The identifier for the case.
@@ -35080,6 +35104,15 @@ type CasesUpdateCaseRequest struct {
 
 		// Tags The words and phrases that help categorize cases. It can be an empty array.
 		Tags *CasesCaseTags `json:"tags,omitempty"`
+
+		// Template The case template to apply, clear, or leave unchanged. Requires the `xpack.cases.templates.enabled` setting. Omit to keep the current template; set to `null` to clear it; set to `{ id, version }` to switch. Switching is an explicit versioned action: both `id` and `version` are required. If `extended_fields` is also provided in the same request, those values are validated against the new template's fields. Use the get case fields API to see what fields the new template exposes.
+		Template *struct {
+			// Id The template identifier. Retrieve template ids with `GET /api/cases/templates`.
+			Id string `json:"id"`
+
+			// Version The template version to apply. Required on update: switching a template is an explicit versioned action, so the version must be specified.
+			Version int `json:"version"`
+		} `json:"template,omitempty"`
 
 		// Title A title for the case.
 		Title *CasesCaseTitle `json:"title,omitempty"`
@@ -56108,14 +56141,14 @@ type KibanaHTTPAPIsVisXyStylingInterpolation string
 
 // KibanaHTTPAPIsVisXyStylingAreas Area-specific rendering settings
 type KibanaHTTPAPIsVisXyStylingAreas struct {
-	// Fill Area fill type: solid or gradient. Defaults to solid.
+	// Fill Area fill type: solid or gradient.
 	Fill *KibanaHTTPAPIsVisXyStylingAreasFill `json:"fill,omitempty"`
 
 	// FillOpacity Area fill opacity (0-1 typical, max 2 for legacy)
 	FillOpacity *float32 `json:"fill_opacity,omitempty"`
 }
 
-// KibanaHTTPAPIsVisXyStylingAreasFill Area fill type: solid or gradient. Defaults to solid.
+// KibanaHTTPAPIsVisXyStylingAreasFill Area fill type: solid or gradient.
 type KibanaHTTPAPIsVisXyStylingAreasFill string
 
 // KibanaHTTPAPIsVisXyStylingBars Bar-specific rendering settings
@@ -79436,6 +79469,12 @@ type GetActionsConnectorTypesParams struct {
 // PostAgentBuilderA2aAgentidJSONBody defines parameters for PostAgentBuilderA2aAgentid.
 type PostAgentBuilderA2aAgentidJSONBody = interface{}
 
+// GetAgentBuilderAgentsParams defines parameters for GetAgentBuilderAgents.
+type GetAgentBuilderAgentsParams struct {
+	// IncludeHidden When true, hidden agents (such as built-in system agents) are included in the response.
+	IncludeHidden *bool `form:"include_hidden,omitempty" json:"include_hidden,omitempty"`
+}
+
 // PostAgentBuilderAgentsJSONBody defines parameters for PostAgentBuilderAgents.
 type PostAgentBuilderAgentsJSONBody struct {
 	AccessControl *struct {
@@ -81976,7 +82015,7 @@ type ImportRulesMultipartBody struct {
 
 // ImportRulesParams defines parameters for ImportRules.
 type ImportRulesParams struct {
-	// Overwrite Determines whether existing rules with the same `rule_id` are overwritten.
+	// Overwrite Determines whether existing rules with the same `rule_id` are overwritten. If an imported rule matches the existing rule's settings, including whether it's enabled, the existing rule isn't updated. It keeps its `revision`, `updated_at` timestamp, and API key, and is counted in `rules_summary.skipped`.
 	Overwrite *bool `form:"overwrite,omitempty" json:"overwrite,omitempty"`
 
 	// OverwriteExceptions Determines whether existing exception lists with the same `list_id` are overwritten. Both the exception list container and its items are overwritten.
@@ -180011,7 +180050,7 @@ type ClientInterface interface {
 	GetAgentBuilderA2aAgentidJson(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetAgentBuilderAgents request
-	GetAgentBuilderAgents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetAgentBuilderAgents(ctx context.Context, params *GetAgentBuilderAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PostAgentBuilderAgentsWithBody request with any body
 	PostAgentBuilderAgentsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -183063,8 +183102,8 @@ func (c *Client) GetAgentBuilderA2aAgentidJson(ctx context.Context, agentId stri
 	return c.Client.Do(req)
 }
 
-func (c *Client) GetAgentBuilderAgents(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewGetAgentBuilderAgentsRequest(c.Server)
+func (c *Client) GetAgentBuilderAgents(ctx context.Context, params *GetAgentBuilderAgentsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetAgentBuilderAgentsRequest(c.Server, params)
 	if err != nil {
 		return nil, err
 	}
@@ -196585,7 +196624,7 @@ func NewGetAgentBuilderA2aAgentidJsonRequest(server string, agentId string) (*ht
 }
 
 // NewGetAgentBuilderAgentsRequest generates requests for GetAgentBuilderAgents
-func NewGetAgentBuilderAgentsRequest(server string) (*http.Request, error) {
+func NewGetAgentBuilderAgentsRequest(server string, params *GetAgentBuilderAgentsParams) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -196601,6 +196640,33 @@ func NewGetAgentBuilderAgentsRequest(server string) (*http.Request, error) {
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.IncludeHidden != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "include_hidden", *params.IncludeHidden, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "boolean", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
@@ -236061,7 +236127,7 @@ type ClientWithResponsesInterface interface {
 	GetAgentBuilderA2aAgentidJsonWithResponse(ctx context.Context, agentId string, reqEditors ...RequestEditorFn) (*GetAgentBuilderA2aAgentidJsonResponse, error)
 
 	// GetAgentBuilderAgentsWithResponse request
-	GetAgentBuilderAgentsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAgentBuilderAgentsResponse, error)
+	GetAgentBuilderAgentsWithResponse(ctx context.Context, params *GetAgentBuilderAgentsParams, reqEditors ...RequestEditorFn) (*GetAgentBuilderAgentsResponse, error)
 
 	// PostAgentBuilderAgentsWithBodyWithResponse request with any body
 	PostAgentBuilderAgentsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAgentBuilderAgentsResponse, error)
@@ -244519,7 +244585,8 @@ type GetCaseConfigurationDefaultSpaceResponse struct {
 			Username   *string `json:"username"`
 		} `json:"created_by,omitempty"`
 
-		// CustomFields Custom fields configuration details.
+		// CustomFields Custom fields configuration details. Deprecated. Use the field library (`/api/cases/field_definitions`) to manage field definitions and `extended_fields` on case create/update to set field values.
+		// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 		CustomFields *[]struct {
 			// DefaultValue A default value for the custom field. If the `type` is `text`, the default value must be a string. If the `type` is `toggle`, the default value must be boolean.
 			DefaultValue *GetCaseConfigurationDefaultSpace200JSONResponseBody_CustomFields_DefaultValue `json:"defaultValue,omitempty"`
@@ -244557,7 +244624,10 @@ type GetCaseConfigurationDefaultSpaceResponse struct {
 		} `json:"observableTypes,omitempty"`
 
 		// Owner The application that owns the cases: Stack Management, Observability, or Elastic Security.
-		Owner     *CasesOwner     `json:"owner,omitempty"`
+		Owner *CasesOwner `json:"owner,omitempty"`
+
+		// Templates Configuration-embedded templates. Deprecated: use the templates API (`GET /api/cases/templates`) and case `extended_fields` instead.
+		// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 		Templates *CasesTemplates `json:"templates,omitempty"`
 		UpdatedAt *time.Time      `json:"updated_at,omitempty"`
 		UpdatedBy *struct {
@@ -244625,7 +244695,8 @@ type SetCaseConfigurationDefaultSpaceResponse struct {
 			Username   *string `json:"username"`
 		} `json:"created_by,omitempty"`
 
-		// CustomFields Custom fields configuration details.
+		// CustomFields Custom fields configuration details. Deprecated. Use the field library (`/api/cases/field_definitions`) to manage field definitions and `extended_fields` on case create/update to set field values.
+		// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 		CustomFields *[]struct {
 			// DefaultValue A default value for the custom field. If the `type` is `text`, the default value must be a string. If the `type` is `toggle`, the default value must be boolean.
 			DefaultValue *SetCaseConfigurationDefaultSpace200JSONResponseBody_CustomFields_DefaultValue `json:"defaultValue,omitempty"`
@@ -244663,7 +244734,10 @@ type SetCaseConfigurationDefaultSpaceResponse struct {
 		} `json:"observableTypes,omitempty"`
 
 		// Owner The application that owns the cases: Stack Management, Observability, or Elastic Security.
-		Owner     *CasesOwner     `json:"owner,omitempty"`
+		Owner *CasesOwner `json:"owner,omitempty"`
+
+		// Templates Configuration-embedded templates. Deprecated: use the templates API (`GET /api/cases/templates`) and case `extended_fields` instead.
+		// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 		Templates *CasesTemplates `json:"templates,omitempty"`
 		UpdatedAt *time.Time      `json:"updated_at,omitempty"`
 		UpdatedBy *struct {
@@ -244772,7 +244846,8 @@ type UpdateCaseConfigurationDefaultSpaceResponse struct {
 			Username   *string `json:"username"`
 		} `json:"created_by,omitempty"`
 
-		// CustomFields Custom fields configuration details.
+		// CustomFields Custom fields configuration details. Deprecated. Use the field library (`/api/cases/field_definitions`) to manage field definitions and `extended_fields` on case create/update to set field values.
+		// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 		CustomFields *[]struct {
 			// DefaultValue A default value for the custom field. If the `type` is `text`, the default value must be a string. If the `type` is `toggle`, the default value must be boolean.
 			DefaultValue *UpdateCaseConfigurationDefaultSpace200JSONResponseBody_CustomFields_DefaultValue `json:"defaultValue,omitempty"`
@@ -244810,7 +244885,10 @@ type UpdateCaseConfigurationDefaultSpaceResponse struct {
 		} `json:"observableTypes,omitempty"`
 
 		// Owner The application that owns the cases: Stack Management, Observability, or Elastic Security.
-		Owner     *CasesOwner     `json:"owner,omitempty"`
+		Owner *CasesOwner `json:"owner,omitempty"`
+
+		// Templates Configuration-embedded templates. Deprecated: use the templates API (`GET /api/cases/templates`) and case `extended_fields` instead.
+		// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 		Templates *CasesTemplates `json:"templates,omitempty"`
 		UpdatedAt *time.Time      `json:"updated_at,omitempty"`
 		UpdatedBy *struct {
@@ -247148,8 +247226,23 @@ type ImportRulesResponse struct {
 		ExceptionsSuccess            bool                                 `json:"exceptions_success"`
 		ExceptionsSuccessCount       int                                  `json:"exceptions_success_count"`
 		RulesCount                   int                                  `json:"rules_count"`
-		Success                      bool                                 `json:"success"`
-		SuccessCount                 int                                  `json:"success_count"`
+
+		// RulesSummary Counts of imported rules by outcome. `created`, `updated`, and `skipped` are included in `success_count`. `failed` did not import successfully.
+		RulesSummary struct {
+			// Created Rules created by this import.
+			Created int `json:"created"`
+
+			// Failed Rules that did not import successfully.
+			Failed int `json:"failed"`
+
+			// Skipped Existing rules skipped because nothing changed. Included in `success_count`.
+			Skipped int `json:"skipped"`
+
+			// Updated Existing rules overwritten because the payload changed.
+			Updated int `json:"updated"`
+		} `json:"rules_summary"`
+		Success      bool `json:"success"`
+		SuccessCount int  `json:"success_count"`
 	}
 }
 
@@ -266813,8 +266906,8 @@ func (c *ClientWithResponses) GetAgentBuilderA2aAgentidJsonWithResponse(ctx cont
 }
 
 // GetAgentBuilderAgentsWithResponse request returning *GetAgentBuilderAgentsResponse
-func (c *ClientWithResponses) GetAgentBuilderAgentsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetAgentBuilderAgentsResponse, error) {
-	rsp, err := c.GetAgentBuilderAgents(ctx, reqEditors...)
+func (c *ClientWithResponses) GetAgentBuilderAgentsWithResponse(ctx context.Context, params *GetAgentBuilderAgentsParams, reqEditors ...RequestEditorFn) (*GetAgentBuilderAgentsResponse, error) {
+	rsp, err := c.GetAgentBuilderAgents(ctx, params, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -282840,7 +282933,8 @@ func ParseGetCaseConfigurationDefaultSpaceResponse(rsp *http.Response) (*GetCase
 				Username   *string `json:"username"`
 			} `json:"created_by,omitempty"`
 
-			// CustomFields Custom fields configuration details.
+			// CustomFields Custom fields configuration details. Deprecated. Use the field library (`/api/cases/field_definitions`) to manage field definitions and `extended_fields` on case create/update to set field values.
+			// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 			CustomFields *[]struct {
 				// DefaultValue A default value for the custom field. If the `type` is `text`, the default value must be a string. If the `type` is `toggle`, the default value must be boolean.
 				DefaultValue *GetCaseConfigurationDefaultSpace200JSONResponseBody_CustomFields_DefaultValue `json:"defaultValue,omitempty"`
@@ -282878,7 +282972,10 @@ func ParseGetCaseConfigurationDefaultSpaceResponse(rsp *http.Response) (*GetCase
 			} `json:"observableTypes,omitempty"`
 
 			// Owner The application that owns the cases: Stack Management, Observability, or Elastic Security.
-			Owner     *CasesOwner     `json:"owner,omitempty"`
+			Owner *CasesOwner `json:"owner,omitempty"`
+
+			// Templates Configuration-embedded templates. Deprecated: use the templates API (`GET /api/cases/templates`) and case `extended_fields` instead.
+			// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 			Templates *CasesTemplates `json:"templates,omitempty"`
 			UpdatedAt *time.Time      `json:"updated_at,omitempty"`
 			UpdatedBy *struct {
@@ -282948,7 +283045,8 @@ func ParseSetCaseConfigurationDefaultSpaceResponse(rsp *http.Response) (*SetCase
 				Username   *string `json:"username"`
 			} `json:"created_by,omitempty"`
 
-			// CustomFields Custom fields configuration details.
+			// CustomFields Custom fields configuration details. Deprecated. Use the field library (`/api/cases/field_definitions`) to manage field definitions and `extended_fields` on case create/update to set field values.
+			// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 			CustomFields *[]struct {
 				// DefaultValue A default value for the custom field. If the `type` is `text`, the default value must be a string. If the `type` is `toggle`, the default value must be boolean.
 				DefaultValue *SetCaseConfigurationDefaultSpace200JSONResponseBody_CustomFields_DefaultValue `json:"defaultValue,omitempty"`
@@ -282986,7 +283084,10 @@ func ParseSetCaseConfigurationDefaultSpaceResponse(rsp *http.Response) (*SetCase
 			} `json:"observableTypes,omitempty"`
 
 			// Owner The application that owns the cases: Stack Management, Observability, or Elastic Security.
-			Owner     *CasesOwner     `json:"owner,omitempty"`
+			Owner *CasesOwner `json:"owner,omitempty"`
+
+			// Templates Configuration-embedded templates. Deprecated: use the templates API (`GET /api/cases/templates`) and case `extended_fields` instead.
+			// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 			Templates *CasesTemplates `json:"templates,omitempty"`
 			UpdatedAt *time.Time      `json:"updated_at,omitempty"`
 			UpdatedBy *struct {
@@ -283099,7 +283200,8 @@ func ParseUpdateCaseConfigurationDefaultSpaceResponse(rsp *http.Response) (*Upda
 				Username   *string `json:"username"`
 			} `json:"created_by,omitempty"`
 
-			// CustomFields Custom fields configuration details.
+			// CustomFields Custom fields configuration details. Deprecated. Use the field library (`/api/cases/field_definitions`) to manage field definitions and `extended_fields` on case create/update to set field values.
+			// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 			CustomFields *[]struct {
 				// DefaultValue A default value for the custom field. If the `type` is `text`, the default value must be a string. If the `type` is `toggle`, the default value must be boolean.
 				DefaultValue *UpdateCaseConfigurationDefaultSpace200JSONResponseBody_CustomFields_DefaultValue `json:"defaultValue,omitempty"`
@@ -283137,7 +283239,10 @@ func ParseUpdateCaseConfigurationDefaultSpaceResponse(rsp *http.Response) (*Upda
 			} `json:"observableTypes,omitempty"`
 
 			// Owner The application that owns the cases: Stack Management, Observability, or Elastic Security.
-			Owner     *CasesOwner     `json:"owner,omitempty"`
+			Owner *CasesOwner `json:"owner,omitempty"`
+
+			// Templates Configuration-embedded templates. Deprecated: use the templates API (`GET /api/cases/templates`) and case `extended_fields` instead.
+			// Deprecated: this property has been marked as deprecated upstream, but no `x-deprecated-reason` was set
 			Templates *CasesTemplates `json:"templates,omitempty"`
 			UpdatedAt *time.Time      `json:"updated_at,omitempty"`
 			UpdatedBy *struct {
@@ -285825,8 +285930,23 @@ func ParseImportRulesResponse(rsp *http.Response) (*ImportRulesResponse, error) 
 			ExceptionsSuccess            bool                                 `json:"exceptions_success"`
 			ExceptionsSuccessCount       int                                  `json:"exceptions_success_count"`
 			RulesCount                   int                                  `json:"rules_count"`
-			Success                      bool                                 `json:"success"`
-			SuccessCount                 int                                  `json:"success_count"`
+
+			// RulesSummary Counts of imported rules by outcome. `created`, `updated`, and `skipped` are included in `success_count`. `failed` did not import successfully.
+			RulesSummary struct {
+				// Created Rules created by this import.
+				Created int `json:"created"`
+
+				// Failed Rules that did not import successfully.
+				Failed int `json:"failed"`
+
+				// Skipped Existing rules skipped because nothing changed. Included in `success_count`.
+				Skipped int `json:"skipped"`
+
+				// Updated Existing rules overwritten because the payload changed.
+				Updated int `json:"updated"`
+			} `json:"rules_summary"`
+			Success      bool `json:"success"`
+			SuccessCount int  `json:"success_count"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
