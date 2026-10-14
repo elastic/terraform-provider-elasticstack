@@ -190,17 +190,8 @@ func (u *usageSet) markJSONCall(info *types.Info, call *ast.CallExpr) {
 }
 
 func jsonValueArgument(info *types.Info, call *ast.CallExpr) (int, bool) {
-	var ident *ast.Ident
-	switch fun := call.Fun.(type) {
-	case *ast.SelectorExpr:
-		ident = fun.Sel
-	case *ast.Ident:
-		ident = fun
-	default:
-		return 0, false
-	}
-	fn, ok := info.Uses[ident].(*types.Func)
-	if !ok || fn.Pkg() == nil || fn.Pkg().Path() != "encoding/json" {
+	fn := calledFunc(info, call)
+	if fn == nil || fn.Pkg() == nil || fn.Pkg().Path() != "encoding/json" {
 		return 0, false
 	}
 	switch fn.Name() {

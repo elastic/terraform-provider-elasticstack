@@ -41,9 +41,7 @@ type scanUnit struct {
 type reachResult struct {
 	// Methods holds the kbapi client method names referenced within the reachable code.
 	Methods map[string]bool
-	// Funcs holds the full names of the reachable module functions.
-	Funcs map[string]bool
-	units []scanUnit
+	units   []scanUnit
 	// implementations resolves an interface method to every module implementation.
 	implementations func(iface *types.Interface, name string) []*types.Func
 }
@@ -131,7 +129,7 @@ func indexDecl(idx *moduleIndex, pkg *packages.Package, decl ast.Decl) {
 // Every reference to a module function, whether a call or a function value, is followed, and
 // interface method calls are resolved to all module implementations.
 func computeReach(mod *loadedModule, kbapiPath, pkgPath string) *reachResult {
-	result := &reachResult{Methods: make(map[string]bool), Funcs: make(map[string]bool)}
+	result := &reachResult{Methods: make(map[string]bool)}
 	root, ok := mod.byPath[pkgPath]
 	if !ok {
 		return result
@@ -211,20 +209,24 @@ func (w *reachWalker) followDecl(fn *types.Func) {
 	if !ok || strings.HasSuffix(site.pkg.PkgPath, providerClientsPkgSuffix) {
 		return
 	}
-	w.result.Funcs[fn.FullName()] = true
 	w.scan(site.pkg, site.node)
 }
 
-func isClientMethod(fn *types.Func) bool {
+// receiverType returns the receiver type of a method, or nil for a plain function.
+func receiverType(fn *types.Func) types.Type {
 	sig, ok := fn.Type().(*types.Signature)
 	if !ok || sig.Recv() == nil {
+		return nil
+	}
+	return sig.Recv().Type()
+}
+
+func isClientMethod(fn *types.Func) bool {
+	recv := receiverType(fn)
+	if recv == nil {
 		return false
 	}
-	recv := sig.Recv().Type()
-	if ptr, ok := recv.(*types.Pointer); ok {
-		recv = ptr.Elem()
-	}
-	named, ok := recv.(*types.Named)
+	named, ok := derefType(recv).(*types.Named)
 	if !ok {
 		return false
 	}
@@ -232,16 +234,12 @@ func isClientMethod(fn *types.Func) bool {
 }
 
 func receiverInterface(fn *types.Func) *types.Interface {
-	sig, ok := fn.Type().(*types.Signature)
-	if !ok || sig.Recv() == nil {
+	recv := receiverType(fn)
+	if recv == nil {
 		return nil
 	}
-	switch t := sig.Recv().Type().Underlying().(type) {
-	case *types.Interface:
-		return t
-	default:
-		return nil
-	}
+	iface, _ := recv.Underlying().(*types.Interface)
+	return iface
 }
 
 func (w *reachWalker) implementations(iface *types.Interface, name string) []*types.Func {

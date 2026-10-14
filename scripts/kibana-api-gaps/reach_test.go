@@ -50,18 +50,13 @@ func TestReachFollowsCallsIntoSharedHelperPackages(t *testing.T) {
 	assert.Equal(t, []string{"CreateWidgetWithResponse"}, sortedMethods(reachFor(t, "helperuser")))
 }
 
-func TestReachResolvesInterfaceCallsToAllImplementations(t *testing.T) {
-	assert.True(t, reachFor(t, "helperuser").Funcs["(fixture/helpers.Legacy).Describe"])
-}
-
 func TestReachIsEmptyForResourcesNotCallingTheClient(t *testing.T) {
 	assert.Empty(t, reachFor(t, "nokibana").Methods)
 }
 
 func TestReachDoesNotExpandIntoProviderClientPlumbing(t *testing.T) {
-	r := reachFor(t, "nokibana")
-	assert.False(t, r.Funcs["(*fixture/internal/clients.Scoped).Check"])
-	assert.Empty(t, r.Methods)
+	// nokibana calls Scoped.Check through an interface; following it would reach GetWidget.
+	assert.Empty(t, reachFor(t, "nokibana").Methods)
 }
 
 func TestReachResolvesInterfaceCallsToGenericImplementations(t *testing.T) {
