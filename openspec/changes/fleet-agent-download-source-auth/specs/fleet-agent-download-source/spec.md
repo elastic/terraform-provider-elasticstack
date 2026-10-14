@@ -41,11 +41,16 @@ The resource SHALL expose an optional `auth` nested attribute mapping to the Fle
 
 ### Requirement: Auth credential-mode validation
 
-The `auth` attribute's `username` SHALL require `password` to also be set, and `password` SHALL conflict with `api_key` (mutually exclusive). `headers` SHALL carry no dependency on `username`, `password`, or `api_key`, so an `auth` block containing only `headers` SHALL be valid, and so SHALL an empty `auth = {}` block.
+The `auth` attribute's `username` and `password` SHALL be set together (each requires the other), and `password` SHALL conflict with `api_key` (mutually exclusive). `headers` SHALL carry no dependency on `username`, `password`, or `api_key`, so an `auth` block containing only `headers` SHALL be valid, and so SHALL an empty `auth = {}` block.
 
 #### Scenario: Username without password rejected
 
 - **WHEN** `auth = { username = "svc" }` is configured with no `password`
+- **THEN** Terraform SHALL report a validation error before any API call
+
+#### Scenario: Password without username rejected
+
+- **WHEN** `auth = { password = "secret" }` is configured with no `username`
 - **THEN** Terraform SHALL report a validation error before any API call
 
 #### Scenario: Password and api_key together rejected

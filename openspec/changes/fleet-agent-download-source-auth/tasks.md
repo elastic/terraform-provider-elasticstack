@@ -1,46 +1,38 @@
-## 1. Schema
+## 1. Credential modes
 
-- [ ] 1.1 Add `auth` `SingleNestedAttribute` to `internal/fleet/agentdownloadsource/schema.go`: `username` (optional string), `password` (optional string, `Sensitive: true`), `api_key` (optional string, `Sensitive: true`), `headers` (optional `ListNestedAttribute` of `{key, value}` both required strings, `listvalidator.SizeAtMost(100)`)
-- [ ] 1.2 Add `stringvalidator.AlsoRequires` between `auth.username` and `auth.password` (relative-path, each direction), matching `internal/schema/es_connection_shared.go:51,59`
-- [ ] 1.3 Add `stringvalidator.ConflictsWith` between `auth.password` and `auth.api_key` (relative-path), matching `internal/schema/es_connection_shared.go:68,78`
-- [ ] 1.4 Confirm no validator ties `headers` to the other three fields (headers-only `auth` block must remain valid)
+- [ ] 1.1 Add the `auth` `SingleNestedAttribute` to `internal/fleet/agentdownloadsource/schema.go` with optional `username` (string), `password` and `api_key` (sensitive strings), and optional `headers` (list of `{key, value}` with required strings)
+- [ ] 1.2 Add relative-path `stringvalidator.AlsoRequires` validators in both directions between `auth.username` and `auth.password`, plus `stringvalidator.ConflictsWith` between `auth.password` and `auth.api_key`, following `internal/schema/es_connection_shared.go:51,59,68,78`; do not couple `headers` to credentials
+- [ ] 1.3 Add `authModel` in `internal/fleet/agentdownloadsource/models.go`, populate the generated request `Auth` from it, and map configured credential fields on create and update
+- [ ] 1.4 Extend `readAndHydrateState` in `internal/fleet/agentdownloadsource/read.go` to decode `username` and preserve redacted `password`/`api_key` from a caller-supplied fallback independently, mirroring `internal/fleet/output/models_kafka.go:566-581`
+- [ ] 1.5 Add acceptance cases for basic auth and API-key auth, plus validator errors for username without password, password without username, and password with api_key
 
-## 2. Models — create/update mapping
+## 2. Headers and empty auth
 
-- [ ] 2.1 In `internal/fleet/agentdownloadsource/models.go`, add an `authModel` struct (`Username`, `Password`, `APIKey types.String`, `Headers types.List`) and thread it onto `model` as `Auth types.Object`
-- [ ] 2.2 Implement `toAPIAuthModel` building `kbapi...JSONRequestBody.Auth` from `authModel` (headers converted to the generated anonymous struct slice)
-- [ ] 2.3 Update `toAPICreateModel` to set `Auth` from the planned `auth` block when present, nil when absent
-- [ ] 2.4 Update `toAPIUpdateModel` per Decision 3: when planned `auth` is null/absent AND `prior.Auth` was non-null, set `Auth` to an explicit empty struct (`&struct{...}{}`, marshals to `{}`); when planned `auth` is non-null, populate fully; when both planned and prior are null/absent, leave `Auth` nil
-- [ ] 2.5 Add the 9.4.0 version requirement in `GetVersionRequirements`, firing only when `auth` is non-null in the plan, using `entitycore.NewAttributeVersionRequirement`/`addMinimum` pattern from `internal/fleet/agentpolicy/version_requirements.go:32-43`; keep `agentDownloadSourceMinVersion` (8.13.0) as the resource baseline
+- [ ] 2.1 Add the `listvalidator.SizeAtMost(100)` validator to `auth.headers` and confirm no validator prevents headers-only or empty `auth = {}` blocks
+- [ ] 2.2 Map headers to the generated request and response types while preserving null versus empty: if configured as an empty list, construct a non-nil empty generated slice so the request sends `"headers":[]` rather than omitting `headers`; decode an API `headers: []` as an empty `types.List`, and absent headers as null, following `internal/fleet/output/models_kafka.go:584-598`
+- [ ] 2.3 Add acceptance cases for headers-only auth, `auth = {}`, and `auth = { headers = [] }` (assert the empty list remains non-null in state)
+- [ ] 2.4 Add `auth_headers_max` (100 entries accepted) and `auth_headers_over_max` (101 entries rejected by the schema validator or API) acceptance cases
 
-## 3. Read hydration
+## 3. Update removal and secret preservation
 
-- [ ] 3.1 Change `readAndHydrateState` signature in `internal/fleet/agentdownloadsource/read.go` to accept a `fallbackAuth types.Object` (or equivalent) parameter alongside the existing preserved space/connection params
-- [ ] 3.2 Decode `item.Auth.Username` verbatim (`types.StringPointerValue`)
-- [ ] 3.3 Decode `item.Auth.Headers` verbatim into a `types.List`, keeping null (no headers) distinct from an explicit empty list (`headers: []` in the response), matching `fromAPIKafkaModel`'s headers handling (`internal/fleet/output/models_kafka.go:584-598`)
-- [ ] 3.4 Apply the `kafka.password` nil-pointer preservation condition independently to `item.Auth.Password` and `item.Auth.ApiKey`: when the API pointer is nil, fall back to the corresponding field on `fallbackAuth`; otherwise use the API value — mirror `internal/fleet/output/models_kafka.go:566-581`
-- [ ] 3.5 When `item.Auth` itself is nil in the response, set state's `auth` to null (no credentials/headers configured server-side)
-- [ ] 3.6 Update `readAgentDownloadSource` (the plain refresh/Read path) to pass `prior.Auth` as the fallback, mirroring kafka's `configuredPassword` capture
-- [ ] 3.7 Update `finalizeWrite` in `internal/fleet/agentdownloadsource/write.go` to pass `plan.Auth` (not prior state) as the fallback into `readAndHydrateState`, so a just-written/rotated credential survives the mandatory post-write read
+- [ ] 3.1 Update `toAPIUpdateModel`: send an explicit empty `Auth` object when planned `auth` is absent but `prior.Auth` was set; populate the full object when planned `auth` is set; leave `Auth` nil only when absent in both plan and prior state
+- [ ] 3.2 Pass `prior.Auth` as the fallback from the plain refresh/Read path and `plan.Auth` from `finalizeWrite` into `readAndHydrateState`, so refresh preserves known secrets and post-write reads preserve newly set or rotated secrets
+- [ ] 3.3 Add acceptance cases for password rotation, switching from basic auth to API key, and removing previously configured auth (assert the removal update sends `{}` and clears server-side auth)
 
-## 4. Acceptance tests
+## 4. Import redaction
 
-- [ ] 4.1 Add `testdata/TestAccResourceFleetAgentDownloadSource*/with_auth_basic/main.tf` (username+password) and corresponding test case in `acc_test.go`
-- [ ] 4.2 Add `with_auth_api_key` test case
-- [ ] 4.3 Add `with_auth_headers_only` test case (no username/password/api_key, headers only)
-- [ ] 4.4 Add `auth_update_rotate_password` test case asserting the rotated value survives post-update hydration (exercises the plan-fallback path from 3.7)
-- [ ] 4.5 Add `auth_switch_basic_to_api_key` test case
-- [ ] 4.6 Add `auth_remove` test case: `auth` block set then removed in a subsequent apply; assert the follow-up read shows no credentials (exercises the `auth: {}` clearing path from 2.4)
-- [ ] 4.7 Add `auth_empty_object` test case (`auth = {}` in config)
-- [ ] 4.8 Add `auth_headers_empty_list` test case (`auth = { headers = [] }`) asserting state keeps `headers` as an empty list, not null
-- [ ] 4.9 Add `auth_headers_max` (exactly 100 header entries, accepted) and `auth_headers_over_max` (101 entries, `ExpectError` matching the API's 400 `array size is [101]...` message or the provider's own size validator diagnostic) test cases
-- [ ] 4.10 Add validator `ExpectError` cases: `username`+`password`+`api_key` together, and `username` without `password`
-- [ ] 4.11 Add `auth_import_redacted`: create a source with `auth.password`/`auth.api_key` set, import it, and use a scoped `ImportStateVerifyIgnore` (`[]string{"auth.password", "auth.api_key"}`) plus a custom `ImportStateCheck` asserting both are null post-import, following `internal/apm/source_map/acc_test.go:159-167,210` / `internal/elasticsearch/security/user/acc_test.go:293-304`
-- [ ] 4.12 Add a negative version-gate case: a configuration setting `auth` against a Kibana below 9.4.0 is rejected, while an otherwise-identical configuration omitting `auth` still succeeds at the resource's 8.13.0 baseline; use the provider's existing version-skip/version-gate test helpers
+- [ ] 4.1 Ensure the import read path has no prior-auth fallback: redacted `password` and `api_key` remain null while `username` and `headers` hydrate from the API response
+- [ ] 4.2 Add a basic-auth import case that verifies `auth.password` is null after import, using an `ImportStateVerifyIgnore` scoped to `auth.password` and an `ImportStateCheck` for null
+- [ ] 4.3 Add a separate API-key import case that verifies `auth.api_key` is null after import, using an `ImportStateVerifyIgnore` scoped to `auth.api_key` and an `ImportStateCheck` for null; follow `internal/apm/source_map/acc_test.go:159-167,210` / `internal/elasticsearch/security/user/acc_test.go:293-304`
 
-## 5. Spec sync
+## 5. Version gating
 
-- [ ] 5.1 After implementation, sync the delta spec in `openspec/changes/fleet-agent-download-source-auth/specs/fleet-agent-download-source/spec.md` into `openspec/specs/fleet-agent-download-source/spec.md` (openspec-sync-specs skill) and archive the change (openspec-archive-change skill)
+- [ ] 5.1 Add the 9.4.0 version requirement in `GetVersionRequirements`, firing only when `auth` is non-null in the plan, using `entitycore.NewAttributeVersionRequirement`/`addMinimum` from `internal/fleet/agentpolicy/version_requirements.go:32-43`; keep the 8.13.0 resource baseline unchanged
+- [ ] 5.2 Add a negative version-gate case: auth is rejected below 9.4.0, while an otherwise-identical configuration without auth succeeds at the resource's 8.13.0 baseline, using existing version-skip/version-gate test helpers
+
+## 6. Spec sync
+
+- [ ] 6.1 After implementation, sync the delta spec in `openspec/changes/fleet-agent-download-source-auth/specs/fleet-agent-download-source/spec.md` into `openspec/specs/fleet-agent-download-source/spec.md` (openspec-sync-specs skill) and archive the change (openspec-archive-change skill)
 
 ## 6. Docs (follow-up, not required for this proposal)
 
