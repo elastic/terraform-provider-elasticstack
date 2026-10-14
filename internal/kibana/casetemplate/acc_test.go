@@ -170,11 +170,14 @@ func TestAccResourceKibanaCaseTemplate(t *testing.T) {
 				compositeIDMatches("default"),
 				resource.TestCheckNoResourceAttr(resourceName, "description"),
 				resource.TestCheckNoResourceAttr(resourceName, "tags.#"),
+				attr("field_count", "1"),
+				resource.TestCheckNoResourceAttr(resourceName, "usage_count"),
+				resource.TestCheckNoResourceAttr(resourceName, "is_default"),
 				captureID(&firstID),
 			),
 			// Reformat-only edit (key order, comments, indentation): the plan
 			// must be empty and no PUT may be sent, so the version is unchanged.
-			withPlanCheck(step("reformat", vars, attr("template_version", "1"), idUnchanged(&firstID)), plancheck.ExpectEmptyPlan()),
+			withPlanCheck(step("reformat", vars, attr("template_version", "1"), attr("field_count", "1"), idUnchanged(&firstID)), plancheck.ExpectEmptyPlan()),
 			// Structural edit: a real in-place update that creates version 2.
 			withPlanCheck(step("structural_edit", vars,
 				resource.TestMatchResourceAttr(resourceName, "definition_yaml", regexp.MustCompile(`severity: high`)),
@@ -189,6 +192,8 @@ func TestAccResourceKibanaCaseTemplate(t *testing.T) {
 				attr("template_version", "3"),
 				idUnchanged(&firstID),
 			),
+			// Import after a populated step (description and tags set).
+			withImportID(importStep("add_description_tags", vars), idFunc),
 			// Duplicate entries and a specific order are preserved by the API.
 			step("tags_duplicates", vars,
 				attr("tags.#", "3"),
@@ -221,7 +226,15 @@ func TestAccResourceKibanaCaseTemplate(t *testing.T) {
 				attr("tags.#", "0"),
 				attr("template_version", "8"),
 			),
-			withImportID(importStep("empty_description_tags", vars), idFunc),
+			// Omitting is_enabled on update keeps the current value (false); the
+			// server default of true only applies on create. No update is sent.
+			withPlanCheck(step("omit_is_enabled", vars, attr("is_enabled", "false"), attr("template_version", "8")), plancheck.ExpectEmptyPlan()),
+			// Re-enabling is a real update.
+			step("reenable", vars, attr("is_enabled", "true"), attr("template_version", "9")),
+			// field_count follows structural field additions and removals.
+			step("add_field", vars, attr("field_count", "2"), attr("template_version", "10")),
+			step("remove_field", vars, attr("field_count", "1"), attr("template_version", "11")),
+			withImportID(importStep("remove_field", vars), idFunc),
 		},
 	})
 }
@@ -465,4 +478,77 @@ func deleteTemplateByID(t *testing.T, id string) {
 	if diags := kibanaoapi.DeleteCaseTemplate(context.Background(), kibanaClient(t), "default", id); diags.HasError() {
 		t.Fatalf("failed to delete template %s: %v", id, diags)
 	}
+}
+
+// TestAccResourceKibanaCaseTemplateOwnerChange verifies changing owner forces
+// replacement (destroy before create) and that every owner value round-trips.
+func TestAccResourceKibanaCaseTemplateOwnerChange(t *testing.T) {
+	name := uniqueName()
+	var firstID string
+	vars := func(owner string) config.Variables {
+		return config.Variables{"name": config.StringVariable(name), "owner": config.StringVariable(owner)}
+	}
+	replaced := func(owner string) resource.TestStep {
+		s := withPlanCheck(step("change", vars(owner), attr("owner", owner), idChanged(&firstID)),
+			plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate))
+		return s
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps: []resource.TestStep{
+			step("change", vars("cases"), attr("owner", "cases"), captureID(&firstID)),
+			replaced("securitySolution"),
+			replaced("observability"),
+		},
+	})
+}
+
+// TestAccResourceKibanaCaseTemplateReformatWithChange verifies a reformat-only
+// definition_yaml edit combined with a real attribute change is not suppressed.
+func TestAccResourceKibanaCaseTemplateReformatWithChange(t *testing.T) {
+	name := uniqueName()
+	vars := nameVars(name)
+	var firstID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps: []resource.TestStep{
+			step("minimal", vars, attr("template_version", "1"), captureID(&firstID)),
+			withPlanCheck(step("reformat_rename", vars,
+				attr("name", name+"_renamed"),
+				attr("template_version", "2"),
+				attr("field_count", "1"),
+				idUnchanged(&firstID),
+			), plancheck.ExpectNonEmptyPlan()),
+		},
+	})
+}
+
+func TestAccResourceKibanaCaseTemplateNameEmpty(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps:    []resource.TestStep{planErrStep("invalid", `(?is)Invalid Attribute Value Length.*between 1 and 50`)},
+	})
+}
+
+func TestAccResourceKibanaCaseTemplateNameTooLong(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps:    []resource.TestStep{planErrStep("invalid", `(?is)Invalid Attribute Value Length.*(at most|between) .*50`)},
+	})
+}
+
+func TestAccResourceKibanaCaseTemplateDescriptionTooLong(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps:    []resource.TestStep{planErrStep("invalid", `(?is)Invalid Attribute Value Length.*at most 1000`)},
+	})
+}
+
+func TestAccResourceKibanaCaseTemplateDefinitionTooLong(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t, supported) },
+		Steps:    []resource.TestStep{planErrStep("invalid", `(?is)Invalid Attribute Value Length.*at most 30000`)},
+	})
 }
