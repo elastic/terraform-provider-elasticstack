@@ -356,9 +356,11 @@ func xyDataLayerAttributes() map[string]schema.Attribute {
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
 					"config_json": schema.StringAttribute{
-						MarkdownDescription: "Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition.",
-						CustomType:          jsontypes.NormalizedType{},
-						Required:            true,
+						MarkdownDescription: "Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. " +
+							"For standard: axis, color, and metric definition. " +
+							`A format with type "duration" that also sets decimals and/or compact requires Elastic Stack 9.5.2 or later.`,
+						CustomType: jsontypes.NormalizedType{},
+						Required:   true,
 					},
 				},
 			},
