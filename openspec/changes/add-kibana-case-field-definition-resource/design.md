@@ -69,13 +69,13 @@ Both surface through standard error-diagnostic reporting with no special-case lo
 | `schema.go` | Schema per "Schema mapping" above. |
 | `models.go` | `GetVersionRequirements` (9.5.0 minimum), `GetID`/`GetResourceID`/`GetSpaceID`, mapping between `kbapi.CasesFieldDefinitionResponse` and the model (composite id, `description`/`is_global` nullability), and `toAPICreateModel`/`toAPIUpdateModel`. |
 | `create.go` / `update.go` | `entitycore.SimpleKibanaCreate`/`SimpleKibanaUpdate` wiring, following the `agentbuilderworkflow` shape. |
-| `internal/clients/kibanaoapi/case_field_definition.go` | Thin wrapper (`CreateCaseFieldDefinition`, `GetCaseFieldDefinition`, `UpdateCaseFieldDefinition`, `DeleteCaseFieldDefinition`) calling the generated `...WithResponse` methods with `kibanautil.SpaceAwarePathRequestEditor(spaceID)`, using `HandleMutateRawResponse[kbapi.CasesFieldDefinitionResponse]` / `HandleGetRawResponse[kbapi.CasesFieldDefinitionResponse]` for create/update/read and `diagutil.HandleStatusResponse` for delete (404 treated as success), modeled on `internal/clients/kibanaoapi/agentbuilder_skill.go`. |
+| `internal/clients/kibanaoapi/case_field_definition.go` | Thin wrapper (`CreateCaseFieldDefinition`, `GetCaseFieldDefinition`, `UpdateCaseFieldDefinition`, `DeleteCaseFieldDefinition`) calling the generated `...WithResponse` methods with `kibanautil.SpaceAwarePathRequestEditor(spaceID)`, using `HandleMutateRawResponse[kbapi.CasesFieldDefinitionResponse]` / `HandleGetRawResponse[kbapi.CasesFieldDefinitionResponse]` for create/update/read and `diagutil.HandleStatusResponse` for delete (HTTP 204 and 404 treated as success), modeled on `internal/clients/kibanaoapi/agentbuilder_skill.go`. |
 
 Import: the import ID is the composite `<space_id>/<field_definition_id>`, passed through to `id` (`resource.ImportStatePassthroughID`); a subsequent read populates the rest.
 
 ### Data flow
 
-Plan → `toAPICreateModel`/`toAPIUpdateModel` builds the write body → `SimpleKibanaCreate`/`SimpleKibanaUpdate` calls the wrapper for `req.SpaceID` (and `req.WriteID` for update) → the response is mapped directly into the model (no separate read-after-write call is required, since `CasesFieldDefinitionResponse` is already the full authoritative shape) → `id` is set from `<space_id>/<field_definition_id>`. Destroy calls `DeleteCaseFieldDefinition` and treats HTTP 404 as success (already-deleted).
+Plan → `toAPICreateModel`/`toAPIUpdateModel` builds the write body → `SimpleKibanaCreate`/`SimpleKibanaUpdate` calls the wrapper for `req.SpaceID` (and `req.WriteID` for update) → after a successful write, the envelope performs a read and maps its response into the model → `id` is set from `<space_id>/<field_definition_id>`. The mutation response is not used as final state; this follows the resource convention of deriving final state from a read after write. Destroy calls `DeleteCaseFieldDefinition` and treats HTTP 204 and 404 as success (already-deleted).
 
 ### Failure handling
 

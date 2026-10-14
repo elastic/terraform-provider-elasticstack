@@ -28,7 +28,7 @@ resource "elasticstack_kibana_case_field_definition" "example" {
 
 ### Requirement: Field library CRUD API
 
-The resource SHALL create a field definition with `POST /api/cases/field_definitions`, read it with `GET /api/cases/field_definitions/{field_definition_id}`, update it with `PUT /api/cases/field_definitions/{field_definition_id}`, and delete it with `DELETE /api/cases/field_definitions/{field_definition_id}`, all routed through the space given by `space_id`. The resource SHALL map the full `CasesFieldDefinitionResponse` returned by create, read, and update calls directly into Terraform state without requiring a separate follow-up read.
+The resource SHALL create a field definition with `POST /api/cases/field_definitions`, read it with `GET /api/cases/field_definitions/{field_definition_id}`, update it with `PUT /api/cases/field_definitions/{field_definition_id}`, and delete it with `DELETE /api/cases/field_definitions/{field_definition_id}`, all routed through the space given by `space_id`. After a successful create or update, the resource SHALL perform a read and derive final Terraform state from that read response.
 Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-createcasefielddefinitiondefaultspace
 
 #### Scenario: Create writes the configured field
@@ -38,11 +38,12 @@ Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-create
 - THEN the resource SHALL send a create request with that `owner` and `definition`
 - AND the resulting state SHALL contain `name = "triage-priority"`, a non-empty `field_definition_id`, and `id = "default/<field_definition_id>"`
 
-#### Scenario: Update sends only the changed attributes' request body
+#### Scenario: Update preserves field identity
 
 - GIVEN the resource exists with a given `field_definition_id`
 - WHEN `definition`, `description`, or `is_global` changes and apply runs
-- THEN the resource SHALL send an update request identifying the field by `field_definition_id` and SHALL NOT change `field_definition_id` in the resulting state
+- THEN the resource SHALL send an update request identifying the field by `field_definition_id` and including the required `owner` and `definition` fields
+- AND the resource SHALL perform a read after the update and SHALL NOT change `field_definition_id` in the resulting state
 
 ### Requirement: Schema and validation
 
@@ -137,7 +138,7 @@ On destroy, the resource SHALL send `DELETE /api/cases/field_definitions/{field_
 #### Scenario: Normal destroy
 
 - GIVEN the resource exists and is not referenced by an active template or custom field
-- WHEN `terraform destroy` runs
+- WHEN `terraform destroy` runs and the API returns HTTP 204
 - THEN the resource SHALL be deleted via the API
 - AND the resource SHALL be removed from state
 
