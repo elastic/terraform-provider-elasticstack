@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -103,44 +104,31 @@ func hydrateAuth(ctx context.Context, apiAuth *downloadSourceAuth, fallback *aut
 		return nil, nil
 	}
 
-	var apiUsername, apiPassword, apiKey *string
-	var apiHeaders *[]downloadSourceAuthHeader
+	var api downloadSourceAuth
 	if apiAuth != nil {
-		apiUsername = apiAuth.Username
-		apiPassword = apiAuth.Password
-		apiKey = apiAuth.ApiKey
-		apiHeaders = apiAuth.Headers
+		api = *apiAuth
 	}
-
-	var fallbackPassword, fallbackAPIKey types.String
+	var prior authModel
 	if fallback != nil {
-		fallbackPassword = fallback.Password
-		fallbackAPIKey = fallback.APIKey
+		prior = *fallback
 	}
 
-	headers, diags := authHeadersFromAPI(ctx, apiHeaders)
+	headers, diags := authHeadersFromAPI(ctx, api.Headers)
 	return &authModel{
-		Username: types.StringPointerValue(apiUsername),
-		Password: preserveRedactedSecret(apiPassword, fallbackPassword),
-		APIKey:   preserveRedactedSecret(apiKey, fallbackAPIKey),
+		Username: types.StringPointerValue(api.Username),
+		Password: preserveRedactedSecret(api.Password, prior.Password),
+		APIKey:   preserveRedactedSecret(api.ApiKey, prior.APIKey),
 		Headers:  headers,
 	}, diags
 }
 
 func authHeadersFromAPI(ctx context.Context, apiHeaders *[]downloadSourceAuthHeader) (types.List, diag.Diagnostics) {
-	elemType := authHeadersElementType(ctx)
-	if apiHeaders == nil {
-		return types.ListNull(elemType), nil
-	}
-
-	headerModels := make([]authHeaderModel, len(*apiHeaders))
-	for i, header := range *apiHeaders {
-		headerModels[i] = authHeaderModel{
-			Key:   types.StringValue(header.Key),
-			Value: types.StringValue(header.Value),
-		}
-	}
-	return types.ListValueFrom(ctx, elemType, headerModels)
+	var diags diag.Diagnostics
+	headers := typeutils.SliceToListType(ctx, typeutils.Deref(apiHeaders), authHeadersElementType(ctx), path.Root("auth").AtName("headers"), &diags,
+		func(header downloadSourceAuthHeader, _ typeutils.ListMeta) authHeaderModel {
+			return authHeaderModel{Key: types.StringValue(header.Key), Value: types.StringValue(header.Value)}
+		})
+	return headers, diags
 }
 
 func preserveRedactedSecret(apiValue *string, fallback types.String) types.String {

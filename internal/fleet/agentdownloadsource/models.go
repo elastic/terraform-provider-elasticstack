@@ -90,24 +90,13 @@ func (m model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRe
 		*agentDownloadSourceMinVersion,
 		fmt.Sprintf("This resource requires stack version %s or higher.", agentDownloadSourceMinVersion),
 	)
-
-	addMinimum := func(configured bool, attr path.Path, minVersion *version.Version, detail string) {
-		if !configured {
-			return
-		}
+	if m.Auth != nil {
 		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
-			attr,
-			*minVersion,
-			detail,
+			path.Root("auth"),
+			*agentDownloadSourceAuthMinVersion,
+			fmt.Sprintf("`auth` is not supported on this version; it is only supported in Elastic Stack %s and above", agentDownloadSourceAuthMinVersion),
 		))
 	}
-
-	addMinimum(
-		m.Auth != nil,
-		path.Root("auth"),
-		agentDownloadSourceAuthMinVersion,
-		fmt.Sprintf("`auth` is not supported on this version; it is only supported in Elastic Stack %s and above", agentDownloadSourceAuthMinVersion),
-	)
 
 	return reqs, nil
 }
@@ -146,26 +135,13 @@ func (m model) authRequest(ctx context.Context) (*downloadSourceAuth, diag.Diagn
 }
 
 func (m authModel) toAPIHeaders(ctx context.Context) (*[]downloadSourceAuthHeader, diag.Diagnostics) {
-	if !typeutils.IsKnown(m.Headers) {
-		return nil, nil
-	}
-
 	var diags diag.Diagnostics
-	headerModels := typeutils.ListTypeAs[authHeaderModel](ctx, m.Headers, path.Root("auth").AtName("headers"), &diags)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	// make returns a non-nil slice even when headerModels is empty, so the
-	// request JSON is "headers":[] rather than an omitted field.
-	headers := make([]downloadSourceAuthHeader, len(headerModels))
-	for i, header := range headerModels {
-		headers[i] = downloadSourceAuthHeader{
-			Key:   header.Key.ValueString(),
-			Value: header.Value.ValueString(),
-		}
-	}
-	return &headers, nil
+	// SliceRef keeps a known empty list as "headers":[]. SliceNilIfEmpty would omit it.
+	headers := typeutils.SliceRef(typeutils.ListTypeToSlice(ctx, m.Headers, path.Root("auth").AtName("headers"), &diags,
+		func(header authHeaderModel, _ typeutils.ListMeta) downloadSourceAuthHeader {
+			return downloadSourceAuthHeader{Key: header.Key.ValueString(), Value: header.Value.ValueString()}
+		}))
+	return headers, diags
 }
 
 func (m model) toAPIUpdateModel(ctx context.Context, prior model) (kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody, diag.Diagnostics) {

@@ -214,14 +214,8 @@ func TestReadAndHydrateStateDecodesAbsentHeadersAsNull(t *testing.T) {
 	spaceID := "space-a"
 	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
 	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
-	headerType := authHeadersElementType(ctx).(types.ObjectType)
 	fallback := &authModel{
-		Headers: types.ListValueMust(headerType, []attr.Value{
-			types.ObjectValueMust(headerType.AttrTypes, map[string]attr.Value{
-				"key":   types.StringValue("X-A"),
-				"value": types.StringValue("1"),
-			}),
-		}),
+		Headers: mustAuthHeaders(t, authHeaderModel{Key: types.StringValue("X-A"), Value: types.StringValue("1")}),
 	}
 
 	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -260,15 +254,9 @@ func TestReadAndHydrateStateUsesAPIHeadersNotFallback(t *testing.T) {
 	spaceID := "space-a"
 	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
 	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
-	headerType := authHeadersElementType(ctx).(types.ObjectType)
 	fallback := &authModel{
 		Username: types.StringValue("stale-user"),
-		Headers: types.ListValueMust(headerType, []attr.Value{
-			types.ObjectValueMust(headerType.AttrTypes, map[string]attr.Value{
-				"key":   types.StringValue("X-A"),
-				"value": types.StringValue("1"),
-			}),
-		}),
+		Headers:  mustAuthHeaders(t, authHeaderModel{Key: types.StringValue("X-A"), Value: types.StringValue("1")}),
 	}
 
 	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -299,12 +287,7 @@ func TestReadAndHydrateStateUsesAPIHeadersNotFallback(t *testing.T) {
 	require.True(t, found)
 	require.NotNil(t, state.Auth)
 	require.Equal(t, "svc-account", state.Auth.Username.ValueString())
-	require.True(t, state.Auth.Headers.Equal(types.ListValueMust(headerType, []attr.Value{
-		types.ObjectValueMust(headerType.AttrTypes, map[string]attr.Value{
-			"key":   types.StringValue("X-B"),
-			"value": types.StringValue("2"),
-		}),
-	})))
+	require.True(t, state.Auth.Headers.Equal(mustAuthHeaders(t, authHeaderModel{Key: types.StringValue("X-B"), Value: types.StringValue("2")})))
 }
 
 func TestReadAndHydrateStateLeavesSecretsNullWithoutFallback(t *testing.T) {
@@ -315,8 +298,6 @@ func TestReadAndHydrateStateLeavesSecretsNullWithoutFallback(t *testing.T) {
 	spaceID := "space-a"
 	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
 	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
-	headerType := authHeadersElementType(ctx).(types.ObjectType)
-
 	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		resp := map[string]any{
 			"item": map[string]any{
@@ -347,12 +328,7 @@ func TestReadAndHydrateStateLeavesSecretsNullWithoutFallback(t *testing.T) {
 	require.Equal(t, "svc-account", state.Auth.Username.ValueString())
 	require.True(t, state.Auth.Password.IsNull())
 	require.True(t, state.Auth.APIKey.IsNull())
-	require.True(t, state.Auth.Headers.Equal(types.ListValueMust(headerType, []attr.Value{
-		types.ObjectValueMust(headerType.AttrTypes, map[string]attr.Value{
-			"key":   types.StringValue("X-A"),
-			"value": types.StringValue("1"),
-		}),
-	})))
+	require.True(t, state.Auth.Headers.Equal(mustAuthHeaders(t, authHeaderModel{Key: types.StringValue("X-A"), Value: types.StringValue("1")})))
 }
 
 func TestReadAndHydrateStateDecodesEmptyHeadersList(t *testing.T) {

@@ -168,18 +168,12 @@ func TestModelToAPICreateModelIncludesAPIKeyAuth(t *testing.T) {
 
 func TestModelToAPICreateModelSendsHeadersOnly(t *testing.T) {
 	ctx := context.Background()
-	headerType := authHeadersElementType(ctx).(types.ObjectType)
 	state := model{
 		Name:    types.StringValue("download-source"),
 		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
 		Default: types.BoolValue(false),
 		Auth: &authModel{
-			Headers: types.ListValueMust(headerType, []attr.Value{
-				types.ObjectValueMust(headerType.AttrTypes, map[string]attr.Value{
-					"key":   types.StringValue("X-A"),
-					"value": types.StringValue("1"),
-				}),
-			}),
+			Headers: mustAuthHeaders(t, authHeaderModel{Key: types.StringValue("X-A"), Value: types.StringValue("1")}),
 		},
 	}
 
@@ -491,4 +485,11 @@ func TestModelToAPIUpdateModelReplacesAuthWithAPIKeyOnly(t *testing.T) {
 	require.Contains(t, string(encoded), `"api_key":"rotated-key"`)
 	require.NotContains(t, string(encoded), `"username"`)
 	require.NotContains(t, string(encoded), `"password"`)
+}
+
+func mustAuthHeaders(t *testing.T, headers ...authHeaderModel) types.List {
+	t.Helper()
+	list, diags := types.ListValueFrom(context.Background(), authHeadersElementType(context.Background()), headers)
+	require.Empty(t, diags)
+	return list
 }
