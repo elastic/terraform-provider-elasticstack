@@ -19,14 +19,11 @@ package sourcemap
 
 import (
 	"context"
-	"crypto/sha256"
 	"encoding/base64"
-	"encoding/hex"
 	"fmt"
-	"io"
-	"os"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/fileutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -70,22 +67,13 @@ func (r *resourceSourceMap) Create(ctx context.Context, req resource.CreateReque
 		sourcemapBytes = decoded
 
 	case sm.File != nil && typeutils.IsKnown(sm.File.Path):
-		f, openErr := os.Open(sm.File.Path.ValueString())
-		if openErr != nil {
-			resp.Diagnostics.AddError("Failed to open source map file", openErr.Error())
-			return
-		}
-		defer f.Close()
-		h := sha256.New()
-		var buf []byte
-		raw, readErr := io.ReadAll(io.TeeReader(f, h))
+		data, digest, readErr := fileutil.ReadFileWithSHA256HexDigest(sm.File.Path.ValueString())
 		if readErr != nil {
 			resp.Diagnostics.AddError("Failed to read source map file", readErr.Error())
 			return
 		}
-		buf = raw
-		sourcemapBytes = buf
-		checksum = hex.EncodeToString(h.Sum(nil))
+		sourcemapBytes = data
+		checksum = digest
 
 	default:
 		resp.Diagnostics.AddError("No source map content provided", "Exactly one of sourcemap.json, sourcemap.binary, or sourcemap.file.path must be set.")
