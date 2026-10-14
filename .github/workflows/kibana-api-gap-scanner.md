@@ -53,7 +53,7 @@ tools:
   timeout: 300
   repo-memory:
     - id: kibana-api-gap-scanner
-      # NOTE: This branch name must match the ref of the repo-memory checkout step above.
+      # NOTE: This branch name must match the ref of the repo-memory checkout step.
       branch-name: memory/kibana-api-gap-scanner
       file-glob: ["memory/kibana-api-gap-scanner/state.json"]
       create-orphan: true
@@ -119,7 +119,7 @@ jobs:
           script: |
             const fn = require('${{ github.workspace }}/.github/scripts/workflows/issue-slots/compute.js');
             await fn({ github, context, core });
-      # NOTE: This ref must match the repo-memory tool config branch-name below.
+      # NOTE: This ref must match the repo-memory tool config branch-name.
       - name: Check for repo-memory branch
         id: memory_branch
         env:

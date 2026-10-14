@@ -89,7 +89,7 @@ The walk uses **`generated/kbapi/oas-filtered.yaml`**, the exact input the Go ty
 
 The three owners:
 
-- **`scripts/kibana-api-gaps` (Go)** owns every fact: what exists, what is absent, keys, fingerprints, ordering, rendered issue content, and memory validation and writing. It has two subcommands, `discover` and `record`, following the `kibana-spec-impact` precedent of `pre-activation` and `memory-record-from-report`.
+- **`scripts/kibana-api-gaps` (Go)** owns every fact: what exists, what is absent, keys, fingerprints, ordering, rendered issue content, and memory validation and writing. It has three subcommands, `discover`, `render-issue`, and `record`, following the `kibana-spec-impact` precedent of `pre-activation` and `memory-record-from-report`.
 - **The agent** owns only judgement: a verdict and a reason. It cannot add fields, because issue bodies are pre-rendered and the agent appends only the reason. `record` rejects verdicts for keys that are not in the report.
 - **gh-aw** owns writes: the `create-issue` safe output, the repo-memory push, and the shared dispatch fragment.
 
@@ -113,6 +113,7 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 | `memory` | Reads and writes `memory/kibana-api-gap-scanner/state.json`: `groups{key: {fingerprint, verdict, reason, date}}` and `resources{name: last_triaged}` | The issue reference in a `file` record is the group key itself |
 | `render` | Issue title `<resource>: <top-level field>`; body listing fields, OAS pointers, the `x-state` version when present, and a final visible marker line ``kibana-api-gap: key `…` fingerprint `…` `` | The agent supplies only the reason paragraph, inserted before the marker. The marker is deliberately not an HTML comment with `key=`/`fp=` pairs: gh-aw's safe-output sanitizer strips HTML comments (live run 38486620680: the issues arrived without it) and its log redaction masks `key=` values |
 | cmd `discover` | Takes slots; outputs `report.json` with the ordered triage queue (at most 15), rendered issues, and `run_agent` | Runs in the `discover` job, ahead of pre_activation |
+| cmd `render-issue` | Takes the report, a queue key, and the triage reason; prints the pre-rendered issue body with the reason inserted before the key marker | Run by the agent for each `file` verdict, its stdout is the `create-issue` body |
 | cmd `record` | Takes `verdicts.json` and the report; writes a validated memory update. Rejects unknown keys, verdicts out of queue order, verdicts after the slots are filled with `file` verdicts, verdict lists that stop early (neither filling the slots with `file` verdicts nor covering the whole queue), and empty reasons; updates `last_triaged` (an RFC 3339 timestamp per resource, so same-day runs rotate) | Run by the agent, like `memory-record-from-report` |
 
 **Workflow and CI components:**
