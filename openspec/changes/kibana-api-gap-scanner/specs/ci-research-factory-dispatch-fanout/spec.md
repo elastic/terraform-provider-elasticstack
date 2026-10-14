@@ -40,3 +40,12 @@ The logic that determines which issues to dispatch to `research-factory` SHALL b
 - **WHEN** maintainers review it
 - **THEN** the logic that parses created issue identities and dispatches `research-factory` SHALL be repository-authored and deterministic
 - **AND** it SHALL run after safe-output issue creation has completed
+
+### Requirement: `research-factory` accepts dispatches from `github-actions[bot]`
+The `research-factory` workflow SHALL allow `github-actions[bot]` through its pre-activation team-membership check (via the `on.bots` allow-list, compiled to `GH_AW_ALLOWED_BOTS`), so that producer dispatches executed with the workflow `GITHUB_TOKEN` are activated rather than skipped for lacking repository permission. This SHALL NOT change which issue events qualify for human-triggered intake.
+
+#### Scenario: Producer dispatch runs as `github-actions[bot]`
+- **GIVEN** a producer workflow dispatches `research-factory` using its `GITHUB_TOKEN`
+- **WHEN** the `research-factory` pre-activation job checks the triggering actor
+- **THEN** the actor `github-actions[bot]` SHALL be allowed
+- **AND** activation and the agent job SHALL run

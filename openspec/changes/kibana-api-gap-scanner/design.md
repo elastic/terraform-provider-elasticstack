@@ -60,15 +60,15 @@ The walk uses **`generated/kbapi/oas-filtered.yaml`**, the exact input the Go ty
 ```
  workflow: kibana-api-gap-scanner.md   (concurrency: 1 run at a time, queued)
  +-----------------------------------------------------------------------------+
- | pre-activation job (deterministic, no LLM)                                  |
+ | discover job (deterministic, no LLM; ubuntu-latest, Go cache, on.needs)     |
  |   checkout + memory branch (memory/kibana-api-gap-scanner)                  |
  |   issue-slots/compute.js  (label kibana-api-gap, cap 3)  -> slots           |
- |   go run ./scripts/kibana-api-gaps discover                                 |
+ |   go build + kibana-api-gaps discover (timeouts; phase timings on stderr)   |
  |   go/packages + oas-filtered.yaml -> all gap groups (key, fp, fields)       |
  |        minus groups covered in memory (same fingerprint)                    |
  |        ordered (resource rotation, size, key) -> triage queue (<= 15)       |
- |        each group: pre-rendered issue title/body (incl. hidden key marker)  |
- |   upload report artifact; run_agent = slots > 0 && queue non-empty          |
+ |        each group: pre-rendered issue title/body (incl. key marker line)    |
+ |   upload report + binary; run_agent = slots > 0 && queue non-empty          |
  +-----------------------------------------------------------------------------+
             | (skipped when run_agent false)
  +-----------------------------------------------------------------------------+
@@ -77,7 +77,7 @@ The walk uses **`generated/kbapi/oas-filtered.yaml`**, the exact input the Go ty
  |     verdict file|suppress + short reason                                    |
  |     file -> create-issue(pre-rendered title, body + reason)                 |
  |   stop at slots filled OR 15 triaged                                        |
- |   write verdicts.json -> go run ./scripts/kibana-api-gaps record            |
+ |   write verdicts.json -> prebuilt kibana-api-gaps record                    |
  |        validates verdicts vs report (unknown keys rejected), writes memory  |
  |   dispatch_research_factory(dispatch: true)                                 |
  +-----------------------------------------------------------------------------+
@@ -89,7 +89,7 @@ The walk uses **`generated/kbapi/oas-filtered.yaml`**, the exact input the Go ty
 
 The three owners:
 
-- **`scripts/kibana-api-gaps` (Go)** owns every fact: what exists, what is absent, keys, fingerprints, ordering, rendered issue content, and memory validation and writing. It has two subcommands, `discover` and `record`, following the `kibana-spec-impact` precedent of `pre-activation` and `memory-record-from-report`.
+- **`scripts/kibana-api-gaps` (Go)** owns every fact: what exists, what is absent, keys, fingerprints, ordering, rendered issue content, and memory validation and writing. It has three subcommands, `discover`, `render-issue`, and `record`, following the `kibana-spec-impact` precedent of `pre-activation` and `memory-record-from-report`.
 - **The agent** owns only judgement: a verdict and a reason. It cannot add fields, because issue bodies are pre-rendered and the agent appends only the reason. `record` rejects verdicts for keys that are not in the report.
 - **gh-aw** owns writes: the `create-issue` safe output, the repo-memory push, and the shared dispatch fragment.
 
@@ -108,12 +108,13 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 | `oas` | Loads `generated/kbapi/oas-filtered.yaml` as a `yaml.v3` node tree; resolves `$ref` and `allOf`; exposes request-body schema and query params per operation, plus `deprecated` and `x-state` | Uses the raw node tree, not an OpenAPI loader, so fingerprinting is exact |
 | `walk` | Lockstep walk of OAS schema and Go type: properties to struct fields by json tag; arrays, maps, and pointers to their element; `oneOf`/`anyOf` to union variant types through `As*`/`From*` | An unmatched json tag is a **tool error**, never silently skipped |
 | `usage` | Per resource: the set of kbapi struct fields used (`types.Info` selections and composite-literal keys) within that resource's `reach` set; plus **opaque-covered types**: targets of whole-value `json.Unmarshal`/`Marshal`, and used `json.RawMessage` or map-typed fields | Computed per resource, not module-wide, so another resource's usage cannot hide a gap |
-| `group` | Builds gap groups per (resource, top-level field), keyed `<resource>#<OAS JSON pointer>`, whose members are the unused fields in the subtree; drops deprecated and response-only fields | If the top-level field itself is unused, its whole subtree forms one group |
+| `group` | Builds gap groups per (resource, top-level field name), keyed `<resource>#<OAS JSON pointer>`, whose members are the unused fields in the subtree; drops deprecated and response-only fields | If the top-level field itself is unused, its whole subtree forms one group. The same field name in several operation bodies or union variants (create and update, or every variant of a union body) is merged into one group keyed by the smallest pointer (so a new smaller sibling re-keys and re-triages the group once, accepted), kept apart for body properties versus query parameters, with a fingerprint over all constituent pointers and fingerprints; this was added after the spike, where per-variant groups made one resource report 506 groups |
 | `fingerprint` | SHA-256 of a canonical JSON projection of the resolved subtree over `type`, `format`, `properties`, `required`, `enum`, `items`, combinators, `additionalProperties`, and `deprecated`; excludes `description`, `title`, `example(s)`, and `x-*` | Implements the "structure only" fingerprint |
 | `memory` | Reads and writes `memory/kibana-api-gap-scanner/state.json`: `groups{key: {fingerprint, verdict, reason, date}}` and `resources{name: last_triaged}` | The issue reference in a `file` record is the group key itself |
-| `render` | Issue title `<resource>: <top-level field>`; body listing fields, OAS pointers, the `x-state` version when present, and a hidden marker `<!-- kibana-api-gap key=… fp=… -->` | The agent supplies only the reason paragraph |
-| cmd `discover` | Takes slots; outputs `report.json` with the ordered triage queue (at most 15), rendered issues, and `run_agent` | Runs in pre-activation |
-| cmd `record` | Takes `verdicts.json` and the report; writes a validated memory update. Rejects unknown keys, more `file` verdicts than slots, and empty reasons; updates `last_triaged` | Run by the agent, like `memory-record-from-report` |
+| `render` | Issue title `<resource>: <top-level field>`; body listing fields, OAS pointers, the `x-state` version when present, and a final visible marker line ``kibana-api-gap: key `…` fingerprint `…` `` | The agent supplies only the reason paragraph, inserted before the marker. The marker is deliberately not an HTML comment with `key=`/`fp=` pairs: gh-aw's safe-output sanitizer strips HTML comments (live run 38486620680: the issues arrived without it) and its log redaction masks `key=` values |
+| cmd `discover` | Takes slots; outputs `report.json` with the ordered triage queue (at most 15), rendered issues, and `run_agent` | Runs in the `discover` job, ahead of pre_activation |
+| cmd `render-issue` | Takes the report, a queue key, and the triage reason; prints the pre-rendered issue body with the reason inserted before the key marker | Run by the agent for each `file` verdict, its stdout is the `create-issue` body |
+| cmd `record` | Takes `verdicts.json` and the report; writes a validated memory update. Rejects unknown keys, verdicts out of queue order, verdicts after the slots are filled with `file` verdicts, verdict lists that stop early (neither filling the slots with `file` verdicts nor covering the whole queue), and empty reasons; updates `last_triaged` (an RFC 3339 timestamp per resource, so same-day runs rotate) | Run by the agent, like `memory-record-from-report` |
 
 **Workflow and CI components:**
 
@@ -127,7 +128,7 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 ### D4. Data flow and state ownership
 
 ```
- durable inputs                     pre-activation                 agent job
+ durable inputs                     discover job                   agent job
  --------------                     --------------                 ---------
  repo @ SHA (Go, oas-filtered) --> discover --> report.json --artifact--> read queue
  memory branch state.json ------->     |          (queue <= 15,             |
@@ -158,24 +159,26 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 - **Stale records are kept.** Records whose group no longer appears in discovery (the gap was fixed) are ignored; there is no garbage collection in v1.
 - **The agent never decides facts.** Group membership, fields, and issue text come from the report; the agent adds only a verdict and reason, and `record` refuses keys outside the queue.
 - **All-or-nothing runs** (gh-aw job gating). If the agent fails, no issues are created and no memory is pushed, so the next run re-triages cleanly with no duplicates. If the agent succeeds, memory is pushed after issue creation has been attempted. A blocked or failed `create-issue` therefore still leaves a `file` record, which is the accepted limitation in the spec.
-- **`discover` is deterministic:** the same SHA and memory produce a byte-identical report, which the unit tests and the spike's repeatability check rely on.
+- **`discover` is deterministic:** the same SHA and memory produce a byte-identical report, which the unit tests rely on.
 
 ### D5. Failure handling: fail loudly on unknown shapes, never guess absence
 
 | Failure | Where | Handling | Result |
 |---|---|---|---|
-| `go/packages` load or type-check fails | `discover` | Non-zero exit; pre-activation fails and `run_agent` is never set | No triage, no issues, memory untouched |
+| `go/packages` load or type-check fails | `discover` | Non-zero exit; the discover job fails and `run_agent` is never set | No triage, no issues, memory untouched |
 | The lockstep walk finds a json tag with no OAS match, or the reverse | `walk` | **Tool error** naming the type, field, and operation; the run fails rather than guessing | As above; signals that kbapi and `oas-filtered.yaml` are out of sync or that `walk` has a gap |
 | A kbapi method has no matching `New<Op>Request` constructor | `opindex` | Tool error | As above |
 | Unsupported schema shape (e.g. `not`, exotic `allOf`) | `walk` | That **subtree** is treated as covered and listed in the report's `skipped_shapes` diagnostics; the run continues | No false gap is possible; visible in the artifact |
 | No slots, or an empty queue | `discover` | `run_agent=false` with a gate reason, as in kibana-spec-impact | Agent skipped |
-| A verdict for an unknown key, an extra `file`, or an empty reason | `record` | The whole `verdicts.json` is rejected with a precise error; the agent fixes it and re-runs `record` | Memory only ever takes valid verdicts |
+| A verdict for an unknown key, out of queue order, after the slots are filled, a list that stops early, or with an empty reason | `record` | The whole `verdicts.json` is rejected with a precise error; the agent fixes it and re-runs `record` | Memory only ever takes valid verdicts |
 | Agent dies or times out mid-triage | Agent job | gh-aw processes no safe outputs and pushes no memory for a failed agent | No issues, memory unchanged; the next run re-triages those groups |
 | Memory push fails after successful triage | gh-aw repo-memory | The job fails visibly | Red run. Issues from this run exist without records, so the next run may re-file them. Rare, because the push is a plain git push to a dedicated branch; the key marker makes any duplicate obvious. |
 | `create-issue` fails or is blocked by threat detection | `safe_outputs` | None | Accepted limitation: the group stays covered until its fingerprint changes |
 | Two triggers at the same time | Workflow | Queueing `concurrency` group (no cancel-in-progress) | Runs are serialised |
 
 **Ordering inside the agent:** for each group, triage, then append the verdict, then call `create-issue` if the verdict is `file`. `record` runs once at the end, after all verdicts, and must succeed before the agent finishes. Running `record` incrementally would add nothing, because memory is only pushed when the whole agent job succeeds.
+
+**Accepted ordering asymmetry:** `create-issue` is a gh-aw safe output that runs after the agent finishes, while `record` validates the verdicts inside the agent. A `record` failure therefore stops the agent, and gh-aw then processes no safe outputs, so no issue is created from an invalid run. The residual asymmetry is the reverse: issues for `file` verdicts are created before memory is pushed, so if the memory push fails the issues exist without records. This is accepted: the exposure is bounded by the slot cap (at most 3 issues per run), the key marker makes duplicates obvious, and the behaviour is verified live in task 4.3.
 
 **Observability:**
 - the report artifact: all groups, the queue, `skipped_shapes`, the gate reason, and resources with zero mapped operations;
@@ -197,44 +200,44 @@ Code reuse: `inventory.go` moves from `kibana-spec-impact`, widened to resources
 - **Real-repo variety** is covered by the integration test, which fails loudly on unknown shapes instead of silently mis-reporting.
 - No live Elastic Stack is needed.
 
-### D7. Rollout in two PRs, with no unwatched period
+### D7. Rollout in a single PR, verified live after merge
 
 ```
  step 0  spike: discover (resource-filtered) on 3 resources -> signal-to-noise review
-         NO-GO -> stop, revisit the change (proposal gate)
+         (conditional go, user-approved; see "Spike outcome" below)
            |
- step 1  PR 1: scripts/kibana-api-gaps + tests, shared dispatch-research-factory
-         fragment, scanner workflow with ONLY workflow_dispatch enabled;
-         provision the kibana-api-gap label; kibana-spec-impact untouched
+ step 1  ONE PR: scripts/kibana-api-gaps + tests, shared dispatch-research-factory
+         fragment, scanner workflow with schedule + push + dispatch,
+         REMOVE kibana-spec-impact (workflow, lock, script, Makefile line),
+         docs: continuous-quality-workflows.md + factory-workflows.md
            |
- step 2  live dispatch runs: verify triage, issues, dispatch,
-         memory branch, failed-agent all-or-nothing; tune triage prompt if needed
+ step 2  after merge: live dispatch runs (task 4.3): verify triage, issues,
+         dispatch, memory branch, failed-agent all-or-nothing; tune the prompt if needed
            |
- step 3  PR 2: enable daily schedule + push trigger;
-         REMOVE kibana-spec-impact (workflow, lock, script, Makefile line,
-         spec via archive of this change); delete memory/kibana-spec-impact branch
-           |
- step 4  docs: continuous-quality-workflows.md + factory-workflows.md (in PR 2)
+ step 3  after merge, manual: delete the memory/kibana-spec-impact branch;
+         archive this change so the ci-kibana-spec-impact-issues removal reaches the main specs
 ```
 
-- **Why two PRs:**
-  - Removing `kibana-spec-impact` in the same PR that first introduces the scanner would leave Kibana client changes unwatched if the scanner turns out noisy.
-  - Running dispatch-only first lets the triage prompt and the all-or-nothing behaviour be checked on real data, with no exposure to the schedule.
-  - Swapping the two in PR 2 means there is never a coverage gap and never two scanners filing at once.
+- **What shipped and the trade-off:**
+  - The original plan used two PRs: dispatch-only first, then schedule plus the `kibana-spec-impact` removal. Review and the spike's reflection and merge fixes made the scanner deterministic and unit-tested, so it shipped as one PR instead.
+  - Cost: the live behaviour (triage in order, issue creation, dispatch, memory, failed-agent all-or-nothing) is first exercised after merge, with the schedule already enabled. Exposure is bounded: at most 3 open `kibana-api-gap` issues (slots), at most 15 groups triaged per run, and at most 3 research-factory dispatches per day.
+  - Benefit: there is never a coverage gap and never two scanners filing at once, and no intermediate state to maintain.
 - **Compatibility:**
   - **First-run backlog:** the first scheduled run sees the whole historical backlog; the slot cap (at most 3 open) and the triage budget (15 per run) throttle it with no seeding.
   - **Memory bootstrap:** the branch is created as an orphan on the first `record` (`create-orphan: true`).
   - **Existing `[kibana-spec-impact]` issues** stay open. They lack the `kibana-api-gap` label, so they do not consume slots. Overlap with new gap issues is possible for a few resources; it is visible and harmless.
   - **research-factory load:** at most 3 dispatches per day at steady state. The `research-factory-critic-gate` change is recommended to land first.
 - **Rollback:**
-  - Before step 3: disable or delete the scanner; `kibana-spec-impact` never stopped running.
-  - After step 3: revert PR 2. The `kibana-spec-impact` helper can be restored from git and its baseline re-seeded from current `main`. Its old dedupe fingerprints are lost, so it may re-file a few entities once.
+  - If live verification (task 4.3) shows a problem: disable the schedule and push triggers (leaving dispatch), or disable the scanner; fix forward.
+  - To restore the old scanner: revert the PR. The `kibana-spec-impact` helper comes back from git and its baseline is re-seeded from current `main`. Its old dedupe fingerprints (and the deleted memory branch, if already removed) are lost, so it may re-file a few entities once.
+
+**Spike outcome (task 2.3):** conditional go, user-approved. The whole-repository group count fell from 1,632 to 1,051 after treating types handed to `reflect` as opaque-covered, and to 244 after merging same-field groups across create, update, and union bodies (keeping query-parameter and body groups apart); the three spike resources (SLO, synthetics monitor, Fleet agent policy) produced 21 groups, matching the 21 logical fields counted by hand, with about 57% plausible real gaps and the rest in the triage suppress categories.
 
 ## Risks / Trade-offs
 
 | Concern | Risk | Mitigation |
 |---|---|---|
-| **Performance of `discover`** | A full-module load with types, plus a 12 MB generated `kibana.gen.go` and a large `oas-filtered.yaml`, could take minutes and several GB of RAM | One load per run, reused throughout; standard `ubuntu-latest` runners (16 GB) suffice; the integration test is skipped under `-short`. If load time exceeds about 5 minutes, load only the resource packages and their dependencies. |
+| **Performance of `discover`** | `discover` imports the provider (resource inventory) and then `packages.Load`s the module with types, so a cold run compiles the whole dependency graph twice if the two builds differ in GOOS/GOARCH/CGO. Measured cold (14-core laptop): build 48 s (274 CPU-s) plus load 52 s (2 GB RSS) with mismatched env, versus 24 s plus 4 s when the build also uses `CGO_ENABLED=0`; the analysis itself is about 3 s. On the 1 vCPU `ubuntu-slim` pre_activation runner (15 minute cap, no Go cache) this timed out after about 13.7 minutes. | `discover` runs in a dedicated `discover` job (`on.needs`, so it precedes pre_activation) on `ubuntu-latest` with `setup-go` caching, a build step with `CGO_ENABLED=0` so the load reuses the build cache, and `timeout-minutes` on the job (25) and on the build (12) and discover (10) steps. `discover` logs each phase (oas, load, index, reach, group, total) on stderr. The integration test is skipped under `-short`. If load time stays above about 5 minutes, load only the resource packages and their dependencies. |
 | **Reference graph over-approximates** | Resolving interface calls to all implementations, and following every function reference, pulls in more code than a resource really executes. Usage is over-counted, so some real gaps are missed. Operations can also be over-counted, so a resource may be credited with an operation a shared helper references for another resource. | Missing gaps is the safe direction (no false absence). Operation over-counting yields candidates that are true statements about reachable code, and triage can suppress them as irrelevant. The report lists resources with zero mapped operations and per-resource operation counts, so outliers show up during the spike. |
 | **Triage model and prompt** | Weak suppression criteria make the filter too lenient or too aggressive | The same OpenRouter Claude setup as schema-coverage (`anthropic/claude-sonnet-5`, `--effort high`). The prompt lists concrete suppress categories (server-managed or computed state, internal or telemetry fields, runtime actions that make no sense as IaC, fields covered by an opaque attribute that `usage` missed) and says "if in doubt, file". Every suppression and its reason is in memory for review. |
 | **Prompt injection via the spec** | OAS descriptions come from upstream Kibana and are shown to the triage agent | Low risk, because upstream is Elastic's own spec. The agent is read-only (`contents: read`, `issues: read`); writes are limited to `create-issue` (max 3) and `record`, whose input is validated. An injected "file everything" is still capped by slots and keys. |

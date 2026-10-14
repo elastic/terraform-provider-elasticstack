@@ -78,7 +78,7 @@ Each reactive-track issue carries exactly one `phase-*` label after it has enter
 | Verify implementation before merge | `verify-openspec` label | `openspec-verify-change`, `requirements-verification`, `schema-coverage` |
 | Babysit a PR through CI and review | — | `pr-monitoring-loop` |
 | Detect duplicate code, refactor opportunities, coverage gaps, flaky tests | Continuous-quality scanners | — |
-| Roll up generated client drift into entity follow-ups | `kibana-spec-impact` | — |
+| Find unused Kibana API request fields and hand them to research | `kibana-api-gap-scanner` | — |
 | Clean up dead code, docs drift | `ci-deadcode-removal-rotation`, `security-role-docs-drift` | — |
 
 The design intent: CI handles **intake and first-pass automation**; the local loop is the richer implementation-and-review surface where humans (and locally-launched agents) drive the work to merge.

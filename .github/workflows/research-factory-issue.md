@@ -9,6 +9,8 @@ description: >-
 on:
   issues:
     types: [opened, labeled]
+  bots:
+    - github-actions[bot]
   workflow_dispatch:
     inputs:
       issue_number:

@@ -159,7 +159,7 @@ hook-test: ## Run hook JavaScript unit tests
 
 .PHONY: test
 test: workflow-test hook-test ## Run unit tests and JS tests
-	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
+	go test -v -short $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
 
 CURL_BASE_OPTS = -sS --retry 5 --retry-all-errors -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
 CURL_OPTS = $(CURL_BASE_OPTS) -X POST
@@ -252,8 +252,8 @@ workflow-generate: ## Generate workflow markdown sources
 	@ gh aw compile
 
 .PHONY: workflow-test
-workflow-test: ## Run unit tests for workflow helpers (Go changelog + kibana-spec-impact, node workflow lib)
-	@ go test ./scripts/kibana-spec-impact/... -count=1
+workflow-test: ## Run unit tests for workflow helpers (Go changelog + kibana-api-gaps, node workflow lib)
+	@ go test ./scripts/kibana-api-gaps/... -count=1
 	@ go test ./scripts/changelog/... -count=1
 	@ go test ./scripts/version-matrix/... -count=1
 	@ node --test .github/scripts/workflows/lib/*.test.mjs

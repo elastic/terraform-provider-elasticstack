@@ -90,12 +90,18 @@ Running discovery twice on the same repository state SHALL produce identical can
 - **THEN** both runs SHALL report the same candidates with the same identities
 
 ### Requirement: Candidates are grouped per resource and top-level request field with stable identity
-Candidates SHALL be grouped into one gap group per (resource, top-level request field), where a top-level request field is a direct property of an operation's request body or a query parameter. Each group SHALL have a stable key made of the resource type name and the Kibana API specification location of the top-level field, and a structural fingerprint computed from that field's definition including all nested fields. The fingerprint SHALL change when the field's structure changes (types, properties, enum values, required-ness, or deprecation) and SHALL NOT change when only descriptions or examples change.
+Candidates SHALL be grouped into one gap group per (resource, top-level request field), where a top-level request field is a direct property of an operation's request body or a query parameter. A top-level field of the same kind (request-body property or query parameter) that appears under the same name in several of the resource's operation bodies or request-body variants (for example in both a create and an update body, or in every variant of a union body) SHALL form one group; the group's members keep their own specification locations. Each group SHALL have a stable key made of the resource type name and the Kibana API specification location of the top-level field (the lexicographically smallest location when the group spans several), and a structural fingerprint computed from the definitions of that field, including all nested fields, at every location the group spans. When a location is added that sorts before the current smallest one, or the smallest one is removed, the group's key changes and it is triaged once more; this is accepted. The fingerprint SHALL change when the field's structure changes (types, properties, enum values, required-ness, or deprecation) and SHALL NOT change when only descriptions or examples change.
 
 #### Scenario: Nested unused fields share one group
 - **GIVEN** a resource that leaves two nested fields under the same top-level request field unused
 - **WHEN** candidates are grouped
 - **THEN** both fields SHALL belong to a single gap group for that top-level field
+
+#### Scenario: Same field in several bodies shares one group
+- **GIVEN** a resource whose create and update request bodies both accept the same top-level field, which the resource never uses
+- **WHEN** candidates are grouped
+- **THEN** a single gap group SHALL exist for that field, keyed by the smaller of the two specification locations
+- **AND** the group SHALL list the unused fields at both locations
 
 #### Scenario: Description-only change keeps the fingerprint
 - **GIVEN** a gap group with a recorded fingerprint
@@ -148,7 +154,7 @@ Each run SHALL compute available issue slots as the cap of 3 minus the number of
 - **THEN** the run SHALL stop after 15 triaged groups
 
 ### Requirement: Filed gap groups become grounded issues dispatched to research
-For each `file` verdict, the scanner SHALL create one issue whose title is prefixed with `[kibana-api-gap] ` and names the resource and the top-level field, labelled `kibana-api-gap` and `triaged`. The issue body SHALL identify the resource, list every unused field in the group with its Kibana API specification location, state the Kibana version in which the field was introduced when the specification provides one, and include triage's reason for filing. After issue creation, the scanner SHALL dispatch `research-factory` once per created issue, as defined by the `ci-research-factory-dispatch-fanout` capability. The scanner SHALL NOT apply any factory trigger label.
+For each `file` verdict, the scanner SHALL create one issue whose title is prefixed with `[kibana-api-gap] ` and names the resource and the top-level field, labelled `kibana-api-gap` and `triaged`. The issue body SHALL identify the resource, list every unused field in the group with its Kibana API specification location, state the Kibana version in which the field was introduced when the specification provides one, include triage's reason for filing, and end with a visible, machine-readable marker line carrying the group key and fingerprint (not an HTML comment, which the safe-output sanitizer strips). After issue creation, the scanner SHALL dispatch `research-factory` once per created issue, as defined by the `ci-research-factory-dispatch-fanout` capability. The scanner SHALL NOT apply any factory trigger label.
 
 #### Scenario: Filed issue is grounded
 - **GIVEN** a `file` verdict for a group of two unused fields
