@@ -47,7 +47,7 @@
 - [x] 7.1 Update `examples/resources/elasticstack_fleet_agent_download_source/resource.tf` to show the `ssl` block
 - [x] 7.2 Regenerate `docs/resources/fleet_agent_download_source.md` via the existing `make` docs target
 - [x] 7.3 Add a CHANGELOG entry following the repo's existing format
-- [ ] 7.4 Update the `ssl` shape in the canonical schema sketch at `openspec/specs/fleet-agent-download-source/spec.md` when syncing this delta — deferred to `verify-openspec` sync/archive after approval, per user direction
+- [x] 7.4 Update the `ssl` shape in the canonical schema sketch at `openspec/specs/fleet-agent-download-source/spec.md` when syncing this delta — completed during the `verify-openspec` sync/archive run
 
 ## 8. Validation and cleanup
 
