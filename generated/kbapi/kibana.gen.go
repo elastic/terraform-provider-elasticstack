@@ -1461,6 +1461,36 @@ func (e KibanaHTTPAPIsStreamlangStep020From1Type) Valid() bool {
 	}
 }
 
+// Defines values for KibanaHTTPAPIsStreamlangStep0210Action.
+const (
+	KibanaHTTPAPIsStreamlangStep0210ActionNetworkDirection KibanaHTTPAPIsStreamlangStep0210Action = "network_direction"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsStreamlangStep0210Action enum.
+func (e KibanaHTTPAPIsStreamlangStep0210Action) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsStreamlangStep0210ActionNetworkDirection:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsStreamlangStep0211Action.
+const (
+	KibanaHTTPAPIsStreamlangStep0211ActionNetworkDirection KibanaHTTPAPIsStreamlangStep0211Action = "network_direction"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsStreamlangStep0211Action enum.
+func (e KibanaHTTPAPIsStreamlangStep0211Action) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsStreamlangStep0211ActionNetworkDirection:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KibanaHTTPAPIsStreamlangStep022Action.
 const (
 	JsonExtract KibanaHTTPAPIsStreamlangStep022Action = "json_extract"
@@ -4557,6 +4587,42 @@ func (e KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GaugeAggre
 	}
 }
 
+// Defines values for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortDirection.
+const (
+	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortDirectionAsc  KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortDirection = "asc"
+	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortDirectionDesc KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortDirection = "desc"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortDirection enum.
+func (e KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortDirection) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortDirectionAsc:
+		return true
+	case KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortDirectionDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField.
+const (
+	Alphabetically KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField = "alphabetically"
+	Recency        KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField = "recency"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField enum.
+func (e KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField) Valid() bool {
+	switch e {
+	case Alphabetically:
+		return true
+	case Recency:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HeaderRowHeight1.
 const (
 	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HeaderRowHeight1Auto KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HeaderRowHeight1 = "auto"
@@ -7234,6 +7300,7 @@ func (e KibanaHTTPAPIsNewOutputElasticsearchType) Valid() bool {
 const (
 	KibanaHTTPAPIsNewOutputKafkaAuthTypeKerberos KibanaHTTPAPIsNewOutputKafkaAuthType = "kerberos"
 	KibanaHTTPAPIsNewOutputKafkaAuthTypeNone     KibanaHTTPAPIsNewOutputKafkaAuthType = "none"
+	KibanaHTTPAPIsNewOutputKafkaAuthTypeOauth2   KibanaHTTPAPIsNewOutputKafkaAuthType = "oauth2"
 	KibanaHTTPAPIsNewOutputKafkaAuthTypeSsl      KibanaHTTPAPIsNewOutputKafkaAuthType = "ssl"
 	KibanaHTTPAPIsNewOutputKafkaAuthTypeUserPass KibanaHTTPAPIsNewOutputKafkaAuthType = "user_pass"
 )
@@ -7244,6 +7311,8 @@ func (e KibanaHTTPAPIsNewOutputKafkaAuthType) Valid() bool {
 	case KibanaHTTPAPIsNewOutputKafkaAuthTypeKerberos:
 		return true
 	case KibanaHTTPAPIsNewOutputKafkaAuthTypeNone:
+		return true
+	case KibanaHTTPAPIsNewOutputKafkaAuthTypeOauth2:
 		return true
 	case KibanaHTTPAPIsNewOutputKafkaAuthTypeSsl:
 		return true
@@ -7290,6 +7359,45 @@ func (e KibanaHTTPAPIsNewOutputKafkaConnectionType) Valid() bool {
 	case KibanaHTTPAPIsNewOutputKafkaConnectionTypeEncryption:
 		return true
 	case KibanaHTTPAPIsNewOutputKafkaConnectionTypePlaintext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsNewOutputKafkaOauth2GrantType.
+const (
+	KibanaHTTPAPIsNewOutputKafkaOauth2GrantTypeClientCredentials                    KibanaHTTPAPIsNewOutputKafkaOauth2GrantType = "client_credentials"
+	KibanaHTTPAPIsNewOutputKafkaOauth2GrantTypeUrnIetfParamsOauthGrantTypeJwtBearer KibanaHTTPAPIsNewOutputKafkaOauth2GrantType = "urn:ietf:params:oauth:grant-type:jwt-bearer"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsNewOutputKafkaOauth2GrantType enum.
+func (e KibanaHTTPAPIsNewOutputKafkaOauth2GrantType) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsNewOutputKafkaOauth2GrantTypeClientCredentials:
+		return true
+	case KibanaHTTPAPIsNewOutputKafkaOauth2GrantTypeUrnIetfParamsOauthGrantTypeJwtBearer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithm.
+const (
+	KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithmRS256 KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithm = "RS256"
+	KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithmRS384 KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithm = "RS384"
+	KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithmRS512 KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithm = "RS512"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithm enum.
+func (e KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithm) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithmRS256:
+		return true
+	case KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithmRS384:
+		return true
+	case KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithmRS512:
 		return true
 	default:
 		return false
@@ -8254,6 +8362,7 @@ func (e KibanaHTTPAPIsOutputResponseElasticsearchType) Valid() bool {
 const (
 	KibanaHTTPAPIsOutputResponseKafkaAuthTypeKerberos KibanaHTTPAPIsOutputResponseKafkaAuthType = "kerberos"
 	KibanaHTTPAPIsOutputResponseKafkaAuthTypeNone     KibanaHTTPAPIsOutputResponseKafkaAuthType = "none"
+	KibanaHTTPAPIsOutputResponseKafkaAuthTypeOauth2   KibanaHTTPAPIsOutputResponseKafkaAuthType = "oauth2"
 	KibanaHTTPAPIsOutputResponseKafkaAuthTypeSsl      KibanaHTTPAPIsOutputResponseKafkaAuthType = "ssl"
 	KibanaHTTPAPIsOutputResponseKafkaAuthTypeUserPass KibanaHTTPAPIsOutputResponseKafkaAuthType = "user_pass"
 )
@@ -8264,6 +8373,8 @@ func (e KibanaHTTPAPIsOutputResponseKafkaAuthType) Valid() bool {
 	case KibanaHTTPAPIsOutputResponseKafkaAuthTypeKerberos:
 		return true
 	case KibanaHTTPAPIsOutputResponseKafkaAuthTypeNone:
+		return true
+	case KibanaHTTPAPIsOutputResponseKafkaAuthTypeOauth2:
 		return true
 	case KibanaHTTPAPIsOutputResponseKafkaAuthTypeSsl:
 		return true
@@ -8310,6 +8421,45 @@ func (e KibanaHTTPAPIsOutputResponseKafkaConnectionType) Valid() bool {
 	case KibanaHTTPAPIsOutputResponseKafkaConnectionTypeEncryption:
 		return true
 	case KibanaHTTPAPIsOutputResponseKafkaConnectionTypePlaintext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsOutputResponseKafkaOauth2GrantType.
+const (
+	KibanaHTTPAPIsOutputResponseKafkaOauth2GrantTypeClientCredentials                    KibanaHTTPAPIsOutputResponseKafkaOauth2GrantType = "client_credentials"
+	KibanaHTTPAPIsOutputResponseKafkaOauth2GrantTypeUrnIetfParamsOauthGrantTypeJwtBearer KibanaHTTPAPIsOutputResponseKafkaOauth2GrantType = "urn:ietf:params:oauth:grant-type:jwt-bearer"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsOutputResponseKafkaOauth2GrantType enum.
+func (e KibanaHTTPAPIsOutputResponseKafkaOauth2GrantType) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsOutputResponseKafkaOauth2GrantTypeClientCredentials:
+		return true
+	case KibanaHTTPAPIsOutputResponseKafkaOauth2GrantTypeUrnIetfParamsOauthGrantTypeJwtBearer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithm.
+const (
+	KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithmRS256 KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithm = "RS256"
+	KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithmRS384 KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithm = "RS384"
+	KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithmRS512 KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithm = "RS512"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithm enum.
+func (e KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithm) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithmRS256:
+		return true
+	case KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithmRS384:
+		return true
+	case KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithmRS512:
 		return true
 	default:
 		return false
@@ -9451,6 +9601,7 @@ func (e KibanaHTTPAPIsUpdateOutputElasticsearchType) Valid() bool {
 const (
 	KibanaHTTPAPIsUpdateOutputKafkaAuthTypeKerberos KibanaHTTPAPIsUpdateOutputKafkaAuthType = "kerberos"
 	KibanaHTTPAPIsUpdateOutputKafkaAuthTypeNone     KibanaHTTPAPIsUpdateOutputKafkaAuthType = "none"
+	KibanaHTTPAPIsUpdateOutputKafkaAuthTypeOauth2   KibanaHTTPAPIsUpdateOutputKafkaAuthType = "oauth2"
 	KibanaHTTPAPIsUpdateOutputKafkaAuthTypeSsl      KibanaHTTPAPIsUpdateOutputKafkaAuthType = "ssl"
 	KibanaHTTPAPIsUpdateOutputKafkaAuthTypeUserPass KibanaHTTPAPIsUpdateOutputKafkaAuthType = "user_pass"
 )
@@ -9461,6 +9612,8 @@ func (e KibanaHTTPAPIsUpdateOutputKafkaAuthType) Valid() bool {
 	case KibanaHTTPAPIsUpdateOutputKafkaAuthTypeKerberos:
 		return true
 	case KibanaHTTPAPIsUpdateOutputKafkaAuthTypeNone:
+		return true
+	case KibanaHTTPAPIsUpdateOutputKafkaAuthTypeOauth2:
 		return true
 	case KibanaHTTPAPIsUpdateOutputKafkaAuthTypeSsl:
 		return true
@@ -9507,6 +9660,45 @@ func (e KibanaHTTPAPIsUpdateOutputKafkaConnectionType) Valid() bool {
 	case Encryption:
 		return true
 	case Plaintext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsUpdateOutputKafkaOauth2GrantType.
+const (
+	ClientCredentials                    KibanaHTTPAPIsUpdateOutputKafkaOauth2GrantType = "client_credentials"
+	UrnIetfParamsOauthGrantTypeJwtBearer KibanaHTTPAPIsUpdateOutputKafkaOauth2GrantType = "urn:ietf:params:oauth:grant-type:jwt-bearer"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsUpdateOutputKafkaOauth2GrantType enum.
+func (e KibanaHTTPAPIsUpdateOutputKafkaOauth2GrantType) Valid() bool {
+	switch e {
+	case ClientCredentials:
+		return true
+	case UrnIetfParamsOauthGrantTypeJwtBearer:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsUpdateOutputKafkaOauth2SignatureAlgorithm.
+const (
+	RS256 KibanaHTTPAPIsUpdateOutputKafkaOauth2SignatureAlgorithm = "RS256"
+	RS384 KibanaHTTPAPIsUpdateOutputKafkaOauth2SignatureAlgorithm = "RS384"
+	RS512 KibanaHTTPAPIsUpdateOutputKafkaOauth2SignatureAlgorithm = "RS512"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsUpdateOutputKafkaOauth2SignatureAlgorithm enum.
+func (e KibanaHTTPAPIsUpdateOutputKafkaOauth2SignatureAlgorithm) Valid() bool {
+	switch e {
+	case RS256:
+		return true
+	case RS384:
+		return true
+	case RS512:
 		return true
 	default:
 		return false
@@ -12071,6 +12263,7 @@ const (
 	KibanaHTTPAPIsVisMetricIconConfigNameHeart         KibanaHTTPAPIsVisMetricIconConfigName = "heart"
 	KibanaHTTPAPIsVisMetricIconConfigNameMapMarker     KibanaHTTPAPIsVisMetricIconConfigName = "map_marker"
 	KibanaHTTPAPIsVisMetricIconConfigNamePin           KibanaHTTPAPIsVisMetricIconConfigName = "pin"
+	KibanaHTTPAPIsVisMetricIconConfigNamePopout        KibanaHTTPAPIsVisMetricIconConfigName = "popout"
 	KibanaHTTPAPIsVisMetricIconConfigNameSortDown      KibanaHTTPAPIsVisMetricIconConfigName = "sort_down"
 	KibanaHTTPAPIsVisMetricIconConfigNameSortUp        KibanaHTTPAPIsVisMetricIconConfigName = "sort_up"
 	KibanaHTTPAPIsVisMetricIconConfigNameStarEmpty     KibanaHTTPAPIsVisMetricIconConfigName = "star_empty"
@@ -12104,6 +12297,8 @@ func (e KibanaHTTPAPIsVisMetricIconConfigName) Valid() bool {
 	case KibanaHTTPAPIsVisMetricIconConfigNameMapMarker:
 		return true
 	case KibanaHTTPAPIsVisMetricIconConfigNamePin:
+		return true
+	case KibanaHTTPAPIsVisMetricIconConfigNamePopout:
 		return true
 	case KibanaHTTPAPIsVisMetricIconConfigNameSortDown:
 		return true
@@ -17469,6 +17664,21 @@ const (
 func (e SecurityDetectionsAPIBulkDeleteRulesAction) Valid() bool {
 	switch e {
 	case SecurityDetectionsAPIBulkDeleteRulesActionDelete:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecurityDetectionsAPIBulkDeleteSkipReason.
+const (
+	RULENOTFOUND SecurityDetectionsAPIBulkDeleteSkipReason = "RULE_NOT_FOUND"
+)
+
+// Valid indicates whether the value is a known member of the SecurityDetectionsAPIBulkDeleteSkipReason enum.
+func (e SecurityDetectionsAPIBulkDeleteSkipReason) Valid() bool {
+	switch e {
+	case RULENOTFOUND:
 		return true
 	default:
 		return false
@@ -32639,16 +32849,16 @@ func (e FindSlosOpParamsSortBy) Valid() bool {
 
 // Defines values for FindSlosOpParamsSortDirection.
 const (
-	Asc  FindSlosOpParamsSortDirection = "asc"
-	Desc FindSlosOpParamsSortDirection = "desc"
+	FindSlosOpParamsSortDirectionAsc  FindSlosOpParamsSortDirection = "asc"
+	FindSlosOpParamsSortDirectionDesc FindSlosOpParamsSortDirection = "desc"
 )
 
 // Valid indicates whether the value is a known member of the FindSlosOpParamsSortDirection enum.
 func (e FindSlosOpParamsSortDirection) Valid() bool {
 	switch e {
-	case Asc:
+	case FindSlosOpParamsSortDirectionAsc:
 		return true
-	case Desc:
+	case FindSlosOpParamsSortDirectionDesc:
 		return true
 	default:
 		return false
@@ -36511,13 +36721,53 @@ type KibanaHTTPAPIsStreamlangStep021 struct {
 
 // KibanaHTTPAPIsStreamlangStep0210 defines model for .
 type KibanaHTTPAPIsStreamlangStep0210 struct {
+	Action KibanaHTTPAPIsStreamlangStep0210Action `json:"action"`
+
+	// CustomIdentifier Custom identifier to correlate this processor across outputs
+	CustomIdentifier *string `json:"customIdentifier,omitempty"`
+
+	// Description Human-readable notes about this processor step
+	Description   *string `json:"description,omitempty"`
+	DestinationIp string  `json:"destination_ip"`
+
+	// IgnoreFailure Continue pipeline execution if this processor fails
+	IgnoreFailure    *bool    `json:"ignore_failure,omitempty"`
+	IgnoreMissing    *bool    `json:"ignore_missing,omitempty"`
 	InternalNetworks []string `json:"internal_networks"`
+	SourceIp         string   `json:"source_ip"`
+	TargetField      *string  `json:"target_field,omitempty"`
+
+	// Where The root condition object. It can be a simple filter or a combination of other conditions.
+	Where *KibanaHTTPAPIsCondition `json:"where,omitempty"`
 }
+
+// KibanaHTTPAPIsStreamlangStep0210Action defines model for KibanaHTTPAPIsStreamlangStep.0.21.0.Action.
+type KibanaHTTPAPIsStreamlangStep0210Action string
 
 // KibanaHTTPAPIsStreamlangStep0211 defines model for .
 type KibanaHTTPAPIsStreamlangStep0211 struct {
-	InternalNetworksField string `json:"internal_networks_field"`
+	Action KibanaHTTPAPIsStreamlangStep0211Action `json:"action"`
+
+	// CustomIdentifier Custom identifier to correlate this processor across outputs
+	CustomIdentifier *string `json:"customIdentifier,omitempty"`
+
+	// Description Human-readable notes about this processor step
+	Description   *string `json:"description,omitempty"`
+	DestinationIp string  `json:"destination_ip"`
+
+	// IgnoreFailure Continue pipeline execution if this processor fails
+	IgnoreFailure         *bool   `json:"ignore_failure,omitempty"`
+	IgnoreMissing         *bool   `json:"ignore_missing,omitempty"`
+	InternalNetworksField string  `json:"internal_networks_field"`
+	SourceIp              string  `json:"source_ip"`
+	TargetField           *string `json:"target_field,omitempty"`
+
+	// Where The root condition object. It can be a simple filter or a combination of other conditions.
+	Where *KibanaHTTPAPIsCondition `json:"where,omitempty"`
 }
+
+// KibanaHTTPAPIsStreamlangStep0211Action defines model for KibanaHTTPAPIsStreamlangStep.0.21.1.Action.
+type KibanaHTTPAPIsStreamlangStep0211Action string
 
 // KibanaHTTPAPIsStreamlangStep022 JsonExtract processor - Extract values from JSON strings using JSONPath-like selectors
 type KibanaHTTPAPIsStreamlangStep022 struct {
@@ -36747,20 +36997,20 @@ type KibanaHTTPAPIsWiredStreamUpsertRequestStreamIngestWiredRoutingStatus string
 // KibanaHTTPAPIsWiredStreamUpsertRequestStreamType defines model for KibanaHTTPAPIsWiredStreamUpsertRequest.Stream.Type.
 type KibanaHTTPAPIsWiredStreamUpsertRequestStreamType string
 
-// KibanaHTTPAPIsZodV454Schema0 defines model for Kibana_HTTP_APIs__zod_v4_54___schema0.
-type KibanaHTTPAPIsZodV454Schema0 struct {
+// KibanaHTTPAPIsZodV4383Schema0 defines model for Kibana_HTTP_APIs__zod_v4_383___schema0.
+type KibanaHTTPAPIsZodV4383Schema0 struct {
 	union json.RawMessage
 }
 
-// KibanaHTTPAPIsZodV454Schema00 defines model for .
-type KibanaHTTPAPIsZodV454Schema00 struct {
+// KibanaHTTPAPIsZodV4383Schema00 defines model for .
+type KibanaHTTPAPIsZodV4383Schema00 struct {
 	Objects struct {
 		All map[string]interface{} `json:"all"`
 	} `json:"objects"`
 }
 
-// KibanaHTTPAPIsZodV454Schema01 defines model for .
-type KibanaHTTPAPIsZodV454Schema01 struct {
+// KibanaHTTPAPIsZodV4383Schema01 defines model for .
+type KibanaHTTPAPIsZodV4383Schema01 struct {
 	Objects struct {
 		Mappings bool `json:"mappings"`
 		Routing  []struct {
@@ -41635,7 +41885,7 @@ type KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControlWidth string
 
 // KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl A dropdown control that filters data by selecting field values from a data view. Define the data view, field, and selection settings in `config`.
 type KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl struct {
-	Config *KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl_Config `json:"config,omitempty"`
+	Config KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControl_Config `json:"config"`
 
 	// Grow When `true`, the control expands to fill any available horizontal space. Defaults to `false`.
 	Grow *bool `json:"grow,omitempty"`
@@ -41661,7 +41911,7 @@ type KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaOptionsListControlWidth 
 
 // KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl A slider control that filters data by selecting a numeric range for the configured field. Define the data view, field, and selection settings in `config`.
 type KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl struct {
-	Config *KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl_Config `json:"config,omitempty"`
+	Config KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaRangeSliderControl_Config `json:"config"`
 
 	// Grow When `true`, the control expands to fill any available horizontal space. Defaults to `false`.
 	Grow *bool `json:"grow,omitempty"`
@@ -42286,62 +42536,62 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsType str
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0 defines model for .
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0 struct {
-	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the advanced setting "defaultColumns" or the referenced saved object.
+	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the `defaultColumns` advanced setting or the referenced saved object.
 	ColumnOrder *[]string `json:"column_order,omitempty"`
 
-	// ColumnSettings Per-column presentation settings keyed by field name (e.g. widths). Keys should correspond to entries in `column_order` when both are set.
+	// ColumnSettings Per-column settings keyed by field name, such as width. Keys should correspond to entries in `column_order` when both are set.
 	ColumnSettings *map[string]struct {
 		// Width Optional width of the column in pixels.
 		Width *float32 `json:"width,omitempty"`
 	} `json:"column_settings,omitempty"`
 	DataSource KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_DataSource `json:"data_source"`
 
-	// DefaultRenderedNodes Discover display option: controls how many nodes each JSON cell renders by default in JSON document view.
+	// DefaultRenderedNodes The number of nodes each JSON cell renders by default in the JSON document view.
 	DefaultRenderedNodes *float32 `json:"default_rendered_nodes,omitempty"`
 
-	// Density Discover display option: controls table row spacing. Choose "compact", "expanded", or "normal". If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
+	// Density The table row spacing. If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
 	Density *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Density `json:"density,omitempty"`
 
-	// DocumentsDisplayMode Discover display option: controls whether documents are shown as a formatted table ("table") or as a raw JSON tree ("json").
+	// DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
 	DocumentsDisplayMode *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0DocumentsDisplayMode `json:"documents_display_mode,omitempty"`
 
 	// Filters List of filters to apply to the data in the tab.
 	Filters *[]KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema `json:"filters,omitempty"`
 
-	// HeaderRowHeight Discover display option: controls table header row height. Use a number (1–5) or "auto" to size based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
+	// HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
 	HeaderRowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight `json:"header_row_height,omitempty"`
 
-	// HideNulls Discover display option: controls whether fields with null values are hidden in JSON document view.
+	// HideNulls When `true`, fields with null values are hidden in the JSON document view.
 	HideNulls *bool `json:"hide_nulls,omitempty"`
 
 	// Query A search query consisting of an expression and its language. Supports KQL and Lucene syntax.
 	Query *KibanaHTTPAPIsKbnAsCodeQuery `json:"query,omitempty"`
 
-	// RowHeight Discover display option: controls table data row height. Use a number (1–20) or "auto" to size based on content. If omitted, defaults to the advanced setting "discover:rowHeightOption".
+	// RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
 	RowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_RowHeight `json:"row_height,omitempty"`
 
-	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the advanced setting "discover:sampleRowsPerPage". Has no effect on ES|QL tabs since Kibana 8.16.
+	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the `discover:sampleRowsPerPage` advanced setting. Has no effect on ES|QL tabs since Kibana 8.16.
 	RowsPerPage *float32 `json:"rows_per_page,omitempty"`
 
-	// SampleSize Discover display option: controls how many documents to sample for the data table. If omitted, defaults to the advanced setting "discover:sampleSize".
+	// SampleSize The number of documents to sample for the data table. If omitted, defaults to the `discover:sampleSize` advanced setting.
 	SampleSize *float32 `json:"sample_size,omitempty"`
 
 	// Sort Sort configuration for the data table (field and direction).
 	Sort *[]struct {
-		// Direction The direction to sort the field by: Use "asc" for ascending or "desc" for descending.
+		// Direction The sort direction: `asc` for ascending or `desc` for descending.
 		Direction KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection `json:"direction"`
 
 		// Name The name of the field to sort by.
 		Name string `json:"name"`
 	} `json:"sort,omitempty"`
 
-	// Type Identifies the type of profile settings saved with the tab. The `default` value indicates that no profile settings are included.
+	// Type The tab type. `default` tabs have no type-specific settings.
 	Type *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Type `json:"type,omitempty"`
 
-	// ViewMode Discover view mode. Choose "documents" (search hits), "patterns" (pattern analysis), or "aggregated" (field statistics).
+	// ViewMode The Discover view mode: `documents` (search hits), `patterns` (pattern analysis), or `aggregated` (field statistics).
 	ViewMode *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode `json:"view_mode,omitempty"`
 
-	// WrapLines Discover display option: controls whether long values wrap in JSON document view. When false, values are truncated to a single line.
+	// WrapLines When `true`, long values wrap in the JSON document view. When `false`, they are truncated to a single line.
 	WrapLines *bool `json:"wrap_lines,omitempty"`
 }
 
@@ -42350,10 +42600,10 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_DataSour
 	union json.RawMessage
 }
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Density Discover display option: controls table row spacing. Choose "compact", "expanded", or "normal". If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Density The table row spacing. If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Density string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0DocumentsDisplayMode Discover display option: controls whether documents are shown as a formatted table ("table") or as a raw JSON tree ("json").
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0DocumentsDisplayMode string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight0 defines model for .
@@ -42362,7 +42612,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeig
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight1 defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.0.Tabs.0.HeaderRowHeight.1.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight1 string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight Discover display option: controls table header row height. Use a number (1–5) or "auto" to size based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight struct {
 	union json.RawMessage
 }
@@ -42373,26 +42623,26 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight0 = 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight1 defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.0.Tabs.0.RowHeight.1.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0RowHeight1 string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_RowHeight Discover display option: controls table data row height. Use a number (1–20) or "auto" to size based on content. If omitted, defaults to the advanced setting "discover:rowHeightOption".
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_RowHeight struct {
 	union json.RawMessage
 }
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection The direction to sort the field by: Use "asc" for ascending or "desc" for descending.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection The sort direction: `asc` for ascending or `desc` for descending.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Type Identifies the type of profile settings saved with the tab. The `default` value indicates that no profile settings are included.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Type The tab type. `default` tabs have no type-specific settings.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Type string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode Discover view mode. Choose "documents" (search hits), "patterns" (pattern analysis), or "aggregated" (field statistics).
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode The Discover view mode: `documents` (search hits), `patterns` (pattern analysis), or `aggregated` (field statistics).
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1 ES|QL (Elasticsearch Query Language) data source.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1 struct {
-	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the advanced setting "defaultColumns" or the referenced saved object.
+	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the `defaultColumns` advanced setting or the referenced saved object.
 	ColumnOrder *[]string `json:"column_order,omitempty"`
 
-	// ColumnSettings Per-column presentation settings keyed by field name (e.g. widths). Keys should correspond to entries in `column_order` when both are set.
+	// ColumnSettings Per-column settings keyed by field name, such as width. Keys should correspond to entries in `column_order` when both are set.
 	ColumnSettings *map[string]struct {
 		// Width Optional width of the column in pixels.
 		Width *float32 `json:"width,omitempty"`
@@ -42401,50 +42651,50 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1 struct {
 	// DataSource Uses an ES|QL query as the data source. The query is executed at render time; resulting columns are available as fields.
 	DataSource KibanaHTTPAPIsEsqlDataSource `json:"data_source"`
 
-	// DefaultRenderedNodes Discover display option: controls how many nodes each JSON cell renders by default in JSON document view.
+	// DefaultRenderedNodes The number of nodes each JSON cell renders by default in the JSON document view.
 	DefaultRenderedNodes *float32 `json:"default_rendered_nodes,omitempty"`
 
-	// Density Discover display option: controls table row spacing. Choose "compact", "expanded", or "normal". If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
+	// Density The table row spacing. If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
 	Density *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Density `json:"density,omitempty"`
 
-	// DocumentsDisplayMode Discover display option: controls whether documents are shown as a formatted table ("table") or as a raw JSON tree ("json").
+	// DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
 	DocumentsDisplayMode *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1DocumentsDisplayMode `json:"documents_display_mode,omitempty"`
 
-	// HeaderRowHeight Discover display option: controls table header row height. Use a number (1–5) or "auto" to size based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
+	// HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
 	HeaderRowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_HeaderRowHeight `json:"header_row_height,omitempty"`
 
-	// HideNulls Discover display option: controls whether fields with null values are hidden in JSON document view.
+	// HideNulls When `true`, fields with null values are hidden in the JSON document view.
 	HideNulls *bool `json:"hide_nulls,omitempty"`
 
-	// RowHeight Discover display option: controls table data row height. Use a number (1–20) or "auto" to size based on content. If omitted, defaults to the advanced setting "discover:rowHeightOption".
+	// RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
 	RowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_RowHeight `json:"row_height,omitempty"`
 
-	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the advanced setting "discover:sampleRowsPerPage". Has no effect on ES|QL tabs since Kibana 8.16.
+	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the `discover:sampleRowsPerPage` advanced setting. Has no effect on ES|QL tabs since Kibana 8.16.
 	RowsPerPage *float32 `json:"rows_per_page,omitempty"`
 
-	// SampleSize Discover display option: controls how many documents to sample for the data table. If omitted, defaults to the advanced setting "discover:sampleSize".
+	// SampleSize The number of documents to sample for the data table. If omitted, defaults to the `discover:sampleSize` advanced setting.
 	SampleSize *float32 `json:"sample_size,omitempty"`
 
 	// Sort Sort configuration for the data table (field and direction).
 	Sort *[]struct {
-		// Direction The direction to sort the field by: Use "asc" for ascending or "desc" for descending.
+		// Direction The sort direction: `asc` for ascending or `desc` for descending.
 		Direction KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection `json:"direction"`
 
 		// Name The name of the field to sort by.
 		Name string `json:"name"`
 	} `json:"sort,omitempty"`
 
-	// Type Identifies the type of profile settings saved with the tab. The `default` value indicates that no profile settings are included.
+	// Type The tab type. `default` tabs have no type-specific settings.
 	Type *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Type `json:"type,omitempty"`
 
-	// WrapLines Discover display option: controls whether long values wrap in JSON document view. When false, values are truncated to a single line.
+	// WrapLines When `true`, long values wrap in the JSON document view. When `false`, they are truncated to a single line.
 	WrapLines *bool `json:"wrap_lines,omitempty"`
 }
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Density Discover display option: controls table row spacing. Choose "compact", "expanded", or "normal". If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Density The table row spacing. If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Density string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1DocumentsDisplayMode Discover display option: controls whether documents are shown as a formatted table ("table") or as a raw JSON tree ("json").
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1DocumentsDisplayMode string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight0 defines model for .
@@ -42453,7 +42703,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeig
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight1 defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.0.Tabs.1.HeaderRowHeight.1.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight1 string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_HeaderRowHeight Discover display option: controls table header row height. Use a number (1–5) or "auto" to size based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_HeaderRowHeight struct {
 	union json.RawMessage
 }
@@ -42464,23 +42714,23 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight0 = 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight1 defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.0.Tabs.1.RowHeight.1.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1RowHeight1 string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_RowHeight Discover display option: controls table data row height. Use a number (1–20) or "auto" to size based on content. If omitted, defaults to the advanced setting "discover:rowHeightOption".
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_RowHeight struct {
 	union json.RawMessage
 }
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection The direction to sort the field by: Use "asc" for ascending or "desc" for descending.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection The sort direction: `asc` for ascending or `desc` for descending.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Type Identifies the type of profile settings saved with the tab. The `default` value indicates that no profile settings are included.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Type The tab type. `default` tabs have no type-specific settings.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Type string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2 An ES|QL tab with saved metrics grid settings. The dashboard panel stores these settings and restores them in Discover. The panel does not render the metrics grid.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2 struct {
-	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the advanced setting "defaultColumns" or the referenced saved object.
+	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the `defaultColumns` advanced setting or the referenced saved object.
 	ColumnOrder *[]string `json:"column_order,omitempty"`
 
-	// ColumnSettings Per-column presentation settings keyed by field name (e.g. widths). Keys should correspond to entries in `column_order` when both are set.
+	// ColumnSettings Per-column settings keyed by field name, such as width. Keys should correspond to entries in `column_order` when both are set.
 	ColumnSettings *map[string]struct {
 		// Width Optional width of the column in pixels.
 		Width *float32 `json:"width,omitempty"`
@@ -42492,37 +42742,43 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2 struct {
 	// DataSource Uses an ES|QL query as the data source. The query is executed at render time; resulting columns are available as fields.
 	DataSource KibanaHTTPAPIsEsqlDataSource `json:"data_source"`
 
-	// DefaultRenderedNodes Discover display option: controls how many nodes each JSON cell renders by default in JSON document view.
+	// DefaultRenderedNodes The number of nodes each JSON cell renders by default in the JSON document view.
 	DefaultRenderedNodes *float32 `json:"default_rendered_nodes,omitempty"`
 
-	// Density Discover display option: controls table row spacing. Choose "compact", "expanded", or "normal". If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
+	// Density The table row spacing. If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
 	Density *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2Density `json:"density,omitempty"`
 
 	// Dimensions Fields used to group metrics in the metrics grid.
 	Dimensions []string `json:"dimensions"`
 
-	// DocumentsDisplayMode Discover display option: controls whether documents are shown as a formatted table ("table") or as a raw JSON tree ("json").
+	// DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
 	DocumentsDisplayMode *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2DocumentsDisplayMode `json:"documents_display_mode,omitempty"`
 
 	// GaugeAggregation Aggregation applied to gauge metric fields.
 	GaugeAggregation KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GaugeAggregation `json:"gauge_aggregation"`
 
-	// HeaderRowHeight Discover display option: controls table header row height. Use a number (1–5) or "auto" to size based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
+	// GridSortDirection Direction of the metrics grid order. If omitted, defaults to ascending.
+	GridSortDirection *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortDirection `json:"grid_sort_direction,omitempty"`
+
+	// GridSortField Criterion used to order metrics in the metrics grid. `recency` orders by the metrics the viewing user explored most recently in their own browser. If omitted, metrics are ordered alphabetically.
+	GridSortField *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField `json:"grid_sort_field,omitempty"`
+
+	// HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
 	HeaderRowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_HeaderRowHeight `json:"header_row_height,omitempty"`
 
-	// HideNulls Discover display option: controls whether fields with null values are hidden in JSON document view.
+	// HideNulls When `true`, fields with null values are hidden in the JSON document view.
 	HideNulls *bool `json:"hide_nulls,omitempty"`
 
 	// HistogramPercentile Percentile displayed for histogram metric fields.
 	HistogramPercentile KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile `json:"histogram_percentile"`
 
-	// RowHeight Discover display option: controls table data row height. Use a number (1–20) or "auto" to size based on content. If omitted, defaults to the advanced setting "discover:rowHeightOption".
+	// RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
 	RowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_RowHeight `json:"row_height,omitempty"`
 
-	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the advanced setting "discover:sampleRowsPerPage". Has no effect on ES|QL tabs since Kibana 8.16.
+	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the `discover:sampleRowsPerPage` advanced setting. Has no effect on ES|QL tabs since Kibana 8.16.
 	RowsPerPage *float32 `json:"rows_per_page,omitempty"`
 
-	// SampleSize Discover display option: controls how many documents to sample for the data table. If omitted, defaults to the advanced setting "discover:sampleSize".
+	// SampleSize The number of documents to sample for the data table. If omitted, defaults to the `discover:sampleSize` advanced setting.
 	SampleSize *float32 `json:"sample_size,omitempty"`
 
 	// SearchTerm Search term used to filter metrics in the metrics grid.
@@ -42530,7 +42786,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2 struct {
 
 	// Sort Sort configuration for the data table (field and direction).
 	Sort *[]struct {
-		// Direction The direction to sort the field by: Use "asc" for ascending or "desc" for descending.
+		// Direction The sort direction: `asc` for ascending or `desc` for descending.
 		Direction KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2SortDirection `json:"direction"`
 
 		// Name The name of the field to sort by.
@@ -42540,21 +42796,27 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2 struct {
 	// Type A tab with saved metrics grid settings. Requires an ES|QL data source. These settings are used only when the query supports the metrics experience.
 	Type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2Type `json:"type"`
 
-	// WrapLines Discover display option: controls whether long values wrap in JSON document view. When false, values are truncated to a single line.
+	// WrapLines When `true`, long values wrap in the JSON document view. When `false`, they are truncated to a single line.
 	WrapLines *bool `json:"wrap_lines,omitempty"`
 }
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2CounterAggregation Aggregation applied to counter metric fields.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2CounterAggregation string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2Density Discover display option: controls table row spacing. Choose "compact", "expanded", or "normal". If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2Density The table row spacing. If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2Density string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2DocumentsDisplayMode Discover display option: controls whether documents are shown as a formatted table ("table") or as a raw JSON tree ("json").
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2DocumentsDisplayMode string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GaugeAggregation Aggregation applied to gauge metric fields.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GaugeAggregation string
+
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortDirection Direction of the metrics grid order. If omitted, defaults to ascending.
+type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortDirection string
+
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField Criterion used to order metrics in the metrics grid. `recency` orders by the metrics the viewing user explored most recently in their own browser. If omitted, metrics are ordered alphabetically.
+type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HeaderRowHeight0 defines model for .
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HeaderRowHeight0 = float32
@@ -42562,7 +42824,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HeaderRowHeig
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HeaderRowHeight1 defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.0.Tabs.2.HeaderRowHeight.1.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HeaderRowHeight1 string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_HeaderRowHeight Discover display option: controls table header row height. Use a number (1–5) or "auto" to size based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_HeaderRowHeight struct {
 	union json.RawMessage
 }
@@ -42576,12 +42838,12 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2RowHeight0 = 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2RowHeight1 defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.0.Tabs.2.RowHeight.1.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2RowHeight1 string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_RowHeight Discover display option: controls table data row height. Use a number (1–20) or "auto" to size based on content. If omitted, defaults to the advanced setting "discover:rowHeightOption".
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_RowHeight struct {
 	union json.RawMessage
 }
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2SortDirection The direction to sort the field by: Use "asc" for ascending or "desc" for descending.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2SortDirection The sort direction: `asc` for ascending or `desc` for descending.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2SortDirection string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2Type A tab with saved metrics grid settings. Requires an ES|QL data source. These settings are used only when the query supports the metrics experience.
@@ -42617,46 +42879,46 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1 struct {
 		// ColumnOrder When set, overrides column order for the data table relative to the referenced saved object (`ref_id`) or the inline tab in `tabs`. If omitted, the source configuration is used.
 		ColumnOrder *[]string `json:"column_order,omitempty"`
 
-		// ColumnSettings Per-column presentation overrides (e.g. widths) keyed by field name. When set, merges with the source configuration for the referenced session or inline tab.
+		// ColumnSettings Per-column settings keyed by field name, such as width. When set, merges with the source configuration for the referenced session or inline tab.
 		ColumnSettings *map[string]struct {
 			// Width Optional width of the column in pixels.
 			Width *float32 `json:"width,omitempty"`
 		} `json:"column_settings,omitempty"`
 
-		// DefaultRenderedNodes Discover display option: controls how many nodes each JSON cell renders by default in JSON document view. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
+		// DefaultRenderedNodes The number of nodes each JSON cell renders by default in the JSON document view. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
 		DefaultRenderedNodes *float32 `json:"default_rendered_nodes,omitempty"`
 
-		// Density Discover display option: controls table row spacing (`compact`, `expanded`, or `normal`). When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
+		// Density The table row spacing. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
 		Density *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity `json:"density,omitempty"`
 
-		// DocumentsDisplayMode Discover display option: controls whether documents are shown as a formatted table ("table") or as a raw JSON tree ("json"). When set, overrides the referenced saved object or the inline tab config in `tabs`.
+		// DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree. When set, overrides the referenced saved object or the inline tab config in `tabs`.
 		DocumentsDisplayMode *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDocumentsDisplayMode `json:"documents_display_mode,omitempty"`
 
-		// HeaderRowHeight Discover display option: controls table header row height (number 1–5 or `auto`). When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
+		// HeaderRowHeight The table header row height, as a number of lines, or `auto`. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
 		HeaderRowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight `json:"header_row_height,omitempty"`
 
-		// HideNulls Discover display option: controls whether fields with null values are hidden in JSON document view. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
+		// HideNulls When `true`, fields with null values are hidden in the JSON document view. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
 		HideNulls *bool `json:"hide_nulls,omitempty"`
 
-		// RowHeight Discover display option: controls table data row height (number 1–20 or `auto`). When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, falls back to the source or to the advanced setting "discover:rowHeightOption".
+		// RowHeight The table data row height, as a number of lines, or `auto`. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, falls back to the source or to the `discover:rowHeightOption` advanced setting.
 		RowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight `json:"row_height,omitempty"`
 
-		// RowsPerPage Number of rows per page. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, falls back to the source or to the advanced setting "discover:sampleRowsPerPage".
+		// RowsPerPage The number of rows per page. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, falls back to the source or to the `discover:sampleRowsPerPage` advanced setting.
 		RowsPerPage *float32 `json:"rows_per_page,omitempty"`
 
-		// SampleSize Discover display option: controls how many documents to sample. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, falls back to the source or to the advanced setting "discover:sampleSize".
+		// SampleSize The number of documents to sample. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, falls back to the source or to the `discover:sampleSize` advanced setting.
 		SampleSize *float32 `json:"sample_size,omitempty"`
 
 		// Sort Sort configuration (field and direction) for the data table. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
 		Sort *[]struct {
-			// Direction The direction to sort the field by: Use "asc" for ascending or "desc" for descending.
+			// Direction The sort direction: `asc` for ascending or `desc` for descending.
 			Direction KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
 
 			// Name The name of the field to sort by.
 			Name string `json:"name"`
 		} `json:"sort,omitempty"`
 
-		// WrapLines Discover display option: controls whether long values wrap in JSON document view. When false, values are truncated to a single line. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
+		// WrapLines When `true`, long values wrap in the JSON document view. When `false`, they are truncated to a single line. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
 		WrapLines *bool `json:"wrap_lines,omitempty"`
 	} `json:"overrides,omitempty"`
 	RefId string `json:"ref_id"`
@@ -42677,10 +42939,10 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsTrigger 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsType defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.1.Drilldowns.Type.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1DrilldownsType string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity Discover display option: controls table row spacing (`compact`, `expanded`, or `normal`). When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity The table row spacing. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDocumentsDisplayMode Discover display option: controls whether documents are shown as a formatted table ("table") or as a raw JSON tree ("json"). When set, overrides the referenced saved object or the inline tab config in `tabs`.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree. When set, overrides the referenced saved object or the inline tab config in `tabs`.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDocumentsDisplayMode string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight0 defines model for .
@@ -42689,7 +42951,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRow
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight1 defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.1.Overrides.HeaderRowHeight.1.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesHeaderRowHeight1 string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight Discover display option: controls table header row height (number 1–5 or `auto`). When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight The table header row height, as a number of lines, or `auto`. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, the source configuration is used.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight struct {
 	union json.RawMessage
 }
@@ -42700,12 +42962,12 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight1 defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.1.Overrides.RowHeight.1.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesRowHeight1 string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight Discover display option: controls table data row height (number 1–20 or `auto`). When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, falls back to the source or to the advanced setting "discover:rowHeightOption".
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight The table data row height, as a number of lines, or `auto`. When set, overrides the referenced saved object or the inline tab config in `tabs`. If omitted, falls back to the source or to the `discover:rowHeightOption` advanced setting.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight struct {
 	union json.RawMessage
 }
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection The direction to sort the field by: Use "asc" for ascending or "desc" for descending.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection The sort direction: `asc` for ascending or `desc` for descending.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.
@@ -43047,7 +43309,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeMlSingleMetricViewerType string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl defines model for Kibana_HTTP_APIs_kbn-dashboard-panel-type-options_list_control.
 type KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl struct {
-	Config *KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config `json:"config,omitempty"`
+	Config KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config `json:"config"`
 
 	// Grid The position and size of the panel on the dashboard grid.
 	Grid KibanaHTTPAPIsKbnDashboardPanelGrid `json:"grid"`
@@ -43067,7 +43329,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControlType string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl defines model for Kibana_HTTP_APIs_kbn-dashboard-panel-type-range_slider_control.
 type KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl struct {
-	Config *KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl_Config `json:"config,omitempty"`
+	Config KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl_Config `json:"config"`
 
 	// Grid The position and size of the panel on the dashboard grid.
 	Grid KibanaHTTPAPIsKbnDashboardPanelGrid `json:"grid"`
@@ -46180,14 +46442,44 @@ type KibanaHTTPAPIsNewOutputKafka struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	} `json:"headers,omitempty"`
-	Hosts                  []string                               `json:"hosts"`
-	Id                     *string                                `json:"id,omitempty"`
-	IsDefault              *bool                                  `json:"is_default,omitempty"`
-	IsDefaultMonitoring    *bool                                  `json:"is_default_monitoring,omitempty"`
-	IsInternal             *bool                                  `json:"is_internal,omitempty"`
-	IsPreconfigured        *bool                                  `json:"is_preconfigured,omitempty"`
-	Key                    *string                                `json:"key,omitempty"`
-	Name                   string                                 `json:"name"`
+	Hosts               []string `json:"hosts"`
+	Id                  *string  `json:"id,omitempty"`
+	IsDefault           *bool    `json:"is_default,omitempty"`
+	IsDefaultMonitoring *bool    `json:"is_default_monitoring,omitempty"`
+	IsInternal          *bool    `json:"is_internal,omitempty"`
+	IsPreconfigured     *bool    `json:"is_preconfigured,omitempty"`
+	Key                 *string  `json:"key,omitempty"`
+	Name                string   `json:"name"`
+	Oauth2              *struct {
+		Audience                 *string                  `json:"audience,omitempty"`
+		Claims                   *map[string]*interface{} `json:"claims,omitempty"`
+		ClientCertificateKeyFile *string                  `json:"client_certificate_key_file,omitempty"`
+		ClientCertificateKeyId   *string                  `json:"client_certificate_key_id,omitempty"`
+		ClientId                 *string                  `json:"client_id,omitempty"`
+		ClientIdFile             *string                  `json:"client_id_file,omitempty"`
+		ClientSecretFile         *string                  `json:"client_secret_file,omitempty"`
+		EndpointParams           *map[string][]string     `json:"endpoint_params,omitempty"`
+
+		// ExpiryBuffer How many seconds before a token's expiry the agent requests a new one. It defaults to `300` when not set.
+		ExpiryBuffer       *float32                                              `json:"expiry_buffer,omitempty"`
+		GrantType          *KibanaHTTPAPIsNewOutputKafkaOauth2GrantType          `json:"grant_type,omitempty"`
+		Iss                *string                                               `json:"iss,omitempty"`
+		Scopes             *[]string                                             `json:"scopes,omitempty"`
+		SignatureAlgorithm *KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithm `json:"signature_algorithm,omitempty"`
+
+		// Timeout How long, in seconds, a request to the token endpoint can take before it times out. There is no limit when it is not set.
+		Timeout *float32 `json:"timeout,omitempty"`
+		Tls     *struct {
+			CaFile             *string `json:"ca_file,omitempty"`
+			CertFile           *string `json:"cert_file,omitempty"`
+			InsecureSkipVerify *bool   `json:"insecure_skip_verify,omitempty"`
+			KeyFile            *string `json:"key_file,omitempty"`
+			MaxVersion         *string `json:"max_version,omitempty"`
+			MinVersion         *string `json:"min_version,omitempty"`
+			ServerNameOverride *string `json:"server_name_override,omitempty"`
+		} `json:"tls,omitempty"`
+		TokenUrl string `json:"token_url"`
+	} `json:"oauth2,omitempty"`
 	OtelDisableBeatsauth   *bool                                  `json:"otel_disable_beatsauth,omitempty"`
 	OtelExporterConfigYaml *string                                `json:"otel_exporter_config_yaml,omitempty"`
 	Partition              *KibanaHTTPAPIsNewOutputKafkaPartition `json:"partition,omitempty"`
@@ -46207,6 +46499,10 @@ type KibanaHTTPAPIsNewOutputKafka struct {
 		Mechanism *KibanaHTTPAPIsNewOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
 	} `json:"sasl,omitempty"`
 	Secrets *struct {
+		Oauth2 *struct {
+			ClientCertificateKey *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey `json:"client_certificate_key,omitempty"`
+			ClientSecret         *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret         `json:"client_secret,omitempty"`
+		} `json:"oauth2,omitempty"`
 		Password *KibanaHTTPAPIsNewOutputKafka_Secrets_Password `json:"password,omitempty"`
 		Ssl      *struct {
 			Key KibanaHTTPAPIsNewOutputKafka_Secrets_Ssl_Key `json:"key"`
@@ -46230,6 +46526,12 @@ type KibanaHTTPAPIsNewOutputKafkaCompression string
 // KibanaHTTPAPIsNewOutputKafkaConnectionType defines model for KibanaHTTPAPIsNewOutputKafka.ConnectionType.
 type KibanaHTTPAPIsNewOutputKafkaConnectionType string
 
+// KibanaHTTPAPIsNewOutputKafkaOauth2GrantType defines model for KibanaHTTPAPIsNewOutputKafka.Oauth2.GrantType.
+type KibanaHTTPAPIsNewOutputKafkaOauth2GrantType string
+
+// KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithm defines model for KibanaHTTPAPIsNewOutputKafka.Oauth2.SignatureAlgorithm.
+type KibanaHTTPAPIsNewOutputKafkaOauth2SignatureAlgorithm string
+
 // KibanaHTTPAPIsNewOutputKafkaPartition defines model for KibanaHTTPAPIsNewOutputKafka.Partition.
 type KibanaHTTPAPIsNewOutputKafkaPartition string
 
@@ -46238,6 +46540,34 @@ type KibanaHTTPAPIsNewOutputKafkaRequiredAcks int
 
 // KibanaHTTPAPIsNewOutputKafkaSaslMechanism defines model for KibanaHTTPAPIsNewOutputKafka.Sasl.Mechanism.
 type KibanaHTTPAPIsNewOutputKafkaSaslMechanism string
+
+// KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0 defines model for .
+type KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0 struct {
+	Hash *string `json:"hash,omitempty"`
+	Id   string  `json:"id"`
+}
+
+// KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1 defines model for .
+type KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1 = string
+
+// KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey defines model for KibanaHTTPAPIsNewOutputKafka.Secrets.Oauth2.ClientCertificateKey.
+type KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0 defines model for .
+type KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0 struct {
+	Hash *string `json:"hash,omitempty"`
+	Id   string  `json:"id"`
+}
+
+// KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1 defines model for .
+type KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1 = string
+
+// KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret defines model for KibanaHTTPAPIsNewOutputKafka.Secrets.Oauth2.ClientSecret.
+type KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret struct {
+	union json.RawMessage
+}
 
 // KibanaHTTPAPIsNewOutputKafkaSecretsPassword0 defines model for .
 type KibanaHTTPAPIsNewOutputKafkaSecretsPassword0 struct {
@@ -47366,6 +47696,7 @@ type KibanaHTTPAPIsOutputResponseKafka struct {
 	IsPreconfigured        *bool                                             `json:"is_preconfigured,omitempty"`
 	Key                    *string                                           `json:"key,omitempty"`
 	Name                   string                                            `json:"name"`
+	Oauth2                 *KibanaHTTPAPIsOutputResponseKafka_Oauth2         `json:"oauth2,omitempty"`
 	OtelDisableBeatsauth   *bool                                             `json:"otel_disable_beatsauth,omitempty"`
 	OtelExporterConfigYaml *string                                           `json:"otel_exporter_config_yaml,omitempty"`
 	Partition              *KibanaHTTPAPIsOutputResponseKafkaPartition       `json:"partition,omitempty"`
@@ -47412,6 +47743,49 @@ type KibanaHTTPAPIsOutputResponseKafka_Headers_Item struct {
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
+// KibanaHTTPAPIsOutputResponseKafkaOauth2GrantType defines model for KibanaHTTPAPIsOutputResponseKafka.Oauth2.GrantType.
+type KibanaHTTPAPIsOutputResponseKafkaOauth2GrantType string
+
+// KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithm defines model for KibanaHTTPAPIsOutputResponseKafka.Oauth2.SignatureAlgorithm.
+type KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithm string
+
+// KibanaHTTPAPIsOutputResponseKafka_Oauth2_Tls defines model for KibanaHTTPAPIsOutputResponseKafka.Oauth2.Tls.
+type KibanaHTTPAPIsOutputResponseKafka_Oauth2_Tls struct {
+	CaFile               *string                `json:"ca_file,omitempty"`
+	CertFile             *string                `json:"cert_file,omitempty"`
+	InsecureSkipVerify   *bool                  `json:"insecure_skip_verify,omitempty"`
+	KeyFile              *string                `json:"key_file,omitempty"`
+	MaxVersion           *string                `json:"max_version,omitempty"`
+	MinVersion           *string                `json:"min_version,omitempty"`
+	ServerNameOverride   *string                `json:"server_name_override,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// KibanaHTTPAPIsOutputResponseKafka_Oauth2 defines model for KibanaHTTPAPIsOutputResponseKafka.Oauth2.
+type KibanaHTTPAPIsOutputResponseKafka_Oauth2 struct {
+	Audience                 *string                  `json:"audience,omitempty"`
+	Claims                   *map[string]*interface{} `json:"claims,omitempty"`
+	ClientCertificateKeyFile *string                  `json:"client_certificate_key_file,omitempty"`
+	ClientCertificateKeyId   *string                  `json:"client_certificate_key_id,omitempty"`
+	ClientId                 *string                  `json:"client_id,omitempty"`
+	ClientIdFile             *string                  `json:"client_id_file,omitempty"`
+	ClientSecretFile         *string                  `json:"client_secret_file,omitempty"`
+	EndpointParams           *map[string][]string     `json:"endpoint_params,omitempty"`
+
+	// ExpiryBuffer How many seconds before a token's expiry the agent requests a new one. It defaults to `300` when not set.
+	ExpiryBuffer       *float32                                                   `json:"expiry_buffer,omitempty"`
+	GrantType          *KibanaHTTPAPIsOutputResponseKafkaOauth2GrantType          `json:"grant_type,omitempty"`
+	Iss                *string                                                    `json:"iss,omitempty"`
+	Scopes             *[]string                                                  `json:"scopes,omitempty"`
+	SignatureAlgorithm *KibanaHTTPAPIsOutputResponseKafkaOauth2SignatureAlgorithm `json:"signature_algorithm,omitempty"`
+
+	// Timeout How long, in seconds, a request to the token endpoint can take before it times out. There is no limit when it is not set.
+	Timeout              *float32                                      `json:"timeout,omitempty"`
+	Tls                  *KibanaHTTPAPIsOutputResponseKafka_Oauth2_Tls `json:"tls,omitempty"`
+	TokenUrl             string                                        `json:"token_url"`
+	AdditionalProperties map[string]interface{}                        `json:"-"`
+}
+
 // KibanaHTTPAPIsOutputResponseKafkaPartition defines model for KibanaHTTPAPIsOutputResponseKafka.Partition.
 type KibanaHTTPAPIsOutputResponseKafkaPartition string
 
@@ -47437,6 +47811,43 @@ type KibanaHTTPAPIsOutputResponseKafkaSaslMechanism string
 type KibanaHTTPAPIsOutputResponseKafka_Sasl struct {
 	Mechanism            *KibanaHTTPAPIsOutputResponseKafkaSaslMechanism `json:"mechanism,omitempty"`
 	AdditionalProperties map[string]interface{}                          `json:"-"`
+}
+
+// KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0 defines model for .
+type KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0 struct {
+	Hash                 *string                `json:"hash,omitempty"`
+	Id                   string                 `json:"id"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1 defines model for .
+type KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1 = string
+
+// KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey defines model for KibanaHTTPAPIsOutputResponseKafka.Secrets.Oauth2.ClientCertificateKey.
+type KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0 defines model for .
+type KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0 struct {
+	Hash                 *string                `json:"hash,omitempty"`
+	Id                   string                 `json:"id"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1 defines model for .
+type KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1 = string
+
+// KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret defines model for KibanaHTTPAPIsOutputResponseKafka.Secrets.Oauth2.ClientSecret.
+type KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2 defines model for KibanaHTTPAPIsOutputResponseKafka.Secrets.Oauth2.
+type KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2 struct {
+	ClientCertificateKey *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey `json:"client_certificate_key,omitempty"`
+	ClientSecret         *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret         `json:"client_secret,omitempty"`
+	AdditionalProperties map[string]interface{}                                                 `json:"-"`
 }
 
 // KibanaHTTPAPIsOutputResponseKafkaSecretsPassword0 defines model for .
@@ -47477,6 +47888,7 @@ type KibanaHTTPAPIsOutputResponseKafka_Secrets_Ssl struct {
 
 // KibanaHTTPAPIsOutputResponseKafka_Secrets defines model for KibanaHTTPAPIsOutputResponseKafka.Secrets.
 type KibanaHTTPAPIsOutputResponseKafka_Secrets struct {
+	Oauth2               *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2   `json:"oauth2,omitempty"`
 	Password             *KibanaHTTPAPIsOutputResponseKafka_Secrets_Password `json:"password,omitempty"`
 	Ssl                  *KibanaHTTPAPIsOutputResponseKafka_Secrets_Ssl      `json:"ssl,omitempty"`
 	AdditionalProperties map[string]interface{}                              `json:"-"`
@@ -49420,14 +49832,44 @@ type KibanaHTTPAPIsUpdateOutputKafka struct {
 		Key   string `json:"key"`
 		Value string `json:"value"`
 	} `json:"headers,omitempty"`
-	Hosts                  *[]string                                 `json:"hosts,omitempty"`
-	Id                     *string                                   `json:"id,omitempty"`
-	IsDefault              *bool                                     `json:"is_default,omitempty"`
-	IsDefaultMonitoring    *bool                                     `json:"is_default_monitoring,omitempty"`
-	IsInternal             *bool                                     `json:"is_internal,omitempty"`
-	IsPreconfigured        *bool                                     `json:"is_preconfigured,omitempty"`
-	Key                    *string                                   `json:"key,omitempty"`
-	Name                   string                                    `json:"name"`
+	Hosts               *[]string `json:"hosts,omitempty"`
+	Id                  *string   `json:"id,omitempty"`
+	IsDefault           *bool     `json:"is_default,omitempty"`
+	IsDefaultMonitoring *bool     `json:"is_default_monitoring,omitempty"`
+	IsInternal          *bool     `json:"is_internal,omitempty"`
+	IsPreconfigured     *bool     `json:"is_preconfigured,omitempty"`
+	Key                 *string   `json:"key,omitempty"`
+	Name                string    `json:"name"`
+	Oauth2              *struct {
+		Audience                 *string                  `json:"audience,omitempty"`
+		Claims                   *map[string]*interface{} `json:"claims,omitempty"`
+		ClientCertificateKeyFile *string                  `json:"client_certificate_key_file,omitempty"`
+		ClientCertificateKeyId   *string                  `json:"client_certificate_key_id,omitempty"`
+		ClientId                 *string                  `json:"client_id,omitempty"`
+		ClientIdFile             *string                  `json:"client_id_file,omitempty"`
+		ClientSecretFile         *string                  `json:"client_secret_file,omitempty"`
+		EndpointParams           *map[string][]string     `json:"endpoint_params,omitempty"`
+
+		// ExpiryBuffer How many seconds before a token's expiry the agent requests a new one. It defaults to `300` when not set.
+		ExpiryBuffer       *float32                                                 `json:"expiry_buffer,omitempty"`
+		GrantType          *KibanaHTTPAPIsUpdateOutputKafkaOauth2GrantType          `json:"grant_type,omitempty"`
+		Iss                *string                                                  `json:"iss,omitempty"`
+		Scopes             *[]string                                                `json:"scopes,omitempty"`
+		SignatureAlgorithm *KibanaHTTPAPIsUpdateOutputKafkaOauth2SignatureAlgorithm `json:"signature_algorithm,omitempty"`
+
+		// Timeout How long, in seconds, a request to the token endpoint can take before it times out. There is no limit when it is not set.
+		Timeout *float32 `json:"timeout,omitempty"`
+		Tls     *struct {
+			CaFile             *string `json:"ca_file,omitempty"`
+			CertFile           *string `json:"cert_file,omitempty"`
+			InsecureSkipVerify *bool   `json:"insecure_skip_verify,omitempty"`
+			KeyFile            *string `json:"key_file,omitempty"`
+			MaxVersion         *string `json:"max_version,omitempty"`
+			MinVersion         *string `json:"min_version,omitempty"`
+			ServerNameOverride *string `json:"server_name_override,omitempty"`
+		} `json:"tls,omitempty"`
+		TokenUrl string `json:"token_url"`
+	} `json:"oauth2,omitempty"`
 	OtelDisableBeatsauth   *bool                                     `json:"otel_disable_beatsauth,omitempty"`
 	OtelExporterConfigYaml *string                                   `json:"otel_exporter_config_yaml,omitempty"`
 	Partition              *KibanaHTTPAPIsUpdateOutputKafkaPartition `json:"partition,omitempty"`
@@ -49447,6 +49889,10 @@ type KibanaHTTPAPIsUpdateOutputKafka struct {
 		Mechanism *KibanaHTTPAPIsUpdateOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
 	} `json:"sasl,omitempty"`
 	Secrets *struct {
+		Oauth2 *struct {
+			ClientCertificateKey *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey `json:"client_certificate_key,omitempty"`
+			ClientSecret         *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret         `json:"client_secret,omitempty"`
+		} `json:"oauth2,omitempty"`
 		Password *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Password `json:"password,omitempty"`
 		Ssl      *struct {
 			Key KibanaHTTPAPIsUpdateOutputKafka_Secrets_Ssl_Key `json:"key"`
@@ -49470,6 +49916,12 @@ type KibanaHTTPAPIsUpdateOutputKafkaCompression string
 // KibanaHTTPAPIsUpdateOutputKafkaConnectionType defines model for KibanaHTTPAPIsUpdateOutputKafka.ConnectionType.
 type KibanaHTTPAPIsUpdateOutputKafkaConnectionType string
 
+// KibanaHTTPAPIsUpdateOutputKafkaOauth2GrantType defines model for KibanaHTTPAPIsUpdateOutputKafka.Oauth2.GrantType.
+type KibanaHTTPAPIsUpdateOutputKafkaOauth2GrantType string
+
+// KibanaHTTPAPIsUpdateOutputKafkaOauth2SignatureAlgorithm defines model for KibanaHTTPAPIsUpdateOutputKafka.Oauth2.SignatureAlgorithm.
+type KibanaHTTPAPIsUpdateOutputKafkaOauth2SignatureAlgorithm string
+
 // KibanaHTTPAPIsUpdateOutputKafkaPartition defines model for KibanaHTTPAPIsUpdateOutputKafka.Partition.
 type KibanaHTTPAPIsUpdateOutputKafkaPartition string
 
@@ -49478,6 +49930,34 @@ type KibanaHTTPAPIsUpdateOutputKafkaRequiredAcks int
 
 // KibanaHTTPAPIsUpdateOutputKafkaSaslMechanism defines model for KibanaHTTPAPIsUpdateOutputKafka.Sasl.Mechanism.
 type KibanaHTTPAPIsUpdateOutputKafkaSaslMechanism string
+
+// KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0 defines model for .
+type KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0 struct {
+	Hash *string `json:"hash,omitempty"`
+	Id   string  `json:"id"`
+}
+
+// KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1 defines model for .
+type KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1 = string
+
+// KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey defines model for KibanaHTTPAPIsUpdateOutputKafka.Secrets.Oauth2.ClientCertificateKey.
+type KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0 defines model for .
+type KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0 struct {
+	Hash *string `json:"hash,omitempty"`
+	Id   string  `json:"id"`
+}
+
+// KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1 defines model for .
+type KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1 = string
+
+// KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret defines model for KibanaHTTPAPIsUpdateOutputKafka.Secrets.Oauth2.ClientSecret.
+type KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret struct {
+	union json.RawMessage
+}
 
 // KibanaHTTPAPIsUpdateOutputKafkaSecretsPassword0 defines model for .
 type KibanaHTTPAPIsUpdateOutputKafkaSecretsPassword0 struct {
@@ -59587,6 +60067,9 @@ type SecurityDetectionsAPIBulkDeleteRules struct {
 
 // SecurityDetectionsAPIBulkDeleteRulesAction defines model for SecurityDetectionsAPIBulkDeleteRules.Action.
 type SecurityDetectionsAPIBulkDeleteRulesAction string
+
+// SecurityDetectionsAPIBulkDeleteSkipReason defines model for Security_Detections_API_BulkDeleteSkipReason.
+type SecurityDetectionsAPIBulkDeleteSkipReason string
 
 // SecurityDetectionsAPIBulkDisableRules defines model for Security_Detections_API_BulkDisableRules.
 type SecurityDetectionsAPIBulkDisableRules struct {
@@ -78971,6 +79454,18 @@ type PostAgentBuilderAgentsJSONBody struct {
 		// AiIndices Array of AI indices to associate with the agent.
 		AiIndices *[]string `json:"ai_indices,omitempty"`
 
+		// Approvals Auto-approval defaults applied to every run of this agent.
+		Approvals *struct {
+			// AutoApprovedApis Destructive Elasticsearch or Kibana APIs this agent may call without a user confirmation, keyed by backend.
+			AutoApprovedApis *struct {
+				// Elasticsearch Elasticsearch APIs pre-approved for every run of this agent. Each entry is an exact identifier formed from the namespace and name (for example `indices.create`), a namespace wildcard (for example `indices.*`), or `*` for every Elasticsearch API. Entries are not checked against the known APIs, and one that matches no API has no effect.
+				Elasticsearch *[]string `json:"elasticsearch,omitempty"`
+
+				// Kibana Kibana APIs pre-approved for every run of this agent. Each entry is an exact identifier formed from the namespace and name (for example `alerting.delete-alerting-rule-id`), a namespace wildcard (for example `alerting.*`), or `*` for every Kibana API. Entries are not checked against the known APIs, and one that matches no API has no effect.
+				Kibana *[]string `json:"kibana,omitempty"`
+			} `json:"auto_approved_apis,omitempty"`
+		} `json:"approvals,omitempty"`
+
 		// ConnectorIds Array of connector IDs to associate with the agent.
 		ConnectorIds *[]string `json:"connector_ids,omitempty"`
 
@@ -79059,6 +79554,18 @@ type PutAgentBuilderAgentsIdJSONBody struct {
 	Configuration *struct {
 		// AiIndices Array of AI indices to associate with the agent.
 		AiIndices *[]string `json:"ai_indices,omitempty"`
+
+		// Approvals Auto-approval defaults applied to every run of this agent.
+		Approvals *struct {
+			// AutoApprovedApis Destructive Elasticsearch or Kibana APIs this agent may call without a user confirmation, keyed by backend.
+			AutoApprovedApis *struct {
+				// Elasticsearch Elasticsearch APIs pre-approved for every run of this agent. Each entry is an exact identifier formed from the namespace and name (for example `indices.create`), a namespace wildcard (for example `indices.*`), or `*` for every Elasticsearch API. Entries are not checked against the known APIs, and one that matches no API has no effect.
+				Elasticsearch *[]string `json:"elasticsearch,omitempty"`
+
+				// Kibana Kibana APIs pre-approved for every run of this agent. Each entry is an exact identifier formed from the namespace and name (for example `alerting.delete-alerting-rule-id`), a namespace wildcard (for example `alerting.*`), or `*` for every Kibana API. Entries are not checked against the known APIs, and one that matches no API has no effect.
+				Kibana *[]string `json:"kibana,omitempty"`
+			} `json:"auto_approved_apis,omitempty"`
+		} `json:"approvals,omitempty"`
 
 		// ConnectorIds Array of connector IDs to associate with the agent.
 		ConnectorIds *[]string `json:"connector_ids,omitempty"`
@@ -84916,6 +85423,12 @@ type PutFleetCloudOnboardingDeploymentsIdJSONBody struct {
 	EcfStacks *[]struct {
 		// Family ECF template family.
 		Family PutFleetCloudOnboardingDeploymentsIdJSONBodyEcfStacksFamily `json:"family"`
+
+		// ServiceIds Service IDs active when the stack was last launched or updated.
+		ServiceIds *[]string `json:"serviceIds,omitempty"`
+
+		// StackArn CloudFormation stack ARN pasted by the user post-launch.
+		StackArn *string `json:"stackArn,omitempty"`
 
 		// StackName CloudFormation stack name (128-char AWS limit).
 		StackName string `json:"stackName"`
@@ -91503,10 +92016,10 @@ type PutStreamsNameQueryJSONBody struct {
 
 // PostStreamsNameContentExportJSONBody defines parameters for PostStreamsNameContentExport.
 type PostStreamsNameContentExportJSONBody struct {
-	Description string                       `json:"description"`
-	Include     KibanaHTTPAPIsZodV454Schema0 `json:"include"`
-	Name        string                       `json:"name"`
-	Version     string                       `json:"version"`
+	Description string                        `json:"description"`
+	Include     KibanaHTTPAPIsZodV4383Schema0 `json:"include"`
+	Name        string                        `json:"name"`
+	Version     string                        `json:"version"`
 }
 
 // PostStreamsNameContentImportMultipartBody defines parameters for PostStreamsNameContentImport.
@@ -103107,6 +103620,14 @@ func (a *KibanaHTTPAPIsOutputResponseKafka) UnmarshalJSON(b []byte) error {
 		delete(object, "name")
 	}
 
+	if raw, found := object["oauth2"]; found {
+		err = json.Unmarshal(raw, &a.Oauth2)
+		if err != nil {
+			return fmt.Errorf("error reading 'oauth2': %w", err)
+		}
+		delete(object, "oauth2")
+	}
+
 	if raw, found := object["otel_disable_beatsauth"]; found {
 		err = json.Unmarshal(raw, &a.OtelDisableBeatsauth)
 		if err != nil {
@@ -103398,6 +103919,13 @@ func (a KibanaHTTPAPIsOutputResponseKafka) MarshalJSON() ([]byte, error) {
 		return nil, fmt.Errorf("error marshaling 'name': %w", err)
 	}
 
+	if a.Oauth2 != nil {
+		object["oauth2"], err = json.Marshal(a.Oauth2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'oauth2': %w", err)
+		}
+	}
+
 	if a.OtelDisableBeatsauth != nil {
 		object["otel_disable_beatsauth"], err = json.Marshal(a.OtelDisableBeatsauth)
 		if err != nil {
@@ -103686,6 +104214,455 @@ func (a KibanaHTTPAPIsOutputResponseKafka_Headers_Item) MarshalJSON() ([]byte, e
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for KibanaHTTPAPIsOutputResponseKafka_Oauth2_Tls. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsOutputResponseKafka_Oauth2_Tls) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsOutputResponseKafka_Oauth2_Tls
+func (a *KibanaHTTPAPIsOutputResponseKafka_Oauth2_Tls) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafka_Oauth2_Tls to handle AdditionalProperties
+func (a *KibanaHTTPAPIsOutputResponseKafka_Oauth2_Tls) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["ca_file"]; found {
+		err = json.Unmarshal(raw, &a.CaFile)
+		if err != nil {
+			return fmt.Errorf("error reading 'ca_file': %w", err)
+		}
+		delete(object, "ca_file")
+	}
+
+	if raw, found := object["cert_file"]; found {
+		err = json.Unmarshal(raw, &a.CertFile)
+		if err != nil {
+			return fmt.Errorf("error reading 'cert_file': %w", err)
+		}
+		delete(object, "cert_file")
+	}
+
+	if raw, found := object["insecure_skip_verify"]; found {
+		err = json.Unmarshal(raw, &a.InsecureSkipVerify)
+		if err != nil {
+			return fmt.Errorf("error reading 'insecure_skip_verify': %w", err)
+		}
+		delete(object, "insecure_skip_verify")
+	}
+
+	if raw, found := object["key_file"]; found {
+		err = json.Unmarshal(raw, &a.KeyFile)
+		if err != nil {
+			return fmt.Errorf("error reading 'key_file': %w", err)
+		}
+		delete(object, "key_file")
+	}
+
+	if raw, found := object["max_version"]; found {
+		err = json.Unmarshal(raw, &a.MaxVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'max_version': %w", err)
+		}
+		delete(object, "max_version")
+	}
+
+	if raw, found := object["min_version"]; found {
+		err = json.Unmarshal(raw, &a.MinVersion)
+		if err != nil {
+			return fmt.Errorf("error reading 'min_version': %w", err)
+		}
+		delete(object, "min_version")
+	}
+
+	if raw, found := object["server_name_override"]; found {
+		err = json.Unmarshal(raw, &a.ServerNameOverride)
+		if err != nil {
+			return fmt.Errorf("error reading 'server_name_override': %w", err)
+		}
+		delete(object, "server_name_override")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafka_Oauth2_Tls to handle AdditionalProperties
+func (a KibanaHTTPAPIsOutputResponseKafka_Oauth2_Tls) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.CaFile != nil {
+		object["ca_file"], err = json.Marshal(a.CaFile)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'ca_file': %w", err)
+		}
+	}
+
+	if a.CertFile != nil {
+		object["cert_file"], err = json.Marshal(a.CertFile)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'cert_file': %w", err)
+		}
+	}
+
+	if a.InsecureSkipVerify != nil {
+		object["insecure_skip_verify"], err = json.Marshal(a.InsecureSkipVerify)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'insecure_skip_verify': %w", err)
+		}
+	}
+
+	if a.KeyFile != nil {
+		object["key_file"], err = json.Marshal(a.KeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'key_file': %w", err)
+		}
+	}
+
+	if a.MaxVersion != nil {
+		object["max_version"], err = json.Marshal(a.MaxVersion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'max_version': %w", err)
+		}
+	}
+
+	if a.MinVersion != nil {
+		object["min_version"], err = json.Marshal(a.MinVersion)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'min_version': %w", err)
+		}
+	}
+
+	if a.ServerNameOverride != nil {
+		object["server_name_override"], err = json.Marshal(a.ServerNameOverride)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'server_name_override': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for KibanaHTTPAPIsOutputResponseKafka_Oauth2. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsOutputResponseKafka_Oauth2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsOutputResponseKafka_Oauth2
+func (a *KibanaHTTPAPIsOutputResponseKafka_Oauth2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafka_Oauth2 to handle AdditionalProperties
+func (a *KibanaHTTPAPIsOutputResponseKafka_Oauth2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["audience"]; found {
+		err = json.Unmarshal(raw, &a.Audience)
+		if err != nil {
+			return fmt.Errorf("error reading 'audience': %w", err)
+		}
+		delete(object, "audience")
+	}
+
+	if raw, found := object["claims"]; found {
+		err = json.Unmarshal(raw, &a.Claims)
+		if err != nil {
+			return fmt.Errorf("error reading 'claims': %w", err)
+		}
+		delete(object, "claims")
+	}
+
+	if raw, found := object["client_certificate_key_file"]; found {
+		err = json.Unmarshal(raw, &a.ClientCertificateKeyFile)
+		if err != nil {
+			return fmt.Errorf("error reading 'client_certificate_key_file': %w", err)
+		}
+		delete(object, "client_certificate_key_file")
+	}
+
+	if raw, found := object["client_certificate_key_id"]; found {
+		err = json.Unmarshal(raw, &a.ClientCertificateKeyId)
+		if err != nil {
+			return fmt.Errorf("error reading 'client_certificate_key_id': %w", err)
+		}
+		delete(object, "client_certificate_key_id")
+	}
+
+	if raw, found := object["client_id"]; found {
+		err = json.Unmarshal(raw, &a.ClientId)
+		if err != nil {
+			return fmt.Errorf("error reading 'client_id': %w", err)
+		}
+		delete(object, "client_id")
+	}
+
+	if raw, found := object["client_id_file"]; found {
+		err = json.Unmarshal(raw, &a.ClientIdFile)
+		if err != nil {
+			return fmt.Errorf("error reading 'client_id_file': %w", err)
+		}
+		delete(object, "client_id_file")
+	}
+
+	if raw, found := object["client_secret_file"]; found {
+		err = json.Unmarshal(raw, &a.ClientSecretFile)
+		if err != nil {
+			return fmt.Errorf("error reading 'client_secret_file': %w", err)
+		}
+		delete(object, "client_secret_file")
+	}
+
+	if raw, found := object["endpoint_params"]; found {
+		err = json.Unmarshal(raw, &a.EndpointParams)
+		if err != nil {
+			return fmt.Errorf("error reading 'endpoint_params': %w", err)
+		}
+		delete(object, "endpoint_params")
+	}
+
+	if raw, found := object["expiry_buffer"]; found {
+		err = json.Unmarshal(raw, &a.ExpiryBuffer)
+		if err != nil {
+			return fmt.Errorf("error reading 'expiry_buffer': %w", err)
+		}
+		delete(object, "expiry_buffer")
+	}
+
+	if raw, found := object["grant_type"]; found {
+		err = json.Unmarshal(raw, &a.GrantType)
+		if err != nil {
+			return fmt.Errorf("error reading 'grant_type': %w", err)
+		}
+		delete(object, "grant_type")
+	}
+
+	if raw, found := object["iss"]; found {
+		err = json.Unmarshal(raw, &a.Iss)
+		if err != nil {
+			return fmt.Errorf("error reading 'iss': %w", err)
+		}
+		delete(object, "iss")
+	}
+
+	if raw, found := object["scopes"]; found {
+		err = json.Unmarshal(raw, &a.Scopes)
+		if err != nil {
+			return fmt.Errorf("error reading 'scopes': %w", err)
+		}
+		delete(object, "scopes")
+	}
+
+	if raw, found := object["signature_algorithm"]; found {
+		err = json.Unmarshal(raw, &a.SignatureAlgorithm)
+		if err != nil {
+			return fmt.Errorf("error reading 'signature_algorithm': %w", err)
+		}
+		delete(object, "signature_algorithm")
+	}
+
+	if raw, found := object["timeout"]; found {
+		err = json.Unmarshal(raw, &a.Timeout)
+		if err != nil {
+			return fmt.Errorf("error reading 'timeout': %w", err)
+		}
+		delete(object, "timeout")
+	}
+
+	if raw, found := object["tls"]; found {
+		err = json.Unmarshal(raw, &a.Tls)
+		if err != nil {
+			return fmt.Errorf("error reading 'tls': %w", err)
+		}
+		delete(object, "tls")
+	}
+
+	if raw, found := object["token_url"]; found {
+		err = json.Unmarshal(raw, &a.TokenUrl)
+		if err != nil {
+			return fmt.Errorf("error reading 'token_url': %w", err)
+		}
+		delete(object, "token_url")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafka_Oauth2 to handle AdditionalProperties
+func (a KibanaHTTPAPIsOutputResponseKafka_Oauth2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Audience != nil {
+		object["audience"], err = json.Marshal(a.Audience)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'audience': %w", err)
+		}
+	}
+
+	if a.Claims != nil {
+		object["claims"], err = json.Marshal(a.Claims)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'claims': %w", err)
+		}
+	}
+
+	if a.ClientCertificateKeyFile != nil {
+		object["client_certificate_key_file"], err = json.Marshal(a.ClientCertificateKeyFile)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'client_certificate_key_file': %w", err)
+		}
+	}
+
+	if a.ClientCertificateKeyId != nil {
+		object["client_certificate_key_id"], err = json.Marshal(a.ClientCertificateKeyId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'client_certificate_key_id': %w", err)
+		}
+	}
+
+	if a.ClientId != nil {
+		object["client_id"], err = json.Marshal(a.ClientId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'client_id': %w", err)
+		}
+	}
+
+	if a.ClientIdFile != nil {
+		object["client_id_file"], err = json.Marshal(a.ClientIdFile)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'client_id_file': %w", err)
+		}
+	}
+
+	if a.ClientSecretFile != nil {
+		object["client_secret_file"], err = json.Marshal(a.ClientSecretFile)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'client_secret_file': %w", err)
+		}
+	}
+
+	if a.EndpointParams != nil {
+		object["endpoint_params"], err = json.Marshal(a.EndpointParams)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'endpoint_params': %w", err)
+		}
+	}
+
+	if a.ExpiryBuffer != nil {
+		object["expiry_buffer"], err = json.Marshal(a.ExpiryBuffer)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'expiry_buffer': %w", err)
+		}
+	}
+
+	if a.GrantType != nil {
+		object["grant_type"], err = json.Marshal(a.GrantType)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'grant_type': %w", err)
+		}
+	}
+
+	if a.Iss != nil {
+		object["iss"], err = json.Marshal(a.Iss)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'iss': %w", err)
+		}
+	}
+
+	if a.Scopes != nil {
+		object["scopes"], err = json.Marshal(a.Scopes)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'scopes': %w", err)
+		}
+	}
+
+	if a.SignatureAlgorithm != nil {
+		object["signature_algorithm"], err = json.Marshal(a.SignatureAlgorithm)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'signature_algorithm': %w", err)
+		}
+	}
+
+	if a.Timeout != nil {
+		object["timeout"], err = json.Marshal(a.Timeout)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'timeout': %w", err)
+		}
+	}
+
+	if a.Tls != nil {
+		object["tls"], err = json.Marshal(a.Tls)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tls': %w", err)
+		}
+	}
+
+	object["token_url"], err = json.Marshal(a.TokenUrl)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'token_url': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for KibanaHTTPAPIsOutputResponseKafka_Random. Returns the specified
 // element and whether it was found
 func (a KibanaHTTPAPIsOutputResponseKafka_Random) Get(fieldName string) (value interface{}, found bool) {
@@ -103878,6 +104855,251 @@ func (a KibanaHTTPAPIsOutputResponseKafka_Sasl) MarshalJSON() ([]byte, error) {
 		object["mechanism"], err = json.Marshal(a.Mechanism)
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'mechanism': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0
+func (a *KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0 to handle AdditionalProperties
+func (a *KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["hash"]; found {
+		err = json.Unmarshal(raw, &a.Hash)
+		if err != nil {
+			return fmt.Errorf("error reading 'hash': %w", err)
+		}
+		delete(object, "hash")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0 to handle AdditionalProperties
+func (a KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Hash != nil {
+		object["hash"], err = json.Marshal(a.Hash)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'hash': %w", err)
+		}
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0
+func (a *KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0 to handle AdditionalProperties
+func (a *KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["hash"]; found {
+		err = json.Unmarshal(raw, &a.Hash)
+		if err != nil {
+			return fmt.Errorf("error reading 'hash': %w", err)
+		}
+		delete(object, "hash")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0 to handle AdditionalProperties
+func (a KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Hash != nil {
+		object["hash"], err = json.Marshal(a.Hash)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'hash': %w", err)
+		}
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2
+func (a *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2 to handle AdditionalProperties
+func (a *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["client_certificate_key"]; found {
+		err = json.Unmarshal(raw, &a.ClientCertificateKey)
+		if err != nil {
+			return fmt.Errorf("error reading 'client_certificate_key': %w", err)
+		}
+		delete(object, "client_certificate_key")
+	}
+
+	if raw, found := object["client_secret"]; found {
+		err = json.Unmarshal(raw, &a.ClientSecret)
+		if err != nil {
+			return fmt.Errorf("error reading 'client_secret': %w", err)
+		}
+		delete(object, "client_secret")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2 to handle AdditionalProperties
+func (a KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.ClientCertificateKey != nil {
+		object["client_certificate_key"], err = json.Marshal(a.ClientCertificateKey)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'client_certificate_key': %w", err)
+		}
+	}
+
+	if a.ClientSecret != nil {
+		object["client_secret"], err = json.Marshal(a.ClientSecret)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'client_secret': %w", err)
 		}
 	}
 
@@ -104143,6 +105365,14 @@ func (a *KibanaHTTPAPIsOutputResponseKafka_Secrets) UnmarshalJSON(b []byte) erro
 		return err
 	}
 
+	if raw, found := object["oauth2"]; found {
+		err = json.Unmarshal(raw, &a.Oauth2)
+		if err != nil {
+			return fmt.Errorf("error reading 'oauth2': %w", err)
+		}
+		delete(object, "oauth2")
+	}
+
 	if raw, found := object["password"]; found {
 		err = json.Unmarshal(raw, &a.Password)
 		if err != nil {
@@ -104177,6 +105407,13 @@ func (a *KibanaHTTPAPIsOutputResponseKafka_Secrets) UnmarshalJSON(b []byte) erro
 func (a KibanaHTTPAPIsOutputResponseKafka_Secrets) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
+
+	if a.Oauth2 != nil {
+		object["oauth2"], err = json.Marshal(a.Oauth2)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'oauth2': %w", err)
+		}
+	}
 
 	if a.Password != nil {
 		object["password"], err = json.Marshal(a.Password)
@@ -120594,22 +121831,22 @@ func (t *KibanaHTTPAPIsWiredStreamUpsertRequest_Stream_Ingest_Settings_IndexRefr
 	return err
 }
 
-// AsKibanaHTTPAPIsZodV454Schema00 returns the union data inside the KibanaHTTPAPIsZodV454Schema0 as a KibanaHTTPAPIsZodV454Schema00
-func (t KibanaHTTPAPIsZodV454Schema0) AsKibanaHTTPAPIsZodV454Schema00() (KibanaHTTPAPIsZodV454Schema00, error) {
-	var body KibanaHTTPAPIsZodV454Schema00
+// AsKibanaHTTPAPIsZodV4383Schema00 returns the union data inside the KibanaHTTPAPIsZodV4383Schema0 as a KibanaHTTPAPIsZodV4383Schema00
+func (t KibanaHTTPAPIsZodV4383Schema0) AsKibanaHTTPAPIsZodV4383Schema00() (KibanaHTTPAPIsZodV4383Schema00, error) {
+	var body KibanaHTTPAPIsZodV4383Schema00
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromKibanaHTTPAPIsZodV454Schema00 overwrites any union data inside the KibanaHTTPAPIsZodV454Schema0 as the provided KibanaHTTPAPIsZodV454Schema00
-func (t *KibanaHTTPAPIsZodV454Schema0) FromKibanaHTTPAPIsZodV454Schema00(v KibanaHTTPAPIsZodV454Schema00) error {
+// FromKibanaHTTPAPIsZodV4383Schema00 overwrites any union data inside the KibanaHTTPAPIsZodV4383Schema0 as the provided KibanaHTTPAPIsZodV4383Schema00
+func (t *KibanaHTTPAPIsZodV4383Schema0) FromKibanaHTTPAPIsZodV4383Schema00(v KibanaHTTPAPIsZodV4383Schema00) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeKibanaHTTPAPIsZodV454Schema00 performs a merge with any union data inside the KibanaHTTPAPIsZodV454Schema0, using the provided KibanaHTTPAPIsZodV454Schema00
-func (t *KibanaHTTPAPIsZodV454Schema0) MergeKibanaHTTPAPIsZodV454Schema00(v KibanaHTTPAPIsZodV454Schema00) error {
+// MergeKibanaHTTPAPIsZodV4383Schema00 performs a merge with any union data inside the KibanaHTTPAPIsZodV4383Schema0, using the provided KibanaHTTPAPIsZodV4383Schema00
+func (t *KibanaHTTPAPIsZodV4383Schema0) MergeKibanaHTTPAPIsZodV4383Schema00(v KibanaHTTPAPIsZodV4383Schema00) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -120620,22 +121857,22 @@ func (t *KibanaHTTPAPIsZodV454Schema0) MergeKibanaHTTPAPIsZodV454Schema00(v Kiba
 	return err
 }
 
-// AsKibanaHTTPAPIsZodV454Schema01 returns the union data inside the KibanaHTTPAPIsZodV454Schema0 as a KibanaHTTPAPIsZodV454Schema01
-func (t KibanaHTTPAPIsZodV454Schema0) AsKibanaHTTPAPIsZodV454Schema01() (KibanaHTTPAPIsZodV454Schema01, error) {
-	var body KibanaHTTPAPIsZodV454Schema01
+// AsKibanaHTTPAPIsZodV4383Schema01 returns the union data inside the KibanaHTTPAPIsZodV4383Schema0 as a KibanaHTTPAPIsZodV4383Schema01
+func (t KibanaHTTPAPIsZodV4383Schema0) AsKibanaHTTPAPIsZodV4383Schema01() (KibanaHTTPAPIsZodV4383Schema01, error) {
+	var body KibanaHTTPAPIsZodV4383Schema01
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromKibanaHTTPAPIsZodV454Schema01 overwrites any union data inside the KibanaHTTPAPIsZodV454Schema0 as the provided KibanaHTTPAPIsZodV454Schema01
-func (t *KibanaHTTPAPIsZodV454Schema0) FromKibanaHTTPAPIsZodV454Schema01(v KibanaHTTPAPIsZodV454Schema01) error {
+// FromKibanaHTTPAPIsZodV4383Schema01 overwrites any union data inside the KibanaHTTPAPIsZodV4383Schema0 as the provided KibanaHTTPAPIsZodV4383Schema01
+func (t *KibanaHTTPAPIsZodV4383Schema0) FromKibanaHTTPAPIsZodV4383Schema01(v KibanaHTTPAPIsZodV4383Schema01) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeKibanaHTTPAPIsZodV454Schema01 performs a merge with any union data inside the KibanaHTTPAPIsZodV454Schema0, using the provided KibanaHTTPAPIsZodV454Schema01
-func (t *KibanaHTTPAPIsZodV454Schema0) MergeKibanaHTTPAPIsZodV454Schema01(v KibanaHTTPAPIsZodV454Schema01) error {
+// MergeKibanaHTTPAPIsZodV4383Schema01 performs a merge with any union data inside the KibanaHTTPAPIsZodV4383Schema0, using the provided KibanaHTTPAPIsZodV4383Schema01
+func (t *KibanaHTTPAPIsZodV4383Schema0) MergeKibanaHTTPAPIsZodV4383Schema01(v KibanaHTTPAPIsZodV4383Schema01) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -120646,12 +121883,12 @@ func (t *KibanaHTTPAPIsZodV454Schema0) MergeKibanaHTTPAPIsZodV454Schema01(v Kiba
 	return err
 }
 
-func (t KibanaHTTPAPIsZodV454Schema0) MarshalJSON() ([]byte, error) {
+func (t KibanaHTTPAPIsZodV4383Schema0) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *KibanaHTTPAPIsZodV454Schema0) UnmarshalJSON(b []byte) error {
+func (t *KibanaHTTPAPIsZodV4383Schema0) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -131552,6 +132789,130 @@ func (t *KibanaHTTPAPIsNewOutputElasticsearch_Secrets_Ssl_Key) UnmarshalJSON(b [
 	return err
 }
 
+// AsKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0 returns the union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey as a KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0
+func (t KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey) AsKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0() (KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0, error) {
+	var body KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0 overwrites any union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey as the provided KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey) FromKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0(v KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0 performs a merge with any union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey, using the provided KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey) MergeKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0(v KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1 returns the union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey as a KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1
+func (t KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey) AsKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1() (KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1, error) {
+	var body KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1 overwrites any union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey as the provided KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey) FromKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1(v KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1 performs a merge with any union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey, using the provided KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey) MergeKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1(v KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0 returns the union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret as a KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0
+func (t KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret) AsKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0() (KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0, error) {
+	var body KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0 overwrites any union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret as the provided KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret) FromKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0(v KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0 performs a merge with any union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret, using the provided KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret) MergeKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0(v KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1 returns the union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret as a KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1
+func (t KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret) AsKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1() (KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1, error) {
+	var body KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1 overwrites any union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret as the provided KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret) FromKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1(v KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1 performs a merge with any union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret, using the provided KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret) MergeKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1(v KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientSecret1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsKibanaHTTPAPIsNewOutputKafkaSecretsPassword0 returns the union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Password as a KibanaHTTPAPIsNewOutputKafkaSecretsPassword0
 func (t KibanaHTTPAPIsNewOutputKafka_Secrets_Password) AsKibanaHTTPAPIsNewOutputKafkaSecretsPassword0() (KibanaHTTPAPIsNewOutputKafkaSecretsPassword0, error) {
 	var body KibanaHTTPAPIsNewOutputKafkaSecretsPassword0
@@ -132567,6 +133928,130 @@ func (t KibanaHTTPAPIsOutputResponseElasticsearch_Secrets_Ssl_Key) MarshalJSON()
 }
 
 func (t *KibanaHTTPAPIsOutputResponseElasticsearch_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0 returns the union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey as a KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0
+func (t KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey) AsKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0() (KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0, error) {
+	var body KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0 overwrites any union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey as the provided KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey) FromKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0(v KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0 performs a merge with any union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey, using the provided KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey) MergeKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0(v KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1 returns the union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey as a KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1
+func (t KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey) AsKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1() (KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1, error) {
+	var body KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1 overwrites any union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey as the provided KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey) FromKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1(v KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1 performs a merge with any union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey, using the provided KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey) MergeKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1(v KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientCertificateKey) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0 returns the union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret as a KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0
+func (t KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret) AsKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0() (KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0, error) {
+	var body KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0 overwrites any union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret as the provided KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret) FromKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0(v KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0 performs a merge with any union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret, using the provided KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret) MergeKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0(v KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1 returns the union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret as a KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1
+func (t KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret) AsKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1() (KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1, error) {
+	var body KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1 overwrites any union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret as the provided KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret) FromKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1(v KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1 performs a merge with any union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret, using the provided KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret) MergeKibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1(v KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientSecret1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2_ClientSecret) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -135202,6 +136687,130 @@ func (t KibanaHTTPAPIsUpdateOutputElasticsearch_Secrets_Ssl_Key) MarshalJSON() (
 }
 
 func (t *KibanaHTTPAPIsUpdateOutputElasticsearch_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0 returns the union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey as a KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0
+func (t KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey) AsKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0() (KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0, error) {
+	var body KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0 overwrites any union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey as the provided KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey) FromKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0(v KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0 performs a merge with any union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey, using the provided KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey) MergeKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0(v KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1 returns the union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey as a KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1
+func (t KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey) AsKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1() (KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1, error) {
+	var body KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1 overwrites any union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey as the provided KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey) FromKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1(v KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1 performs a merge with any union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey, using the provided KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey) MergeKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1(v KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0 returns the union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret as a KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0
+func (t KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret) AsKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0() (KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0, error) {
+	var body KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0 overwrites any union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret as the provided KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret) FromKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0(v KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0 performs a merge with any union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret, using the provided KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret) MergeKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0(v KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1 returns the union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret as a KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1
+func (t KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret) AsKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1() (KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1, error) {
+	var body KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1 overwrites any union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret as the provided KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret) FromKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1(v KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1 performs a merge with any union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret, using the provided KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret) MergeKibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1(v KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientSecret1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -152797,6 +154406,32 @@ func (t *SecurityDetectionsAPIBulkActionSkipResult_SkipReason) FromSecurityDetec
 
 // MergeSecurityDetectionsAPIBulkGapsFillingSkipReason performs a merge with any union data inside the SecurityDetectionsAPIBulkActionSkipResult_SkipReason, using the provided SecurityDetectionsAPIBulkGapsFillingSkipReason
 func (t *SecurityDetectionsAPIBulkActionSkipResult_SkipReason) MergeSecurityDetectionsAPIBulkGapsFillingSkipReason(v SecurityDetectionsAPIBulkGapsFillingSkipReason) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityDetectionsAPIBulkDeleteSkipReason returns the union data inside the SecurityDetectionsAPIBulkActionSkipResult_SkipReason as a SecurityDetectionsAPIBulkDeleteSkipReason
+func (t SecurityDetectionsAPIBulkActionSkipResult_SkipReason) AsSecurityDetectionsAPIBulkDeleteSkipReason() (SecurityDetectionsAPIBulkDeleteSkipReason, error) {
+	var body SecurityDetectionsAPIBulkDeleteSkipReason
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityDetectionsAPIBulkDeleteSkipReason overwrites any union data inside the SecurityDetectionsAPIBulkActionSkipResult_SkipReason as the provided SecurityDetectionsAPIBulkDeleteSkipReason
+func (t *SecurityDetectionsAPIBulkActionSkipResult_SkipReason) FromSecurityDetectionsAPIBulkDeleteSkipReason(v SecurityDetectionsAPIBulkDeleteSkipReason) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityDetectionsAPIBulkDeleteSkipReason performs a merge with any union data inside the SecurityDetectionsAPIBulkActionSkipResult_SkipReason, using the provided SecurityDetectionsAPIBulkDeleteSkipReason
+func (t *SecurityDetectionsAPIBulkActionSkipResult_SkipReason) MergeSecurityDetectionsAPIBulkDeleteSkipReason(v SecurityDetectionsAPIBulkDeleteSkipReason) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -251523,6 +253158,12 @@ type PostFleetCloudOnboardingDeploymentsResponse struct {
 				// Family ECF template family.
 				Family PostFleetCloudOnboardingDeployments200JSONResponseBodyItemEcfStacksFamily `json:"family"`
 
+				// ServiceIds Service IDs active when the stack was last launched or updated.
+				ServiceIds *[]string `json:"serviceIds,omitempty"`
+
+				// StackArn CloudFormation stack ARN pasted by the user post-launch.
+				StackArn *string `json:"stackArn,omitempty"`
+
 				// StackName CloudFormation stack name (128-char AWS limit).
 				StackName string `json:"stackName"`
 
@@ -251626,6 +253267,12 @@ type GetFleetCloudOnboardingDeploymentsConnectorConnectoridResponse struct {
 			EcfStacks *[]struct {
 				// Family ECF template family.
 				Family GetFleetCloudOnboardingDeploymentsConnectorConnectorid200JSONResponseBodyItemsEcfStacksFamily `json:"family"`
+
+				// ServiceIds Service IDs active when the stack was last launched or updated.
+				ServiceIds *[]string `json:"serviceIds,omitempty"`
+
+				// StackArn CloudFormation stack ARN pasted by the user post-launch.
+				StackArn *string `json:"stackArn,omitempty"`
 
 				// StackName CloudFormation stack name (128-char AWS limit).
 				StackName string `json:"stackName"`
@@ -251773,6 +253420,12 @@ type GetFleetCloudOnboardingDeploymentsIdResponse struct {
 				// Family ECF template family.
 				Family GetFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemEcfStacksFamily `json:"family"`
 
+				// ServiceIds Service IDs active when the stack was last launched or updated.
+				ServiceIds *[]string `json:"serviceIds,omitempty"`
+
+				// StackArn CloudFormation stack ARN pasted by the user post-launch.
+				StackArn *string `json:"stackArn,omitempty"`
+
 				// StackName CloudFormation stack name (128-char AWS limit).
 				StackName string `json:"stackName"`
 
@@ -251879,6 +253532,12 @@ type PutFleetCloudOnboardingDeploymentsIdResponse struct {
 			EcfStacks *[]struct {
 				// Family ECF template family.
 				Family PutFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemEcfStacksFamily `json:"family"`
+
+				// ServiceIds Service IDs active when the stack was last launched or updated.
+				ServiceIds *[]string `json:"serviceIds,omitempty"`
+
+				// StackArn CloudFormation stack ARN pasted by the user post-launch.
+				StackArn *string `json:"stackArn,omitempty"`
 
 				// StackName CloudFormation stack name (128-char AWS limit).
 				StackName string `json:"stackName"`
@@ -290582,6 +292241,12 @@ func ParsePostFleetCloudOnboardingDeploymentsResponse(rsp *http.Response) (*Post
 					// Family ECF template family.
 					Family PostFleetCloudOnboardingDeployments200JSONResponseBodyItemEcfStacksFamily `json:"family"`
 
+					// ServiceIds Service IDs active when the stack was last launched or updated.
+					ServiceIds *[]string `json:"serviceIds,omitempty"`
+
+					// StackArn CloudFormation stack ARN pasted by the user post-launch.
+					StackArn *string `json:"stackArn,omitempty"`
+
 					// StackName CloudFormation stack name (128-char AWS limit).
 					StackName string `json:"stackName"`
 
@@ -290687,6 +292352,12 @@ func ParseGetFleetCloudOnboardingDeploymentsConnectorConnectoridResponse(rsp *ht
 				EcfStacks *[]struct {
 					// Family ECF template family.
 					Family GetFleetCloudOnboardingDeploymentsConnectorConnectorid200JSONResponseBodyItemsEcfStacksFamily `json:"family"`
+
+					// ServiceIds Service IDs active when the stack was last launched or updated.
+					ServiceIds *[]string `json:"serviceIds,omitempty"`
+
+					// StackArn CloudFormation stack ARN pasted by the user post-launch.
+					StackArn *string `json:"stackArn,omitempty"`
 
 					// StackName CloudFormation stack name (128-char AWS limit).
 					StackName string `json:"stackName"`
@@ -290844,6 +292515,12 @@ func ParseGetFleetCloudOnboardingDeploymentsIdResponse(rsp *http.Response) (*Get
 					// Family ECF template family.
 					Family GetFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemEcfStacksFamily `json:"family"`
 
+					// ServiceIds Service IDs active when the stack was last launched or updated.
+					ServiceIds *[]string `json:"serviceIds,omitempty"`
+
+					// StackArn CloudFormation stack ARN pasted by the user post-launch.
+					StackArn *string `json:"stackArn,omitempty"`
+
 					// StackName CloudFormation stack name (128-char AWS limit).
 					StackName string `json:"stackName"`
 
@@ -290958,6 +292635,12 @@ func ParsePutFleetCloudOnboardingDeploymentsIdResponse(rsp *http.Response) (*Put
 				EcfStacks *[]struct {
 					// Family ECF template family.
 					Family PutFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemEcfStacksFamily `json:"family"`
+
+					// ServiceIds Service IDs active when the stack was last launched or updated.
+					ServiceIds *[]string `json:"serviceIds,omitempty"`
+
+					// StackArn CloudFormation stack ARN pasted by the user post-launch.
+					StackArn *string `json:"stackArn,omitempty"`
 
 					// StackName CloudFormation stack name (128-char AWS limit).
 					StackName string `json:"stackName"`
