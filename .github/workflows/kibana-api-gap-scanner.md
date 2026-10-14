@@ -153,7 +153,7 @@ jobs:
           CGO_ENABLED: "0"
         run: |
           mkdir -p /tmp/gh-aw/agent
-          go build -o /tmp/gh-aw/agent/kibana-api-gaps ./scripts/kibana-api-gaps
+          go build -ldflags "-s -w" -o /tmp/gh-aw/agent/kibana-api-gaps ./scripts/kibana-api-gaps
       - name: Discover Kibana API gaps
         id: discover_gaps
         timeout-minutes: 10
@@ -189,14 +189,12 @@ jobs:
 
 Deterministic discovery has already proven that each gap group below is a set of Kibana API request fields that a Terraform resource can reach but never uses. You do **judgement only**: for each queued group, decide whether it is worth exposing in Terraform. You cannot add, remove, or edit fields; you can only return a verdict and a reason.
 
-## Pre-activation context
+## Discovery context
 
-Do **not** query GitHub issue counts yourself; use only these values.
+Do **not** query GitHub issue counts yourself; use only these values from the `discover` job.
 
-- **Open `kibana-api-gap` issues**: `${{ needs.discover.outputs.open_issues }}`
 - **Issue slots available**: `${{ needs.discover.outputs.issue_slots_available }}`
 - **Groups in the triage queue**: `${{ needs.discover.outputs.queue_size }}`
-- **Gate reason**: ${{ needs.discover.outputs.gate_reason }}
 
 ## Inputs
 
@@ -245,10 +243,6 @@ For each `file` verdict call `create-issue` once:
 
 Do not apply any labels yourself and do not add any factory trigger label; the safe output applies `kibana-api-gap` and `triaged`.
 
-### Issue title length guardrail
-
-GitHub issue titles are limited to **256 characters total**, including the `title-prefix` that `create-issue` prepends automatically. This workflow's prefix is `"[kibana-api-gap] "` (17 characters), leaving **239** characters for the title. The pre-rendered titles are short; if one would exceed the limit, truncate the field part only, never the resource name.
-
 ## Recording verdicts
 
 After the last verdict (and after all `create-issue` calls), write `/tmp/gh-aw/agent/verdicts.json`, a JSON array in triage order with one object per triaged group and no other fields:
@@ -271,8 +265,8 @@ Then run `record` exactly **once**:
 
 `record` validates the verdicts against the report (known keys, queue order, no more `file` verdicts than slots, no early stop before the slots are filled or the queue is covered, non-empty reasons). If it rejects the file, fix `verdicts.json` and run it again; it must succeed before you finish. Never write `state.json` by hand.
 
-If you filed nothing and the queue was non-empty, still call `record`, then call `noop` with a short reason.
+If you filed nothing and the queue was non-empty, still call `record`, then call `noop` with a short reason (`noop` is only for this zero-filed case).
 
 ## Dispatch
 
-After creating all issues for this run (or if no issues were created), call the `dispatch_research_factory` safe output tool once with `dispatch: true` to dispatch the `research-factory` workflow for each created issue.
+`dispatch_research_factory` is always your last safe output call, after every `create-issue` and any `noop`, including when no issue was created. Call it once with `dispatch: true` to dispatch the `research-factory` workflow for each created issue.
