@@ -1,10 +1,10 @@
 ## 1. `pinned_panels[]` entries accept and apply `width`/`grow`
 
-- [ ] 1.1 Add optional `width` (`stringvalidator.OneOf("small", "medium", "large")`) and `grow`
+- [x] 1.1 Add optional `width` (`stringvalidator.OneOf("small", "medium", "large")`) and `grow`
       (bool) attributes to `pinnedPanelsNestedObject()`
       (`internal/kibana/dashboard/schema_control_configs.go`), alongside `type` and the existing
       `*_config` blocks.
-- [ ] 1.2 Add matching `Width types.String` / `Grow types.Bool` fields to `PinnedPanelModel`
+- [x] 1.2 Add matching `Width types.String` / `Grow types.Bool` fields to `PinnedPanelModel`
       (`internal/kibana/dashboard/models/panel.go`). Do not add these fields to `PanelModel` or
       `SyntheticPanel()`.
 - [ ] 1.3 Change `ControlPinnedHandler.AfterRemapToGroup`'s signature from `func(group *G)` to
@@ -42,6 +42,6 @@
 
 ## 3. Documentation
 
-- [ ] 3.1 Document the new `width` and `grow` attributes on `pinned_panels[]` in the resource
+- [x] 3.1 Document the new `width` and `grow` attributes on `pinned_panels[]` in the resource
       documentation (generated provider docs / schema `MarkdownDescription`), noting the enum values
       and defaults (`medium` / `false`) applied server-side when omitted.
