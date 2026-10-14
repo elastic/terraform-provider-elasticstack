@@ -93,6 +93,14 @@ func TestCaseFieldDefinitionRouting(t *testing.T) {
 		assert.Nil(t, got)
 		assert.False(t, diags.HasError())
 	})
+
+	t.Run("read 500 returns an error diagnostic", func(t *testing.T) {
+		var seen []string
+		c := newCaseFieldDefinitionTestClient(t, http.StatusInternalServerError, `{"message":"boom"}`, &seen)
+		got, diags := GetCaseFieldDefinition(ctx, c, "default", "fd-1")
+		assert.Nil(t, got)
+		assert.True(t, diags.HasError(), "a 500 must surface as an error, not as not-found")
+	})
 }
 
 func TestDeleteCaseFieldDefinitionStatuses(t *testing.T) {
