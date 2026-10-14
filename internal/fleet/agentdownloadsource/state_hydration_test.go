@@ -25,12 +25,16 @@ import (
 	"go/token"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	fwpath "github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -111,6 +115,97 @@ func TestReadAndHydrateStateTreatsEmptyProxyIDAsNull(t *testing.T) {
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
 	require.True(t, state.ProxyID.IsNull())
+}
+
+func TestReadAndHydrateStateHydratesSslFromReadPayload(t *testing.T) {
+	t.Parallel()
+
+	sourceID := "source-ssl-read"
+	spaceID := "space-a"
+	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
+
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+				"proxy_id":   "proxy-from-read",
+				"ssl": map[string]any{
+					"certificate":             "cert-from-read",
+					"certificate_authorities": []string{"ca-from-read"},
+					"key":                     "key-from-read",
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.True(t, found)
+	require.False(t, state.Ssl.IsNull(), "expected a populated ssl object in state")
+
+	var readDiags diag.Diagnostics
+	sslModel := typeutils.ObjectTypeAs[agentDownloadSourceSslModel](context.Background(), state.Ssl, fwpath.Root("ssl"), &readDiags)
+	require.False(t, readDiags.HasError(), "unexpected diagnostics: %#v", readDiags)
+	require.Equal(t, "cert-from-read", sslModel.Certificate.ValueString())
+	var caDiags diag.Diagnostics
+	require.Equal(t, []string{"ca-from-read"}, typeutils.ListTypeToSliceString(context.Background(), sslModel.CertificateAuthorities, fwpath.Root("certificate_authorities"), &caDiags))
+	require.Equal(t, "key-from-read", sslModel.Key.ValueString())
+}
+
+func TestReadAndHydrateStateNullsAbsentAndEmptySsl(t *testing.T) {
+	t.Parallel()
+
+	for name, sslPayload := range map[string]any{
+		"ssl absent": nil,
+		"ssl present but empty": map[string]any{
+			"certificate":             "",
+			"certificate_authorities": []string{},
+			"key":                     "",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			sourceID := "source-ssl-" + strings.ToLower(strings.ReplaceAll(name, " ", "-"))
+			spaceID := "space-a"
+			preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+			preservedKibanaConnection := providerschema.KibanaConnectionNullList()
+
+			item := map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+				"proxy_id":   "proxy-from-read",
+			}
+			if sslPayload != nil {
+				item["ssl"] = sslPayload
+			}
+
+			client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				if err := json.NewEncoder(w).Encode(map[string]any{"item": item}); err != nil {
+					t.Errorf("failed to encode response: %v", err)
+				}
+			}))
+
+			state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection)
+
+			require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+			require.True(t, found)
+			require.True(t, state.Ssl.IsNull(), "expected a null ssl object in state")
+		})
+	}
 }
 
 func TestCreateAndUpdateFinalizeStateViaReadHydration(t *testing.T) {
