@@ -29,7 +29,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const caseTemplateBody = `{"templateId":"tpl-1","templateVersion":2,"latestVersion":2,"isLatest":true,"name":"t","owner":"cases","definition":{"name":"t"},"definitionString":"name: t\n","deletedAt":null}`
+const caseTemplateBody = `{"templateId":"tpl-1","templateVersion":2,"latestVersion":2,"isLatest":true,` +
+	`"name":"t","owner":"cases","definition":{"name":"t"},"definitionString":"name: t\n","deletedAt":null}`
 
 func newCaseTemplateTestClient(t *testing.T, status int, body string, seen *[]string) *Client {
 	t.Helper()

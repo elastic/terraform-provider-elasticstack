@@ -110,7 +110,7 @@ func (m templateModel) toAPIModel() kbapi.CasesTemplateWriteRequest {
 		IsEnabled:   typeutils.OptionalBool(m.IsEnabled),
 	}
 	if typeutils.IsKnown(m.Tags) {
-		tags := kbapi.CasesTemplateTags(typeutils.ListToStringsMust(m.Tags))
+		tags := typeutils.ListToStringsMust(m.Tags)
 		if tags == nil {
 			tags = kbapi.CasesTemplateTags{}
 		}
