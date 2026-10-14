@@ -98,7 +98,7 @@ func (w *walker) bodyGaps(schema schemaRef, goType types.Type) ([]propGap, error
 		return nil, nil
 	}
 	if variants, ok := w.defined.unionVariants(t); ok {
-		return w.unionBodyGaps(v, variants, schema.pointer)
+		return unionBranches(w, v, variants, schema.pointer, w.bodyGaps)
 	}
 	if _, ok := t.Underlying().(*types.Struct); !ok || len(v.properties) == 0 {
 		w.skip(schema.pointer, "request body is not an object with properties")
@@ -107,7 +107,9 @@ func (w *walker) bodyGaps(schema schemaRef, goType types.Type) ([]propGap, error
 	return w.structGaps(v, t, "")
 }
 
-func (w *walker) unionBodyGaps(v *schemaView, variants []types.Type, pointer string) ([]propGap, error) {
+// unionBranches walks each oneOf/anyOf branch against the matching union variant and joins the
+// results.
+func unionBranches[T any](w *walker, v *schemaView, variants []types.Type, pointer string, walk func(schemaRef, types.Type) ([]T, error)) ([]T, error) {
 	if len(v.oneOf) == 0 {
 		w.skip(pointer, "union Go type without oneOf or anyOf")
 		return nil, nil
@@ -115,13 +117,13 @@ func (w *walker) unionBodyGaps(v *schemaView, variants []types.Type, pointer str
 	if len(v.oneOf) != len(variants) {
 		return nil, fmt.Errorf("%s: %d oneOf/anyOf branches but %d union variants in Go type", pointer, len(v.oneOf), len(variants))
 	}
-	var out []propGap
+	var out []T
 	for i, branch := range v.oneOf {
-		gaps, err := w.bodyGaps(branch, variants[i])
+		found, err := walk(branch, variants[i])
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, gaps...)
+		out = append(out, found...)
 	}
 	return out, nil
 }
@@ -165,6 +167,11 @@ func (w *walker) gaps(ref schemaRef, goType types.Type, path string) ([]Member, 
 	if err != nil {
 		return nil, err
 	}
+	return w.viewGaps(ref, v, goType, path)
+}
+
+// viewGaps is gaps for a ref whose view the caller has already built.
+func (w *walker) viewGaps(ref schemaRef, v *schemaView, goType types.Type, path string) ([]Member, error) {
 	if v.deprecated || v.readOnly {
 		return nil, nil
 	}
@@ -210,7 +217,9 @@ func (w *walker) elementGaps(v *schemaView, elem types.Type, path string) ([]Mem
 
 func (w *walker) objectGaps(v *schemaView, t types.Type, pointer, path string) ([]Member, error) {
 	if variants, ok := w.defined.unionVariants(t); ok {
-		return w.unionGaps(v, variants, pointer, path)
+		return unionBranches(w, v, variants, pointer, func(branch schemaRef, variant types.Type) ([]Member, error) {
+			return w.gaps(branch, variant, path)
+		})
 	}
 	if len(v.oneOf) > 0 {
 		w.skip(pointer, "oneOf or anyOf without a union Go type")
@@ -223,25 +232,6 @@ func (w *walker) objectGaps(v *schemaView, t types.Type, pointer, path string) (
 	var members []Member
 	for _, prop := range props {
 		members = append(members, prop.members...)
-	}
-	return members, nil
-}
-
-func (w *walker) unionGaps(v *schemaView, variants []types.Type, pointer, path string) ([]Member, error) {
-	if len(v.oneOf) == 0 {
-		w.skip(pointer, "union Go type without oneOf or anyOf")
-		return nil, nil
-	}
-	if len(v.oneOf) != len(variants) {
-		return nil, fmt.Errorf("%s: %d oneOf/anyOf branches but %d union variants in Go type", pointer, len(v.oneOf), len(variants))
-	}
-	var members []Member
-	for i, branch := range v.oneOf {
-		found, err := w.gaps(branch, variants[i], path)
-		if err != nil {
-			return nil, err
-		}
-		members = append(members, found...)
 	}
 	return members, nil
 }
@@ -272,19 +262,17 @@ func (w *walker) structGaps(v *schemaView, t types.Type, path string) ([]propGap
 		fieldPath := joinFieldPath(path, prop.name)
 		gap := propGap{name: prop.name, ref: prop.ref, required: prop.required}
 		if w.usage.fieldUsed(entry.owner, entry.field.Name()) {
-			gap.members, err = w.gaps(prop.ref, entry.field.Type(), fieldPath)
+			gap.members, err = w.viewGaps(prop.ref, child, entry.field.Type(), fieldPath)
 			if err != nil {
 				return nil, err
 			}
-		} else if !w.isOpaque(t) {
+		} else {
 			gap.members = []Member{{Field: fieldPath, Pointer: prop.ref.pointer, XState: child.xState}}
 		}
 		out = append(out, gap)
 	}
-	if !w.isOpaque(t) {
-		if err := unmatchedGoFields(fields, matched, t); err != nil {
-			return nil, err
-		}
+	if err := unmatchedGoFields(fields, matched, t); err != nil {
+		return nil, err
 	}
 	return out, nil
 }
