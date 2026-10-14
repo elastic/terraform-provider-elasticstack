@@ -29,7 +29,6 @@ import (
 
 var (
 	fingerprintScalarKeys = []string{"type", "format", "deprecated"}
-	fingerprintMapKeys    = []string{"properties"}
 	fingerprintSchemaKeys = []string{"items", "not"}
 	fingerprintListKeys   = []string{"oneOf", "anyOf", "allOf"}
 )
@@ -81,20 +80,16 @@ func (d *oasDoc) project(ref schemaRef, active map[string]bool) (any, error) {
 
 func (d *oasDoc) projectChildren(resolved schemaRef, out map[string]any, active map[string]bool) error {
 	node := resolved.node
-	for _, key := range fingerprintMapKeys {
-		value := mappingValue(node, key)
-		if value == nil {
-			continue
-		}
+	if value := mappingValue(node, "properties"); value != nil {
 		children := make(map[string]any)
 		for i := 0; i+1 < len(value.Content); i += 2 {
-			child, err := d.project(schemaRef{node: value.Content[i+1], pointer: resolved.pointer + "/" + key + "/" + escapePointerToken(value.Content[i].Value)}, active)
+			child, err := d.project(schemaRef{node: value.Content[i+1], pointer: resolved.pointer + "/properties/" + escapePointerToken(value.Content[i].Value)}, active)
 			if err != nil {
 				return err
 			}
 			children[value.Content[i].Value] = child
 		}
-		out[key] = children
+		out["properties"] = children
 	}
 	for _, key := range fingerprintSchemaKeys {
 		if value := mappingValue(node, key); value != nil {
@@ -142,7 +137,11 @@ func decodeNode(node *yaml.Node) any {
 	return value
 }
 
+// sortedStrings returns the scalar values of a sequence node, sorted; a nil node has none.
 func sortedStrings(node *yaml.Node) []string {
+	if node == nil {
+		return []string{}
+	}
 	values := make([]string, 0, len(node.Content))
 	for _, item := range node.Content {
 		values = append(values, item.Value)

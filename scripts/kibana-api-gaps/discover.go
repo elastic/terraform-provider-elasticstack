@@ -22,6 +22,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"maps"
 	"slices"
 	"sort"
 	"strings"
@@ -129,11 +130,7 @@ func reachedOperations(reach *reachResult, idx *opIndex) []opSpec {
 		}
 		byKey[key] = spec
 	}
-	keys := make([]string, 0, len(byKey))
-	for key := range byKey {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
+	keys := slices.Sorted(maps.Keys(byKey))
 	ops := make([]opSpec, 0, len(keys))
 	for _, key := range keys {
 		ops = append(ops, byKey[key])
@@ -175,6 +172,25 @@ type groupBuild struct {
 	group    Group
 	ref      schemaRef
 	required bool
+	seen     map[Member]bool
+}
+
+// addMembers appends the members of src not already in seen, recording them there.
+func addMembers(dst []Member, seen map[Member]bool, src []Member) []Member {
+	for _, m := range src {
+		if !seen[m] {
+			seen[m] = true
+			dst = append(dst, m)
+		}
+	}
+	return dst
+}
+
+// sortMembers orders members by field, then pointer, then x-state.
+func sortMembers(members []Member) {
+	slices.SortFunc(members, func(a, b Member) int {
+		return cmp.Or(strings.Compare(a.Field, b.Field), strings.Compare(a.Pointer, b.Pointer), strings.Compare(a.XState, b.XState))
+	})
 }
 
 func addGroup(groups map[string]*groupBuild, resource string, prop propGap) {
@@ -187,15 +203,12 @@ func addGroup(groups map[string]*groupBuild, resource string, prop propGap) {
 		build = &groupBuild{
 			group: Group{Key: key, Resource: resource, Field: prop.name, Pointer: prop.ref.pointer, query: prop.query},
 			ref:   prop.ref,
+			seen:  make(map[Member]bool),
 		}
 		groups[key] = build
 	}
 	build.required = build.required || prop.required
-	for _, member := range prop.members {
-		if !slices.Contains(build.group.Members, member) {
-			build.group.Members = append(build.group.Members, member)
-		}
-	}
+	build.group.Members = addMembers(build.group.Members, build.seen, prop.members)
 }
 
 func (b *groupBuild) finish(doc *oasDoc) (Group, error) {
@@ -206,9 +219,7 @@ func (b *groupBuild) finish(doc *oasDoc) (Group, error) {
 	sum := sha256.Sum256([]byte(structure + "|" + strings.ToLower(fmt.Sprint(b.required))))
 	group := b.group
 	group.Fingerprint = hex.EncodeToString(sum[:])
-	slices.SortFunc(group.Members, func(a, b Member) int {
-		return cmp.Or(strings.Compare(a.Field, b.Field), strings.Compare(a.Pointer, b.Pointer), strings.Compare(a.XState, b.XState))
-	})
+	sortMembers(group.Members)
 	return group, nil
 }
 
@@ -243,18 +254,13 @@ func mergeSiblings(siblings []Group) Group {
 	slices.SortFunc(siblings, func(a, b Group) int { return strings.Compare(a.Pointer, b.Pointer) })
 	out := siblings[0]
 	out.Members = nil
+	seen := make(map[Member]bool)
 	var structure strings.Builder
 	for _, g := range siblings {
 		structure.WriteString(g.Pointer + "=" + g.Fingerprint + "\n")
-		for _, m := range g.Members {
-			if !slices.Contains(out.Members, m) {
-				out.Members = append(out.Members, m)
-			}
-		}
+		out.Members = addMembers(out.Members, seen, g.Members)
 	}
-	slices.SortFunc(out.Members, func(a, b Member) int {
-		return cmp.Or(strings.Compare(a.Field, b.Field), strings.Compare(a.Pointer, b.Pointer), strings.Compare(a.XState, b.XState))
-	})
+	sortMembers(out.Members)
 	sum := sha256.Sum256([]byte(structure.String()))
 	out.Fingerprint = hex.EncodeToString(sum[:])
 	return out

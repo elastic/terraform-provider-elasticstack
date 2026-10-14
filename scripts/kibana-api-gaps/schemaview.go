@@ -73,7 +73,7 @@ func (d *oasDoc) view(ref schemaRef) (*schemaView, error) {
 
 func (d *oasDoc) addProperties(v *schemaView, resolved schemaRef) error {
 	required := make(map[string]bool)
-	for _, name := range sortedStrings(orEmpty(mappingValue(resolved.node, "required"))) {
+	for _, name := range sortedStrings(mappingValue(resolved.node, "required")) {
 		required[name] = true
 	}
 	if props := mappingValue(resolved.node, "properties"); props != nil {
@@ -135,13 +135,6 @@ func mergeProperties(existing, added []schemaProperty) []schemaProperty {
 		}
 	}
 	return existing
-}
-
-func orEmpty(node *yaml.Node) *yaml.Node {
-	if node == nil {
-		return &yaml.Node{}
-	}
-	return node
 }
 
 func firstNonEmpty(values ...string) string {
