@@ -1,0 +1,28 @@
+{
+  "groups": {
+    "elasticstack_fleet_agent_download_source#/paths/~1api~1fleet~1agent_download_sources/post/requestBody/content/application~1json/schema/properties/auth": {
+      "fingerprint": "33ba56163b211932d96bb443a81a7f961db72684dc1ea6d1744b1ab93a25bf2e",
+      "verdict": "file",
+      "reason": "Real user-configurable feature (authenticating to a private download host with api_key, basic auth, or custom headers); the resource has no auth support today and no opaque attribute covers it, so this should be exposed.",
+      "date": "2026-10-14",
+      "issue": "elasticstack_fleet_agent_download_source#/paths/~1api~1fleet~1agent_download_sources/post/requestBody/content/application~1json/schema/properties/auth"
+    },
+    "elasticstack_fleet_agent_download_source#/paths/~1api~1fleet~1agent_download_sources/post/requestBody/content/application~1json/schema/properties/secrets": {
+      "fingerprint": "12d3001aa2a9f1cdf65b640544ed0ba3faf4934a3d21314723437322721abf4a",
+      "verdict": "file",
+      "reason": "Real user-configurable feature letting auth/ssl material for a download source be stored as a Fleet secret instead of plaintext; no opaque attribute or existing field covers this, so it should be exposed.",
+      "date": "2026-10-14",
+      "issue": "elasticstack_fleet_agent_download_source#/paths/~1api~1fleet~1agent_download_sources/post/requestBody/content/application~1json/schema/properties/secrets"
+    },
+    "elasticstack_fleet_agent_download_source#/paths/~1api~1fleet~1agent_download_sources/post/requestBody/content/application~1json/schema/properties/ssl": {
+      "fingerprint": "749c08a0f31feacc001ce97c41e20def33870f7ec7af7e5bb6a566c2fcd00ca9",
+      "verdict": "file",
+      "reason": "Real user-configurable feature (custom certificate/CA/key for a download host using self-signed or private certs); the resource has no SSL support today and no opaque attribute covers it, so this should be exposed.",
+      "date": "2026-10-14",
+      "issue": "elasticstack_fleet_agent_download_source#/paths/~1api~1fleet~1agent_download_sources/post/requestBody/content/application~1json/schema/properties/ssl"
+    }
+  },
+  "resources": {
+    "elasticstack_fleet_agent_download_source": "2026-10-14T00:36:14Z"
+  }
+}
