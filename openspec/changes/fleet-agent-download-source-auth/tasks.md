@@ -15,9 +15,9 @@
 
 ## 3. Update removal and secret preservation
 
-- [ ] 3.1 Update `toAPIUpdateModel`: send an explicit empty `Auth` object when planned `auth` is absent but `prior.Auth` was set; populate the full object when planned `auth` is set; leave `Auth` nil only when absent in both plan and prior state
-- [ ] 3.2 Pass `prior.Auth` as the fallback from the plain refresh/Read path and `plan.Auth` from `finalizeWrite` into `readAndHydrateState`, so refresh preserves known secrets and post-write reads preserve newly set or rotated secrets
-- [ ] 3.3 Add acceptance cases for password rotation, switching from basic auth to API key, and removing previously configured auth (assert the removal update sends `{}` and clears server-side auth)
+- [x] 3.1 Update `toAPIUpdateModel`: send an explicit empty `Auth` object when planned `auth` is absent but `prior.Auth` was set; populate the full object when planned `auth` is set; leave `Auth` nil only when absent in both plan and prior state
+- [x] 3.2 Pass `prior.Auth` as the fallback from the plain refresh/Read path and `plan.Auth` from `finalizeWrite` into `readAndHydrateState`, so refresh preserves known secrets and post-write reads preserve newly set or rotated secrets
+- [x] 3.3 Add acceptance cases for password rotation, switching from basic auth to API key, and removing previously configured auth (assert the removal update sends `{}` and clears server-side auth)
 
 ## 4. Import redaction
 
