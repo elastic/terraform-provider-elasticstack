@@ -307,6 +307,54 @@ func TestReadAndHydrateStateUsesAPIHeadersNotFallback(t *testing.T) {
 	})))
 }
 
+func TestReadAndHydrateStateLeavesSecretsNullWithoutFallback(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	sourceID := "source-import-redacted"
+	spaceID := "space-a"
+	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
+	headerType := authHeadersElementType(ctx).(types.ObjectType)
+
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+				"auth": map[string]any{
+					"username": "svc-account",
+					"headers": []any{
+						map[string]any{"key": "X-A", "value": "1"},
+					},
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	state, found, diags := readAndHydrateState(ctx, client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.True(t, found)
+	require.NotNil(t, state.Auth)
+	require.Equal(t, "svc-account", state.Auth.Username.ValueString())
+	require.True(t, state.Auth.Password.IsNull())
+	require.True(t, state.Auth.APIKey.IsNull())
+	require.True(t, state.Auth.Headers.Equal(types.ListValueMust(headerType, []attr.Value{
+		types.ObjectValueMust(headerType.AttrTypes, map[string]attr.Value{
+			"key":   types.StringValue("X-A"),
+			"value": types.StringValue("1"),
+		}),
+	})))
+}
+
 func TestReadAndHydrateStateDecodesEmptyHeadersList(t *testing.T) {
 	t.Parallel()
 

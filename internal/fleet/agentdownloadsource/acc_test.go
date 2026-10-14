@@ -69,6 +69,72 @@ func TestAccResourceFleetAgentDownloadSource_AuthBasic(t *testing.T) {
 	})
 }
 
+func TestAccResourceFleetAgentDownloadSource_AuthBasicImport(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+	password := fmt.Sprintf("secret-%s", random)
+	resourceName := "elasticstack_fleet_agent_download_source.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(random),
+					"password": config.StringVariable(password),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "auth.username", "svc-account"),
+					resource.TestCheckResourceAttr(resourceName, "auth.password", password),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.0.key", "X-A"),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.0.value", "1"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(random),
+					"password": config.StringVariable(password),
+				},
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auth.password"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					res := s.RootModule().Resources[resourceName]
+					if res == nil || res.Primary == nil {
+						return "", fmt.Errorf("resource %s not found in state", resourceName)
+					}
+					return fmt.Sprintf("default/%s", res.Primary.ID), nil
+				},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(states))
+					}
+					if importedPassword, ok := states[0].Attributes["auth.password"]; ok {
+						return fmt.Errorf("expected auth.password to be null after import, got %q", importedPassword)
+					}
+					if states[0].Attributes["auth.username"] != "svc-account" {
+						return fmt.Errorf("expected auth.username to be populated from the API, got %q", states[0].Attributes["auth.username"])
+					}
+					if states[0].Attributes["auth.headers.#"] != "1" ||
+						states[0].Attributes["auth.headers.0.key"] != "X-A" ||
+						states[0].Attributes["auth.headers.0.value"] != "1" {
+						return fmt.Errorf("expected auth.headers to be populated from the API, got key %q value %q", states[0].Attributes["auth.headers.0.key"], states[0].Attributes["auth.headers.0.value"])
+					}
+					return nil
+				},
+			},
+		},
+	})
+}
+
 func TestAccResourceFleetAgentDownloadSource_AuthAPIKey(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
 
@@ -91,6 +157,65 @@ func TestAccResourceFleetAgentDownloadSource_AuthAPIKey(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.username"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password"),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthAPIKeyImport(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+	apiKey := fmt.Sprintf("key-%s", random)
+	resourceName := "elasticstack_fleet_agent_download_source.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("api_key"),
+				ConfigVariables: config.Variables{
+					"suffix":  config.StringVariable(random),
+					"api_key": config.StringVariable(apiKey),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "auth.api_key", apiKey),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.0.key", "X-A"),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.0.value", "1"),
+					resource.TestCheckNoResourceAttr(resourceName, "auth.username"),
+					resource.TestCheckNoResourceAttr(resourceName, "auth.password"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("api_key"),
+				ConfigVariables: config.Variables{
+					"suffix":  config.StringVariable(random),
+					"api_key": config.StringVariable(apiKey),
+				},
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"auth.api_key"},
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					res := s.RootModule().Resources[resourceName]
+					if res == nil || res.Primary == nil {
+						return "", fmt.Errorf("resource %s not found in state", resourceName)
+					}
+					return fmt.Sprintf("default/%s", res.Primary.ID), nil
+				},
+				ImportStateCheck: func(states []*terraform.InstanceState) error {
+					if len(states) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(states))
+					}
+					if importedAPIKey, ok := states[0].Attributes["auth.api_key"]; ok {
+						return fmt.Errorf("expected auth.api_key to be null after import, got %q", importedAPIKey)
+					}
+					return nil
+				},
 			},
 		},
 	})

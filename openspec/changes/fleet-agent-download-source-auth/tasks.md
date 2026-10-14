@@ -21,9 +21,9 @@
 
 ## 4. Import redaction
 
-- [ ] 4.1 Ensure the import read path has no prior-auth fallback: redacted `password` and `api_key` remain null while `username` and `headers` hydrate from the API response
-- [ ] 4.2 Add a basic-auth import case that verifies `auth.password` is null after import, using an `ImportStateVerifyIgnore` scoped to `auth.password` and an `ImportStateCheck` for null
-- [ ] 4.3 Add a separate API-key import case that verifies `auth.api_key` is null after import, using an `ImportStateVerifyIgnore` scoped to `auth.api_key` and an `ImportStateCheck` for null; follow `internal/apm/source_map/acc_test.go:159-167,210` / `internal/elasticsearch/security/user/acc_test.go:293-304`
+- [x] 4.1 Ensure the import read path has no prior-auth fallback: redacted `password` and `api_key` remain null while `username` and `headers` hydrate from the API response
+- [x] 4.2 Add a basic-auth import case that verifies `auth.password` is null after import, using an `ImportStateVerifyIgnore` scoped to `auth.password` and an `ImportStateCheck` for null
+- [x] 4.3 Add a separate API-key import case that verifies `auth.api_key` is null after import, using an `ImportStateVerifyIgnore` scoped to `auth.api_key` and an `ImportStateCheck` for null; follow `internal/apm/source_map/acc_test.go:159-167,210` / `internal/elasticsearch/security/user/acc_test.go:293-304`
 
 ## 5. Version gating
 
