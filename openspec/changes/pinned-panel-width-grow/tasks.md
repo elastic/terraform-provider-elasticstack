@@ -29,13 +29,13 @@
       null, no diff), a configured `small`/`false` or `large`/`true` value round-tripping unchanged,
       drift when the API value changes while a same-type prior exists, a different control type at
       the same list position reading API values directly, and the no-prior/import branch.
-- [ ] 2.3 Add or extend acceptance test coverage in
+- [x] 2.3 Add or extend acceptance test coverage in
       `internal/kibana/dashboard/acc_pinned_panels_test.go` (using
       `testdata/TestAccResourceKibanaDashboardPinnedPanels/...`) for at least the options-list control
       type: a create step with `width = "small"` / `grow = false`, an update step changing to `width =
       "large"` / `grow = true`, a step omitting both attributes that produces no diff on a subsequent
       plan, and an `ImportStateVerify` pass asserting both configured values import correctly.
-- [ ] 2.4 Confirm all four pinned control types (options list, range slider, ES|QL, time slider)
+- [x] 2.4 Confirm all four pinned control types (options list, range slider, ES|QL, time slider)
       expose the same `width`/`grow` behavior, gated at the existing `MinDashboardAPISupport` version
       check; no additional version gate is required unless the open question in `design.md` resolves
       otherwise.
