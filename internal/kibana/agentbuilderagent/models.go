@@ -239,7 +239,13 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 	}
 
 	body.Configuration = &struct {
-		AiIndices                 *[]string `json:"ai_indices,omitempty"`
+		AiIndices *[]string `json:"ai_indices,omitempty"`
+		Approvals *struct {
+			AutoApprovedApis *struct {
+				Elasticsearch *[]string `json:"elasticsearch,omitempty"`
+				Kibana        *[]string `json:"kibana,omitempty"`
+			} `json:"auto_approved_apis,omitempty"`
+		} `json:"approvals,omitempty"`
 		ConnectorIds              *[]string `json:"connector_ids,omitempty"` //nolint:revive
 		EnableElasticCapabilities *bool     `json:"enable_elastic_capabilities,omitempty"`
 		Instructions              *string   `json:"instructions,omitempty"`

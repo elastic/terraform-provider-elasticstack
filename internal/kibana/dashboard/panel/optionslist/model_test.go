@@ -36,10 +36,7 @@ type olFieldCfg = kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSch
 type olEsqlCfg = kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsql
 
 func olEnsureConfig(p *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl) *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config {
-	if p.Config == nil {
-		p.Config = &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl_Config{}
-	}
-	return p.Config
+	return &p.Config
 }
 
 func makeAPIConfig(t *testing.T, dataViewID, fieldName string) *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeOptionsListControl {

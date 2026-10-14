@@ -257,9 +257,6 @@ func buildFieldConfig(cfg *models.RangeSliderControlByFieldModel, rsPanel *kbapi
 		c.Step = &v
 	}
 
-	if rsPanel.Config == nil {
-		rsPanel.Config = &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl_Config{}
-	}
 	if err := rsPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField(c); err != nil {
 		var diags diag.Diagnostics
 		diags.AddError("Failed to build range slider control config", err.Error())
@@ -294,9 +291,6 @@ func buildEsqlConfig(cfg *models.RangeSliderControlByEsqlModel, rsPanel *kbapi.K
 		c.Step = &v
 	}
 
-	if rsPanel.Config == nil {
-		rsPanel.Config = &kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeRangeSliderControl_Config{}
-	}
 	if err := rsPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql(c); err != nil {
 		var diags diag.Diagnostics
 		diags.AddError("Failed to build range slider control config", err.Error())
