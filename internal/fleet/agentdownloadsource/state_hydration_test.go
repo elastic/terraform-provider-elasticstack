@@ -23,6 +23,7 @@ import (
 	"go/ast"
 	"go/parser"
 	"go/token"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -67,7 +68,7 @@ func TestReadAndHydrateStateUsesReadPayload(t *testing.T) {
 		}
 	}))
 
-	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection)
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil)
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
@@ -79,6 +80,291 @@ func TestReadAndHydrateStateUsesReadPayload(t *testing.T) {
 	require.Equal(t, "proxy-from-read", state.ProxyID.ValueString())
 	require.Equal(t, preservedSpaceIDs, state.SpaceIDs)
 	require.Equal(t, preservedKibanaConnection, state.KibanaConnection)
+	require.Nil(t, state.Auth)
+}
+
+func TestReadAndHydrateStatePreservesRedactedPassword(t *testing.T) {
+	t.Parallel()
+
+	sourceID := "source-basic-auth"
+	spaceID := "space-a"
+	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
+	fallback := &authModel{
+		Username: types.StringValue("stale-user"),
+		Password: types.StringValue("secret"),
+		APIKey:   types.StringNull(),
+	}
+
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+				"auth": map[string]any{
+					"username": "svc-account",
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.True(t, found)
+	require.NotNil(t, state.Auth)
+	require.Equal(t, "svc-account", state.Auth.Username.ValueString())
+	require.Equal(t, "secret", state.Auth.Password.ValueString())
+	require.True(t, state.Auth.APIKey.IsNull())
+}
+
+func TestReadAndHydrateStateUsesAPISecretWhenPresent(t *testing.T) {
+	t.Parallel()
+
+	sourceID := "source-echoed-secret"
+	spaceID := "space-a"
+	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
+	fallback := &authModel{
+		Password: types.StringValue("configured-password"),
+		APIKey:   types.StringValue("configured-key"),
+	}
+
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+				"auth": map[string]any{
+					"username": "svc-account",
+					"password": "echoed-password",
+					"api_key":  "echoed-key",
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.True(t, found)
+	require.NotNil(t, state.Auth)
+	require.Equal(t, "svc-account", state.Auth.Username.ValueString())
+	require.Equal(t, "echoed-password", state.Auth.Password.ValueString())
+	require.Equal(t, "echoed-key", state.Auth.APIKey.ValueString())
+}
+
+func TestReadAndHydrateStatePreservesRedactedAPIKeyIndependently(t *testing.T) {
+	t.Parallel()
+
+	sourceID := "source-api-key-auth"
+	spaceID := "space-a"
+	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
+	fallback := &authModel{
+		Password: types.StringNull(),
+		APIKey:   types.StringValue("secret-key"),
+	}
+
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.True(t, found)
+	require.NotNil(t, state.Auth)
+	require.True(t, state.Auth.Username.IsNull())
+	require.True(t, state.Auth.Password.IsNull())
+	require.Equal(t, "secret-key", state.Auth.APIKey.ValueString())
+}
+
+func TestReadAndHydrateStateDecodesAbsentHeadersAsNull(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	sourceID := "source-absent-headers"
+	spaceID := "space-a"
+	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
+	fallback := &authModel{
+		Headers: mustAuthHeaders(t, authHeaderModel{Key: types.StringValue("X-A"), Value: types.StringValue("1")}),
+	}
+
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+				"auth": map[string]any{
+					"username": "svc-account",
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	state, found, diags := readAndHydrateState(ctx, client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.True(t, found)
+	require.NotNil(t, state.Auth)
+	require.True(t, state.Auth.Headers.IsNull())
+	require.Equal(t, "svc-account", state.Auth.Username.ValueString())
+}
+
+func TestReadAndHydrateStateUsesAPIHeadersNotFallback(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	sourceID := "source-api-headers"
+	spaceID := "space-a"
+	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
+	fallback := &authModel{
+		Username: types.StringValue("stale-user"),
+		Headers:  mustAuthHeaders(t, authHeaderModel{Key: types.StringValue("X-A"), Value: types.StringValue("1")}),
+	}
+
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+				"auth": map[string]any{
+					"username": "svc-account",
+					"headers": []any{
+						map[string]any{"key": "X-B", "value": "2"},
+					},
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	state, found, diags := readAndHydrateState(ctx, client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.True(t, found)
+	require.NotNil(t, state.Auth)
+	require.Equal(t, "svc-account", state.Auth.Username.ValueString())
+	require.True(t, state.Auth.Headers.Equal(mustAuthHeaders(t, authHeaderModel{Key: types.StringValue("X-B"), Value: types.StringValue("2")})))
+}
+
+func TestReadAndHydrateStateLeavesSecretsNullWithoutFallback(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	sourceID := "source-import-redacted"
+	spaceID := "space-a"
+	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+				"auth": map[string]any{
+					"username": "svc-account",
+					"headers": []any{
+						map[string]any{"key": "X-A", "value": "1"},
+					},
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	state, found, diags := readAndHydrateState(ctx, client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.True(t, found)
+	require.NotNil(t, state.Auth)
+	require.Equal(t, "svc-account", state.Auth.Username.ValueString())
+	require.True(t, state.Auth.Password.IsNull())
+	require.True(t, state.Auth.APIKey.IsNull())
+	require.True(t, state.Auth.Headers.Equal(mustAuthHeaders(t, authHeaderModel{Key: types.StringValue("X-A"), Value: types.StringValue("1")})))
+}
+
+func TestReadAndHydrateStateDecodesEmptyHeadersList(t *testing.T) {
+	t.Parallel()
+
+	sourceID := "source-empty-headers"
+	spaceID := "space-a"
+	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
+
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+				"auth": map[string]any{
+					"headers": []any{},
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.True(t, found)
+	require.NotNil(t, state.Auth)
+	require.False(t, state.Auth.Headers.IsNull())
+	require.Empty(t, state.Auth.Headers.Elements())
 }
 
 func TestReadAndHydrateStateTreatsEmptyProxyIDAsNull(t *testing.T) {
@@ -106,11 +392,110 @@ func TestReadAndHydrateStateTreatsEmptyProxyIDAsNull(t *testing.T) {
 		}
 	}))
 
-	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection)
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil)
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
 	require.True(t, state.ProxyID.IsNull())
+}
+
+func TestUpdateAgentDownloadSourceReadBackKeepsRotatedPassword(t *testing.T) {
+	t.Parallel()
+
+	sourceID := "source-rotate-password"
+	spaceID := "space-a"
+	spaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+				"auth": map[string]any{
+					"username": "svc-account",
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	plan := model{
+		SourceID: types.StringValue(sourceID),
+		Name:     types.StringValue("name-from-read"),
+		Host:     types.StringValue("https://read.example.com"),
+		Default:  types.BoolValue(false),
+		SpaceIDs: spaceIDs,
+		Auth: &authModel{
+			Username: types.StringValue("svc-account"),
+			Password: types.StringValue("new-secret"),
+		},
+	}
+	prior := model{
+		SourceID: types.StringValue(sourceID),
+		SpaceIDs: spaceIDs,
+		Auth: &authModel{
+			Username: types.StringValue("svc-account"),
+			Password: types.StringValue("old-secret"),
+		},
+	}
+
+	result, diags := updateAgentDownloadSource(context.Background(), client, plan, prior)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.NotNil(t, result.Model.Auth)
+	require.Equal(t, "svc-account", result.Model.Auth.Username.ValueString())
+	require.Equal(t, "new-secret", result.Model.Auth.Password.ValueString())
+}
+
+func TestCreateAgentDownloadSourceReportsHeadersConversionFailure(t *testing.T) {
+	t.Parallel()
+
+	var postBody string
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == http.MethodPost {
+			raw, err := io.ReadAll(r.Body)
+			if err != nil {
+				t.Errorf("read request body: %v", err)
+			}
+			postBody = string(raw)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         "source-bad-headers",
+				"name":       "download-source",
+				"host":       "https://artifacts.example.com/elastic-agent",
+				"is_default": false,
+			},
+		}
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	plan := model{
+		Name:     types.StringValue("download-source"),
+		Host:     types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default:  types.BoolValue(false),
+		SourceID: types.StringValue("source-bad-headers"),
+		Auth: &authModel{
+			Headers: types.ListValueMust(types.StringType, []attr.Value{
+				types.StringValue("not-a-header"),
+			}),
+		},
+	}
+
+	_, diags := createAgentDownloadSource(context.Background(), client, plan)
+
+	require.True(t, diags.HasError(), "headers conversion failure must surface a diagnostic; request body: %s", postBody)
+	require.Empty(t, postBody, "headers conversion failure must not send a request that omits headers")
 }
 
 func TestCreateAndUpdateFinalizeStateViaReadHydration(t *testing.T) {
@@ -189,6 +574,46 @@ func assertFinalizeWriteUsesReadHydration(t *testing.T) {
 
 	require.True(t, hasReadAndHydrateCall, "finalizeWrite should call readAndHydrateState")
 	require.True(t, hasResultFromRead, "finalizeWrite should return a write result built from readState")
+}
+
+func TestReadPathPassesPriorAuthAndWritePathPassesPlanAuth(t *testing.T) {
+	t.Parallel()
+
+	requireAuthFallbackArg(t, "read.go", "readAgentDownloadSource", "prior")
+	requireAuthFallbackArg(t, "write.go", "finalizeWrite", "plan")
+}
+
+func requireAuthFallbackArg(t *testing.T, filename, funcName, receiver string) {
+	t.Helper()
+
+	funcDecl := findFuncDecl(t, filename, funcName)
+
+	var matched bool
+	ast.Inspect(funcDecl.Body, func(node ast.Node) bool {
+		if matched {
+			return false
+		}
+		call, ok := node.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		ident, ok := call.Fun.(*ast.Ident)
+		if !ok || ident.Name != "readAndHydrateState" || len(call.Args) < 7 {
+			return true
+		}
+		sel, ok := call.Args[6].(*ast.SelectorExpr)
+		if !ok || sel.Sel == nil || sel.Sel.Name != "Auth" {
+			return true
+		}
+		recv, ok := sel.X.(*ast.Ident)
+		if ok && recv.Name == receiver {
+			matched = true
+			return false
+		}
+		return true
+	})
+
+	require.True(t, matched, "%s should pass %s.Auth to readAndHydrateState", funcName, receiver)
 }
 
 // findFuncDecl parses filename and returns the *ast.FuncDecl named funcName.

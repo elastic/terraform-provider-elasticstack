@@ -28,6 +28,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -39,11 +40,42 @@ type model struct {
 	Host             types.String `tfsdk:"host"`
 	Default          types.Bool   `tfsdk:"default"`
 	ProxyID          types.String `tfsdk:"proxy_id"`
+	Auth             *authModel   `tfsdk:"auth"`
 	SpaceIDs         types.Set    `tfsdk:"space_ids"`         // > string
 	KibanaConnection types.List   `tfsdk:"kibana_connection"` // > provider schema connection block
 }
 
-var agentDownloadSourceMinVersion = version.Must(version.NewVersion("8.13.0"))
+type authModel struct {
+	Username types.String `tfsdk:"username"`
+	Password types.String `tfsdk:"password"`
+	APIKey   types.String `tfsdk:"api_key"`
+	Headers  types.List   `tfsdk:"headers"`
+}
+
+type authHeaderModel struct {
+	Key   types.String `tfsdk:"key"`
+	Value types.String `tfsdk:"value"`
+}
+
+// downloadSourceAuthHeader is one generated Fleet download-source auth header.
+type downloadSourceAuthHeader = struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+// downloadSourceAuth is the generated Fleet download-source auth object, shared by
+// the create request, update request, and read response.
+type downloadSourceAuth = struct {
+	ApiKey   *string                     `json:"api_key,omitempty"` //nolint:revive // matches the generated kbapi field name
+	Headers  *[]downloadSourceAuthHeader `json:"headers,omitempty"`
+	Password *string                     `json:"password,omitempty"`
+	Username *string                     `json:"username,omitempty"`
+}
+
+var (
+	agentDownloadSourceMinVersion     = version.Must(version.NewVersion("8.13.0"))
+	agentDownloadSourceAuthMinVersion = version.Must(version.NewVersion("9.4.0"))
+)
 
 func (m model) GetID() types.String             { return m.ID }
 func (m model) GetResourceID() types.String     { return m.SourceID }
@@ -54,18 +86,29 @@ func (m model) GetSpaceID() types.String {
 }
 
 func (m model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return entitycore.SingleVersionRequirement(
+	reqs := entitycore.SingleVersionRequirement(
 		*agentDownloadSourceMinVersion,
 		fmt.Sprintf("This resource requires stack version %s or higher.", agentDownloadSourceMinVersion),
-	), nil
+	)
+	if m.Auth != nil {
+		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
+			path.Root("auth"),
+			*agentDownloadSourceAuthMinVersion,
+			fmt.Sprintf("`auth` is not supported on this version; it is only supported in Elastic Stack %s and above", agentDownloadSourceAuthMinVersion),
+		))
+	}
+
+	return reqs, nil
 }
 
-func (m model) toAPICreateModel(_ context.Context) kbapi.PostFleetAgentDownloadSourcesJSONRequestBody {
+func (m model) toAPICreateModel(ctx context.Context) (kbapi.PostFleetAgentDownloadSourcesJSONRequestBody, diag.Diagnostics) {
+	auth, diags := m.authRequest(ctx)
 	body := kbapi.PostFleetAgentDownloadSourcesJSONRequestBody{
 		Host:      m.Host.ValueString(),
 		Name:      m.Name.ValueString(),
 		IsDefault: m.Default.ValueBoolPointer(),
 		ProxyId:   m.ProxyID.ValueStringPointer(),
+		Auth:      auth,
 	}
 
 	// The API allows setting a custom id only at creation time.
@@ -74,14 +117,55 @@ func (m model) toAPICreateModel(_ context.Context) kbapi.PostFleetAgentDownloadS
 		body.Id = &id
 	}
 
-	return body
+	return body, diags
 }
 
-func (m model) toAPIUpdateModel(_ context.Context, prior model) kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody {
+func (m model) authRequest(ctx context.Context) (*downloadSourceAuth, diag.Diagnostics) {
+	if m.Auth == nil {
+		return nil, nil
+	}
+
+	headers, diags := m.Auth.toAPIHeaders(ctx)
+	return &downloadSourceAuth{
+		ApiKey:   m.Auth.APIKey.ValueStringPointer(),
+		Password: m.Auth.Password.ValueStringPointer(),
+		Username: m.Auth.Username.ValueStringPointer(),
+		Headers:  headers,
+	}, diags
+}
+
+func (m authModel) toAPIHeaders(ctx context.Context) (*[]downloadSourceAuthHeader, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	// SliceRef keeps a known empty list as "headers":[]. SliceNilIfEmpty would omit it.
+	headers := typeutils.SliceRef(typeutils.ListTypeToSlice(ctx, m.Headers, path.Root("auth").AtName("headers"), &diags,
+		func(header authHeaderModel, _ typeutils.ListMeta) downloadSourceAuthHeader {
+			return downloadSourceAuthHeader{Key: header.Key.ValueString(), Value: header.Value.ValueString()}
+		}))
+	return headers, diags
+}
+
+func (m model) toAPIUpdateModel(ctx context.Context, prior model) (kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody, diag.Diagnostics) {
+	auth, diags := m.authForUpdate(ctx, prior)
 	return kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{
 		Host:      m.Host.ValueString(),
 		Name:      m.Name.ValueString(),
 		IsDefault: m.Default.ValueBoolPointer(),
 		ProxyId:   fleet.ProxyIDForUpdate(m.ProxyID, prior.ProxyID),
+		Auth:      auth,
+	}, diags
+}
+
+// authForUpdate builds the update body's auth field. A planned auth block is
+// sent in full. Removing a previously configured auth block sends an empty
+// object: the generated `json:"auth,omitempty"` tag drops nil, and Fleet
+// treats an omitted field as a merge that leaves the prior credentials in
+// place. When auth was already absent, nil is returned so the field stays omitted.
+func (m model) authForUpdate(ctx context.Context, prior model) (*downloadSourceAuth, diag.Diagnostics) {
+	if m.Auth != nil {
+		return m.authRequest(ctx)
 	}
+	if prior.Auth != nil {
+		return &downloadSourceAuth{}, nil
+	}
+	return nil, nil
 }

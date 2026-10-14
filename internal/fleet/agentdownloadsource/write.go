@@ -47,7 +47,7 @@ func writeAgentDownloadSource(
 func finalizeWrite(ctx context.Context, client *fleet.Client, sourceID, spaceID string, plan model, verb string) (entitycore.KibanaWriteResult[model], diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	readState, found, readDiags := readAndHydrateState(ctx, client, sourceID, spaceID, plan.SpaceIDs, plan.KibanaConnection)
+	readState, found, readDiags := readAndHydrateState(ctx, client, sourceID, spaceID, plan.SpaceIDs, plan.KibanaConnection, plan.Auth)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[model]{}, diags

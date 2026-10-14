@@ -24,7 +24,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -37,7 +40,7 @@ func readAgentDownloadSource(
 ) (model, bool, diag.Diagnostics) {
 	fleetClient := client.GetFleetClient()
 
-	return readAndHydrateState(ctx, fleetClient, resourceID, spaceID, prior.SpaceIDs, prior.KibanaConnection)
+	return readAndHydrateState(ctx, fleetClient, resourceID, spaceID, prior.SpaceIDs, prior.KibanaConnection, prior.Auth)
 }
 
 func readAndHydrateState(
@@ -47,6 +50,7 @@ func readAndHydrateState(
 	spaceID string,
 	preservedSpaceIDs types.Set,
 	preservedKibanaConnection types.List,
+	fallbackAuth *authModel,
 ) (model, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var state model
@@ -89,5 +93,55 @@ func readAndHydrateState(
 	state.ProxyID = typeutils.NonEmptyStringishPointerValue(item.ProxyId)
 	state.SpaceIDs = preservedSpaceIDs
 	state.KibanaConnection = preservedKibanaConnection
+	auth, authDiags := hydrateAuth(ctx, item.Auth, fallbackAuth)
+	diags.Append(authDiags...)
+	state.Auth = auth
 	return state, true, diags
+}
+
+func hydrateAuth(ctx context.Context, apiAuth *downloadSourceAuth, fallback *authModel) (*authModel, diag.Diagnostics) {
+	if apiAuth == nil && fallback == nil {
+		return nil, nil
+	}
+
+	var api downloadSourceAuth
+	if apiAuth != nil {
+		api = *apiAuth
+	}
+	var prior authModel
+	if fallback != nil {
+		prior = *fallback
+	}
+
+	headers, diags := authHeadersFromAPI(ctx, api.Headers)
+	return &authModel{
+		Username: types.StringPointerValue(api.Username),
+		Password: preserveRedactedSecret(api.Password, prior.Password),
+		APIKey:   preserveRedactedSecret(api.ApiKey, prior.APIKey),
+		Headers:  headers,
+	}, diags
+}
+
+func authHeadersFromAPI(ctx context.Context, apiHeaders *[]downloadSourceAuthHeader) (types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	headers := typeutils.SliceToListType(ctx, typeutils.Deref(apiHeaders), authHeadersElementType(ctx), path.Root("auth").AtName("headers"), &diags,
+		func(header downloadSourceAuthHeader, _ typeutils.ListMeta) authHeaderModel {
+			return authHeaderModel{Key: types.StringValue(header.Key), Value: types.StringValue(header.Value)}
+		})
+	return headers, diags
+}
+
+func preserveRedactedSecret(apiValue *string, fallback types.String) types.String {
+	switch {
+	case apiValue != nil:
+		return types.StringPointerValue(apiValue)
+	case typeutils.IsKnown(fallback):
+		return fallback
+	default:
+		return types.StringNull()
+	}
+}
+
+func authHeadersElementType(ctx context.Context) attr.Type {
+	return typeutils.ElementTypeOf(getSchema(ctx).Attributes["auth"].(schema.SingleNestedAttribute).Attributes["headers"].GetType())
 }
