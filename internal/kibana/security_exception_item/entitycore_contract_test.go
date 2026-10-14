@@ -51,4 +51,5 @@ func TestNewResource_satisfiesFrameworkInterfaces(t *testing.T) {
 	var _ resource.ResourceWithConfigure = newExceptionItemResource()
 	var _ resource.ResourceWithImportState = newExceptionItemResource()
 	var _ resource.ResourceWithValidateConfig = newExceptionItemResource()
+	var _ resource.ResourceWithUpgradeState = newExceptionItemResource()
 }

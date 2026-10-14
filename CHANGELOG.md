@@ -2,6 +2,10 @@
 
 ### Breaking changes
 
+#### `elasticstack_kibana_security_exception_item` no longer accepts a writable `comments` attribute
+
+`comments` is now a computed, read-only view of the full comment log Kibana stores, including comments written outside Terraform (each entry exposes `id`, `comment`, `created_at`, and `created_by`). To require a comment text, move it onto the new `required_comments` list attribute: the provider appends any missing text in configuration order and never edits, reorders, or deletes stored comments. Comment-only changes are in-place updates and no longer recreate the item. Existing state is upgraded automatically (schema version 1): stored comment `id` and `comment` values are preserved, the new audit attributes are added as null, and `required_comments` stays unset until configured. Remove any `comments {}` blocks from configuration; stored comments remain in Kibana either way.
+
 `elasticstack_kibana_alerting_rule` no longer exposes `last_execution_status` or `last_execution_date`. Those values change on every rule execution and caused a perpetual plan diff. Read them from the `elasticstack_kibana_alerting_rules` data source instead. Remove any configuration that references those attributes on the resource, including `lifecycle.ignore_changes`. Existing state that still contains the attributes is read without error and the values are dropped.
 
 The following data sources previously returned empty state or only a warning when the entity was not found, and now return an error: snapshot repository, trained model, `elasticstack_elasticsearch_security_role`, `elasticstack_elasticsearch_security_user`, `elasticstack_kibana_security_role`, index template and query ruleset. Configurations that probed for existence this way must handle the error.

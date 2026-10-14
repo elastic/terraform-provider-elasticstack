@@ -56,6 +56,7 @@ type ExceptionItemModel struct {
 	Tags             types.Set            `tfsdk:"tags"`
 	Meta             jsontypes.Normalized `tfsdk:"meta"`
 	Entries          types.List           `tfsdk:"entries"`
+	RequiredComments types.List           `tfsdk:"required_comments"`
 	Comments         types.List           `tfsdk:"comments"`
 	ExpireTime       timetypes.RFC3339    `tfsdk:"expire_time"`
 	CreatedAt        types.String         `tfsdk:"created_at"`
@@ -88,8 +89,10 @@ func (m ExceptionItemModel) GetVersionRequirements(_ context.Context) ([]entityc
 var _ entitycore.WithVersionRequirements = ExceptionItemModel{}
 
 type CommentModel struct {
-	ID      types.String `tfsdk:"id"`
-	Comment types.String `tfsdk:"comment"`
+	ID        types.String `tfsdk:"id"`
+	Comment   types.String `tfsdk:"comment"`
+	CreatedAt types.String `tfsdk:"created_at"`
+	CreatedBy types.String `tfsdk:"created_by"`
 }
 
 type EntryModel struct {
@@ -312,8 +315,10 @@ func getNestedEntryAttrTypes() map[string]attr.Type {
 // getCommentAttrTypes returns the attribute types for comment objects
 func getCommentAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"id":      types.StringType,
-		"comment": types.StringType,
+		"id":          types.StringType,
+		"comment":     types.StringType,
+		attrCreatedAt: types.StringType,
+		attrCreatedBy: types.StringType,
 	}
 }
 
@@ -380,17 +385,6 @@ func (m *ExceptionItemModel) setCommonProps(
 	}
 }
 
-func (m *ExceptionItemModel) commentModels(ctx context.Context, diags *diag.Diagnostics) []CommentModel {
-	if !typeutils.IsKnown(m.Comments) {
-		return nil
-	}
-	comments := typeutils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), diags)
-	if diags.HasError() || len(comments) == 0 {
-		return nil
-	}
-	return comments
-}
-
 // toCreateRequest converts the Terraform model to API create request
 func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.CreateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -450,11 +444,11 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 		genericReq.ExpireTime = &expireTime
 	}
 
-	if comments := m.commentModels(ctx, &diags); comments != nil {
-		commentsArray := make(kbapi.SecurityExceptionsAPICreateExceptionListItemCommentArray, len(comments))
-		for i, comment := range comments {
+	if required, known := requiredCommentTexts(m.RequiredComments); known && len(required) > 0 {
+		commentsArray := make(kbapi.SecurityExceptionsAPICreateExceptionListItemCommentArray, len(required))
+		for i, text := range required {
 			commentsArray[i] = kbapi.SecurityExceptionsAPICreateExceptionListItemComment{
-				Comment: comment.Comment.ValueString(),
+				Comment: text,
 			}
 		}
 		genericReq.Comments = &commentsArray
@@ -473,8 +467,18 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 	return req, diags
 }
 
-// toUpdateRequest converts the Terraform model to API update request
-func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID string) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
+// updateCommentsArray is the comments array shape an update-request body
+// carries.
+type updateCommentsArray = kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray
+
+// toUpdateRequest converts the Terraform model to API update request. comments
+// carries the reconciled append body from the update path; it is nil when no
+// required text is missing, so the request omits comments entirely.
+func (m *ExceptionItemModel) toUpdateRequest(
+	ctx context.Context,
+	resourceID string,
+	comments *updateCommentsArray,
+) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	entries, d := convertEntriesToAPI(ctx, m.Entries)
@@ -527,14 +531,8 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID str
 		genericReq.ExpireTime = &expireTime
 	}
 
-	if comments := m.commentModels(ctx, &diags); comments != nil {
-		commentsArray := make(kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray, len(comments))
-		for i, comment := range comments {
-			commentsArray[i] = kbapi.SecurityExceptionsAPIUpdateExceptionListItemComment{
-				Comment: comment.Comment.ValueString(),
-			}
-		}
-		genericReq.Comments = &commentsArray
+	if comments != nil {
+		genericReq.Comments = comments
 	}
 	if diags.HasError() {
 		return nil, diags
@@ -609,8 +607,10 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 		comments := make([]CommentModel, len(apiResp.Comments))
 		for i, comment := range apiResp.Comments {
 			comments[i] = CommentModel{
-				ID:      typeutils.StringishValue(comment.Id),
-				Comment: typeutils.StringishValue(comment.Comment),
+				ID:        typeutils.StringishValue(comment.Id),
+				Comment:   typeutils.StringishValue(comment.Comment),
+				CreatedAt: types.StringValue(comment.CreatedAt.Format(kbschema.KibanaTimestampLayout)),
+				CreatedBy: types.StringValue(comment.CreatedBy),
 			}
 		}
 		list, d := types.ListValueFrom(ctx, types.ObjectType{
