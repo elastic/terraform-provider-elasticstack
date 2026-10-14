@@ -188,7 +188,7 @@ func TestFinishDiscoverWritesReportAndSummary(t *testing.T) {
 	d := &Discovery{Groups: []Group{gapGroup("r", "a", 1, "f")}}
 	opts := discoverOptions{slots: 1, memoryPath: filepath.Join(dir, "state.json"), reportPath: filepath.Join(dir, "report.json"), summaryPath: filepath.Join(dir, "summary.md")}
 
-	require.NoError(t, finishDiscover(d, opts, io.Discard))
+	require.NoError(t, finishDiscover(d, opts, io.Discard, io.Discard))
 
 	data, err := os.ReadFile(opts.reportPath)
 	require.NoError(t, err)
@@ -207,7 +207,7 @@ func TestFinishDiscoverSkipsGroupsCoveredByTheMemoryFile(t *testing.T) {
 	opts := discoverOptions{slots: 1, memoryPath: filepath.Join(dir, "state.json"), reportPath: filepath.Join(dir, "report.json")}
 	require.NoError(t, saveMemory(opts.memoryPath, &Memory{Groups: map[string]Record{g.Key: {Fingerprint: "f", Verdict: verdictSuppress, Reason: "x"}}}))
 
-	require.NoError(t, finishDiscover(&Discovery{Groups: []Group{g}}, opts, io.Discard))
+	require.NoError(t, finishDiscover(&Discovery{Groups: []Group{g}}, opts, io.Discard, io.Discard))
 
 	data, err := os.ReadFile(opts.reportPath)
 	require.NoError(t, err)
@@ -222,7 +222,7 @@ func TestFinishDiscoverIsByteIdenticalAcrossRuns(t *testing.T) {
 	d := &Discovery{Groups: []Group{gapGroup("r", "a", 2, "f"), gapGroup("s", "b", 1, "f")}}
 	read := func(name string) []byte {
 		opts := discoverOptions{slots: 2, memoryPath: filepath.Join(dir, "none.json"), reportPath: filepath.Join(dir, name)}
-		require.NoError(t, finishDiscover(d, opts, io.Discard))
+		require.NoError(t, finishDiscover(d, opts, io.Discard, io.Discard))
 		data, err := os.ReadFile(opts.reportPath)
 		require.NoError(t, err)
 		return data

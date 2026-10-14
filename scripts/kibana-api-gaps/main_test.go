@@ -96,12 +96,11 @@ func TestFinishDiscoverReportsErrors(t *testing.T) {
 	none := filepath.Join(dir, "none")
 	report := filepath.Join(dir, "r.json")
 
-	require.Error(t, finishDiscover(d, discoverOptions{memoryPath: bad, reportPath: report}, io.Discard), "malformed memory")
-	require.Error(t, finishDiscover(d, discoverOptions{memoryPath: none, reportPath: filepath.Join(blocker, "r.json")}, io.Discard), "unwritable report")
+	require.Error(t, finishDiscover(d, discoverOptions{memoryPath: bad, reportPath: report}, io.Discard, io.Discard), "malformed memory")
+	require.Error(t, finishDiscover(d, discoverOptions{memoryPath: none, reportPath: filepath.Join(blocker, "r.json")}, io.Discard, io.Discard), "unwritable report")
 	opts := discoverOptions{memoryPath: none, reportPath: report, summaryPath: filepath.Join(blocker, "s.md")}
 	var warnings bytes.Buffer
-	opts.warn = &warnings
-	require.NoError(t, finishDiscover(d, opts, io.Discard), "an unwritable summary is not fatal")
+	require.NoError(t, finishDiscover(d, opts, io.Discard, &warnings), "an unwritable summary is not fatal")
 	assert.Contains(t, warnings.String(), "step summary")
 	assert.FileExists(t, report)
 }

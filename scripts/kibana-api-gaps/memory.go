@@ -18,12 +18,11 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
+
+	"github.com/elastic/terraform-provider-elasticstack/scripts/internal/memoryio"
 )
 
 const (
@@ -61,16 +60,12 @@ func (m *Memory) covers(g Group) bool {
 
 // loadMemory reads state.json; an absent file is an empty memory.
 func loadMemory(path string) (*Memory, error) {
-	data, err := os.ReadFile(path)
-	if errors.Is(err, fs.ErrNotExist) {
-		return newMemory(), nil
-	}
-	if err != nil {
-		return nil, err
-	}
 	mem := newMemory()
-	if err := json.Unmarshal(data, mem); err != nil {
-		return nil, fmt.Errorf("parse memory %s: %w", path, err)
+	if err := memoryio.ReadJSON(path, mem); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return newMemory(), nil
+		}
+		return nil, err
 	}
 	if mem.Groups == nil {
 		mem.Groups = map[string]Record{}
@@ -81,35 +76,7 @@ func loadMemory(path string) (*Memory, error) {
 	return mem, nil
 }
 
+// saveMemory writes state.json atomically.
 func saveMemory(path string, mem *Memory) error {
-	data, err := json.MarshalIndent(mem, "", "  ")
-	if err != nil {
-		return err
-	}
-	return writeFileAtomic(path, append(data, '\n'))
-}
-
-// writeFileAtomic writes through a temporary file in the same directory and renames it into
-// place, so a crash never leaves a truncated file behind.
-func writeFileAtomic(path string, data []byte) (err error) {
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o750); err != nil {
-		return err
-	}
-	tmp, err := os.CreateTemp(dir, filepath.Base(path)+".tmp-*")
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if err != nil {
-			err = errors.Join(err, os.Remove(tmp.Name()))
-		}
-	}()
-	if _, err = tmp.Write(data); err != nil {
-		return errors.Join(err, tmp.Close())
-	}
-	if err = tmp.Close(); err != nil {
-		return err
-	}
-	return os.Rename(tmp.Name(), path)
+	return memoryio.AtomicWriteJSON(path, mem, filepath.Base(path)+".tmp-*")
 }

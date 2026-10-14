@@ -25,7 +25,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -34,6 +33,8 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+
+	"github.com/elastic/terraform-provider-elasticstack/scripts/internal/memoryio"
 )
 
 const (
@@ -73,7 +74,6 @@ type discoverOptions struct {
 	memoryPath  string
 	reportPath  string
 	summaryPath string
-	warn        io.Writer // where a failed step summary is reported; nil discards it
 }
 
 func cmdDiscover(args []string, stdout, stderr io.Writer) error {
@@ -95,8 +95,7 @@ func cmdDiscover(args []string, stdout, stderr io.Writer) error {
 	if err != nil {
 		return err
 	}
-	opts.warn = stderr
-	if err := finishDiscover(result, opts, stdout); err != nil {
+	if err := finishDiscover(result, opts, stdout, stderr); err != nil {
 		return err
 	}
 	log.total()
@@ -104,22 +103,19 @@ func cmdDiscover(args []string, stdout, stderr io.Writer) error {
 }
 
 // finishDiscover turns a discovery result into report.json, a step summary, and a one-line status.
-func finishDiscover(result *Discovery, opts discoverOptions, stdout io.Writer) error {
+// A failed step summary is reported on warn, which may be nil.
+func finishDiscover(result *Discovery, opts discoverOptions, stdout, warn io.Writer) error {
 	mem, err := loadMemory(opts.memoryPath)
 	if err != nil {
 		return err
 	}
 	report := buildReport(result, mem, opts.slots)
-	data, err := json.MarshalIndent(report, "", "  ")
-	if err != nil {
-		return err
-	}
-	if err := writeFileAtomic(opts.reportPath, append(data, '\n')); err != nil {
+	if err := memoryio.AtomicWriteJSON(opts.reportPath, report, filepath.Base(opts.reportPath)+".tmp-*"); err != nil {
 		return err
 	}
 	fmt.Fprintf(stdout, "wrote report to %s; run_agent=%t gate_reason=%s queue=%d groups=%d\n",
 		opts.reportPath, report.RunAgent, report.GateReason, len(report.Queue), len(report.Groups))
-	appendSummaryBestEffort(opts.warn, opts.summaryPath, renderDiscoverSummary(report))
+	appendSummaryBestEffort(warn, opts.summaryPath, renderDiscoverSummary(report))
 	return nil
 }
 
