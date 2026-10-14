@@ -57,7 +57,7 @@ Rationale: matches the repo's CRUD-style Kibana resources and its sibling `casef
 | `name` | string | Required, 1-50 chars, unique per `owner` (case-insensitive) — the server also accepts the YAML's own case-default `name:` key as a fallback when the request omits `name`, but this resource always sends an explicit `name` so that fallback is not relied upon. |
 | `description` | string | Optional (not Computed), max 1000 chars — omitting it on write clears any previously stored value (see "Deviations" above); explicit `""` is preserved as an empty string and remains distinct from omitted/null. |
 | `tags` | `List[String]` | Optional (not Computed), max 200 items, each at most 256 chars — order and duplicates are preserved by the API; omitting it on write clears any previously stored value. |
-| `is_enabled` | bool | Optional, Computed, `UseStateForUnknown` — server default `true`; disabled templates are hidden from the case creation flow but remain manageable. |
+| `is_enabled` | bool | Optional, Computed, `UseStateForUnknown` — server default `true` applies on create only, and omitting it on a later update keeps the current value (state is retained, it does not reset to `true`); disabled templates are hidden from the case creation flow but remain manageable. |
 | `template_id` | string | Computed — server-assigned, stable across versions |
 | `template_version` | int64 | Computed — increments on every successful `PUT`, including a `PUT` with an unchanged `definition_yaml` (hence the diff-suppression requirement below) |
 | `field_count` | int64 | Computed, nullable — absent on a template with no custom fields in some server responses; map absence to null rather than assuming `0` |
@@ -101,15 +101,15 @@ Resolved by the maintainer follow-up comment's live probes: on minimal create, o
 | Unit | Responsibility |
 |---|---|
 | `schema.go` | Schema per "Schema mapping" above, including the `definition_yaml` diff-suppression plan modifier. |
-| `models.go` | `GetVersionRequirements` (9.5.2 minimum), `GetID`/`GetResourceID`/`GetSpaceID`, mapping between `kbapi.CasesTemplateV2Response` and the model (composite id, null-vs-empty handling for `description`/`tags`/`field_count`/`usage_count`/`is_default`), and `toAPICreateModel`/`toAPIUpdateModel`. |
-| `create.go` / `update.go` | `entitycore.SimpleKibanaCreate`/`SimpleKibanaUpdate` wiring, calling `.AsCasesTemplateV2Response()` on the create/update response union. |
+| `models.go` | `GetVersionRequirements` (9.5.2 minimum), `GetID`/`GetResourceID`/`GetSpaceID`, mapping between `kbapi.CasesTemplateV2Response` and the model (composite id, null-vs-empty handling for `description`/`tags`/`field_count`/`usage_count`/`is_default`), and the single `toAPIModel`. |
+| `write.go` | `entitycore.SimpleKibanaCreate`/`SimpleKibanaUpdate` wiring (both use the single `toAPIModel`); the `.AsCasesTemplateV2Response()` union unwrap lives in the kibanaoapi wrapper. |
 | `internal/clients/kibanaoapi/case_template.go` | Thin wrapper (`CreateCaseTemplate`, `GetCaseTemplate`, `UpdateCaseTemplate`, `DeleteCaseTemplate`) calling the generated `...WithResponse` methods with `kibanautil.SpaceAwarePathRequestEditor(spaceID)`, using the repo's typed response-handler helpers for create/update/read and `diagutil.HandleStatusResponse` for delete (HTTP 204 and 404 treated as success), modeled on `internal/clients/kibanaoapi/case_field_definition.go`. |
 
 Import: the import ID is the composite `<space_id>/<template_id>`, passed through to `id` (`resource.ImportStatePassthroughID`); a subsequent read populates the rest.
 
 ### Data flow
 
-Plan → `toAPICreateModel`/`toAPIUpdateModel` builds the write body → `SimpleKibanaCreate`/`SimpleKibanaUpdate` calls the wrapper for `req.SpaceID` (and `req.WriteID` for update) → after a successful write, the envelope performs a read and maps its response into the model → `id` is set from `<space_id>/<template_id>`. The mutation response is not used as final state; this follows the resource convention of deriving final state from a read after write. Destroy calls `DeleteCaseTemplate` and treats HTTP 204 and 404 as success (already-deleted); a destroy soft-deletes **all** versions of the template (per OAS prose), and existing cases created from it keep their pinned template reference.
+Plan → the single `toAPIModel` builds the write body → `SimpleKibanaCreate`/`SimpleKibanaUpdate` calls the wrapper for `req.SpaceID` (and `req.WriteID` for update) → after a successful write, the envelope performs a read and maps its response into the model → `id` is set from `<space_id>/<template_id>`. The mutation response is not used as final state; this follows the resource convention of deriving final state from a read after write. Destroy calls `DeleteCaseTemplate` and treats HTTP 204 and 404 as success (already-deleted); a destroy soft-deletes **all** versions of the template (per OAS prose), and existing cases created from it keep their pinned template reference.
 
 ### Failure handling
 

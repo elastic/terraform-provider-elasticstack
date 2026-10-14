@@ -19,6 +19,7 @@ package casetemplate
 
 import (
 	"context"
+	"maps"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -125,12 +126,8 @@ func buildObject(t *testing.T, values attrValues) tftypes.Value {
 
 func merge(base attrValues, overrides attrValues) attrValues {
 	out := attrValues{}
-	for k, v := range base {
-		out[k] = v
-	}
-	for k, v := range overrides {
-		out[k] = v
-	}
+	maps.Copy(out, base)
+	maps.Copy(out, overrides)
 	return out
 }
 

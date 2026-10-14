@@ -80,9 +80,9 @@ func errStep(dir string, vars config.Variables, pattern string) resource.TestSte
 	return s
 }
 
-// planErrStep builds a plan-only step that fails validation before any API call.
-func planErrStep(dir, pattern string) resource.TestStep {
-	s := errStep(dir, nil, pattern)
+// planErrStep builds a plan-only step for the "invalid" test-case directory that fails validation before any API call.
+func planErrStep(pattern string) resource.TestStep {
+	s := errStep("invalid", nil, pattern)
 	s.PlanOnly = true
 	return s
 }
@@ -307,7 +307,7 @@ func TestAccResourceKibanaCaseTemplateCreateAllFields(t *testing.T) {
 func TestAccResourceKibanaCaseTemplateInvalidYAML(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { preCheck(t, supported) },
-		Steps:    []resource.TestStep{planErrStep("invalid", `Invalid YAML`)},
+		Steps:    []resource.TestStep{planErrStep(`Invalid YAML`)},
 	})
 }
 
@@ -316,7 +316,7 @@ func TestAccResourceKibanaCaseTemplateInvalidYAML(t *testing.T) {
 func TestAccResourceKibanaCaseTemplateInvalidOwner(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { preCheck(t, supported) },
-		Steps:    []resource.TestStep{planErrStep("invalid", `(?is)Invalid Attribute Value Match.*owner|value must be one of`)},
+		Steps:    []resource.TestStep{planErrStep(`(?is)Invalid Attribute Value Match.*owner|value must be one of`)},
 	})
 }
 
@@ -528,27 +528,27 @@ func TestAccResourceKibanaCaseTemplateReformatWithChange(t *testing.T) {
 func TestAccResourceKibanaCaseTemplateNameEmpty(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { preCheck(t, supported) },
-		Steps:    []resource.TestStep{planErrStep("invalid", `(?is)Invalid Attribute Value Length.*between 1 and 50`)},
+		Steps:    []resource.TestStep{planErrStep(`(?is)Invalid Attribute Value Length.*between 1 and 50`)},
 	})
 }
 
 func TestAccResourceKibanaCaseTemplateNameTooLong(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { preCheck(t, supported) },
-		Steps:    []resource.TestStep{planErrStep("invalid", `(?is)Invalid Attribute Value Length.*(at most|between) .*50`)},
+		Steps:    []resource.TestStep{planErrStep(`(?is)Invalid Attribute Value Length.*(at most|between) .*50`)},
 	})
 }
 
 func TestAccResourceKibanaCaseTemplateDescriptionTooLong(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { preCheck(t, supported) },
-		Steps:    []resource.TestStep{planErrStep("invalid", `(?is)Invalid Attribute Value Length.*at most 1000`)},
+		Steps:    []resource.TestStep{planErrStep(`(?is)Invalid Attribute Value Length.*at most 1000`)},
 	})
 }
 
 func TestAccResourceKibanaCaseTemplateDefinitionTooLong(t *testing.T) {
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { preCheck(t, supported) },
-		Steps:    []resource.TestStep{planErrStep("invalid", `(?is)Invalid Attribute Value Length.*at most 30000`)},
+		Steps:    []resource.TestStep{planErrStep(`(?is)Invalid Attribute Value Length.*at most 30000`)},
 	})
 }

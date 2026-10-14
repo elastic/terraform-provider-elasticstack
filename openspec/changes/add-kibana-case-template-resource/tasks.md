@@ -18,9 +18,9 @@
 
 ## 3. Import, destroy, and errors
 
-- [x] 3.1 Implement import through `resource.ImportStatePassthroughID` on `id`; add acceptance tests importing `<space_id>/<template_id>` in the default and a named space and verify refresh populates all attributes.
+- [x] 3.1 Implement import through the shared `entitycore.KibanaSpaceImporter` (the same mechanism as `elasticstack_kibana_case_field_definition`) on `id`; add acceptance tests importing `<space_id>/<template_id>` in the default and a named space and verify refresh populates all attributes.
 - [x] 3.2 Implement delete status handling so HTTP 204 is accepted as normal success and 404 is treated as already deleted. Add mocked API tests for these statuses and acceptance tests for normal destroy (HTTP 204) and external deletion followed by refresh/plan.
 - [x] 3.3 Add acceptance tests for the negative cases: duplicate `name` within the same `owner` (409), malformed template schema such as an invalid field `control` value (400), and invalid `owner` rejected at plan-time validation.
 - [x] 3.4 Verify named-space path routing against a live 9.5.2+ cluster if available; record confirmed behavior in design.md's Implementation findings.
-- [x] 3.5 Add a 9.6+-gated acceptance test for a template whose `definition_yaml` references a field via `$ref`, verifying successful create.
+- [x] 3.5 Add a 9.6+-gated acceptance test (compile-verified only: not run locally because no 9.6+ stack was available; CI or a 9.6 stack must confirm) for a template whose `definition_yaml` references a field via `$ref`, verifying successful create.
 - [x] 3.6 Update generated documentation and examples for composite-ID import and destroy behavior (including the all-versions soft-delete note); no `CHANGELOG.md` edit is needed because the changelog is generated from merged PRs (`dev-docs/high-level/contributing.md`).

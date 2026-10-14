@@ -107,7 +107,8 @@ func getResourceSchema(_ context.Context) schema.Schema {
 				Optional: true,
 				Computed: true,
 				MarkdownDescription: "Whether the template is enabled. Disabled templates are hidden from the case creation flow but remain manageable. " +
-					"Defaults to `true` server-side when omitted.",
+					"The server default of `true` applies only on create; omitting the attribute on a later update keeps the current value, " +
+					"so set it to `true` explicitly to re-enable a disabled template.",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.UseStateForUnknown(),
 				},

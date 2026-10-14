@@ -11,7 +11,7 @@ resource "elasticstack_kibana_case_template" "example" {
   definition_yaml = <string, normalized YAML>      # required, at most 30000 characters; case defaults and fields/$ref entries
   description     = <optional, string>             # at most 1000 chars; omitting on update clears it
   tags            = <optional, list of string>     # at most 200 items, each at most 256 chars; order and duplicates preserved
-  is_enabled      = <optional, computed, bool>     # server default true
+  is_enabled      = <optional, computed, bool>     # server default true on create; omitting on update keeps the current value
   space_id        = <optional, computed, string>   # default "default"; forces replacement
 
   # Read-only
@@ -61,7 +61,7 @@ Reference: https://www.elastic.co/docs/explore-analyze/cases/create-case-templat
 - WHEN Terraform validates the configuration
 - THEN `description` SHALL be accepted up to 1000 characters
 - AND `tags` SHALL be accepted as a list of at most 200 strings, each at most 256 characters, preserving order and duplicates
-- AND `is_enabled` SHALL be optional and computed, defaulting to `true` server-side when omitted
+- AND `is_enabled` SHALL be optional and computed, defaulting to `true` server-side when omitted on create, and omitting it on a later update SHALL keep the current value (it does not reset to `true`)
 
 #### Scenario: Invalid YAML is rejected
 
@@ -107,6 +107,12 @@ A config edit to `definition_yaml` that changes only whitespace, comments, or ma
 - THEN `terraform plan` SHALL report an in-place update
 - AND apply SHALL send an update request
 - AND `template_version` SHALL increment
+
+#### Scenario: Suppression keeps computed attributes stable and yields to other changes
+
+- GIVEN the resource exists and `definition_yaml` is edited only in formatting
+- THEN the computed attributes `template_version`, `field_count`, `usage_count`, and `is_default` SHALL retain their prior state values, so the plan stays empty
+- AND if any other configurable attribute (`owner`, `name`, `description`, `tags`, `is_enabled`, `space_id`) also changes, those computed attributes SHALL be planned as unknown as usual and the update SHALL proceed
 
 ### Requirement: Null-vs-empty handling for `description` and `tags`
 

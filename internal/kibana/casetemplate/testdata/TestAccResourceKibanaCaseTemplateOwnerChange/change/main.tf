@@ -11,7 +11,7 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_case_template" "test" {
-  owner           = "${var.owner}"
+  owner           = var.owner
   name            = var.name
   definition_yaml = <<-EOT
 name: Triage case
