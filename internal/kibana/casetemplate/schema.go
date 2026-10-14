@@ -115,18 +115,30 @@ func getResourceSchema(_ context.Context) schema.Schema {
 			"template_version": schema.Int64Attribute{
 				Computed:            true,
 				MarkdownDescription: "The current version of the template. Increments on every successful update.",
+				PlanModifiers: []planmodifier.Int64{
+					keepComputedWhenOnlyFormattingChanged(),
+				},
 			},
 			"field_count": schema.Int64Attribute{
 				Computed:            true,
 				MarkdownDescription: "The number of fields defined in the template, when reported by the API.",
+				PlanModifiers: []planmodifier.Int64{
+					keepComputedWhenOnlyFormattingChanged(),
+				},
 			},
 			"usage_count": schema.Int64Attribute{
 				Computed:            true,
 				MarkdownDescription: "The number of times the template has been used to create a case, when reported by the API.",
+				PlanModifiers: []planmodifier.Int64{
+					keepComputedWhenOnlyFormattingChanged(),
+				},
 			},
 			"is_default": schema.BoolAttribute{
 				Computed:            true,
 				MarkdownDescription: "Whether this is the default template for its owner, when reported by the API.",
+				PlanModifiers: []planmodifier.Bool{
+					keepComputedWhenOnlyFormattingChanged(),
+				},
 			},
 		},
 	}

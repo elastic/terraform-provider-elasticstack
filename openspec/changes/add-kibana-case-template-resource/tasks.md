@@ -8,13 +8,13 @@
 
 ## 2. Update, diff suppression, and null-vs-empty behavior
 
-- [ ] 2.1 Implement update using the required `owner`, `name`, and `definition_yaml` fields in the PUT body, and perform a read after successful update to derive final state. Verify model-to-request and read-response-to-model mappings, including `description`/`tags`/`field_count`/`usage_count`/`is_default` present versus absent.
-- [ ] 2.2 Implement the `definition_yaml` plan-time diff-suppression modifier (parse both state and config as YAML, compare for structural equality, override the planned value to the prior state value when equal) and add a unit test covering semantically-equal (whitespace/comment/key-order-only) versus genuinely-different YAML.
-- [ ] 2.3 Add an acceptance test step editing `definition_yaml` only in formatting (reordered keys, added comments, changed indentation) using `ConfigPlanChecks.PreApply` + `plancheck.ExpectEmptyPlan()`, and verify `template_version` is unchanged after apply. Add a paired step with a genuine structural edit using `plancheck.ExpectNonEmptyPlan()`, verifying `template_version` increments.
-- [ ] 2.4 Add acceptance tests for omitting a previously set `description`/`tags` on update (asserting the live-verified clear-on-omit behavior and resulting null state) and for explicitly setting `description = ""` / `tags = []` (asserting the resulting state preserves the empty values distinctly from null).
-- [ ] 2.5 Add acceptance tests for updating `tags` with a duplicate entry and a specific order, verifying the API preserves both.
-- [ ] 2.6 Add acceptance test steps for an in-place rename and an `is_enabled` toggle; assert state reflects each change and `template_version` increments after each update.
-- [ ] 2.7 Update generated documentation and the resource example for update behavior, the diff-suppression guarantee, and the clear-on-omit semantics for `description`/`tags`.
+- [x] 2.1 Implement update using the required `owner`, `name`, and `definition_yaml` fields in the PUT body, and perform a read after successful update to derive final state. Verify model-to-request and read-response-to-model mappings, including `description`/`tags`/`field_count`/`usage_count`/`is_default` present versus absent.
+- [x] 2.2 Implement the `definition_yaml` plan-time diff-suppression modifier (parse both state and config as YAML, compare for structural equality, override the planned value to the prior state value when equal) and add a unit test covering semantically-equal (whitespace/comment/key-order-only) versus genuinely-different YAML.
+- [x] 2.3 Add an acceptance test step editing `definition_yaml` only in formatting (reordered keys, added comments, changed indentation) using `ConfigPlanChecks.PreApply` + `plancheck.ExpectEmptyPlan()`, and verify `template_version` is unchanged after apply. Add a paired step with a genuine structural edit using `plancheck.ExpectNonEmptyPlan()`, verifying `template_version` increments.
+- [x] 2.4 Add acceptance tests for omitting a previously set `description`/`tags` on update (asserting the live-verified clear-on-omit behavior and resulting null state) and for explicitly setting `description = ""` / `tags = []` (asserting the resulting state preserves the empty values distinctly from null).
+- [x] 2.5 Add acceptance tests for updating `tags` with a duplicate entry and a specific order, verifying the API preserves both.
+- [x] 2.6 Add acceptance test steps for an in-place rename and an `is_enabled` toggle; assert state reflects each change and `template_version` increments after each update.
+- [x] 2.7 Update generated documentation and the resource example for update behavior, the diff-suppression guarantee, and the clear-on-omit semantics for `description`/`tags`.
 
 ## 3. Import, destroy, and errors
 

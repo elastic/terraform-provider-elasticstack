@@ -30,6 +30,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -169,8 +170,62 @@ func TestAccResourceKibanaCaseTemplate(t *testing.T) {
 				resource.TestCheckNoResourceAttr(resourceName, "tags.#"),
 				captureID(&firstID),
 			),
+			// Reformat-only edit (key order, comments, indentation): the plan
+			// must be empty and no PUT may be sent, so the version is unchanged.
+			withPlanCheck(step("reformat", vars, attr("template_version", "1"), idUnchanged(&firstID)), plancheck.ExpectEmptyPlan()),
+			// Structural edit: a real in-place update that creates version 2.
+			withPlanCheck(step("structural_edit", vars,
+				resource.TestMatchResourceAttr(resourceName, "definition_yaml", regexp.MustCompile(`severity: high`)),
+				attr("template_version", "2"),
+				idUnchanged(&firstID),
+			), plancheck.ExpectNonEmptyPlan()),
+			step("add_description_tags", vars,
+				attr("description", "Initial description"),
+				attr("tags.#", "2"),
+				attr("tags.0", "z"),
+				attr("tags.1", "a"),
+				attr("template_version", "3"),
+				idUnchanged(&firstID),
+			),
+			// Duplicate entries and a specific order are preserved by the API.
+			step("tags_duplicates", vars,
+				attr("tags.#", "3"),
+				attr("tags.0", "z"),
+				attr("tags.1", "a"),
+				attr("tags.2", "z"),
+				attr("template_version", "4"),
+			),
+			// In-place rename.
+			step("rename", vars,
+				attr("name", name+"_renamed"),
+				attr("template_version", "5"),
+				idUnchanged(&firstID),
+			),
+			// is_enabled toggle.
+			step("disable", vars,
+				attr("is_enabled", "false"),
+				attr("template_version", "6"),
+				idUnchanged(&firstID),
+			),
+			// Omitting a previously set description/tags clears them.
+			step("remove_description_tags", vars,
+				resource.TestCheckNoResourceAttr(resourceName, "description"),
+				resource.TestCheckNoResourceAttr(resourceName, "tags.#"),
+				attr("template_version", "7"),
+			),
+			// Explicit empty values stay distinct from null.
+			step("empty_description_tags", vars,
+				attr("description", ""),
+				attr("tags.#", "0"),
+				attr("template_version", "8"),
+			),
 		},
 	})
+}
+
+func withPlanCheck(s resource.TestStep, check plancheck.PlanCheck) resource.TestStep {
+	s.ConfigPlanChecks = resource.ConfigPlanChecks{PreApply: []plancheck.PlanCheck{check}}
+	return s
 }
 
 // TestAccResourceKibanaCaseTemplateCreateAllFields creates a template with
