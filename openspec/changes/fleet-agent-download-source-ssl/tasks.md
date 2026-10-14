@@ -51,7 +51,7 @@
 
 ## 8. Validation and cleanup
 
-- [ ] 8.1 Run `make build` and `make check-lint` — fix any issues
+- [x] 8.1 Run `make build` and `make check-lint` — fix any issues
 - [x] 8.2 Run `make check-openspec` — confirm the change validates
 - [x] 8.3 Run targeted acceptance tests against a real Kibana ≥ 9.1 (per `dev-docs/high-level/testing.md`)
 - [x] 8.4 Run the full unit test suite for `internal/fleet/agentdownloadsource`
