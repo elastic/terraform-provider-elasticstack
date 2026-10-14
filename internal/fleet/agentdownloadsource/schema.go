@@ -21,10 +21,13 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 const spaceIDsDescription = "The Kibana space IDs where this download source is available. When set, the download source will be created " +
@@ -35,6 +38,9 @@ const (
 )
 
 func getSchema(_ context.Context) schema.Schema {
+	usernamePath := path.MatchRelative().AtParent().AtName("username")
+	passwordPath := path.MatchRelative().AtParent().AtName("password")
+
 	return schema.Schema{
 		Description: "Creates a new Fleet Agent Binary Download Source.",
 		Attributes: map[string]schema.Attribute{
@@ -71,6 +77,51 @@ func getSchema(_ context.Context) schema.Schema {
 			"proxy_id": schema.StringAttribute{
 				Description: "The ID of the proxy to use for this download source.",
 				Optional:    true,
+			},
+			"auth": schema.SingleNestedAttribute{
+				Description: "Authentication used by Elastic Agents when downloading binaries from this source.",
+				Optional:    true,
+				Attributes: map[string]schema.Attribute{
+					"username": schema.StringAttribute{
+						Description: "Username for HTTP Basic authentication. Required when password is set.",
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.AlsoRequires(passwordPath),
+						},
+					},
+					"password": schema.StringAttribute{
+						Description: "Password for HTTP Basic authentication. Required when username is set.",
+						Optional:    true,
+						Sensitive:   true,
+						Validators: []validator.String{
+							stringvalidator.AlsoRequires(usernamePath),
+						},
+					},
+					"api_key": schema.StringAttribute{
+						Description: "API key used to authenticate download requests. Conflicts with password.",
+						Optional:    true,
+						Sensitive:   true,
+						Validators: []validator.String{
+							stringvalidator.ConflictsWith(passwordPath),
+						},
+					},
+					"headers": schema.ListNestedAttribute{
+						Description: "Custom HTTP headers sent with every download request.",
+						Optional:    true,
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"key": schema.StringAttribute{
+									Description: "HTTP header name.",
+									Required:    true,
+								},
+								"value": schema.StringAttribute{
+									Description: "HTTP header value.",
+									Required:    true,
+								},
+							},
+						},
+					},
+				},
 			},
 			"space_ids": kbschema.SpaceIDsAttribute(spaceIDsDescription),
 		},

@@ -1,10 +1,10 @@
 ## 1. Credential modes
 
-- [ ] 1.1 Add the `auth` `SingleNestedAttribute` to `internal/fleet/agentdownloadsource/schema.go` with optional `username` (string), `password` and `api_key` (sensitive strings), and optional `headers` (list of `{key, value}` with required strings)
-- [ ] 1.2 Add relative-path `stringvalidator.AlsoRequires` validators in both directions between `auth.username` and `auth.password`, plus `stringvalidator.ConflictsWith` between `auth.password` and `auth.api_key`, following `internal/schema/es_connection_shared.go:51,59,68,78`; do not couple `headers` to credentials
-- [ ] 1.3 Add `authModel` in `internal/fleet/agentdownloadsource/models.go`, populate the generated request `Auth` from it, and map configured credential fields on create and update
-- [ ] 1.4 Extend `readAndHydrateState` in `internal/fleet/agentdownloadsource/read.go` to decode `username` and preserve redacted `password`/`api_key` from a caller-supplied fallback independently, mirroring `internal/fleet/output/models_kafka.go:566-581`
-- [ ] 1.5 Add acceptance cases for basic auth and API-key auth, plus validator errors for username without password, password without username, and password with api_key
+- [x] 1.1 Add the `auth` `SingleNestedAttribute` to `internal/fleet/agentdownloadsource/schema.go` with optional `username` (string), `password` and `api_key` (sensitive strings), and optional `headers` (list of `{key, value}` with required strings)
+- [x] 1.2 Add relative-path `stringvalidator.AlsoRequires` validators in both directions between `auth.username` and `auth.password`, plus `stringvalidator.ConflictsWith` between `auth.password` and `auth.api_key`, following `internal/schema/es_connection_shared.go:51,59,68,78`; do not couple `headers` to credentials
+- [x] 1.3 Add `authModel` in `internal/fleet/agentdownloadsource/models.go`, populate the generated request `Auth` from it, and map configured credential fields on create and update
+- [x] 1.4 Extend `readAndHydrateState` in `internal/fleet/agentdownloadsource/read.go` to decode `username` and preserve redacted `password`/`api_key` from a caller-supplied fallback independently, mirroring `internal/fleet/output/models_kafka.go:566-581`
+- [x] 1.5 Add acceptance cases for basic auth and API-key auth, plus validator errors for username without password, password without username, and password with api_key
 
 ## 2. Headers and empty auth
 

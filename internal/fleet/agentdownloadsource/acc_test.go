@@ -20,6 +20,7 @@ package agentdownloadsource_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -35,7 +36,103 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
-var minVersionFleetAgentDownloadSource = version.Must(version.NewVersion("8.13.0"))
+var (
+	minVersionFleetAgentDownloadSource     = version.Must(version.NewVersion("8.13.0"))
+	minVersionFleetAgentDownloadSourceAuth = version.Must(version.NewVersion("9.4.0"))
+)
+
+func TestAccResourceFleetAgentDownloadSource_AuthBasic(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+	password := fmt.Sprintf("secret-%s", random)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(random),
+					"password": config.StringVariable(password),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.username", "svc-account"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password", password),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.api_key"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthAPIKey(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+	apiKey := fmt.Sprintf("key-%s", random)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("api_key"),
+				ConfigVariables: config.Variables{
+					"suffix":  config.StringVariable(random),
+					"api_key": config.StringVariable(apiKey),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.api_key", apiKey),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.username"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthPasswordWithAPIKey(t *testing.T) {
+	resource.UnitTest(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("password_and_api_key"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`(?s)Invalid Attribute Combination`),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthPasswordWithoutUsername(t *testing.T) {
+	resource.UnitTest(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("password_only"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`(?s)Invalid Attribute Combination`),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthUsernameWithoutPassword(t *testing.T) {
+	resource.UnitTest(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("username_only"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`(?s)Invalid Attribute Combination`),
+			},
+		},
+	})
+}
 
 func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSource, versionutils.FlavorAny)

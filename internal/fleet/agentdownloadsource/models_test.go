@@ -48,6 +48,74 @@ func TestModelToAPICreateModel(t *testing.T) {
 	require.Equal(t, "source-123", *body.Id)
 }
 
+func TestModelToAPICreateModelIncludesBasicAuth(t *testing.T) {
+	ctx := context.Background()
+	state := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(false),
+		Auth: &authModel{
+			Username: types.StringValue("svc-account"),
+			Password: types.StringValue("secret"),
+		},
+	}
+
+	body := state.toAPICreateModel(ctx)
+	require.NotNil(t, body.Auth)
+	require.NotNil(t, body.Auth.Username)
+	require.Equal(t, "svc-account", *body.Auth.Username)
+	require.NotNil(t, body.Auth.Password)
+	require.Equal(t, "secret", *body.Auth.Password)
+	require.Nil(t, body.Auth.ApiKey)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), `"username":"svc-account"`)
+	require.Contains(t, string(encoded), `"password":"secret"`)
+	require.NotContains(t, string(encoded), `"api_key"`)
+}
+
+func TestModelToAPICreateModelIncludesAPIKeyAuth(t *testing.T) {
+	ctx := context.Background()
+	state := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(false),
+		Auth: &authModel{
+			APIKey: types.StringValue("secret-key"),
+		},
+	}
+
+	body := state.toAPICreateModel(ctx)
+	require.NotNil(t, body.Auth)
+	require.NotNil(t, body.Auth.ApiKey)
+	require.Equal(t, "secret-key", *body.Auth.ApiKey)
+	require.Nil(t, body.Auth.Username)
+	require.Nil(t, body.Auth.Password)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), `"api_key":"secret-key"`)
+	require.NotContains(t, string(encoded), `"username"`)
+	require.NotContains(t, string(encoded), `"password"`)
+}
+
+func TestModelToAPICreateModelOmitsUnsetAuth(t *testing.T) {
+	ctx := context.Background()
+	state := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(false),
+	}
+
+	body := state.toAPICreateModel(ctx)
+	require.Nil(t, body.Auth)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.NotContains(t, string(encoded), `"auth"`)
+}
+
 func TestModelToAPICreateModelWithoutSourceID(t *testing.T) {
 	ctx := context.Background()
 	state := model{
@@ -135,6 +203,27 @@ func TestModelToAPIUpdateModel(t *testing.T) {
 	require.True(t, *body.IsDefault)
 	require.NotNil(t, body.ProxyId)
 	require.Equal(t, "proxy-456", *body.ProxyId)
+}
+
+func TestModelToAPIUpdateModelIncludesBasicAuth(t *testing.T) {
+	ctx := context.Background()
+	plan := model{
+		Name:    types.StringValue("updated-name"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent-updated"),
+		Default: types.BoolValue(false),
+		Auth: &authModel{
+			Username: types.StringValue("svc-account"),
+			Password: types.StringValue("secret"),
+		},
+	}
+
+	body := plan.toAPIUpdateModel(ctx, model{})
+	require.NotNil(t, body.Auth)
+	require.NotNil(t, body.Auth.Username)
+	require.Equal(t, "svc-account", *body.Auth.Username)
+	require.NotNil(t, body.Auth.Password)
+	require.Equal(t, "secret", *body.Auth.Password)
+	require.Nil(t, body.Auth.ApiKey)
 }
 
 func TestModelToAPIUpdateModelClearsUnsetProxyID(t *testing.T) {

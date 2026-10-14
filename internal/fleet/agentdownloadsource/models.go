@@ -39,8 +39,28 @@ type model struct {
 	Host             types.String `tfsdk:"host"`
 	Default          types.Bool   `tfsdk:"default"`
 	ProxyID          types.String `tfsdk:"proxy_id"`
+	Auth             *authModel   `tfsdk:"auth"`
 	SpaceIDs         types.Set    `tfsdk:"space_ids"`         // > string
 	KibanaConnection types.List   `tfsdk:"kibana_connection"` // > provider schema connection block
+}
+
+type authModel struct {
+	Username types.String `tfsdk:"username"`
+	Password types.String `tfsdk:"password"`
+	APIKey   types.String `tfsdk:"api_key"`
+	Headers  types.List   `tfsdk:"headers"`
+}
+
+// downloadSourceAuth is the generated Fleet download-source auth object, shared by
+// the create request, update request, and read response.
+type downloadSourceAuth = struct {
+	ApiKey  *string `json:"api_key,omitempty"` //nolint:revive // matches the generated kbapi field name
+	Headers *[]struct {
+		Key   string `json:"key"`
+		Value string `json:"value"`
+	} `json:"headers,omitempty"`
+	Password *string `json:"password,omitempty"`
+	Username *string `json:"username,omitempty"`
 }
 
 var agentDownloadSourceMinVersion = version.Must(version.NewVersion("8.13.0"))
@@ -66,6 +86,7 @@ func (m model) toAPICreateModel(_ context.Context) kbapi.PostFleetAgentDownloadS
 		Name:      m.Name.ValueString(),
 		IsDefault: m.Default.ValueBoolPointer(),
 		ProxyId:   m.ProxyID.ValueStringPointer(),
+		Auth:      m.authRequest(),
 	}
 
 	// The API allows setting a custom id only at creation time.
@@ -77,11 +98,24 @@ func (m model) toAPICreateModel(_ context.Context) kbapi.PostFleetAgentDownloadS
 	return body
 }
 
+func (m model) authRequest() *downloadSourceAuth {
+	if m.Auth == nil {
+		return nil
+	}
+
+	return &downloadSourceAuth{
+		ApiKey:   m.Auth.APIKey.ValueStringPointer(),
+		Password: m.Auth.Password.ValueStringPointer(),
+		Username: m.Auth.Username.ValueStringPointer(),
+	}
+}
+
 func (m model) toAPIUpdateModel(_ context.Context, prior model) kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody {
 	return kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{
 		Host:      m.Host.ValueString(),
 		Name:      m.Name.ValueString(),
 		IsDefault: m.Default.ValueBoolPointer(),
 		ProxyId:   fleet.ProxyIDForUpdate(m.ProxyID, prior.ProxyID),
+		Auth:      m.authRequest(),
 	}
 }

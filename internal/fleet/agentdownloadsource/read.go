@@ -24,7 +24,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -37,7 +39,7 @@ func readAgentDownloadSource(
 ) (model, bool, diag.Diagnostics) {
 	fleetClient := client.GetFleetClient()
 
-	return readAndHydrateState(ctx, fleetClient, resourceID, spaceID, prior.SpaceIDs, prior.KibanaConnection)
+	return readAndHydrateState(ctx, fleetClient, resourceID, spaceID, prior.SpaceIDs, prior.KibanaConnection, prior.Auth)
 }
 
 func readAndHydrateState(
@@ -47,6 +49,7 @@ func readAndHydrateState(
 	spaceID string,
 	preservedSpaceIDs types.Set,
 	preservedKibanaConnection types.List,
+	fallbackAuth *authModel,
 ) (model, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	var state model
@@ -89,5 +92,48 @@ func readAndHydrateState(
 	state.ProxyID = typeutils.NonEmptyStringishPointerValue(item.ProxyId)
 	state.SpaceIDs = preservedSpaceIDs
 	state.KibanaConnection = preservedKibanaConnection
+	state.Auth = hydrateAuth(ctx, item.Auth, fallbackAuth)
 	return state, true, diags
+}
+
+func hydrateAuth(ctx context.Context, apiAuth *downloadSourceAuth, fallback *authModel) *authModel {
+	if apiAuth == nil && fallback == nil {
+		return nil
+	}
+
+	var apiUsername, apiPassword, apiKey *string
+	if apiAuth != nil {
+		apiUsername = apiAuth.Username
+		apiPassword = apiAuth.Password
+		apiKey = apiAuth.ApiKey
+	}
+
+	var fallbackPassword, fallbackAPIKey types.String
+	if fallback != nil {
+		fallbackPassword = fallback.Password
+		fallbackAPIKey = fallback.APIKey
+	}
+
+	return &authModel{
+		Username: types.StringPointerValue(apiUsername),
+		Password: preserveRedactedSecret(apiPassword, fallbackPassword),
+		APIKey:   preserveRedactedSecret(apiKey, fallbackAPIKey),
+		Headers:  types.ListNull(authHeadersElementType(ctx)),
+	}
+}
+
+func preserveRedactedSecret(apiValue *string, fallback types.String) types.String {
+	switch {
+	case apiValue != nil:
+		return types.StringPointerValue(apiValue)
+	case typeutils.IsKnown(fallback):
+		return fallback
+	default:
+		return types.StringNull()
+	}
+}
+
+func authHeadersElementType(ctx context.Context) attr.Type {
+	authAttr := getSchema(ctx).Attributes["auth"].(schema.SingleNestedAttribute)
+	return authAttr.Attributes["headers"].GetType().(attr.TypeWithElementType).ElementType()
 }
