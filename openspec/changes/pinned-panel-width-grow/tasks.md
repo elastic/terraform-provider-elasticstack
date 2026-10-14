@@ -19,16 +19,16 @@
 
 ## 2. `width`/`grow` round-trip correctly on refresh and import
 
-- [ ] 2.1 In the new read callback, branch on whether `prior *models.PinnedPanelModel` (already a
-      `FromAPI` parameter) is nil: when nil (import, or no prior entry matched by type), set
-      `width`/`grow` directly from the API's `Width`/`Grow` pointer; when non-nil, use
-      `PreserveString`/`PreserveBool` (`internal/kibana/dashboard/panelkit/nullpreserve.go`) against
+- [ ] 2.1 In the new read callback, treat prior state as reusable only when `prior` is non-nil, its
+      `Type` is known, and it matches the current API discriminator. When no same-type prior exists
+      (import, a missing index, or a type change at that list position), set `width`/`grow` directly
+      from the API's `Width`/`Grow` pointers; otherwise use `PreserveString`/`PreserveBool` against
       `prior.Width`/`prior.Grow`.
 - [ ] 2.2 Unit-test `pinned_panels_mapping_test.go` (or the per-control-type model tests) for all four
       control types covering: omitted `width`/`grow` on refresh with a non-null API default (stays
       null, no diff), a configured `small`/`false` or `large`/`true` value round-tripping unchanged,
-      drift when the API value changes while a prior value exists, and the no-prior/import branch
-      reading the API value directly.
+      drift when the API value changes while a same-type prior exists, a different control type at
+      the same list position reading API values directly, and the no-prior/import branch.
 - [ ] 2.3 Add or extend acceptance test coverage in
       `internal/kibana/dashboard/acc_pinned_panels_test.go` (using
       `testdata/TestAccResourceKibanaDashboardPinnedPanels/...`) for at least the options-list control

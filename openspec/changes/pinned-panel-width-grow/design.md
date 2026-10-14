@@ -74,16 +74,14 @@ either direction in either `ToAPI` or `FromAPI` — this is the literal mechanis
    The package's convention is explicit null-preservation, not unconditional copy of the API value:
    `PreserveString`/`PreserveBool` (`internal/kibana/dashboard/panelkit/nullpreserve.go`) return the
    existing Terraform value unchanged when it is null/unknown, and only convert the API pointer to a
-   Terraform value otherwise. `FromAPI` already receives `prior *models.PinnedPanelModel` directly
-   (`control_pinned_handler.go`'s `FromAPI` signature), and on a fresh `terraform import` (or when no
-   prior entry matches by type) that `prior` pointer is nil — there is no previous Terraform value to
-   preserve. The new read callback must therefore branch explicitly: when `prior == nil`, set
-   `width`/`grow` directly from the API's `Width`/`Grow` pointer (nil pointer → null Terraform value);
-   when `prior != nil`, use `PreserveString`/`PreserveBool` against `prior.Width`/`prior.Grow` so an
-   omitted config value that reads back as the server default (`medium`/`false`) stays null instead
-   of being overwritten. This mirrors the existing import-vs-refresh branching pattern already used
-   elsewhere in the dashboard package for the same reason (e.g. `internal/kibana/dashboard/panel/
-   optionslist/model.go`, `internal/kibana/dashboard/panel/rangeslider/model.go`).
+   `ControlPinnedHandler.FromAPI` receives the prior panel at the same list index, which is not
+   necessarily the same control type as the API response. The read callback must therefore use the
+   same type-match criterion as `SeedPinnedPanelForRead`: when `prior` is nil, its type is unknown,
+   or its type differs from the current discriminator, set `width`/`grow` directly from the API's
+   `Width`/`Grow` pointers (nil pointer → null Terraform value). When a same-type prior exists, use
+   `PreserveString`/`PreserveBool` against `prior.Width`/`prior.Grow` so an omitted config value that
+   reads back as the server default (`medium`/`false`) stays null instead of being overwritten. This
+   mirrors the existing import-vs-refresh and type-change branching used by the pinned-panel path.
 
 4. **Validator and type conversion for `width`**
    The Terraform attribute is a plain `types.String` validated with `stringvalidator.OneOf("small",
