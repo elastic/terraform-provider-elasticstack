@@ -18,6 +18,7 @@
 package dashboard
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -25,6 +26,7 @@ import (
 	"sync/atomic"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -32,8 +34,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
-
-const durationFormatParamsMinVersionMessage = `format.type "duration" with "decimals"/"compact" requires Elastic Stack 9.5.2 or later; remove these properties or upgrade Kibana.`
 
 func durationFormatConfigJSON() jsontypes.Normalized {
 	return jsontypes.NewNormalizedValue(`{"format":{"type":"duration","from":"s","to":"ms","decimals":0,"compact":true}}`)
@@ -114,6 +114,60 @@ func statefulStatusBody(versionNumber string) map[string]any {
 	}
 }
 
+type dashboardWriteFunc func(context.Context, *clients.KibanaScopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]) (entitycore.KibanaWriteResult[models.DashboardModel], diag.Diagnostics)
+
+func forEachDashboardWrite(t *testing.T, fn func(t *testing.T, id types.String, write dashboardWriteFunc)) {
+	t.Helper()
+	for _, op := range []struct {
+		name  string
+		id    types.String
+		write dashboardWriteFunc
+	}{
+		{name: "create", id: types.StringNull(), write: createDashboard},
+		{name: "update", id: types.StringValue("dash-1"), write: updateDashboard},
+	} {
+		t.Run(op.name, func(t *testing.T) {
+			fn(t, op.id, op.write)
+		})
+	}
+}
+
+func writeDashboard(
+	t *testing.T,
+	write dashboardWriteFunc,
+	statusCode int,
+	statusBody any,
+	plan models.DashboardModel,
+	countStatus bool,
+) (entitycore.KibanaWriteResult[models.DashboardModel], diag.Diagnostics, *atomic.Int32, *atomic.Int32) {
+	t.Helper()
+	var dashboardWrites atomic.Int32
+	var statusCalls atomic.Int32
+	var statusCounter *atomic.Int32
+	if countStatus {
+		statusCounter = &statusCalls
+	}
+	server := newDashboardWriteServer(t, statusCode, statusBody, &dashboardWrites, statusCounter)
+	result, diags := write(t.Context(), newTestKibanaScopedClient(t, server), entitycore.KibanaWriteRequest[models.DashboardModel]{
+		Plan:    plan,
+		WriteID: plan.GetResourceID().ValueString(),
+		SpaceID: plan.GetSpaceID().ValueString(),
+	})
+	return result, diags, &dashboardWrites, &statusCalls
+}
+
+func planWithPanel(id types.String, panel models.PanelModel) models.DashboardModel {
+	plan := testDashboardPlanModel(id)
+	plan.Panels = []models.PanelModel{panel}
+	return plan
+}
+
+func panelWithConfigJSON(configJSON string) models.PanelModel {
+	panel := durationFormatXYPanel()
+	panel.VisConfig.ByValue.XYChartConfig.Layers[0].DataLayer.Y[0].ConfigJSON = jsontypes.NewNormalizedValue(configJSON)
+	return panel
+}
+
 func requireDurationFormatRejected(t *testing.T, diags diag.Diagnostics, resultID types.String, dashboardWrites *atomic.Int32, pathParts ...string) {
 	t.Helper()
 	require.True(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
@@ -121,252 +175,107 @@ func requireDurationFormatRejected(t *testing.T, diags diag.Diagnostics, resultI
 	for _, part := range pathParts {
 		require.Contains(t, text, part)
 	}
-	require.Contains(t, text, durationFormatParamsMinVersionMessage)
+	require.Contains(t, text, durationFormatParamsRequirement)
 	require.Equal(t, int32(0), dashboardWrites.Load())
 	require.True(t, resultID.IsNull() || resultID.ValueString() == "")
 }
 
-func TestCreateDashboard_rejectsDurationFormatWithDecimalsAndCompactOnOlderStack(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.5.1"), &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringNull())
-	planModel.Panels = []models.PanelModel{durationFormatXYPanel()}
-
-	result, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	requireDurationFormatRejected(t, diags, result.Model.ID, &dashboardWrites, "panels[0]", `id "latency"`, "layer 0", "metric 0")
-}
-
-func TestUpdateDashboard_rejectsDurationFormatWithDecimalsAndCompactOnOlderStack(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.5.1"), &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringValue("dash-1"))
-	planModel.Panels = []models.PanelModel{durationFormatXYPanel()}
-
-	result, diags := updateDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	requireDurationFormatRejected(t, diags, result.Model.ID, &dashboardWrites, "panels[0]", `id "latency"`, "layer 0", "metric 0")
-}
-
-func TestCreateDashboard_propagatesStatusRetrievalFailureDuringVersionCheck(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusInternalServerError, "kibana status unavailable", &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringNull())
-	planModel.Panels = []models.PanelModel{durationFormatXYPanel()}
-
-	_, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	require.True(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	text := diagnosticText(diags)
-	require.Contains(t, text, "Unexpected status code from server: got HTTP 500")
-	require.Contains(t, text, "kibana status unavailable")
-	require.NotContains(t, text, durationFormatParamsMinVersionMessage)
-	require.Equal(t, int32(0), dashboardWrites.Load())
-}
-
-func TestCreateDashboard_propagatesVersionParsingFailureDuringVersionCheck(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("not-a-version"), &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringNull())
-	planModel.Panels = []models.PanelModel{durationFormatXYPanel()}
-
-	_, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	require.True(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	text := diagnosticText(diags)
-	require.Contains(t, text, "malformed version: not-a-version")
-	require.NotContains(t, text, durationFormatParamsMinVersionMessage)
-	require.Equal(t, int32(0), dashboardWrites.Load())
-}
-
-func TestCreateDashboard_rejectsDurationFormatNestedInSectionOnOlderStack(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.5.1"), &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringNull())
-	planModel.Sections = []models.SectionModel{{
-		ID:     types.StringValue("overview"),
-		Panels: []models.PanelModel{durationFormatXYPanel()},
-	}}
-
-	result, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	requireDurationFormatRejected(t, diags, result.Model.ID, &dashboardWrites, "sections[0].panels[0]", `id "latency"`, "layer 0", "metric 0")
-}
-
-func TestCreateDashboard_allowsDurationFormatParamsAtMinimumVersion(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.5.2"), &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringNull())
-	planModel.Panels = []models.PanelModel{durationFormatXYPanel()}
-
-	_, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
+func requireWriteProceeded(t *testing.T, diags diag.Diagnostics, dashboardWrites, statusCalls *atomic.Int32) {
+	t.Helper()
 	require.False(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	require.NotContains(t, diagnosticText(diags), durationFormatParamsMinVersionMessage)
+	require.NotContains(t, diagnosticText(diags), durationFormatParamsRequirement)
 	require.Equal(t, int32(1), dashboardWrites.Load())
+	if statusCalls != nil {
+		require.Equal(t, int32(0), statusCalls.Load())
+	}
 }
 
-func TestUpdateDashboard_allowsDurationFormatParamsAtMinimumVersion(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.5.2"), &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringValue("dash-1"))
-	planModel.Panels = []models.PanelModel{durationFormatXYPanel()}
-
-	_, diags := updateDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
+func TestDashboardWrite_rejectsDurationFormatWithDecimalsAndCompactOnOlderStack(t *testing.T) {
+	forEachDashboardWrite(t, func(t *testing.T, id types.String, write dashboardWriteFunc) {
+		result, diags, writes, _ := writeDashboard(t, write, http.StatusOK, statefulStatusBody("9.5.1"), planWithPanel(id, durationFormatXYPanel()), false)
+		requireDurationFormatRejected(t, diags, result.Model.ID, writes, "panels[0]", `id "latency"`, "layer 0", "metric 0")
 	})
-
-	require.False(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	require.NotContains(t, diagnosticText(diags), durationFormatParamsMinVersionMessage)
-	require.Equal(t, int32(1), dashboardWrites.Load())
 }
 
-func TestUpdateDashboard_rejectsDurationFormatNestedInSectionOnOlderStack(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.5.1"), &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringValue("dash-1"))
-	planModel.Sections = []models.SectionModel{{
-		ID:     types.StringValue("overview"),
-		Panels: []models.PanelModel{durationFormatXYPanel()},
-	}}
-
-	result, diags := updateDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
+func TestDashboardWrite_propagatesStatusRetrievalFailureDuringVersionCheck(t *testing.T) {
+	forEachDashboardWrite(t, func(t *testing.T, id types.String, write dashboardWriteFunc) {
+		_, diags, writes, _ := writeDashboard(t, write, http.StatusInternalServerError, "kibana status unavailable", planWithPanel(id, durationFormatXYPanel()), false)
+		text := diagnosticText(diags)
+		require.True(t, diags.HasError(), "diagnostics: %s", text)
+		require.Contains(t, text, "Unexpected status code from server: got HTTP 500")
+		require.Contains(t, text, "kibana status unavailable")
+		require.NotContains(t, text, durationFormatParamsRequirement)
+		require.Equal(t, int32(0), writes.Load())
 	})
-
-	requireDurationFormatRejected(t, diags, result.Model.ID, &dashboardWrites, "sections[0].panels[0]", `id "latency"`, "layer 0", "metric 0")
 }
 
-func TestCreateDashboard_skipsVersionCheckWithoutDurationFormatParams(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	var statusCalls atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.4.0"), &dashboardWrites, &statusCalls)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringNull())
-
-	_, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
+func TestDashboardWrite_propagatesVersionParsingFailureDuringVersionCheck(t *testing.T) {
+	forEachDashboardWrite(t, func(t *testing.T, id types.String, write dashboardWriteFunc) {
+		_, diags, writes, _ := writeDashboard(t, write, http.StatusOK, statefulStatusBody("not-a-version"), planWithPanel(id, durationFormatXYPanel()), false)
+		text := diagnosticText(diags)
+		require.True(t, diags.HasError(), "diagnostics: %s", text)
+		require.Contains(t, text, "malformed version: not-a-version")
+		require.NotContains(t, text, durationFormatParamsRequirement)
+		require.Equal(t, int32(0), writes.Load())
 	})
-
-	require.False(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	require.Equal(t, int32(1), dashboardWrites.Load())
-	require.Equal(t, int32(0), statusCalls.Load())
 }
 
-func TestUpdateDashboard_skipsVersionCheckWithoutDurationFormatParams(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	var statusCalls atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.4.0"), &dashboardWrites, &statusCalls)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringValue("dash-1"))
-
-	_, diags := updateDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
+func TestDashboardWrite_rejectsDurationFormatNestedInSectionOnOlderStack(t *testing.T) {
+	forEachDashboardWrite(t, func(t *testing.T, id types.String, write dashboardWriteFunc) {
+		plan := testDashboardPlanModel(id)
+		plan.Sections = []models.SectionModel{{
+			ID:     types.StringValue("overview"),
+			Panels: []models.PanelModel{durationFormatXYPanel()},
+		}}
+		result, diags, writes, _ := writeDashboard(t, write, http.StatusOK, statefulStatusBody("9.5.1"), plan, false)
+		requireDurationFormatRejected(t, diags, result.Model.ID, writes, "sections[0].panels[0]", `id "latency"`, "layer 0", "metric 0")
 	})
-
-	require.False(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	require.Equal(t, int32(1), dashboardWrites.Load())
-	require.Equal(t, int32(0), statusCalls.Load())
 }
 
-func TestUpdateDashboard_propagatesStatusRetrievalFailureDuringVersionCheck(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusInternalServerError, "kibana status unavailable", &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringValue("dash-1"))
-	planModel.Panels = []models.PanelModel{durationFormatXYPanel()}
-
-	_, diags := updateDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
+func TestDashboardWrite_allowsDurationFormatParamsAtMinimumVersion(t *testing.T) {
+	forEachDashboardWrite(t, func(t *testing.T, id types.String, write dashboardWriteFunc) {
+		_, diags, writes, _ := writeDashboard(t, write, http.StatusOK, statefulStatusBody("9.5.2"), planWithPanel(id, durationFormatXYPanel()), false)
+		requireWriteProceeded(t, diags, writes, nil)
 	})
-
-	require.True(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	text := diagnosticText(diags)
-	require.Contains(t, text, "Unexpected status code from server: got HTTP 500")
-	require.Contains(t, text, "kibana status unavailable")
-	require.NotContains(t, text, durationFormatParamsMinVersionMessage)
-	require.Equal(t, int32(0), dashboardWrites.Load())
 }
 
-func TestUpdateDashboard_propagatesVersionParsingFailureDuringVersionCheck(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("not-a-version"), &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringValue("dash-1"))
-	planModel.Panels = []models.PanelModel{durationFormatXYPanel()}
-
-	_, diags := updateDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
+func TestDashboardWrite_skipsVersionCheckWithoutDurationFormatParams(t *testing.T) {
+	forEachDashboardWrite(t, func(t *testing.T, id types.String, write dashboardWriteFunc) {
+		_, diags, writes, statusCalls := writeDashboard(t, write, http.StatusOK, statefulStatusBody("9.4.0"), testDashboardPlanModel(id), true)
+		requireWriteProceeded(t, diags, writes, statusCalls)
 	})
+}
 
-	require.True(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	text := diagnosticText(diags)
-	require.Contains(t, text, "malformed version: not-a-version")
-	require.NotContains(t, text, durationFormatParamsMinVersionMessage)
-	require.Equal(t, int32(0), dashboardWrites.Load())
+func TestDashboardWrite_allowsDurationFormatParamsOnServerless(t *testing.T) {
+	statusBody := map[string]any{
+		"version": map[string]any{
+			"number":       "9.4.0",
+			"build_flavor": "serverless",
+		},
+	}
+	forEachDashboardWrite(t, func(t *testing.T, id types.String, write dashboardWriteFunc) {
+		_, diags, writes, _ := writeDashboard(t, write, http.StatusOK, statusBody, planWithPanel(id, durationFormatXYPanel()), false)
+		requireWriteProceeded(t, diags, writes, nil)
+	})
+}
+
+func TestDashboardWrite_doesNotGateNumberFormatOnOlderStack(t *testing.T) {
+	forEachDashboardWrite(t, func(t *testing.T, id types.String, write dashboardWriteFunc) {
+		plan := planWithPanel(id, panelWithConfigJSON(`{"format":{"type":"number","decimals":0,"compact":true}}`))
+		_, diags, writes, statusCalls := writeDashboard(t, write, http.StatusOK, statefulStatusBody("9.4.0"), plan, true)
+		requireWriteProceeded(t, diags, writes, statusCalls)
+	})
+}
+
+func TestDashboardWrite_skipsVersionCheckForDurationFormatWithoutParams(t *testing.T) {
+	forEachDashboardWrite(t, func(t *testing.T, id types.String, write dashboardWriteFunc) {
+		plan := planWithPanel(id, panelWithConfigJSON(`{"format":{"type":"duration","from":"s","to":"ms"}}`))
+		_, diags, writes, statusCalls := writeDashboard(t, write, http.StatusOK, statefulStatusBody("9.4.0"), plan, true)
+		requireWriteProceeded(t, diags, writes, statusCalls)
+	})
 }
 
 func TestCreateDashboard_namesNestedLayerAndMetricIndexes(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.5.1"), &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
 	offending := durationFormatXYPanel()
 	offendingLayer := offending.VisConfig.ByValue.XYChartConfig.Layers[0]
 	offending.VisConfig.ByValue.XYChartConfig.Layers = []models.XYLayerModel{
@@ -388,300 +297,53 @@ func TestCreateDashboard_namesNestedLayerAndMetricIndexes(t *testing.T) {
 			},
 		},
 	}
+	plan := testDashboardPlanModel(types.StringNull())
+	plan.Panels = []models.PanelModel{{}, offending}
 
-	planModel := testDashboardPlanModel(types.StringNull())
-	planModel.Panels = []models.PanelModel{{}, offending}
-
-	result, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	requireDurationFormatRejected(t, diags, result.Model.ID, &dashboardWrites, "panels[1]", `id "latency"`, "layer 1", "metric 1")
-}
-
-func TestCreateDashboard_allowsDurationFormatParamsOnServerless(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	statusBody := map[string]any{
-		"version": map[string]any{
-			"number":       "9.4.0",
-			"build_flavor": "serverless",
-		},
-	}
-	server := newDashboardWriteServer(t, http.StatusOK, statusBody, &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringNull())
-	planModel.Panels = []models.PanelModel{durationFormatXYPanel()}
-
-	_, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	require.False(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	require.NotContains(t, diagnosticText(diags), durationFormatParamsMinVersionMessage)
-	require.Equal(t, int32(1), dashboardWrites.Load())
-}
-
-func TestUpdateDashboard_allowsDurationFormatParamsOnServerless(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	statusBody := map[string]any{
-		"version": map[string]any{
-			"number":       "9.4.0",
-			"build_flavor": "serverless",
-		},
-	}
-	server := newDashboardWriteServer(t, http.StatusOK, statusBody, &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	planModel := testDashboardPlanModel(types.StringValue("dash-1"))
-	planModel.Panels = []models.PanelModel{durationFormatXYPanel()}
-
-	_, diags := updateDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	require.False(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	require.NotContains(t, diagnosticText(diags), durationFormatParamsMinVersionMessage)
-	require.Equal(t, int32(1), dashboardWrites.Load())
-}
-
-func TestCreateDashboard_doesNotGateNumberFormatOnOlderStack(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	var statusCalls atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.4.0"), &dashboardWrites, &statusCalls)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	panel := durationFormatXYPanel()
-	panel.VisConfig.ByValue.XYChartConfig.Layers[0].DataLayer.Y[0].ConfigJSON = jsontypes.NewNormalizedValue(
-		`{"format":{"type":"number","decimals":0,"compact":true}}`,
-	)
-	planModel := testDashboardPlanModel(types.StringNull())
-	planModel.Panels = []models.PanelModel{panel}
-
-	_, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	require.False(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	require.Equal(t, int32(1), dashboardWrites.Load())
-	require.Equal(t, int32(0), statusCalls.Load())
+	result, diags, writes, _ := writeDashboard(t, createDashboard, http.StatusOK, statefulStatusBody("9.5.1"), plan, false)
+	requireDurationFormatRejected(t, diags, result.Model.ID, writes, "panels[1]", `id "latency"`, "layer 1", "metric 1")
 }
 
 func TestCreateDashboard_skipsVersionCheckForNullFormat(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	var statusCalls atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.4.0"), &dashboardWrites, &statusCalls)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	panel := durationFormatXYPanel()
-	panel.VisConfig.ByValue.XYChartConfig.Layers[0].DataLayer.Y[0].ConfigJSON = jsontypes.NewNormalizedValue(`{"format":null}`)
-	planModel := testDashboardPlanModel(types.StringNull())
-	planModel.Panels = []models.PanelModel{panel}
-
-	_, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	require.False(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	require.NotContains(t, diagnosticText(diags), durationFormatParamsMinVersionMessage)
-	require.Equal(t, int32(1), dashboardWrites.Load())
-	require.Equal(t, int32(0), statusCalls.Load())
-}
-
-func TestCreateDashboard_skipsVersionCheckForDurationFormatWithoutParams(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	var statusCalls atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.4.0"), &dashboardWrites, &statusCalls)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	panel := durationFormatXYPanel()
-	panel.VisConfig.ByValue.XYChartConfig.Layers[0].DataLayer.Y[0].ConfigJSON = jsontypes.NewNormalizedValue(
-		`{"format":{"type":"duration","from":"s","to":"ms"}}`,
-	)
-	planModel := testDashboardPlanModel(types.StringNull())
-	planModel.Panels = []models.PanelModel{panel}
-
-	_, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	require.False(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	require.NotContains(t, diagnosticText(diags), durationFormatParamsMinVersionMessage)
-	require.Equal(t, int32(1), dashboardWrites.Load())
-	require.Equal(t, int32(0), statusCalls.Load())
-}
-
-func TestUpdateDashboard_doesNotGateNumberFormatOnOlderStack(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	var statusCalls atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.4.0"), &dashboardWrites, &statusCalls)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	panel := durationFormatXYPanel()
-	panel.VisConfig.ByValue.XYChartConfig.Layers[0].DataLayer.Y[0].ConfigJSON = jsontypes.NewNormalizedValue(
-		`{"format":{"type":"number","decimals":0,"compact":true}}`,
-	)
-	planModel := testDashboardPlanModel(types.StringValue("dash-1"))
-	planModel.Panels = []models.PanelModel{panel}
-
-	_, diags := updateDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	require.False(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	require.NotContains(t, diagnosticText(diags), durationFormatParamsMinVersionMessage)
-	require.Equal(t, int32(1), dashboardWrites.Load())
-	require.Equal(t, int32(0), statusCalls.Load())
+	plan := planWithPanel(types.StringNull(), panelWithConfigJSON(`{"format":null}`))
+	_, diags, writes, statusCalls := writeDashboard(t, createDashboard, http.StatusOK, statefulStatusBody("9.4.0"), plan, true)
+	requireWriteProceeded(t, diags, writes, statusCalls)
 }
 
 func TestCreateDashboard_doesNotGatePercentFormatOnOlderStack(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	var statusCalls atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.4.0"), &dashboardWrites, &statusCalls)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	panel := durationFormatXYPanel()
-	panel.VisConfig.ByValue.XYChartConfig.Layers[0].DataLayer.Y[0].ConfigJSON = jsontypes.NewNormalizedValue(
-		`{"format":{"type":"percent","decimals":0,"compact":true}}`,
-	)
-	planModel := testDashboardPlanModel(types.StringNull())
-	planModel.Panels = []models.PanelModel{panel}
-
-	_, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	require.False(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	require.NotContains(t, diagnosticText(diags), durationFormatParamsMinVersionMessage)
-	require.Equal(t, int32(1), dashboardWrites.Load())
-	require.Equal(t, int32(0), statusCalls.Load())
+	plan := planWithPanel(types.StringNull(), panelWithConfigJSON(`{"format":{"type":"percent","decimals":0,"compact":true}}`))
+	_, diags, writes, statusCalls := writeDashboard(t, createDashboard, http.StatusOK, statefulStatusBody("9.4.0"), plan, true)
+	requireWriteProceeded(t, diags, writes, statusCalls)
 }
 
-func TestUpdateDashboard_skipsVersionCheckForDurationFormatWithoutParams(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	var statusCalls atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.4.0"), &dashboardWrites, &statusCalls)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
+func TestCreateDashboard_rejectsDurationFormatWithNullPanelIDOnOlderStack(t *testing.T) {
 	panel := durationFormatXYPanel()
-	panel.VisConfig.ByValue.XYChartConfig.Layers[0].DataLayer.Y[0].ConfigJSON = jsontypes.NewNormalizedValue(
-		`{"format":{"type":"duration","from":"s","to":"ms"}}`,
-	)
-	planModel := testDashboardPlanModel(types.StringValue("dash-1"))
-	planModel.Panels = []models.PanelModel{panel}
-
-	_, diags := updateDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	require.False(t, diags.HasError(), "diagnostics: %s", diagnosticText(diags))
-	require.NotContains(t, diagnosticText(diags), durationFormatParamsMinVersionMessage)
-	require.Equal(t, int32(1), dashboardWrites.Load())
-	require.Equal(t, int32(0), statusCalls.Load())
+	panel.ID = types.StringNull()
+	result, diags, writes, _ := writeDashboard(t, createDashboard, http.StatusOK, statefulStatusBody("9.5.1"), planWithPanel(types.StringNull(), panel), false)
+	text := diagnosticText(diags)
+	requireDurationFormatRejected(t, diags, result.Model.ID, writes, "panels[0]", "layer 0", "metric 0")
+	require.NotContains(t, text, "id ")
 }
 
-func TestCreateDashboard_rejectsDurationFormatShapesOnOlderStack(t *testing.T) {
+func TestMetricUsesUnsupportedDurationParamsJSONShapes(t *testing.T) {
 	tests := []struct {
 		name       string
 		configJSON string
 	}{
-		{
-			name:       "format id duration with decimals only",
-			configJSON: `{"format":{"id":"duration","decimals":0}}`,
-		},
-		{
-			name:       "format id duration with compact only",
-			configJSON: `{"format":{"id":"duration","compact":true}}`,
-		},
-		{
-			name:       "format id duration with decimals and compact",
-			configJSON: `{"format":{"id":"duration","decimals":0,"compact":true}}`,
-		},
-		{
-			name:       "format id duration with decimals under params",
-			configJSON: `{"format":{"id":"duration","params":{"decimals":0}}}`,
-		},
-		{
-			name:       "format id duration with compact under params",
-			configJSON: `{"format":{"id":"duration","params":{"compact":true}}}`,
-		},
-		{
-			name:       "format type duration with decimals only",
-			configJSON: `{"format":{"type":"duration","decimals":0}}`,
-		},
-		{
-			name:       "format type duration with compact only",
-			configJSON: `{"format":{"type":"duration","compact":true}}`,
-		},
-		{
-			name:       "format type duration with decimals under params",
-			configJSON: `{"format":{"type":"duration","params":{"decimals":0}}}`,
-		},
-		{
-			name:       "format type duration with compact under params",
-			configJSON: `{"format":{"type":"duration","params":{"compact":true}}}`,
-		},
-		{
-			name:       "format type duration with decimals and compact under params",
-			configJSON: `{"format":{"type":"duration","params":{"decimals":0,"compact":true}}}`,
-		},
+		{name: "format id duration with decimals only", configJSON: `{"format":{"id":"duration","decimals":0}}`},
+		{name: "format id duration with compact only", configJSON: `{"format":{"id":"duration","compact":true}}`},
+		{name: "format id duration with decimals and compact", configJSON: `{"format":{"id":"duration","decimals":0,"compact":true}}`},
+		{name: "format id duration with decimals under params", configJSON: `{"format":{"id":"duration","params":{"decimals":0}}}`},
+		{name: "format id duration with compact under params", configJSON: `{"format":{"id":"duration","params":{"compact":true}}}`},
+		{name: "format type duration with decimals only", configJSON: `{"format":{"type":"duration","decimals":0}}`},
+		{name: "format type duration with compact only", configJSON: `{"format":{"type":"duration","compact":true}}`},
+		{name: "format type duration with decimals under params", configJSON: `{"format":{"type":"duration","params":{"decimals":0}}}`},
+		{name: "format type duration with compact under params", configJSON: `{"format":{"type":"duration","params":{"compact":true}}}`},
+		{name: "format type duration with decimals and compact under params", configJSON: `{"format":{"type":"duration","params":{"decimals":0,"compact":true}}}`},
 	}
-
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			var dashboardWrites atomic.Int32
-			server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.5.1"), &dashboardWrites, nil)
-
-			scopedClient := newTestKibanaScopedClient(t, server)
-			panel := durationFormatXYPanel()
-			panel.VisConfig.ByValue.XYChartConfig.Layers[0].DataLayer.Y[0].ConfigJSON = jsontypes.NewNormalizedValue(tc.configJSON)
-			planModel := testDashboardPlanModel(types.StringNull())
-			planModel.Panels = []models.PanelModel{panel}
-
-			result, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-				Plan:    planModel,
-				WriteID: planModel.GetResourceID().ValueString(),
-				SpaceID: planModel.GetSpaceID().ValueString(),
-			})
-
-			requireDurationFormatRejected(t, diags, result.Model.ID, &dashboardWrites, "panels[0]", `id "latency"`, "layer 0", "metric 0")
+			require.True(t, metricUsesUnsupportedDurationParams(jsontypes.NewNormalizedValue(tc.configJSON)))
 		})
 	}
-}
-
-func TestCreateDashboard_rejectsDurationFormatWithNullPanelIDOnOlderStack(t *testing.T) {
-	var dashboardWrites atomic.Int32
-	server := newDashboardWriteServer(t, http.StatusOK, statefulStatusBody("9.5.1"), &dashboardWrites, nil)
-
-	scopedClient := newTestKibanaScopedClient(t, server)
-	panel := durationFormatXYPanel()
-	panel.ID = types.StringNull()
-	planModel := testDashboardPlanModel(types.StringNull())
-	planModel.Panels = []models.PanelModel{panel}
-
-	result, diags := createDashboard(t.Context(), scopedClient, entitycore.KibanaWriteRequest[models.DashboardModel]{
-		Plan:    planModel,
-		WriteID: planModel.GetResourceID().ValueString(),
-		SpaceID: planModel.GetSpaceID().ValueString(),
-	})
-
-	requireDurationFormatRejected(t, diags, result.Model.ID, &dashboardWrites, "panels[0]", "layer 0", "metric 0")
 }

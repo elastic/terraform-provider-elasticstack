@@ -23,220 +23,118 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestMetricFormatUsesUnsupportedDurationParams_decimalsWithoutCompact(t *testing.T) {
+func TestMetricFormatUsesUnsupportedDurationParams(t *testing.T) {
 	t.Parallel()
 
-	model := map[string]any{
-		"format": map[string]any{
-			"type":     "duration",
-			"from":     "s",
-			"to":       "ms",
-			"decimals": float64(0),
+	tests := []struct {
+		name  string
+		model map[string]any
+		want  bool
+	}{
+		{
+			name: "type decimals only",
+			model: map[string]any{"format": map[string]any{
+				"type": "duration", "from": "s", "to": "ms", "decimals": float64(0),
+			}},
+			want: true,
 		},
+		{
+			name: "type compact only",
+			model: map[string]any{"format": map[string]any{
+				"type": "duration", "from": "s", "to": "ms", "compact": true,
+			}},
+			want: true,
+		},
+		{
+			name: "type decimals and compact",
+			model: map[string]any{"format": map[string]any{
+				"type": "duration", "from": "s", "to": "ms", "decimals": float64(0), "compact": true,
+			}},
+			want: true,
+		},
+		{
+			name: "type decimals under params",
+			model: map[string]any{"format": map[string]any{
+				"type": "duration", "params": map[string]any{"decimals": float64(0)},
+			}},
+			want: true,
+		},
+		{
+			name: "type compact under params",
+			model: map[string]any{"format": map[string]any{
+				"type": "duration", "params": map[string]any{"compact": true},
+			}},
+			want: true,
+		},
+		{
+			name: "legacy id decimals",
+			model: map[string]any{"format": map[string]any{
+				"id": "duration", "decimals": float64(1),
+			}},
+			want: true,
+		},
+		{
+			name: "legacy id compact",
+			model: map[string]any{"format": map[string]any{
+				"id": "duration", "compact": true,
+			}},
+			want: true,
+		},
+		{
+			name: "legacy id decimals and compact",
+			model: map[string]any{"format": map[string]any{
+				"id": "duration", "decimals": float64(0), "compact": true,
+			}},
+			want: true,
+		},
+		{
+			name: "legacy id decimals under params",
+			model: map[string]any{"format": map[string]any{
+				"id": "duration", "params": map[string]any{"decimals": float64(1)},
+			}},
+			want: true,
+		},
+		{
+			name: "legacy id compact under params",
+			model: map[string]any{"format": map[string]any{
+				"id": "duration", "params": map[string]any{"compact": true},
+			}},
+			want: true,
+		},
+		{
+			name: "type duration without params",
+			model: map[string]any{"format": map[string]any{
+				"type": "duration", "from": "s", "to": "ms",
+			}},
+		},
+		{
+			name: "legacy id without params",
+			model: map[string]any{"format": map[string]any{
+				"id": "duration", "from": "s", "to": "ms",
+			}},
+		},
+		{
+			name: "number format",
+			model: map[string]any{"format": map[string]any{
+				"type": "number", "decimals": float64(0), "compact": true,
+			}},
+		},
+		{
+			name: "percent params",
+			model: map[string]any{"format": map[string]any{
+				"type": "percent", "params": map[string]any{"compact": true, "decimals": float64(2)},
+			}},
+		},
+		{name: "null format", model: map[string]any{"format": nil}},
+		{name: "nil model"},
+		{name: "missing format", model: map[string]any{}},
+		{name: "format is not a map", model: map[string]any{"format": "duration"}},
 	}
 
-	assert.True(t, MetricFormatUsesUnsupportedDurationParams(model))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_decimalsUnderParams(t *testing.T) {
-	t.Parallel()
-
-	model := map[string]any{
-		"format": map[string]any{
-			"type": "duration",
-			"params": map[string]any{
-				"decimals": float64(0),
-			},
-		},
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			assert.Equal(t, tc.want, MetricFormatUsesUnsupportedDurationParams(tc.model))
+		})
 	}
-
-	assert.True(t, MetricFormatUsesUnsupportedDurationParams(model))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_compactUnderParams(t *testing.T) {
-	t.Parallel()
-
-	model := map[string]any{
-		"format": map[string]any{
-			"type": "duration",
-			"params": map[string]any{
-				"compact": true,
-			},
-		},
-	}
-
-	assert.True(t, MetricFormatUsesUnsupportedDurationParams(model))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_legacyIDSpelling(t *testing.T) {
-	t.Parallel()
-
-	model := map[string]any{
-		"format": map[string]any{
-			"id":       "duration",
-			"decimals": float64(1),
-		},
-	}
-
-	assert.True(t, MetricFormatUsesUnsupportedDurationParams(model))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_legacyIDCompactOnly(t *testing.T) {
-	t.Parallel()
-
-	model := map[string]any{
-		"format": map[string]any{
-			"id":      "duration",
-			"compact": true,
-		},
-	}
-
-	assert.True(t, MetricFormatUsesUnsupportedDurationParams(model))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_legacyIDDecimalsAndCompact(t *testing.T) {
-	t.Parallel()
-
-	model := map[string]any{
-		"format": map[string]any{
-			"id":       "duration",
-			"decimals": float64(0),
-			"compact":  true,
-		},
-	}
-
-	assert.True(t, MetricFormatUsesUnsupportedDurationParams(model))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_legacyIDDecimalsUnderParams(t *testing.T) {
-	t.Parallel()
-
-	model := map[string]any{
-		"format": map[string]any{
-			"id": "duration",
-			"params": map[string]any{
-				"decimals": float64(1),
-			},
-		},
-	}
-
-	assert.True(t, MetricFormatUsesUnsupportedDurationParams(model))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_legacyIDCompactUnderParams(t *testing.T) {
-	t.Parallel()
-
-	model := map[string]any{
-		"format": map[string]any{
-			"id": "duration",
-			"params": map[string]any{
-				"compact": true,
-			},
-		},
-	}
-
-	assert.True(t, MetricFormatUsesUnsupportedDurationParams(model))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_legacyIDWithoutParams(t *testing.T) {
-	t.Parallel()
-
-	model := map[string]any{
-		"format": map[string]any{
-			"id":   "duration",
-			"from": "s",
-			"to":   "ms",
-		},
-	}
-
-	assert.False(t, MetricFormatUsesUnsupportedDurationParams(model))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_durationWithoutParams(t *testing.T) {
-	t.Parallel()
-
-	model := map[string]any{
-		"format": map[string]any{
-			"type": "duration",
-			"from": "s",
-			"to":   "ms",
-		},
-	}
-
-	assert.False(t, MetricFormatUsesUnsupportedDurationParams(model))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_numberFormat(t *testing.T) {
-	t.Parallel()
-
-	model := map[string]any{
-		"format": map[string]any{
-			"type":     "number",
-			"decimals": float64(0),
-			"compact":  true,
-		},
-	}
-
-	assert.False(t, MetricFormatUsesUnsupportedDurationParams(model))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_percentParams(t *testing.T) {
-	t.Parallel()
-
-	model := map[string]any{
-		"format": map[string]any{
-			"type": "percent",
-			"params": map[string]any{
-				"compact":  true,
-				"decimals": float64(2),
-			},
-		},
-	}
-
-	assert.False(t, MetricFormatUsesUnsupportedDurationParams(model))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_nullFormat(t *testing.T) {
-	t.Parallel()
-
-	assert.False(t, MetricFormatUsesUnsupportedDurationParams(map[string]any{"format": nil}))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_nilAndMissingFormat(t *testing.T) {
-	t.Parallel()
-
-	assert.False(t, MetricFormatUsesUnsupportedDurationParams(nil))
-	assert.False(t, MetricFormatUsesUnsupportedDurationParams(map[string]any{}))
-	assert.False(t, MetricFormatUsesUnsupportedDurationParams(map[string]any{"format": "duration"}))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_decimalsAndCompact(t *testing.T) {
-	t.Parallel()
-
-	model := map[string]any{
-		"format": map[string]any{
-			"type":     "duration",
-			"from":     "s",
-			"to":       "ms",
-			"decimals": float64(0),
-			"compact":  true,
-		},
-	}
-
-	assert.True(t, MetricFormatUsesUnsupportedDurationParams(model))
-}
-
-func TestMetricFormatUsesUnsupportedDurationParams_compactWithoutDecimals(t *testing.T) {
-	t.Parallel()
-
-	model := map[string]any{
-		"format": map[string]any{
-			"type":    "duration",
-			"from":    "s",
-			"to":      "ms",
-			"compact": true,
-		},
-	}
-
-	assert.True(t, MetricFormatUsesUnsupportedDurationParams(model))
 }

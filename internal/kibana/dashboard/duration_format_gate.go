@@ -31,7 +31,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-const durationFormatParamsRequirement = `format.type "duration" with "decimals"/"compact" requires Elastic Stack 9.5.2 or later; remove these properties or upgrade Kibana.`
+var durationFormatParamsRequirement = fmt.Sprintf(
+	`format.type "duration" with "decimals"/"compact" requires Elastic Stack %s or later; remove these properties or upgrade Kibana.`,
+	panelkit.MinKibanaAPISupportDurationFormatParams.Original(),
+)
 
 func enforceDurationFormatParamsVersion(ctx context.Context, client *clients.KibanaScopedClient, plan models.DashboardModel) diag.Diagnostics {
 	location, found := firstDurationFormatParams(plan)
@@ -68,10 +71,11 @@ func firstDurationFormatParams(plan models.DashboardModel) (string, bool) {
 
 func firstDurationFormatParamsInPanels(panels []models.PanelModel, pathPrefix string) (string, bool) {
 	for panelIdx, panel := range panels {
-		chart := xyChartConfig(panel)
-		if chart == nil {
+		blocks := visByValueChartBlocksFromPanel(&panel)
+		if blocks == nil || blocks.XYChartConfig == nil {
 			continue
 		}
+		chart := blocks.XYChartConfig
 		for layerIdx, layer := range chart.Layers {
 			if layer.DataLayer == nil {
 				continue
@@ -81,7 +85,7 @@ func firstDurationFormatParamsInPanels(panels []models.PanelModel, pathPrefix st
 					continue
 				}
 				label := fmt.Sprintf("%s[%d]", pathPrefix, panelIdx)
-				if typeutils.IsKnown(panel.ID) && panel.ID.ValueString() != "" {
+				if panel.ID.ValueString() != "" {
 					label += fmt.Sprintf(" (id %q)", panel.ID.ValueString())
 				}
 				return fmt.Sprintf("%s layer %d metric %d", label, layerIdx, metricIdx), true
@@ -89,13 +93,6 @@ func firstDurationFormatParamsInPanels(panels []models.PanelModel, pathPrefix st
 		}
 	}
 	return "", false
-}
-
-func xyChartConfig(panel models.PanelModel) *models.XYChartConfigModel {
-	if panel.VisConfig == nil || panel.VisConfig.ByValue == nil {
-		return nil
-	}
-	return panel.VisConfig.ByValue.XYChartConfig
 }
 
 func metricUsesUnsupportedDurationParams(config jsontypes.Normalized) bool {
