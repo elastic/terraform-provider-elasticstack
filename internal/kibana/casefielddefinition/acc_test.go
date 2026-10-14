@@ -228,6 +228,51 @@ func TestAccResourceKibanaCaseFieldDefinition(t *testing.T) {
 	})
 }
 
+// TestAccResourceKibanaCaseFieldDefinitionCreateAllFields applies the
+// all_fields config as the first step so name, description and is_global are
+// sent on POST.
+func TestAccResourceKibanaCaseFieldDefinitionCreateAllFields(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersion, versionutils.FlavorAny)
+
+	name := uniqueName()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_fields"),
+				ConfigVariables:          nameVars(name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "owner", "cases"),
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "description", "initial description"),
+					resource.TestCheckResourceAttr(resourceName, "is_global", "true"),
+					resource.TestCheckResourceAttrSet(resourceName, "field_definition_id"),
+					resource.TestCheckResourceAttrSet(resourceName, "display_order"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceKibanaCaseFieldDefinitionInvalidOwner verifies an owner outside
+// the allowed set is rejected at validation time (plan only, no API call).
+func TestAccResourceKibanaCaseFieldDefinitionInvalidOwner(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersion, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`(?is)Invalid Attribute Value Match.*owner|value must be one of`),
+			},
+		},
+	})
+}
+
 func TestAccResourceKibanaCaseFieldDefinitionNameMismatch(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersion, versionutils.FlavorAny)
 
