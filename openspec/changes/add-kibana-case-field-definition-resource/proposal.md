@@ -1,6 +1,6 @@
 ## Why
 
-In Elastic Stack 9.5, Kibana Cases moved custom fields out of the per-space case configuration and into a new, reusable field library defined as YAML (`POST /api/cases/field_definitions` and friends). Today the provider has no way to manage field library entries, so teams that declare their case configuration as code either fall back to manual UI changes or `terraform_data`/`local-exec`, neither of which gives state management or drift detection. This change is split out from [#5191](https://github.com/elastic/terraform-provider-elasticstack/issues/5191), which tracked the pre-9.5 case-configuration custom fields that the field library replaces; migration of those existing fields happens automatically server-side and needs no Terraform action.
+In Elastic Stack 9.5, the Kibana Cases UI moved (the public `/api/cases/field_definitions` API followed in 9.6.0, elastic/kibana#289790). Kibana Cases moved custom fields out of the per-space case configuration and into a new, reusable field library defined as YAML (`POST /api/cases/field_definitions` and friends). Today the provider has no way to manage field library entries, so teams that declare their case configuration as code either fall back to manual UI changes or `terraform_data`/`local-exec`, neither of which gives state management or drift detection. This change is split out from [#5191](https://github.com/elastic/terraform-provider-elasticstack/issues/5191), which tracked the pre-9.5 case-configuration custom fields that the field library replaces; migration of those existing fields happens automatically server-side and needs no Terraform action.
 
 Source: [elastic/terraform-provider-elasticstack#5192](https://github.com/elastic/terraform-provider-elasticstack/issues/5192).
 
@@ -33,5 +33,5 @@ Non-goals:
 
 - New Kibana resource package under `internal/kibana/`; the required API operations and types already exist in the generated Kibana client (`generated/kbapi`), so no client regeneration is expected.
 - New thin `internal/clients/kibanaoapi` wrapper for the field-definition CRUD calls.
-- User-facing documentation, an example, and a changelog entry.
-- Acceptance tests requiring a 9.6+ Kibana; some scenarios (partial-update semantics for `description`/`is_global`, named-space path routing) depend on probing a live cluster during implementation per the open questions in design.md.
+- User-facing documentation and an example.
+- Acceptance tests requiring a 9.6+ Kibana; some scenarios (partial-update semantics for `description`/`is_global`, named-space path routing) were resolved by probing a live 9.6 cluster during implementation (see design.md).

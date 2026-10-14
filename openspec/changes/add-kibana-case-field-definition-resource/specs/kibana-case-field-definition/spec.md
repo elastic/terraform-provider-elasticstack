@@ -67,7 +67,7 @@ Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-create
 
 - GIVEN the resource exists with `description` and `is_global` set
 - WHEN configuration removes those attributes and apply runs
-- THEN the API SHALL preserve the stored values (partial-update semantics, verified live on 9.6) and state SHALL keep them
+- THEN state SHALL keep the prior values (the provider carries them forward, and the API also preserves them on omission, verified live on 9.6)
 - AND setting `description = ""` SHALL clear the description
 
 #### Scenario: Invalid owner is rejected at validation

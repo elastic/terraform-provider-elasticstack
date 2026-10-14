@@ -487,3 +487,57 @@ func TestAccResourceKibanaCaseFieldDefinitionVersionGate(t *testing.T) {
 		},
 	})
 }
+
+// TestAccResourceKibanaCaseFieldDefinitionInvalidYAML verifies invalid YAML is
+// rejected at validation time, before any API call (the provider has no
+// reachable-API requirement for validation).
+func TestAccResourceKibanaCaseFieldDefinitionInvalidYAML(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersion, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`Invalid YAML`),
+			},
+		},
+	})
+}
+
+// TestAccResourceKibanaCaseFieldDefinitionKibanaConnection verifies a resource
+// with kibana_connection uses its scoped client: it succeeds with the real
+// endpoint and fails to connect when the block points at an unreachable one,
+// which could not happen if the provider-level client were used instead.
+func TestAccResourceKibanaCaseFieldDefinitionKibanaConnection(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersion, versionutils.FlavorAny)
+
+	name := uniqueName()
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheckWithExplicitKibanaEndpoint(t)
+			preCheck(t)
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          acctest.KibanaConnectionVariables(nameVars(name)),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: acctest.KibanaConnectionVariables(nameVars(name), config.Variables{
+					"kibana_endpoints": config.ListVariable(config.StringVariable("http://127.0.0.1:1")),
+				}),
+				ExpectError: regexp.MustCompile(`(?is)connection refused|dial|unable|failed`),
+			},
+		},
+	})
+}

@@ -87,13 +87,13 @@ Plan → `toAPICreateModel`/`toAPIUpdateModel` builds the write body → `Simple
 ### Testing approach
 
 - Unit tests for the model/API mapping (`description`/`is_global` present vs. absent, composite-id construction, version requirement) and the YAML custom-type validation path, following existing `agentbuilderworkflow` unit test patterns.
-- Acceptance tests in the package (see tasks.md) covering: minimal create, create with all optional fields, omission of `description`/`is_global`, update of `description` (set then remove, probing the actual clear-vs-preserve behavior), update of `is_global`, in-place update of non-identity YAML fields, reformat-only YAML update (semantic-equality no-op), replacement on a consistent `name` change, the 400 name-mismatch negative case, the 409 `field_identity_immutable` negative case, import by composite id, a named (non-default) space, normal destroy, external-deletion-then-refresh (kept as a distinct step from normal destroy), a 409 destroy-blocked negative case, and the resource-level version-gate diagnostic. Tests should resolve the open questions below as part of the acceptance-test work, and the schema/write mapping should be adjusted afterward if the probed behavior does not match the Computed-field assumption above.
+- Acceptance tests in the package (see tasks.md) covering: minimal create, create with all optional fields, omission of `description`/`is_global`, update of `description` (set, omit to confirm preserve-on-omit, clear with an empty string), update of `is_global`, in-place update of non-identity YAML fields, reformat-only YAML update (semantic-equality no-op), replacement on a consistent `name` change, the 400 name-mismatch negative case, the 409 `field_identity_immutable` negative case, import by composite id, a named (non-default) space, normal destroy, external-deletion-then-refresh (kept as a distinct step from normal destroy), a 409 destroy-blocked negative case, and the resource-level version-gate diagnostic. The open questions were resolved by live probing against a 9.6 stack (see Implementation findings); the mapping was adjusted accordingly.
 
 ## Open questions
 
-Resolved by live probing (see Implementation findings): omission semantics for `description`/`is_global`, named-space routing, and the 409 demotion message.
+Resolved by live probing (see Implementation findings): omission semantics for `description`/`is_global` and named-space routing. The 409 demotion message is accepted as unobserved: the case could not be reproduced, so it surfaces as the raw API error.
 
-- The 409 "cannot demote a global field linked to an active custom field in the Cases configuration" case was not reproducible without a Cases-configuration custom-field link and remains unobserved; it surfaces as the raw API error.
+- (Accepted, unobserved) The 409 "cannot demote a global field linked to an active custom field in the Cases configuration" case was not reproducible without a Cases-configuration custom-field link and remains unobserved; it surfaces as the raw API error.
 - Is a companion "case template" resource/data source (`/api/cases/templates`) planned that will reference this field by `name`/`field_definition_id`? Out of scope here, but affects whether `name`/`field_definition_id` need more prominent documentation as stable references.
 
 ## Implementation findings
@@ -114,9 +114,9 @@ Verified live on 2026-10-14 against a freshly pulled Kibana/Elasticsearch `9.6.0
 ## Risks / Trade-offs
 
 - [A mistyped `owner` or a `name`/`type` identity conflict only surfaces as an apply-time 400/409, not a plan-time validation error] → Accepted: documented in the schema description (see "Identity-mismatch errors are not special-cased"); no client-side YAML parsing is added to pre-empt it (see proposal non-goals).
-- [`description`/`is_global` Computed-field choice may not match the server's actual partial-update semantics once verified live] → Tracked as a blocking open question; the acceptance-test task group is scoped to resolve it and adjust the schema/mapping before this change is considered complete.
+- [`description`/`is_global` Computed-field choice may not match the server's actual partial-update semantics once verified live] → Resolved: live probing showed PUT preserves omitted values, so Optional+Computed with `UseStateForUnknown` is correct (see Implementation findings).
 - [The envelope enforces the version requirement on every lifecycle operation, including read and delete] → Accepted: a state entry against a pre-9.6 server is not expected in practice, since the resource could never have been created there.
-- [Reformat-only YAML edits may not produce an empty plan in practice, despite `NormalizedYamlType`'s semantic-equality hook] → Accepted as a documented v1 limitation if the acceptance test shows this, rather than a release blocker (see Schema mapping note on `definition`).
+- [Reformat-only YAML edits may not produce an empty plan in practice, despite `NormalizedYamlType`'s semantic-equality hook] → Confirmed live and accepted as a documented v1 limitation, not a release blocker (see Schema mapping note on `definition`).
 
 ## Migration Plan
 
