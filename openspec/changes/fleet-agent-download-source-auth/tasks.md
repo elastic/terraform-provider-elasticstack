@@ -27,8 +27,8 @@
 
 ## 5. Version gating
 
-- [ ] 5.1 Add the 9.4.0 version requirement in `GetVersionRequirements`, firing only when `auth` is non-null in the plan, using `entitycore.NewAttributeVersionRequirement`/`addMinimum` from `internal/fleet/agentpolicy/version_requirements.go:32-43`; keep the 8.13.0 resource baseline unchanged
-- [ ] 5.2 Add a negative version-gate case: auth is rejected below 9.4.0, while an otherwise-identical configuration without auth succeeds at the resource's 8.13.0 baseline, using existing version-skip/version-gate test helpers
+- [x] 5.1 Add the 9.4.0 version requirement in `GetVersionRequirements`, firing only when `auth` is non-null in the plan, using `entitycore.NewAttributeVersionRequirement`/`addMinimum` from `internal/fleet/agentpolicy/version_requirements.go:32-43`; keep the 8.13.0 resource baseline unchanged
+- [x] 5.2 Add a negative version-gate case: auth is rejected below 9.4.0, while an otherwise-identical configuration without auth succeeds at the resource's 8.13.0 baseline, using existing version-skip/version-gate test helpers
 
 ## 6. Spec sync
 

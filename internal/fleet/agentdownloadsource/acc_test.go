@@ -634,6 +634,69 @@ func TestAccResourceFleetAgentDownloadSource_AuthHeadersOverMax(t *testing.T) {
 	})
 }
 
+func TestAccResourceFleetAgentDownloadSource_AuthRejectedBelowMinimumVersion(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSource, versionutils.FlavorAny)
+
+	unsupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSourceAuth)()
+	if err != nil {
+		t.Fatalf("failed to check stack version: %v", err)
+	}
+	if !unsupported {
+		t.Skip("stack supports auth; skipping version gate test")
+	}
+
+	random := sdkacctest.RandString(8)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_auth"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(random),
+					"password": config.StringVariable(fmt.Sprintf("secret-%s", random)),
+				},
+				ExpectError: regexp.MustCompile("(?s)`auth` is not supported on this version"),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthOmittedBelowAuthMinimumVersion(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSource, versionutils.FlavorAny)
+
+	unsupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionFleetAgentDownloadSourceAuth)()
+	if err != nil {
+		t.Fatalf("failed to check stack version: %v", err)
+	}
+	if !unsupported {
+		t.Skip("stack supports auth; skipping version gate test")
+	}
+
+	random := sdkacctest.RandString(8)
+	resourceName := "elasticstack_fleet_agent_download_source.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_auth"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", fmt.Sprintf("Agent Download Source %s", random)),
+					resource.TestCheckNoResourceAttr(resourceName, "auth.username"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSource, versionutils.FlavorAny)
 

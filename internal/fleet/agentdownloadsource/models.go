@@ -72,7 +72,10 @@ type downloadSourceAuth = struct {
 	Username *string                     `json:"username,omitempty"`
 }
 
-var agentDownloadSourceMinVersion = version.Must(version.NewVersion("8.13.0"))
+var (
+	agentDownloadSourceMinVersion     = version.Must(version.NewVersion("8.13.0"))
+	agentDownloadSourceAuthMinVersion = version.Must(version.NewVersion("9.4.0"))
+)
 
 func (m model) GetID() types.String             { return m.ID }
 func (m model) GetResourceID() types.String     { return m.SourceID }
@@ -83,10 +86,30 @@ func (m model) GetSpaceID() types.String {
 }
 
 func (m model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return entitycore.SingleVersionRequirement(
+	reqs := entitycore.SingleVersionRequirement(
 		*agentDownloadSourceMinVersion,
 		fmt.Sprintf("This resource requires stack version %s or higher.", agentDownloadSourceMinVersion),
-	), nil
+	)
+
+	addMinimum := func(configured bool, attr path.Path, minVersion *version.Version, detail string) {
+		if !configured {
+			return
+		}
+		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
+			attr,
+			*minVersion,
+			detail,
+		))
+	}
+
+	addMinimum(
+		m.Auth != nil,
+		path.Root("auth"),
+		agentDownloadSourceAuthMinVersion,
+		fmt.Sprintf("`auth` is not supported on this version; it is only supported in Elastic Stack %s and above", agentDownloadSourceAuthMinVersion),
+	)
+
+	return reqs, nil
 }
 
 func (m model) toAPICreateModel(ctx context.Context) (kbapi.PostFleetAgentDownloadSourcesJSONRequestBody, diag.Diagnostics) {

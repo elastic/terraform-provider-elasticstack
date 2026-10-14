@@ -22,10 +22,73 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
+
+type versionGateClient struct {
+	server *version.Version
+}
+
+func (c versionGateClient) EnforceMinVersion(_ context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
+	return !c.server.LessThan(minVersion), nil
+}
+
+func TestGetVersionRequirementsRejectsAuthBelowMinimumVersion(t *testing.T) {
+	m := model{
+		Auth: &authModel{
+			Username: types.StringValue("svc-account"),
+			Password: types.StringValue("secret"),
+		},
+	}
+
+	diags := entitycore.EnforceVersionRequirements(context.Background(), versionGateClient{
+		server: version.Must(version.NewVersion("9.3.0")),
+	}, m)
+
+	require.True(t, diags.HasError())
+	require.Equal(t, "Unsupported server version", diags[0].Summary())
+	require.Equal(t, "`auth` is not supported on this version; it is only supported in Elastic Stack 9.4.0 and above", diags[0].Detail())
+	withPath, ok := diags[0].(diag.DiagnosticWithPath)
+	require.True(t, ok)
+	require.Equal(t, path.Root("auth"), withPath.Path())
+
+	reqs, reqDiags := m.GetVersionRequirements(context.Background())
+	require.False(t, reqDiags.HasError())
+	require.Len(t, reqs, 2)
+	require.Nil(t, reqs[0].AttributePath)
+	require.Equal(t, "8.13.0", reqs[0].MinVersion.String())
+	require.Equal(t, "This resource requires stack version 8.13.0 or higher.", reqs[0].ErrorMessage)
+	require.NotNil(t, reqs[1].AttributePath)
+	require.Equal(t, "auth", reqs[1].AttributePath.String())
+	require.Equal(t, "9.4.0", reqs[1].MinVersion.String())
+}
+
+func TestGetVersionRequirementsAllowsOmittedAuthBelowAuthMinimumVersion(t *testing.T) {
+	m := model{}
+
+	diags := entitycore.EnforceVersionRequirements(context.Background(), versionGateClient{
+		server: version.Must(version.NewVersion("8.13.0")),
+	}, m)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	for _, d := range diags {
+		require.NotContains(t, d.Detail(), "auth")
+		require.NotContains(t, d.Summary(), "auth")
+	}
+
+	reqs, reqDiags := m.GetVersionRequirements(context.Background())
+	require.False(t, reqDiags.HasError())
+	require.Len(t, reqs, 1)
+	require.Nil(t, reqs[0].AttributePath)
+	require.Equal(t, "8.13.0", reqs[0].MinVersion.String())
+	require.Equal(t, "This resource requires stack version 8.13.0 or higher.", reqs[0].ErrorMessage)
+}
 
 func TestModelToAPICreateModel(t *testing.T) {
 	ctx := context.Background()
