@@ -11,7 +11,7 @@
 - [ ] 2.1 Add the `listvalidator.SizeAtMost(100)` validator to `auth.headers` and confirm no validator prevents headers-only or empty `auth = {}` blocks
 - [ ] 2.2 Map headers to the generated request and response types while preserving null versus empty: if configured as an empty list, construct a non-nil empty generated slice so the request sends `"headers":[]` rather than omitting `headers`; decode an API `headers: []` as an empty `types.List`, and absent headers as null, following `internal/fleet/output/models_kafka.go:584-598`
 - [ ] 2.3 Add acceptance cases for headers-only auth, `auth = {}`, and `auth = { headers = [] }` (assert the empty list remains non-null in state)
-- [ ] 2.4 Add `auth_headers_max` (100 entries accepted) and `auth_headers_over_max` (101 entries rejected by the schema validator or API) acceptance cases
+- [ ] 2.4 Add `auth_headers_max` (100 entries accepted) and `auth_headers_over_max` (101 entries rejected by the schema validator before any API call) acceptance cases
 
 ## 3. Update removal and secret preservation
 
