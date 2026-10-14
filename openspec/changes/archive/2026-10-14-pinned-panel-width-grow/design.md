@@ -72,7 +72,7 @@ either direction in either `ToAPI` or `FromAPI` — this is the literal mechanis
    `ControlPinnedHandler.FromAPI` receives the prior panel at the same list index, which is not
    necessarily the same control type as the API response; `width`/`grow` are sibling attributes
    independent of the control type, so any prior entry at that index is reusable for them. The read
-   callback therefore branches only on whether a prior exists: when `prior` is nil (import or a
+   sizing read therefore branches only on whether a prior exists: when `prior` is nil (import or a
    missing index), set `width`/`grow` directly from the API's `Width`/`Grow` pointers (nil pointer
    -> null Terraform value). When a prior exists (regardless of its control type), use
    `PreserveString`/`PreserveBool` against `prior.Width`/`prior.Grow` so an omitted config value
@@ -91,7 +91,7 @@ either direction in either `ToAPI` or `FromAPI` — this is the literal mechanis
      `PanelModel` with no `Width`/`Grow` field, so the remap would still have nothing to carry without
      also giving `PanelModel` its own sizing fields (duplicating state already tracked on
      `PinnedPanelModel`) or adding a bespoke pre-remap copy step — at which point it has reintroduced
-     a form of the per-control-type callback above, just at a different boundary. It also requires
+     a form of the shared sizing step above, just at a different boundary. It also requires
      hand-editing a generated client (`generated/kbapi/kibana.gen.go`) or extending the OAS
      transform pipeline (`generated/kbapi/transform_schema.go`), which would be overwritten on
      regeneration unless the generator itself is changed — a much larger, pipeline-level change for a
