@@ -1,0 +1,1 @@
+terraform import elasticstack_kibana_case_field_definition.minimal <space_id>/<field_definition_id>

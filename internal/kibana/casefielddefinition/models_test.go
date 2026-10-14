@@ -28,8 +28,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func ptr[T any](v T) *T { return &v }
-
 func TestPopulateFromAPI(t *testing.T) {
 	t.Run("all fields present", func(t *testing.T) {
 		var m fieldDefinitionModel
@@ -38,9 +36,9 @@ func TestPopulateFromAPI(t *testing.T) {
 			Owner:             "cases",
 			Name:              "f",
 			Definition:        "name: f\ntype: keyword",
-			Description:       ptr("d"),
-			IsGlobal:          ptr(true),
-			DisplayOrder:      ptr(3),
+			Description:       new("d"),
+			IsGlobal:          new(true),
+			DisplayOrder:      new(3),
 		})
 		require.False(t, diags.HasError())
 		assert.Equal(t, "ops/fd-1", m.ID.ValueString())

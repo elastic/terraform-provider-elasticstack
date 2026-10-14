@@ -96,6 +96,16 @@ Plan → `toAPICreateModel`/`toAPIUpdateModel` builds the write body → `Simple
 - Named (non-default) spaces: the generated client only exposes default-space paths (no `spaceId` parameter on the generated methods, `generated/kbapi/kibana.gen.go:203111` et al.); confirm `kibanautil.SpaceAwarePathRequestEditor` correctly rewrites these specific paths against a running cluster — not yet verified live.
 - Is a companion "case template" resource/data source (`/api/cases/templates`) planned that will reference this field by `name`/`field_definition_id`? Out of scope here, but affects whether `name`/`field_definition_id` need more prominent documentation as stable references.
 
+## Implementation findings
+
+Recorded during implementation (stack probing on 2026-10-14):
+
+- **The public `/api/cases/field_definitions` routes are not served by any locally available Kibana image.** A 9.5.5 stack (and inspection of the bundled `@kbn/cases-plugin` in the 9.5.0-SNAPSHOT, 9.5.5, and 9.6.0-SNAPSHOT images) shows the field-definition routes registered only as `access: 'internal'` under `/internal/cases/field_definitions` with a different request schema (a required top-level `name`), gated by `xpack.cases.templates.enabled`. `POST /api/cases/field_definitions` returns `404 Not Found` on 9.5.5. The provider's end-to-end acceptance run against 9.5.5 therefore fails at create with `HTTP 404` after passing plan, version gating, and request routing.
+- Consequently the following open questions remain **unverified against a live public API** and were intentionally not guessed: `description`/`is_global` omission semantics, named-space routing, and whether the 409 demotion error needs a clearer message. The implementation keeps the documented defaults: `description` and `is_global` are Optional+Computed (omitted from the request when unknown/null; final state comes from the read-after-write), the 409 demotion error surfaces as the raw API diagnostic, and named-space routing relies on `kibanautil.SpaceAwarePathRequestEditor`.
+- Named-space routing is covered by mocked-HTTP unit tests (`internal/clients/kibanaoapi/case_field_definition_test.go`), which verify requests are issued to `/s/<space>/api/cases/field_definitions[/<id>]`; live confirmation is still pending.
+- The destroy-blocked acceptance test builds a case template through the generated client using a `$ref` field entry; that YAML shape and the template response id key are taken from the OpenAPI description and are unverified.
+- The changelog is generated from merged PR history (`dev-docs/high-level/contributing.md`), so no manual `CHANGELOG.md` entry is added.
+
 ## Risks / Trade-offs
 
 - [A mistyped `owner` or a `name`/`type` identity conflict only surfaces as an apply-time 400/409, not a plan-time validation error] → Accepted: documented in the schema description (see "Identity-mismatch errors are not special-cased"); no client-side YAML parsing is added to pre-empt it (see proposal non-goals).

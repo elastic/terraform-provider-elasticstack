@@ -59,9 +59,10 @@ func getResourceSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"name": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				MarkdownDescription: "The field name, unique per owner (case-insensitive). Must match the `name` key in `definition`. When omitted, the server extracts it from `definition`. Immutable: changing this forces a new resource.",
+				Optional: true,
+				Computed: true,
+				MarkdownDescription: "The field name, unique per owner (case-insensitive). Must match the `name` key in `definition`. " +
+					"When omitted, the server extracts it from `definition`. Immutable: changing this forces a new resource.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
@@ -78,9 +79,10 @@ func getResourceSchema(_ context.Context) schema.Schema {
 				MarkdownDescription: "Optional human-readable description of the field's purpose.",
 			},
 			"is_global": schema.BoolAttribute{
-				Optional:            true,
-				Computed:            true,
-				MarkdownDescription: "When true, the field is rendered in every case for this owner regardless of the template used. A global field cannot be set back to false while it is linked to an active custom field.",
+				Optional: true,
+				Computed: true,
+				MarkdownDescription: "When true, the field is rendered in every case for this owner regardless of the template used. " +
+					"A global field cannot be set back to false while it is linked to an active custom field.",
 			},
 			"display_order": schema.Int64Attribute{
 				Computed:            true,

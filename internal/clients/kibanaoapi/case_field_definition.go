@@ -47,8 +47,16 @@ func CreateCaseFieldDefinition(ctx context.Context, client *Client, spaceID stri
 }
 
 // UpdateCaseFieldDefinition updates a field definition in the Kibana Cases field library.
-func UpdateCaseFieldDefinition(ctx context.Context, client *Client, spaceID, fieldDefinitionID string, req kbapi.CasesFieldDefinitionPutRequest) (*kbapi.CasesFieldDefinitionResponse, diag.Diagnostics) {
-	resp, err := client.API.UpdateCaseFieldDefinitionDefaultSpaceWithResponse(ctx, fieldDefinitionID, &kbapi.UpdateCaseFieldDefinitionDefaultSpaceParams{}, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+func UpdateCaseFieldDefinition(
+	ctx context.Context,
+	client *Client,
+	spaceID, fieldDefinitionID string,
+	req kbapi.CasesFieldDefinitionPutRequest,
+) (*kbapi.CasesFieldDefinitionResponse, diag.Diagnostics) {
+	params := &kbapi.UpdateCaseFieldDefinitionDefaultSpaceParams{}
+	resp, err := client.API.UpdateCaseFieldDefinitionDefaultSpaceWithResponse(
+		ctx, fieldDefinitionID, params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID),
+	)
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
