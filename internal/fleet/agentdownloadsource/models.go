@@ -146,7 +146,7 @@ func (m authModel) toAPIHeaders(ctx context.Context) (*[]downloadSourceAuthHeade
 }
 
 func (m model) toAPIUpdateModel(ctx context.Context, prior model) (kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody, diag.Diagnostics) {
-	auth, diags := m.authRequest(ctx)
+	auth, diags := m.authForUpdate(ctx, prior)
 	return kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{
 		Host:      m.Host.ValueString(),
 		Name:      m.Name.ValueString(),
@@ -154,4 +154,19 @@ func (m model) toAPIUpdateModel(ctx context.Context, prior model) (kbapi.PutFlee
 		ProxyId:   fleet.ProxyIDForUpdate(m.ProxyID, prior.ProxyID),
 		Auth:      auth,
 	}, diags
+}
+
+// authForUpdate builds the update body's auth field. A planned auth block is
+// sent in full. Removing a previously configured auth block sends an empty
+// object: the generated `json:"auth,omitempty"` tag drops nil, and Fleet
+// treats an omitted field as a merge that leaves the prior credentials in
+// place. When auth was already absent, nil is returned so the field stays omitted.
+func (m model) authForUpdate(ctx context.Context, prior model) (*downloadSourceAuth, diag.Diagnostics) {
+	if m.Auth != nil {
+		return m.authRequest(ctx)
+	}
+	if prior.Auth != nil {
+		return &downloadSourceAuth{}, nil
+	}
+	return nil, nil
 }

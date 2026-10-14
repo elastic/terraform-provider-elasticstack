@@ -353,3 +353,79 @@ func TestModelToAPIUpdateModelOmitsAlreadyUnsetProxyID(t *testing.T) {
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.Nil(t, body.ProxyId)
 }
+
+func TestModelToAPIUpdateModelSendsEmptyAuthWhenRemoved(t *testing.T) {
+	ctx := context.Background()
+	plan := model{
+		Name:    types.StringValue("updated-name"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent-updated"),
+		Default: types.BoolValue(false),
+	}
+	prior := model{
+		Auth: &authModel{
+			Username: types.StringValue("svc-account"),
+			Password: types.StringValue("secret"),
+		},
+	}
+
+	body, diags := plan.toAPIUpdateModel(ctx, prior)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.NotNil(t, body.Auth)
+	require.Nil(t, body.Auth.Username)
+	require.Nil(t, body.Auth.Password)
+	require.Nil(t, body.Auth.ApiKey)
+	require.Nil(t, body.Auth.Headers)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), `"auth":{}`)
+}
+
+func TestModelToAPIUpdateModelOmitsAuthWhenNeverConfigured(t *testing.T) {
+	ctx := context.Background()
+	plan := model{
+		Name:    types.StringValue("renamed"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(false),
+	}
+
+	body, diags := plan.toAPIUpdateModel(ctx, model{})
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.Nil(t, body.Auth)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.NotContains(t, string(encoded), `"auth"`)
+}
+
+func TestModelToAPIUpdateModelReplacesAuthWithAPIKeyOnly(t *testing.T) {
+	ctx := context.Background()
+	plan := model{
+		Name:    types.StringValue("updated-name"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent-updated"),
+		Default: types.BoolValue(false),
+		Auth: &authModel{
+			APIKey: types.StringValue("rotated-key"),
+		},
+	}
+	prior := model{
+		Auth: &authModel{
+			Username: types.StringValue("svc-account"),
+			Password: types.StringValue("secret"),
+		},
+	}
+
+	body, diags := plan.toAPIUpdateModel(ctx, prior)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.NotNil(t, body.Auth)
+	require.Nil(t, body.Auth.Username)
+	require.Nil(t, body.Auth.Password)
+	require.NotNil(t, body.Auth.ApiKey)
+	require.Equal(t, "rotated-key", *body.Auth.ApiKey)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), `"api_key":"rotated-key"`)
+	require.NotContains(t, string(encoded), `"username"`)
+	require.NotContains(t, string(encoded), `"password"`)
+}

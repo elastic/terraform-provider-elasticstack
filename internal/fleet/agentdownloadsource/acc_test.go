@@ -19,6 +19,7 @@ package agentdownloadsource_test
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -231,6 +232,270 @@ func TestAccResourceFleetAgentDownloadSource_AuthHeadersMax(t *testing.T) {
 	})
 }
 
+func TestAccResourceFleetAgentDownloadSource_AuthRemove(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+	password := fmt.Sprintf("secret-%s", random)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_auth"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(random),
+					"password": config.StringVariable(password),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.username", "svc-account"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password", password),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("removed"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.username"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.api_key"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.headers"),
+					testCheckFleetAgentDownloadSourceServerAuthCleared("elasticstack_fleet_agent_download_source.test"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthOmittedWhenNeverConfigured(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "name", fmt.Sprintf("Auth Omitted Agent Download Source %s", random)),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.username"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.api_key"),
+					testCheckFleetAgentDownloadSourceServerAuthCleared("elasticstack_fleet_agent_download_source.test"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("rename"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "name", fmt.Sprintf("Auth Omitted Renamed Agent Download Source %s", random)),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.username"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.api_key"),
+					testCheckFleetAgentDownloadSourceServerAuthCleared("elasticstack_fleet_agent_download_source.test"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthBasicToAPIKey(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+	password := fmt.Sprintf("secret-%s", random)
+	apiKey := fmt.Sprintf("key-%s", random)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(random),
+					"password": config.StringVariable(password),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.username", "svc-account"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password", password),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.api_key"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("api_key"),
+				ConfigVariables: config.Variables{
+					"suffix":  config.StringVariable(random),
+					"api_key": config.StringVariable(apiKey),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.api_key", apiKey),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.username"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password"),
+					testCheckFleetAgentDownloadSourceServerBasicAuthAbsent("elasticstack_fleet_agent_download_source.test"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthPasswordRotation(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+	originalPassword := fmt.Sprintf("secret-%s", random)
+	rotatedPassword := fmt.Sprintf("rotated-%s", random)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("password"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(random),
+					"password": config.StringVariable(originalPassword),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.username", "svc-account"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password", originalPassword),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("password"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(random),
+					"password": config.StringVariable(rotatedPassword),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.username", "svc-account"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password", rotatedPassword),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthPasswordRefresh(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+	password := fmt.Sprintf("secret-%s", random)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("password"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(random),
+					"password": config.StringVariable(password),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password", password),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("password"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(random),
+					"password": config.StringVariable(password),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.username", "svc-account"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "auth.password", password),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetAgentDownloadSource_AuthUsernameAndHeadersFromAPI(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceAuth, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+	password := fmt.Sprintf("secret-%s", random)
+	resourceName := "elasticstack_fleet_agent_download_source.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(random),
+					"password": config.StringVariable(password),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "auth.username", "svc-account"),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.0.key", "X-A"),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.0.value", "1"),
+					testCheckFleetAgentDownloadSourceServerUsernameAndHeaders(resourceName, "svc-account", "X-A", "1"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(random),
+					"password": config.StringVariable(password),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "auth.username", "svc-rotated"),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.0.key", "X-B"),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.0.value", "2"),
+					resource.TestCheckResourceAttr(resourceName, "auth.password", password),
+					testCheckFleetAgentDownloadSourceServerUsernameAndHeaders(resourceName, "svc-rotated", "X-B", "2"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(random),
+					"password": config.StringVariable(password),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: false,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "auth.username", "svc-rotated"),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.0.key", "X-B"),
+					resource.TestCheckResourceAttr(resourceName, "auth.headers.0.value", "2"),
+					resource.TestCheckResourceAttr(resourceName, "auth.password", password),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceFleetAgentDownloadSource_AuthHeadersOverMax(t *testing.T) {
 	resource.UnitTest(t, resource.TestCase{
 		Steps: []resource.TestStep{
@@ -425,6 +690,125 @@ func testCheckFleetAgentDownloadSourceSpaceContains(resourceName, spaceID string
 		}
 		return fmt.Errorf("expected space_ids to contain %q", spaceID)
 	}
+}
+
+type fleetAgentDownloadSourcePayload struct {
+	Item struct {
+		Auth *struct {
+			Username *string `json:"username"`
+			Password *string `json:"password"`
+			APIKey   *string `json:"api_key"`
+			Headers  []struct {
+				Key   string `json:"key"`
+				Value string `json:"value"`
+			} `json:"headers"`
+		} `json:"auth"`
+		Secrets *struct {
+			Auth *struct {
+				Password json.RawMessage `json:"password"`
+				APIKey   json.RawMessage `json:"api_key"`
+			} `json:"auth"`
+		} `json:"secrets"`
+	} `json:"item"`
+}
+
+func readFleetAgentDownloadSourcePayload(s *terraform.State, resourceName string) (fleetAgentDownloadSourcePayload, error) {
+	var payload fleetAgentDownloadSourcePayload
+
+	rs, ok := s.RootModule().Resources[resourceName]
+	if !ok || rs.Primary == nil {
+		return payload, fmt.Errorf("resource %s not found in state", resourceName)
+	}
+
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		return payload, err
+	}
+
+	resp, diags := fleet.GetAgentDownloadSource(context.Background(), client.GetFleetClient(), rs.Primary.ID, getOperationalSpaceFromResourceState(rs))
+	if diags.HasError() {
+		return payload, diagutil.FwDiagsAsError(diags)
+	}
+	if resp == nil || resp.JSON200 == nil {
+		return payload, fmt.Errorf("agent download source %s was not found", rs.Primary.ID)
+	}
+	if err := json.Unmarshal(resp.Body, &payload); err != nil {
+		return payload, err
+	}
+	return payload, nil
+}
+
+func testCheckFleetAgentDownloadSourceServerUsernameAndHeaders(resourceName, username, headerKey, headerValue string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		payload, err := readFleetAgentDownloadSourcePayload(s, resourceName)
+		if err != nil {
+			return err
+		}
+		if payload.Item.Auth == nil || payload.Item.Auth.Username == nil {
+			return fmt.Errorf("expected server auth username %q, got none", username)
+		}
+		if *payload.Item.Auth.Username != username {
+			return fmt.Errorf("expected server auth username %q, got %q", username, *payload.Item.Auth.Username)
+		}
+		if len(payload.Item.Auth.Headers) != 1 {
+			return fmt.Errorf("expected 1 server auth header, got %d", len(payload.Item.Auth.Headers))
+		}
+		header := payload.Item.Auth.Headers[0]
+		if header.Key != headerKey || header.Value != headerValue {
+			return fmt.Errorf("expected server auth header %s=%s, got %s=%s", headerKey, headerValue, header.Key, header.Value)
+		}
+		return nil
+	}
+}
+
+func testCheckFleetAgentDownloadSourceServerBasicAuthAbsent(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		payload, err := readFleetAgentDownloadSourcePayload(s, resourceName)
+		if err != nil {
+			return err
+		}
+		if payload.Item.Auth != nil && payload.Item.Auth.Username != nil {
+			return fmt.Errorf("expected server auth username to be absent, got %q", *payload.Item.Auth.Username)
+		}
+		if payload.Item.Auth != nil && payload.Item.Auth.Password != nil {
+			return fmt.Errorf("expected server auth password to be absent")
+		}
+		if payload.Item.Secrets != nil && payload.Item.Secrets.Auth != nil && jsonRawPresent(payload.Item.Secrets.Auth.Password) {
+			return fmt.Errorf("expected server-side password secret to be absent")
+		}
+		return nil
+	}
+}
+
+func testCheckFleetAgentDownloadSourceServerAuthCleared(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		payload, err := readFleetAgentDownloadSourcePayload(s, resourceName)
+		if err != nil {
+			return err
+		}
+		if payload.Item.Auth != nil {
+			if payload.Item.Auth.Username != nil {
+				return fmt.Errorf("expected server auth username to be cleared, got %q", *payload.Item.Auth.Username)
+			}
+			if payload.Item.Auth.Password != nil {
+				return fmt.Errorf("expected server auth password to be cleared")
+			}
+			if payload.Item.Auth.APIKey != nil {
+				return fmt.Errorf("expected server auth api_key to be cleared")
+			}
+			if len(payload.Item.Auth.Headers) > 0 {
+				return fmt.Errorf("expected server auth headers to be cleared, got %d", len(payload.Item.Auth.Headers))
+			}
+		}
+		if payload.Item.Secrets != nil && payload.Item.Secrets.Auth != nil && (jsonRawPresent(payload.Item.Secrets.Auth.Password) || jsonRawPresent(payload.Item.Secrets.Auth.APIKey)) {
+			return fmt.Errorf("expected server-side auth secrets to be cleared")
+		}
+		return nil
+	}
+}
+
+func jsonRawPresent(raw json.RawMessage) bool {
+	return len(raw) > 0 && string(raw) != "null"
 }
 
 func checkResourceFleetAgentDownloadSourceDestroy(s *terraform.State) error {

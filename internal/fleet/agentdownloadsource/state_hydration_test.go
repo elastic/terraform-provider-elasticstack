@@ -252,6 +252,61 @@ func TestReadAndHydrateStateDecodesAbsentHeadersAsNull(t *testing.T) {
 	require.Equal(t, "svc-account", state.Auth.Username.ValueString())
 }
 
+func TestReadAndHydrateStateUsesAPIHeadersNotFallback(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	sourceID := "source-api-headers"
+	spaceID := "space-a"
+	preservedSpaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+	preservedKibanaConnection := providerschema.KibanaConnectionNullList()
+	headerType := authHeadersElementType(ctx).(types.ObjectType)
+	fallback := &authModel{
+		Username: types.StringValue("stale-user"),
+		Headers: types.ListValueMust(headerType, []attr.Value{
+			types.ObjectValueMust(headerType.AttrTypes, map[string]attr.Value{
+				"key":   types.StringValue("X-A"),
+				"value": types.StringValue("1"),
+			}),
+		}),
+	}
+
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+				"auth": map[string]any{
+					"username": "svc-account",
+					"headers": []any{
+						map[string]any{"key": "X-B", "value": "2"},
+					},
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	state, found, diags := readAndHydrateState(ctx, client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.True(t, found)
+	require.NotNil(t, state.Auth)
+	require.Equal(t, "svc-account", state.Auth.Username.ValueString())
+	require.True(t, state.Auth.Headers.Equal(types.ListValueMust(headerType, []attr.Value{
+		types.ObjectValueMust(headerType.AttrTypes, map[string]attr.Value{
+			"key":   types.StringValue("X-B"),
+			"value": types.StringValue("2"),
+		}),
+	})))
+}
+
 func TestReadAndHydrateStateDecodesEmptyHeadersList(t *testing.T) {
 	t.Parallel()
 
@@ -318,6 +373,60 @@ func TestReadAndHydrateStateTreatsEmptyProxyIDAsNull(t *testing.T) {
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
 	require.True(t, state.ProxyID.IsNull())
+}
+
+func TestUpdateAgentDownloadSourceReadBackKeepsRotatedPassword(t *testing.T) {
+	t.Parallel()
+
+	sourceID := "source-rotate-password"
+	spaceID := "space-a"
+	spaceIDs := types.SetValueMust(types.StringType, []attr.Value{types.StringValue(spaceID)})
+
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		resp := map[string]any{
+			"item": map[string]any{
+				"id":         sourceID,
+				"name":       "name-from-read",
+				"host":       "https://read.example.com",
+				"is_default": false,
+				"auth": map[string]any{
+					"username": "svc-account",
+				},
+			},
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(resp); err != nil {
+			t.Errorf("failed to encode response: %v", err)
+		}
+	}))
+
+	plan := model{
+		SourceID: types.StringValue(sourceID),
+		Name:     types.StringValue("name-from-read"),
+		Host:     types.StringValue("https://read.example.com"),
+		Default:  types.BoolValue(false),
+		SpaceIDs: spaceIDs,
+		Auth: &authModel{
+			Username: types.StringValue("svc-account"),
+			Password: types.StringValue("new-secret"),
+		},
+	}
+	prior := model{
+		SourceID: types.StringValue(sourceID),
+		SpaceIDs: spaceIDs,
+		Auth: &authModel{
+			Username: types.StringValue("svc-account"),
+			Password: types.StringValue("old-secret"),
+		},
+	}
+
+	result, diags := updateAgentDownloadSource(context.Background(), client, plan, prior)
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.NotNil(t, result.Model.Auth)
+	require.Equal(t, "svc-account", result.Model.Auth.Username.ValueString())
+	require.Equal(t, "new-secret", result.Model.Auth.Password.ValueString())
 }
 
 func TestCreateAgentDownloadSourceReportsHeadersConversionFailure(t *testing.T) {
@@ -441,6 +550,46 @@ func assertFinalizeWriteUsesReadHydration(t *testing.T) {
 
 	require.True(t, hasReadAndHydrateCall, "finalizeWrite should call readAndHydrateState")
 	require.True(t, hasResultFromRead, "finalizeWrite should return a write result built from readState")
+}
+
+func TestReadPathPassesPriorAuthAndWritePathPassesPlanAuth(t *testing.T) {
+	t.Parallel()
+
+	requireAuthFallbackArg(t, "read.go", "readAgentDownloadSource", "prior")
+	requireAuthFallbackArg(t, "write.go", "finalizeWrite", "plan")
+}
+
+func requireAuthFallbackArg(t *testing.T, filename, funcName, receiver string) {
+	t.Helper()
+
+	funcDecl := findFuncDecl(t, filename, funcName)
+
+	var matched bool
+	ast.Inspect(funcDecl.Body, func(node ast.Node) bool {
+		if matched {
+			return false
+		}
+		call, ok := node.(*ast.CallExpr)
+		if !ok {
+			return true
+		}
+		ident, ok := call.Fun.(*ast.Ident)
+		if !ok || ident.Name != "readAndHydrateState" || len(call.Args) < 7 {
+			return true
+		}
+		sel, ok := call.Args[6].(*ast.SelectorExpr)
+		if !ok || sel.Sel == nil || sel.Sel.Name != "Auth" {
+			return true
+		}
+		recv, ok := sel.X.(*ast.Ident)
+		if ok && recv.Name == receiver {
+			matched = true
+			return false
+		}
+		return true
+	})
+
+	require.True(t, matched, "%s should pass %s.Auth to readAndHydrateState", funcName, receiver)
 }
 
 // findFuncDecl parses filename and returns the *ast.FuncDecl named funcName.
