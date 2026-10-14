@@ -26,6 +26,7 @@
 ## 5. Unit tests
 
 - [ ] 5.1 Add `internal/fleet/agentdownloadsource/models_ssl_test.go` covering: full round-trip (all three fields set), CA-only, certificate+key only, API-returns-all-nil normalizes to `types.ObjectNull`, empty CA list normalizes to `types.ListNull`
+- [ ] 5.2 Add a schema unit test asserting `ssl` exposes only `certificate_authorities`, `certificate`, and sensitive `key` (with no `verification_mode`) and has the required validators
 
 ## 6. Acceptance tests
 
@@ -46,6 +47,7 @@
 - [ ] 7.1 Update `examples/resources/elasticstack_fleet_agent_download_source/resource.tf` to show the `ssl` block
 - [ ] 7.2 Regenerate `docs/resources/fleet_agent_download_source.md` via the existing `make` docs target
 - [ ] 7.3 Add a CHANGELOG entry following the repo's existing format
+- [ ] 7.4 Update the `ssl` shape in the canonical schema sketch at `openspec/specs/fleet-agent-download-source/spec.md` when syncing this delta
 
 ## 8. Validation and cleanup
 

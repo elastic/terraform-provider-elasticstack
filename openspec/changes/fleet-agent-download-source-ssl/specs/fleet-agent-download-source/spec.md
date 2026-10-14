@@ -114,8 +114,8 @@ When removing a previously-set `ssl` from configuration would produce a plan/sta
 - **WHEN** the practitioner removes `ssl` (or that child) from configuration and applies
 - **THEN** the provider SHALL perform an in-place update, and a subsequent read SHALL show the removed value as null
 
-#### Scenario: Forced replacement when the API does not honor in-place removal
+#### Scenario: Forced replacement when the API cannot honor in-place removal
 
-- **GIVEN** the pre-implementation probe determines that the Fleet PUT API does not clear a previously-set `ssl` (or a specific child) when omitted
+- **GIVEN** the pre-implementation probe determines that neither omitting `ssl` nor sending `ssl = {}` clears a previously-set `ssl`, or that omitting a specific child does not clear that child
 - **WHEN** the practitioner removes `ssl` (or that child) from configuration and applies
 - **THEN** Terraform SHALL plan a replace operation for the resource
