@@ -269,4 +269,4 @@ If you filed nothing and the queue was non-empty, still call `record`, then call
 
 ## Dispatch
 
-`dispatch_research_factory` is always your last safe output call, after every `create-issue` and any `noop`, including when no issue was created. Call it once with `dispatch: true` to dispatch the `research-factory` workflow for each created issue.
+`dispatch_research_factory` is always your last safe output call, after every `create-issue` and any `noop`, including when no issue was created. Call the `dispatch_research_factory` safe output tool once with `dispatch: true` to dispatch the `research-factory` workflow for each created issue.
