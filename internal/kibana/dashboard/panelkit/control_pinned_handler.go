@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // ControlPinnedHandler is a reusable generic implementation of iface.PinnedHandler for
@@ -53,8 +54,12 @@ type ControlPinnedHandler[G any, P any] struct {
 	BuildConfig func(pm models.PanelModel, panel *P) diag.Diagnostics
 
 	// AfterRemapToGroup is called after panel is remapped back to a G value, allowing
-	// callers to set extra discriminator fields (e.g. group.Type). May be nil.
-	AfterRemapToGroup func(group *G)
+	// callers to set extra discriminator fields (e.g. group.Type) and fields that the
+	// panel type does not carry (e.g. width and grow from ppm). May be nil.
+	AfterRemapToGroup func(ppm models.PinnedPanelModel, group *G)
+
+	// SizingFromGroup returns the width and grow values reported on group. May be nil.
+	SizingFromGroup func(group G) (width *string, grow *bool)
 
 	// FromGroup encodes a G into a DashboardPinnedPanels_Item union.
 	FromGroup func(item *kbapi.DashboardPinnedPanels_Item, group G) error
@@ -88,6 +93,16 @@ func (h ControlPinnedHandler[G, P]) FromAPI(ctx context.Context, prior *models.P
 	}
 
 	ppm, populateTf := models.SeedPinnedPanelForRead(prior, h.PanelTypeDiscriminator)
+	if h.SizingFromGroup != nil {
+		width, grow := h.SizingFromGroup(group)
+		if populateTf == nil {
+			ppm.Width = types.StringPointerValue(width)
+			ppm.Grow = types.BoolPointerValue(grow)
+		} else {
+			ppm.Width = PreserveString(ppm.Width, width)
+			ppm.Grow = PreserveBool(ppm.Grow, grow)
+		}
+	}
 	pm := ppm.SyntheticPanel()
 	populateDiags := h.PopulateFromAPI(ctx, &pm, populateTf, &panel)
 	diags.Append(populateDiags...)
@@ -120,7 +135,7 @@ func (h ControlPinnedHandler[G, P]) ToAPI(ppm models.PinnedPanelModel) (kbapi.Da
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
 	if h.AfterRemapToGroup != nil {
-		h.AfterRemapToGroup(&group)
+		h.AfterRemapToGroup(ppm, &group)
 	}
 
 	var item kbapi.DashboardPinnedPanels_Item
@@ -129,4 +144,23 @@ func (h ControlPinnedHandler[G, P]) ToAPI(ppm models.PinnedPanelModel) (kbapi.Da
 		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
 	return item, diags
+}
+
+// EnumPointerFromString converts a known Terraform string into a pointer to the generated enum type E.
+// Null and unknown values yield nil.
+func EnumPointerFromString[E ~string](v types.String) *E {
+	if v.IsNull() || v.IsUnknown() {
+		return nil
+	}
+	e := E(v.ValueString())
+	return &e
+}
+
+// StringPointerFromEnum converts a pointer to a generated enum type into a string pointer.
+func StringPointerFromEnum[E ~string](e *E) *string {
+	if e == nil {
+		return nil
+	}
+	s := string(*e)
+	return &s
 }

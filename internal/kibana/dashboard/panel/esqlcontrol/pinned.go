@@ -48,8 +48,13 @@ func newPinnedHandler() pinnedHandler {
 			return nil
 		},
 		BuildConfig: BuildConfig,
-		AfterRemapToGroup: func(group *kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl) {
+		AfterRemapToGroup: func(ppm models.PinnedPanelModel, group *kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl) {
 			group.Type = kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControlTypeEsqlControl
+			group.Width = panelkit.EnumPointerFromString[kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControlWidth](ppm.Width)
+			group.Grow = ppm.Grow.ValueBoolPointer()
+		},
+		SizingFromGroup: func(group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl) (*string, *bool) {
+			return panelkit.StringPointerFromEnum(group.Width), group.Grow
 		},
 		FromGroup: func(item *kbapi.DashboardPinnedPanels_Item, group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl) error {
 			return item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaEsqlControl(group)

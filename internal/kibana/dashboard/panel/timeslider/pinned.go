@@ -50,6 +50,13 @@ func newPinnedHandler() pinnedHandler {
 			BuildConfig(pm, panel)
 			return nil
 		},
+		AfterRemapToGroup: func(ppm models.PinnedPanelModel, group *kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaTimeSliderControl) {
+			group.Width = panelkit.EnumPointerFromString[kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaTimeSliderControlWidth](ppm.Width)
+			group.Grow = ppm.Grow.ValueBoolPointer()
+		},
+		SizingFromGroup: func(group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaTimeSliderControl) (*string, *bool) {
+			return panelkit.StringPointerFromEnum(group.Width), group.Grow
+		},
 		FromGroup: func(item *kbapi.DashboardPinnedPanels_Item, group kbapi.KibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaTimeSliderControl) error {
 			return item.FromKibanaHTTPAPIsKbnControlsSchemasControlsGroupSchemaTimeSliderControl(group)
 		},
