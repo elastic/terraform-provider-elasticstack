@@ -1671,6 +1671,17 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
       "attemptedAt": "2026-10-14T03:00:46.541519353Z",
       "reason": "verification_timeout"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes.NewMemorySizeUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
+      "attemptedAt": "2026-10-14T03:23:08.742760231Z",
+      "reason": "verification_timeout",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true,
+        "buildExitCode": 124
+      }
     }
   ]
 }
