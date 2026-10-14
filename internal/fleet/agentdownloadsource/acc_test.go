@@ -100,13 +100,7 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"space_ids"},
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					res := s.RootModule().Resources["elasticstack_fleet_agent_download_source.test"]
-					if res == nil || res.Primary == nil {
-						return "", fmt.Errorf("resource elasticstack_fleet_agent_download_source.test not found in state")
-					}
-					return fmt.Sprintf("default/%s", res.Primary.ID), nil
-				},
+				ImportStateIdFunc:       testFleetAgentDownloadSourceImportStateIDDefaultSpace,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -184,11 +178,6 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 	})
 }
 
-// TestAccResourceFleetAgentDownloadSource_SSL exercises the ssl attribute
-// lifecycle: create with all three fields populated (including multiple CAs),
-// update them all to different values, then clear the block entirely. Per-child
-// removal transitions are covered separately in _SSLChildRemoval, and plan-time
-// validation is covered in _SSLValidation.
 func TestAccResourceFleetAgentDownloadSource_SSL(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceSsl, versionutils.FlavorAny)
 
@@ -240,19 +229,11 @@ func TestAccResourceFleetAgentDownloadSource_SSL(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"suffix": config.StringVariable(random),
 				},
-				ResourceName:      "elasticstack_fleet_agent_download_source.test",
-				ImportState:       true,
-				ImportStateVerify: true,
-				ImportStateVerifyIgnore: []string{
-					"space_ids",
-				},
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					res := s.RootModule().Resources["elasticstack_fleet_agent_download_source.test"]
-					if res == nil || res.Primary == nil {
-						return "", fmt.Errorf("resource elasticstack_fleet_agent_download_source.test not found in state")
-					}
-					return fmt.Sprintf("default/%s", res.Primary.ID), nil
-				},
+				ResourceName:            "elasticstack_fleet_agent_download_source.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"space_ids"},
+				ImportStateIdFunc:       testFleetAgentDownloadSourceImportStateIDDefaultSpace,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -262,17 +243,21 @@ func TestAccResourceFleetAgentDownloadSource_SSL(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					testCheckFleetAgentDownloadSourceIDUnchanged(&idBeforeSSLUpdate),
-					// A SingleNestedAttribute has no flat "ssl" state key, so assert the
-					// children's absence explicitly.
-					resource.TestCheckNoResourceAttr(testResourceName, "ssl"),
 					resource.TestCheckNoResourceAttr(testResourceName, "ssl.certificate"),
 					resource.TestCheckNoResourceAttr(testResourceName, "ssl.key"),
-					resource.TestCheckNoResourceAttr(testResourceName, "ssl.certificate_authorities.#"),
 					testCheckNoFlatmapKeyPrefix("ssl.certificate_authorities."),
 				),
 			},
 		},
 	})
+}
+
+func testFleetAgentDownloadSourceImportStateIDDefaultSpace(s *terraform.State) (string, error) {
+	res := s.RootModule().Resources[testResourceName]
+	if res == nil || res.Primary == nil {
+		return "", fmt.Errorf("resource %s not found in state", testResourceName)
+	}
+	return fmt.Sprintf("default/%s", res.Primary.ID), nil
 }
 
 func testCheckFleetAgentDownloadSourceCaptureID(target *string) resource.TestCheckFunc {
@@ -369,11 +354,6 @@ func getOperationalSpaceFromResourceState(rs *terraform.ResourceState) string {
 	return ""
 }
 
-// TestAccResourceFleetAgentDownloadSource_SSLChildRemoval exercises the three
-// per-child removal transitions from a fully populated ssl object. The Fleet
-// PUT API clears an omitted child while preserving the retained two, so each
-// transition is an in-place update: the resource ID stays stable and the
-// dropped child is absent from state.
 func TestAccResourceFleetAgentDownloadSource_SSLChildRemoval(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceSsl, versionutils.FlavorAny)
 
@@ -433,7 +413,6 @@ func childRemovalChecks(transition string) resource.TestCheckFunc {
 		return resource.ComposeTestCheckFunc(
 			resource.TestCheckResourceAttr(testResourceName, "ssl.certificate", "PEM-CERT"),
 			resource.TestCheckResourceAttr(testResourceName, "ssl.key", "PEM-KEY"),
-			resource.TestCheckNoResourceAttr(testResourceName, caList+".#"),
 			testCheckNoFlatmapKeyPrefix(caList+"."),
 		)
 	case "drop_cert":
@@ -464,10 +443,6 @@ func testCheckNoFlatmapKeyPrefix(prefix string) resource.TestCheckFunc {
 	}
 }
 
-// TestAccResourceFleetAgentDownloadSource_SSLValidation exercises the plan-time
-// ssl validators: the object-level at-least-one-sub-attribute rule, the
-// non-empty string rules for certificate and key, the CA list non-empty and
-// no-empty-element rules, and the CA list size limit of 10.
 func TestAccResourceFleetAgentDownloadSource_SSLValidation(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceSsl, versionutils.FlavorAny)
 

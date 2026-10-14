@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
@@ -88,6 +90,32 @@ func Test_objectValueToSSL(t *testing.T) {
 				Key:         new("key"),
 			},
 		},
+		{
+			name: "known all-null object is rejected",
+			obj: types.ObjectValueMust(
+				getSslAttrTypes(ctx),
+				map[string]attr.Value{
+					"certificate_authorities": types.ListNull(types.StringType),
+					"certificate":             types.StringNull(),
+					"key":                     types.StringNull(),
+				},
+			),
+			wantErr: true,
+		},
+		{
+			name: "unknown child defers rejection",
+			obj: types.ObjectValueMust(
+				getSslAttrTypes(ctx),
+				map[string]attr.Value{
+					"certificate_authorities": types.ListUnknown(types.StringType),
+					"certificate":             types.StringNull(),
+					"key":                     types.StringUnknown(),
+				},
+			),
+			// Unknown children defer the all-null rejection; existing
+			// semantics encode an unknown string as an empty-string pointer.
+			want: &agentDownloadSourceSSLAPIModel{Key: new("")},
+		},
 	}
 
 	for _, tt := range tests {
@@ -96,6 +124,9 @@ func Test_objectValueToSSL(t *testing.T) {
 			if (diags.HasError()) != tt.wantErr {
 				t.Errorf("objectValueToSSL() error = %v, wantErr %v", diags, tt.wantErr)
 				return
+			}
+			if tt.wantErr {
+				assert.Equal(t, diag.Diagnostics{diag.NewAttributeErrorDiagnostic(path.Root("ssl"), sslAtLeastOneSubattrSummary, sslAtLeastOneSubattrMessage)}, diags)
 			}
 			assert.Equal(t, tt.want, got)
 		})
@@ -119,6 +150,7 @@ func Test_objectValueToSSLUpdate(t *testing.T) {
 		obj      types.Object
 		priorObj types.Object
 		want     *agentDownloadSourceSSLAPIModel
+		wantErr  bool
 	}{
 		{
 			name:     "returns nil when object and prior are null",
@@ -146,19 +178,33 @@ func Test_objectValueToSSLUpdate(t *testing.T) {
 			priorObj: sslObject,
 			want:     &agentDownloadSourceSSLAPIModel{},
 		},
+		{
+			name: "known all-null object is rejected",
+			obj: types.ObjectValueMust(attrTypes, map[string]attr.Value{
+				"certificate_authorities": types.ListNull(types.StringType),
+				"certificate":             types.StringNull(),
+				"key":                     types.StringNull(),
+			}),
+			priorObj: types.ObjectNull(attrTypes),
+			wantErr:  true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, diags := objectValueToSSLUpdate(ctx, tt.obj, tt.priorObj)
-			if diags.HasError() {
-				t.Errorf("objectValueToSSLUpdate() error = %v", diags)
+			if (diags.HasError()) != tt.wantErr {
+				t.Errorf("objectValueToSSLUpdate() error = %v, wantErr %v", diags, tt.wantErr)
 				return
+			}
+			if tt.wantErr {
+				assert.Equal(t, diag.Diagnostics{diag.NewAttributeErrorDiagnostic(path.Root("ssl"), sslAtLeastOneSubattrSummary, sslAtLeastOneSubattrMessage)}, diags)
 			}
 			assert.Equal(t, tt.want, got)
 		})
 	}
 }
+
 func Test_sslToObjectValue(t *testing.T) {
 	ctx := context.Background()
 	attrTypes := getSslAttrTypes(ctx)

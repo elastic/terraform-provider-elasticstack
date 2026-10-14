@@ -78,13 +78,18 @@ func objectValueToSSL(ctx context.Context, obj types.Object) (*agentDownloadSour
 		return nil, diags
 	}
 
-	if sslModel == nil {
+	// Mirror the schema-level at-least-one validator: children that were
+	// unknown at plan time may resolve to all-null at apply, and sending an
+	// empty ssl object would persist a present-but-empty configuration the
+	// read path normalizes back to null.
+	if sslModel.CertificateAuthorities.IsNull() && sslModel.Certificate.IsNull() && sslModel.Key.IsNull() {
+		diags.AddAttributeError(path.Root("ssl"), sslAtLeastOneSubattrSummary, sslAtLeastOneSubattrMessage)
 		return nil, diags
 	}
 
 	return &agentDownloadSourceSSLAPIModel{
 		Certificate:            sslModel.Certificate.ValueStringPointer(),
-		CertificateAuthorities: typeutils.SliceRef(typeutils.ListTypeToSliceString(ctx, sslModel.CertificateAuthorities, path.Root("certificate_authorities"), &diags)),
+		CertificateAuthorities: typeutils.SliceRef(typeutils.ListTypeToSliceString(ctx, sslModel.CertificateAuthorities, path.Root("ssl").AtName("certificate_authorities"), &diags)),
 		Key:                    sslModel.Key.ValueStringPointer(),
 	}, diags
 }
@@ -105,12 +110,7 @@ func objectValueToSSLUpdate(ctx context.Context, obj types.Object, priorObj type
 		return nil, diags
 	}
 
-	priorSSL, priorDiags := objectValueToSSL(ctx, priorObj)
-	diags.Append(priorDiags...)
-	if diags.HasError() {
-		return nil, diags
-	}
-	if priorSSL == nil {
+	if !typeutils.IsKnown(priorObj) {
 		return nil, diags
 	}
 	return &agentDownloadSourceSSLAPIModel{}, diags
@@ -125,8 +125,9 @@ func sslToObjectValue(
 	certificateAuthorities *[]string,
 	key *string,
 ) (types.Object, diag.Diagnostics) {
+	attrTypes := getSslAttrTypes(ctx)
 	if certificate == nil && certificateAuthorities == nil && key == nil {
-		return types.ObjectNull(getSslAttrTypes(ctx)), nil
+		return types.ObjectNull(attrTypes), nil
 	}
 
 	var diags diag.Diagnostics
@@ -142,10 +143,10 @@ func sslToObjectValue(
 	}
 
 	if sslModel.CertificateAuthorities.IsNull() && sslModel.Certificate.IsNull() && sslModel.Key.IsNull() {
-		return types.ObjectNull(getSslAttrTypes(ctx)), nil
+		return types.ObjectNull(attrTypes), nil
 	}
 
-	obj, diagTemp := types.ObjectValueFrom(ctx, getSslAttrTypes(ctx), sslModel)
+	obj, diagTemp := types.ObjectValueFrom(ctx, attrTypes, sslModel)
 	diags.Append(diagTemp...)
 	return obj, diags
 }

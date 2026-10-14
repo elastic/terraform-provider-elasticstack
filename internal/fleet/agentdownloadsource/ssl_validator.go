@@ -25,6 +25,8 @@ import (
 
 const sslAtLeastOneSubattrSummary = "Empty ssl configuration"
 
+const sslAtLeastOneSubattrMessage = "At least one of certificate_authorities, certificate, or key must be set."
+
 var sslSubattrNames = []string{"certificate_authorities", "certificate", "key"}
 
 // sslAtLeastOneSubattrValidator rejects an ssl object whose sub-attributes
@@ -57,6 +59,6 @@ func (sslAtLeastOneSubattrValidator) ValidateObject(_ context.Context, req valid
 	resp.Diagnostics.AddAttributeError(
 		req.Path,
 		sslAtLeastOneSubattrSummary,
-		"At least one of certificate_authorities, certificate, or key must be set.",
+		sslAtLeastOneSubattrMessage,
 	)
 }

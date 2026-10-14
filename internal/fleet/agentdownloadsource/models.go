@@ -94,7 +94,7 @@ func (m model) toAPICreateModel(ctx context.Context) (kbapi.PostFleetAgentDownlo
 	}
 	body.Ssl = sslToKibana(ssl)
 
-	return body, nil
+	return body, sslDiags
 }
 
 func (m model) toAPIUpdateModel(ctx context.Context, prior model) (kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody, diag.Diagnostics) {
@@ -111,5 +111,5 @@ func (m model) toAPIUpdateModel(ctx context.Context, prior model) (kbapi.PutFlee
 	}
 	body.Ssl = sslToKibana(ssl)
 
-	return body, nil
+	return body, sslDiags
 }

@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -96,6 +97,9 @@ func Test_sslAtLeastOneSubattrValidator(t *testing.T) {
 				Path:        path.Root("ssl"),
 			}, &resp)
 			assert.Equal(t, tt.wantErr, resp.Diagnostics.HasError(), resp.Diagnostics)
+			if tt.wantErr {
+				assert.Equal(t, diag.Diagnostics{diag.NewAttributeErrorDiagnostic(path.Root("ssl"), sslAtLeastOneSubattrSummary, sslAtLeastOneSubattrMessage)}, resp.Diagnostics)
+			}
 		})
 	}
 }
