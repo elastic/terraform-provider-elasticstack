@@ -25,7 +25,7 @@ resource "elasticstack_fleet_agent_download_source" "example" {
 
 ### Requirement: Auth and secrets not in v1 schema
 
-The resource SHALL expose an optional `auth` nested attribute mapping to the Fleet API's `auth` request/response field: `username` (string), `password` (string, sensitive), `api_key` (string, sensitive), and `headers` (list of `{key, value}`, up to 100 entries). The resource SHALL NOT expose the Fleet download source `secrets.auth` reference mechanism (referencing an existing Fleet secret store entry by ID) or the top-level `ssl` object (CA, client cert, client key material) as Terraform schema attributes; those remain managed outside this resource's schema.
+The resource SHALL expose an optional `auth` nested attribute mapping to the Fleet API's `auth` request/response field: `username` (string), `password` (string, sensitive), `api_key` (string, sensitive), and `headers` (list of `{key, value}`, up to 100 entries). The resource SHALL NOT expose the Fleet download source `secrets.auth` reference mechanism (referencing an existing Fleet secret store entry by ID) as Terraform schema attributes; it remains managed outside this resource's schema. This exclusion does not cover the plain top-level `ssl` object (`certificate`, `certificate_authorities`, `key`), which continues to be exposed per the "Optional ssl attribute" requirement.
 
 #### Scenario: Auth attribute present in schema
 
@@ -35,7 +35,12 @@ The resource SHALL expose an optional `auth` nested attribute mapping to the Fle
 #### Scenario: No sensitive auth attributes
 
 - **WHEN** the practitioner inspects the resource schema
-- **THEN** there SHALL be no Terraform attributes exposing the `secrets.auth` `{id}` reference mechanism or the `ssl` object (CA, client cert, client key material) for this resource
+- **THEN** there SHALL be no Terraform attributes exposing the `secrets.auth` `{id}` reference mechanism for this resource
+
+#### Scenario: Plain ssl object is exposed
+
+- **WHEN** the practitioner inspects the resource schema
+- **THEN** there SHALL be an `ssl` attribute exposing `certificate`, `certificate_authorities`, and `key`
 
 ## ADDED Requirements
 
