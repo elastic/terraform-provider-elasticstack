@@ -23,10 +23,12 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
 //go:embed resource-description.md
@@ -54,6 +56,9 @@ func getResourceSchema(_ context.Context) schema.Schema {
 			"owner": schema.StringAttribute{
 				Required:            true,
 				MarkdownDescription: "The solution that owns the field definition: `cases` (Stack), `securitySolution`, or `observability`. Changing this forces a new resource.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("cases", "securitySolution", "observability"),
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 				},
@@ -69,27 +74,37 @@ func getResourceSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"definition": schema.StringAttribute{
-				Required:            true,
-				CustomType:          customtypes.NormalizedYamlType{},
-				MarkdownDescription: "The field definition as a YAML string describing a single field (type, label, control, metadata, validation). Semantically identical YAML is not treated as a change.",
+				Required:   true,
+				CustomType: customtypes.NormalizedYamlType{},
+				MarkdownDescription: "The field definition as a YAML string describing a single field (type, label, control, metadata, validation). " +
+					"Known limitation: edits that only reformat the YAML (key order, whitespace) may still plan an in-place update " +
+					"even though the value is semantically unchanged. Limited to 30000 characters.",
+				Validators: []validator.String{
+					stringvalidator.LengthAtMost(30000),
+				},
 			},
 			"description": schema.StringAttribute{
-				Optional:            true,
-				Computed:            true,
-				MarkdownDescription: "Optional human-readable description of the field's purpose.",
+				Optional: true,
+				Computed: true,
+				MarkdownDescription: "Optional human-readable description of the field's purpose. The API preserves the stored value when " +
+					"the attribute is omitted, so removing it from configuration does not clear it; set it to an empty string (`\"\"`) to clear it.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"is_global": schema.BoolAttribute{
 				Optional: true,
 				Computed: true,
 				MarkdownDescription: "When true, the field is rendered in every case for this owner regardless of the template used. " +
-					"A global field cannot be set back to false while it is linked to an active custom field.",
+					"A global field cannot be set back to false while it is linked to an active custom field. " +
+					"The API preserves the stored value when the attribute is omitted, so removing it from configuration does not reset it; set it to `false` explicitly.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"display_order": schema.Int64Attribute{
 				Computed:            true,
-				MarkdownDescription: "Position of a global field in the case details view, assigned by the server.",
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.UseStateForUnknown(),
-				},
+				MarkdownDescription: "Position of a global field in the case details view, assigned by the server when the field is first made global; it is unset for fields that have never been global.",
 			},
 		},
 	}

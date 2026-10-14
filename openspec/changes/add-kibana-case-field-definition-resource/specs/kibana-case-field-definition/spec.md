@@ -6,8 +6,8 @@ Defines the `elasticstack_kibana_case_field_definition` resource, which manages 
 
 ```hcl
 resource "elasticstack_kibana_case_field_definition" "example" {
-  owner      = string                          # required, forces replacement
-  definition = <string, normalized YAML>       # required; type, label, control, metadata for a single field
+  owner      = string                          # required, one of cases|securitySolution|observability, forces replacement
+  definition = <string, normalized YAML>       # required, at most 30000 characters; type, label, control, metadata for a single field
   name       = <optional, computed, string>    # forces replacement; extracted from `definition` YAML when omitted
   description = <optional, computed, string>
   is_global   = <optional, computed, bool>
@@ -47,7 +47,7 @@ Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-create
 
 ### Requirement: Schema and validation
 
-`owner` SHALL be required and force replacement. `definition` SHALL be required, validated as YAML, and compared semantically so formatting or key-order differences are not a diff. `name` SHALL be optional, computed, and force replacement; when omitted, the server-extracted name SHALL be accepted. `description` and `is_global` SHALL be optional and computed. `space_id` SHALL be optional, computed, default to `"default"`, and force replacement.
+`owner` SHALL be required, restricted to `cases`, `securitySolution`, or `observability`, and force replacement. `definition` SHALL be required, valid YAML of at most 30000 characters, using a semantic-equality type. `name` SHALL be optional, computed, and force replacement. `description` and `is_global` SHALL be optional and computed and keep their prior state value when omitted. `space_id` SHALL be optional, computed, default `"default"`, and force replacement.
 
 #### Scenario: Invalid YAML is rejected
 
@@ -61,6 +61,20 @@ Reference: https://www.elastic.co/docs/api/doc/kibana/operation/operation-create
 - GIVEN two `definition` values that decode to the same YAML structure but differ in whitespace or map key order
 - WHEN Terraform compares the values for planning or state reconciliation
 - THEN the resource SHALL treat them as semantically equal
+- AND a reformat-only edit MAY still plan an in-place update (known v1 limitation, documented in the schema description), which SHALL apply without replacement
+
+#### Scenario: Omitting description or is_global preserves the stored value
+
+- GIVEN the resource exists with `description` and `is_global` set
+- WHEN configuration removes those attributes and apply runs
+- THEN the API SHALL preserve the stored values (partial-update semantics, verified live on 9.6) and state SHALL keep them
+- AND setting `description = ""` SHALL clear the description
+
+#### Scenario: Invalid owner is rejected at validation
+
+- GIVEN a configuration with an `owner` other than `cases`, `securitySolution`, or `observability`
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return a validation diagnostic and make no API call
 
 #### Scenario: Omitting name defers to the server
 

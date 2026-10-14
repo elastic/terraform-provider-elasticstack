@@ -7,6 +7,7 @@ description: |-
   Technical Preview: the underlying Kibana API (/api/cases/field_definitions) is marked Technical Preview in the Kibana OpenAPI specification, even though the Field Library feature is generally available in the Kibana UI as of 9.5. The public API is only available from Elastic Stack 9.6.0 (Stack 9.5 serves only internal routes). The API may change in a future release.
   The field's shape (type, label, control, metadata, validation) is declared as YAML in definition. The field name and the YAML type are immutable after creation:
   Changing the top-level name attribute (together with the matching name key in definition) replaces the resource.Editing only the name key inside definition so that it no longer matches name is rejected by the API with a 400 error.Editing the YAML type is rejected by the API with a 409 field_identity_immutable error.Deleting a field that is still referenced by a case template or custom field is rejected with a 409 error.
+  If name is omitted from configuration, it is taken from the YAML on create and then kept in state; editing only the name key inside definition afterwards is rejected by the API (400/409) rather than replacing the resource. Set name explicitly, or change both together, to rename (replace) a field.
 ---
 
 # elasticstack_kibana_case_field_definition (Resource)
@@ -21,6 +22,8 @@ The field's shape (type, label, control, metadata, validation) is declared as YA
 - Editing only the `name` key inside `definition` so that it no longer matches `name` is rejected by the API with a 400 error.
 - Editing the YAML `type` is rejected by the API with a 409 `field_identity_immutable` error.
 - Deleting a field that is still referenced by a case template or custom field is rejected with a 409 error.
+
+If `name` is omitted from configuration, it is taken from the YAML on create and then kept in state; editing only the `name` key inside `definition` afterwards is rejected by the API (400/409) rather than replacing the resource. Set `name` explicitly, or change both together, to rename (replace) a field.
 ## Example Usage
 
 ```terraform
@@ -75,13 +78,13 @@ resource "elasticstack_kibana_case_field_definition" "in_space" {
 
 ### Required
 
-- `definition` (String) The field definition as a YAML string describing a single field (type, label, control, metadata, validation). Semantically identical YAML is not treated as a change.
+- `definition` (String) The field definition as a YAML string describing a single field (type, label, control, metadata, validation). Known limitation: edits that only reformat the YAML (key order, whitespace) may still plan an in-place update even though the value is semantically unchanged. Limited to 30000 characters.
 - `owner` (String) The solution that owns the field definition: `cases` (Stack), `securitySolution`, or `observability`. Changing this forces a new resource.
 
 ### Optional
 
-- `description` (String) Optional human-readable description of the field's purpose.
-- `is_global` (Boolean) When true, the field is rendered in every case for this owner regardless of the template used. A global field cannot be set back to false while it is linked to an active custom field.
+- `description` (String) Optional human-readable description of the field's purpose. The API preserves the stored value when the attribute is omitted, so removing it from configuration does not clear it; set it to an empty string (`""`) to clear it.
+- `is_global` (Boolean) When true, the field is rendered in every case for this owner regardless of the template used. A global field cannot be set back to false while it is linked to an active custom field. The API preserves the stored value when the attribute is omitted, so removing it from configuration does not reset it; set it to `false` explicitly.
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `name` (String) The field name, unique per owner (case-insensitive). Must match the `name` key in `definition`. When omitted, the server extracts it from `definition`. Immutable: changing this forces a new resource.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
@@ -89,7 +92,7 @@ resource "elasticstack_kibana_case_field_definition" "in_space" {
 
 ### Read-Only
 
-- `display_order` (Number) Position of a global field in the case details view, assigned by the server.
+- `display_order` (Number) Position of a global field in the case details view, assigned by the server when the field is first made global; it is unset for fields that have never been global.
 - `field_definition_id` (String) The server-assigned UUID of the field definition.
 - `id` (String) The composite ID of the field definition: `<space_id>/<field_definition_id>`.
 

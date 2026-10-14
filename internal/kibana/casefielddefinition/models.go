@@ -31,7 +31,7 @@ import (
 )
 
 // minVersion is the first Elastic Stack version with the Cases field library API.
-var minVersion = version.Must(version.NewVersion("9.6.0"))
+var minVersion = version.Must(version.NewVersion("9.6.0-SNAPSHOT"))
 
 type fieldDefinitionModel struct {
 	entitycore.KibanaConnectionField
@@ -55,7 +55,7 @@ func (m fieldDefinitionModel) GetSpaceID() types.String    { return m.SpaceID }
 func (m fieldDefinitionModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return entitycore.SingleVersionRequirement(
 		*minVersion,
-		"The Kibana Cases field library requires Elastic Stack v"+minVersion.String()+" or later.",
+		"The Kibana Cases field library requires Elastic Stack v"+minVersion.Core().String()+" or later.",
 	), nil
 }
 

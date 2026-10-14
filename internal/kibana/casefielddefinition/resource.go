@@ -19,8 +19,6 @@
 package casefielddefinition
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -37,6 +35,7 @@ var (
 // Resource manages a single field in the Kibana Cases field library.
 type Resource struct {
 	*entitycore.KibanaResource[fieldDefinitionModel]
+	*entitycore.KibanaSpaceImporter
 }
 
 func newResource() *Resource {
@@ -52,15 +51,16 @@ func newResource() *Resource {
 				Update: updateFieldDefinition,
 			},
 		),
+		KibanaSpaceImporter: entitycore.NewKibanaSpaceImporter(
+			path.Root("id"), path.Root("space_id"), path.Root("field_definition_id"),
+		).RequireSpaceID(
+			"Invalid import ID",
+			"The import ID must be in the format \"<space_id>/<field_definition_id>\".",
+		),
 	}
 }
 
 // NewResource returns the resource factory used for provider registration.
 func NewResource() resource.Resource {
 	return newResource()
-}
-
-// ImportState passes the composite "<space_id>/<field_definition_id>" through to id.
-func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }

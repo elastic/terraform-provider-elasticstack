@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -108,7 +109,7 @@ func TestVersionRequirement(t *testing.T) {
 	reqs, diags := fieldDefinitionModel{}.GetVersionRequirements(context.Background())
 	require.False(t, diags.HasError())
 	require.Len(t, reqs, 1)
-	assert.Equal(t, "9.6.0", reqs[0].MinVersion.String())
+	assert.Equal(t, "9.6.0-SNAPSHOT", reqs[0].MinVersion.String())
 	assert.Contains(t, reqs[0].ErrorMessage, "9.6.0")
 }
 
@@ -121,4 +122,42 @@ func TestSchema(t *testing.T) {
 	assert.True(t, s.Attributes["description"].IsComputed() && s.Attributes["description"].IsOptional())
 	assert.True(t, s.Attributes["is_global"].IsComputed() && s.Attributes["is_global"].IsOptional())
 	assert.IsType(t, customtypes.NormalizedYamlType{}, s.Attributes["definition"].GetType())
+}
+
+func TestSchemaPlanModifiersAndValidators(t *testing.T) {
+	s := getResourceSchema(context.Background())
+	ctx := context.Background()
+
+	strAttr := func(name string) schema.StringAttribute {
+		a, ok := s.Attributes[name].(schema.StringAttribute)
+		require.True(t, ok, name)
+		return a
+	}
+	hasModifier := func(a schema.StringAttribute, desc string) bool {
+		for _, m := range a.PlanModifiers {
+			if m.Description(ctx) == desc {
+				return true
+			}
+		}
+		return false
+	}
+	const replace = "If the value of this attribute changes, Terraform will destroy and recreate the resource."
+	const useState = "Once set, the value of this attribute in state will not change."
+
+	assert.True(t, hasModifier(strAttr("owner"), replace))
+	assert.True(t, hasModifier(strAttr("name"), replace))
+	assert.True(t, hasModifier(strAttr("name"), useState))
+	assert.True(t, hasModifier(strAttr("space_id"), replace))
+	assert.True(t, hasModifier(strAttr("description"), useState))
+	assert.False(t, hasModifier(strAttr("description"), replace))
+	assert.NotEmpty(t, strAttr("owner").Validators)
+	assert.NotEmpty(t, strAttr("definition").Validators)
+
+	isGlobal, ok := s.Attributes["is_global"].(schema.BoolAttribute)
+	require.True(t, ok)
+	assert.NotEmpty(t, isGlobal.PlanModifiers)
+
+	displayOrder, ok := s.Attributes["display_order"].(schema.Int64Attribute)
+	require.True(t, ok)
+	assert.Empty(t, displayOrder.PlanModifiers, "display_order is server-assigned and may change, so it must not reuse state")
 }

@@ -39,7 +39,7 @@ import (
 
 const resourceName = "elasticstack_kibana_case_field_definition.test"
 
-var minVersion = version.Must(version.NewVersion("9.6.0"))
+var minVersion = version.Must(version.NewVersion("9.6.0-SNAPSHOT"))
 
 func uniqueName() string {
 	return "tf_acc_" + uuid.New().String()[:8]
@@ -114,7 +114,10 @@ func TestAccResourceKibanaCaseFieldDefinition(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "space_id", "default"),
 					resource.TestCheckResourceAttrSet(resourceName, "field_definition_id"),
-					resource.TestCheckResourceAttrSet(resourceName, "display_order"),
+					// Omitted optional fields are absent from the API response and stay null.
+					resource.TestCheckNoResourceAttr(resourceName, "description"),
+					resource.TestCheckNoResourceAttr(resourceName, "is_global"),
+					resource.TestCheckNoResourceAttr(resourceName, "display_order"),
 					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile(`^default/.+`)),
 					captureID(&firstID),
 				),
@@ -128,6 +131,7 @@ func TestAccResourceKibanaCaseFieldDefinition(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "name", name),
 					resource.TestCheckResourceAttr(resourceName, "description", "initial description"),
 					resource.TestCheckResourceAttr(resourceName, "is_global", "true"),
+					resource.TestCheckResourceAttrSet(resourceName, "display_order"),
 					sameID(&firstID, true),
 				),
 			},
@@ -138,17 +142,32 @@ func TestAccResourceKibanaCaseFieldDefinition(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "description", "updated description"),
 					resource.TestCheckResourceAttr(resourceName, "is_global", "false"),
+					resource.TestCheckResourceAttrSet(resourceName, "display_order"),
 					sameID(&firstID, true),
 				),
 			},
 			{
-				// Remove description from config. The assertion is limited to a
-				// clean follow-up plan; whether the server clears or preserves
-				// the stored value is the open question recorded in design.md.
+				// Omitting description and is_global from config does not clear them:
+				// the API preserves stored values on omission (verified live on 9.6),
+				// and the plan keeps the prior state values.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove_description"),
 				ConfigVariables:          nameVars(name),
-				Check:                    sameID(&firstID, true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "description", "updated description"),
+					resource.TestCheckResourceAttr(resourceName, "is_global", "false"),
+					sameID(&firstID, true),
+				),
+			},
+			{
+				// An explicit empty string clears the description.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("clear_description"),
+				ConfigVariables:          nameVars(name),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "description", ""),
+					sameID(&firstID, true),
+				),
 			},
 			{
 				// Non-identity YAML change updates in place.
@@ -161,11 +180,18 @@ func TestAccResourceKibanaCaseFieldDefinition(t *testing.T) {
 				),
 			},
 			{
-				// Semantically identical YAML (key order, blank line, quoting) must plan clean.
+				// Reformat-only YAML (key order, blank line, quoting). Verified live: the
+				// plan still shows an in-place update (the framework does not suppress the
+				// config-vs-state diff via StringSemanticEquals), which is the documented
+				// v1 limitation. The apply must succeed without replacement or an
+				// inconsistent-result error, and a follow-up plan must be empty.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("reformat_yaml"),
 				ConfigVariables:          nameVars(name),
-				PlanOnly:                 true,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					sameID(&firstID, true),
+				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -175,6 +201,15 @@ func TestAccResourceKibanaCaseFieldDefinition(t *testing.T) {
 				ImportState:              true,
 				ImportStateIdFunc:        idFunc,
 				ImportStateVerify:        true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_yaml"),
+				ConfigVariables:          nameVars(name),
+				ResourceName:             resourceName,
+				ImportState:              true,
+				ImportStateId:            "not-a-composite-id",
+				ExpectError:              regexp.MustCompile(`(?i)Wrong resource ID|Invalid import ID`),
 			},
 			{
 				// Changing top-level name together with the YAML name replaces the resource.
@@ -213,7 +248,7 @@ func TestAccResourceKibanaCaseFieldDefinitionNameMismatch(t *testing.T) {
 					"name":       config.StringVariable(name),
 					"other_name": config.StringVariable(name + "_other"),
 				},
-				ExpectError: regexp.MustCompile(`(?is)name`),
+				ExpectError: regexp.MustCompile(`(?is)must match the name in the YAML`),
 			},
 		},
 	})
@@ -287,6 +322,41 @@ func deleteFieldDefinitionByID(t *testing.T, id string) {
 	}
 }
 
+func TestAccResourceKibanaCaseFieldDefinitionOwnerChange(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersion, versionutils.FlavorAny)
+
+	name := uniqueName()
+	var firstID string
+	vars := func(owner string) config.Variables {
+		return config.Variables{"name": config.StringVariable(name), "owner": config.StringVariable(owner)}
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { preCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars("cases"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "owner", "cases"),
+					captureID(&firstID),
+				),
+			},
+			{
+				// owner is immutable server-side; changing it must replace the resource.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("change"),
+				ConfigVariables:          vars("observability"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "owner", "observability"),
+					sameID(&firstID, false),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceKibanaCaseFieldDefinitionExternalDelete(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersion, versionutils.FlavorAny)
 
@@ -317,13 +387,13 @@ func TestAccResourceKibanaCaseFieldDefinitionExternalDelete(t *testing.T) {
 
 // TestAccResourceKibanaCaseFieldDefinitionDestroyBlocked links the field into a
 // case template through the Kibana API, then expects destroy to fail with a
-// 409. NOTE: the template YAML (`$ref` entry) and response shape follow the
-// OpenAPI description and have not been verified against a live 9.6+ stack.
+// 409 ("referenced by N active template(s)"). The template shape (a `$ref`
+// field entry, response key `templateId`) was verified against a live 9.6 stack.
 func TestAccResourceKibanaCaseFieldDefinitionDestroyBlocked(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersion, versionutils.FlavorAny)
 
 	name := uniqueName()
-	var fieldID, templateID string
+	var templateID string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { preCheck(t) },
@@ -332,21 +402,24 @@ func TestAccResourceKibanaCaseFieldDefinitionDestroyBlocked(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          nameVars(name),
-				Check:                    captureID(&fieldID),
 			},
 			{
 				PreConfig: func() {
 					templateID = createTemplateReferencing(t, name)
-					t.Cleanup(func() {
-						deleteTemplate(t, templateID)
-						deleteFieldDefinitionByID(t, fieldID)
-					})
+					t.Cleanup(func() { deleteTemplate(t, templateID) })
 				},
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables:          nameVars(name),
 				Destroy:                  true,
-				ExpectError:              regexp.MustCompile(`(?i)409|conflict|referenc|linked|in use`),
+				ExpectError:              regexp.MustCompile(`(?i)referenced by .* active template`),
+			},
+			{
+				// Remove the reference so the harness's final destroy can succeed.
+				PreConfig:                func() { deleteTemplate(t, templateID) },
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          nameVars(name),
 			},
 		},
 	})
