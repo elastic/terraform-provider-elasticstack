@@ -20,9 +20,7 @@ package casetemplate
 import (
 	"context"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -92,49 +90,36 @@ func (computedKeeper) PlanModifyBool(ctx context.Context, req planmodifier.BoolR
 }
 
 // onlyFormattingChanged reports whether config differs from state solely in a
-// semantically equal definition_yaml.
+// semantically equal definition_yaml. The cheap attribute comparisons run
+// before the YAML parse.
 func onlyFormattingChanged(ctx context.Context, config tfsdk.Config, plan tfsdk.Plan, state tfsdk.State, diags *diag.Diagnostics) bool {
 	if state.Raw.IsNull() || plan.Raw.IsNull() {
 		return false
 	}
 
-	var configYAML, stateYAML customtypes.NormalizedYamlValue
-	diags.Append(config.GetAttribute(ctx, path.Root("definition_yaml"), &configYAML)...)
-	diags.Append(state.GetAttribute(ctx, path.Root("definition_yaml"), &stateYAML)...)
-	if diags.HasError() || configYAML.IsUnknown() || configYAML.IsNull() || stateYAML.IsNull() {
-		return false
-	}
-	equal, d := customtypes.NewNormalizedYamlValue(stateYAML.ValueString()).
-		StringSemanticEquals(ctx, customtypes.NewNormalizedYamlValue(configYAML.ValueString()))
-	diags.Append(d...)
-	if !equal {
-		return false
-	}
-
-	return unchangedAttr[types.String](ctx, config, state, "owner", false, diags) &&
-		unchangedAttr[types.String](ctx, config, state, "name", false, diags) &&
-		unchangedAttr[types.String](ctx, config, state, "description", false, diags) &&
-		unchangedAttr[types.List](ctx, config, state, "tags", false, diags) &&
-		unchangedAttr[types.String](ctx, config, state, "space_id", true, diags) &&
-		unchangedAttr[types.Bool](ctx, config, state, "is_enabled", true, diags) &&
-		// Envelope-injected attributes: a change to either still triggers Update,
-		// whose PUT bumps template_version, so the keeper must not pin it.
-		unchangedAttr[attr.Value](ctx, config, state, "timeouts", false, diags) &&
-		unchangedAttr[attr.Value](ctx, config, state, "kibana_connection", false, diags)
-}
-
-// unchangedAttr reports whether the configured value of the named attribute
-// equals its state value. When ignoreNull is set, an unset config value counts
-// as unchanged because the attribute is Optional+Computed.
-func unchangedAttr[T attr.Value](ctx context.Context, config tfsdk.Config, state tfsdk.State, name string, ignoreNull bool, diags *diag.Diagnostics) bool {
-	var configValue, stateValue T
-	diags.Append(config.GetAttribute(ctx, path.Root(name), &configValue)...)
-	diags.Append(state.GetAttribute(ctx, path.Root(name), &stateValue)...)
+	var configModel, stateModel templateModel
+	diags.Append(config.Get(ctx, &configModel)...)
+	diags.Append(state.Get(ctx, &stateModel)...)
 	if diags.HasError() {
 		return false
 	}
-	if ignoreNull && configValue.IsNull() {
-		return true
+
+	// Optional+Computed attributes count as unchanged when unset in config.
+	unchanged := configModel.Owner.Equal(stateModel.Owner) &&
+		configModel.Name.Equal(stateModel.Name) &&
+		configModel.Description.Equal(stateModel.Description) &&
+		configModel.Tags.Equal(stateModel.Tags) &&
+		(configModel.SpaceID.IsNull() || configModel.SpaceID.Equal(stateModel.SpaceID)) &&
+		(configModel.IsEnabled.IsNull() || configModel.IsEnabled.Equal(stateModel.IsEnabled)) &&
+		// Envelope-injected attributes: a change to either still triggers Update,
+		// whose PUT bumps template_version, so the keeper must not pin it.
+		configModel.Timeouts.Equal(stateModel.Timeouts) &&
+		configModel.KibanaConnection.Equal(stateModel.KibanaConnection)
+	if !unchanged || configModel.DefinitionYAML.IsUnknown() || configModel.DefinitionYAML.IsNull() || stateModel.DefinitionYAML.IsNull() {
+		return false
 	}
-	return configValue.Equal(stateValue)
+
+	equal, d := stateModel.DefinitionYAML.StringSemanticEquals(ctx, configModel.DefinitionYAML)
+	diags.Append(d...)
+	return equal
 }

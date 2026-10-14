@@ -44,16 +44,7 @@ func CreateCaseTemplate(ctx context.Context, client *Client, spaceID string, req
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.CasesTemplateV2Response {
-		if resp.JSON200 == nil {
-			return nil
-		}
-		template, err := resp.JSON200.AsCasesTemplateV2Response()
-		if err != nil {
-			return nil
-		}
-		return &template
-	})
+	return HandleMutateRawResponse[kbapi.CasesTemplateV2Response](resp.StatusCode(), resp.Body)
 }
 
 // UpdateCaseTemplate fully replaces a Kibana Cases template, creating a new template version.
@@ -62,16 +53,7 @@ func UpdateCaseTemplate(ctx context.Context, client *Client, spaceID, templateID
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
-	return HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.CasesTemplateV2Response {
-		if resp.JSON200 == nil {
-			return nil
-		}
-		template, err := resp.JSON200.AsCasesTemplateV2Response()
-		if err != nil {
-			return nil
-		}
-		return &template
-	})
+	return HandleMutateRawResponse[kbapi.CasesTemplateV2Response](resp.StatusCode(), resp.Body)
 }
 
 // DeleteCaseTemplate soft-deletes all versions of a Kibana Cases template.

@@ -26,9 +26,9 @@ import (
 )
 
 var (
-	_ resource.Resource                = newResource()
-	_ resource.ResourceWithConfigure   = newResource()
-	_ resource.ResourceWithImportState = newResource()
+	_ resource.Resource                = (*Resource)(nil)
+	_ resource.ResourceWithConfigure   = (*Resource)(nil)
+	_ resource.ResourceWithImportState = (*Resource)(nil)
 )
 
 var readTemplate = entitycore.SimpleKibanaRead(
