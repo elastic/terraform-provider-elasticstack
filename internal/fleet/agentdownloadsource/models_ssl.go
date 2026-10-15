@@ -20,18 +20,13 @@ package agentdownloadsource
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/sslcore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
-
-type agentDownloadSourceSslModel struct {
-	CertificateAuthorities types.List   `tfsdk:"certificate_authorities"` // > string
-	Certificate            types.String `tfsdk:"certificate"`
-	Key                    types.String `tfsdk:"key"`
-}
 
 // agentDownloadSourceSSLAPIModel mirrors the anonymous `ssl` object on the
 // Fleet agent download source request and response bodies, which unlike the
@@ -73,7 +68,7 @@ func objectValueToSSL(ctx context.Context, obj types.Object) (*agentDownloadSour
 	}
 
 	var diags diag.Diagnostics
-	sslModel := typeutils.ObjectTypeAs[agentDownloadSourceSslModel](ctx, obj, path.Root("ssl"), &diags)
+	sslModel := typeutils.ObjectTypeAs[sslcore.Values](ctx, obj, path.Root("ssl"), &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -82,15 +77,17 @@ func objectValueToSSL(ctx context.Context, obj types.Object) (*agentDownloadSour
 	// unknown at plan time may resolve to all-null at apply, and sending an
 	// empty ssl object would persist a present-but-empty configuration the
 	// read path normalizes back to null.
-	if sslModel.CertificateAuthorities.IsNull() && sslModel.Certificate.IsNull() && sslModel.Key.IsNull() {
+	if sslModel.AllNil() {
 		diags.AddAttributeError(path.Root("ssl"), sslAtLeastOneSubattrSummary, sslAtLeastOneSubattrMessage)
 		return nil, diags
 	}
 
+	certificate, certificateAuthorities, key := sslcore.Extract(ctx, *sslModel, path.Root("ssl").AtName("certificate_authorities"), &diags)
+
 	return &agentDownloadSourceSSLAPIModel{
-		Certificate:            sslModel.Certificate.ValueStringPointer(),
-		CertificateAuthorities: typeutils.SliceRef(typeutils.ListTypeToSliceString(ctx, sslModel.CertificateAuthorities, path.Root("ssl").AtName("certificate_authorities"), &diags)),
-		Key:                    sslModel.Key.ValueStringPointer(),
+		Certificate:            certificate,
+		CertificateAuthorities: certificateAuthorities,
+		Key:                    key,
 	}, diags
 }
 
@@ -126,27 +123,13 @@ func sslToObjectValue(
 	key *string,
 ) (types.Object, diag.Diagnostics) {
 	attrTypes := getSslAttrTypes(ctx)
-	if certificate == nil && certificateAuthorities == nil && key == nil {
-		return types.ObjectNull(attrTypes), nil
-	}
-
 	var diags diag.Diagnostics
-	sslModel := agentDownloadSourceSslModel{
-		Certificate: typeutils.NonEmptyStringishPointerValue(certificate),
-		Key:         typeutils.NonEmptyStringishPointerValue(key),
-	}
-
-	if cas := typeutils.Deref(certificateAuthorities); len(cas) > 0 {
-		sslModel.CertificateAuthorities = typeutils.SliceToListTypeString(ctx, cas, path.Root("ssl").AtName("certificate_authorities"), &diags)
-	} else {
-		sslModel.CertificateAuthorities = types.ListNull(types.StringType)
-	}
-
-	if sslModel.CertificateAuthorities.IsNull() && sslModel.Certificate.IsNull() && sslModel.Key.IsNull() {
+	values := sslcore.Hydrate(ctx, certificate, certificateAuthorities, key, path.Root("ssl").AtName("certificate_authorities"), &diags)
+	if values.AllNil() {
 		return types.ObjectNull(attrTypes), nil
 	}
 
-	obj, diagTemp := types.ObjectValueFrom(ctx, attrTypes, sslModel)
+	obj, diagTemp := types.ObjectValueFrom(ctx, attrTypes, values)
 	diags.Append(diagTemp...)
 	return obj, diags
 }
