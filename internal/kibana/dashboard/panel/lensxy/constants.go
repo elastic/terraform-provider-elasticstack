@@ -22,3 +22,6 @@ const (
 	attrTitle = "title"
 	attrType  = "type"
 )
+
+// operationStaticValue is the reference-line threshold operation name for a static value.
+const operationStaticValue = "static_value"

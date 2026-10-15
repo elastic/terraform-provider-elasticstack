@@ -214,7 +214,7 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
 			if planThreshold.Axis.Equal(types.StringValue("y")) && stateThreshold.Axis.IsNull() {
 				stateThreshold.Axis = planThreshold.Axis
 			}
-			lenscommon.PreserveNullIfStateEquals(planThreshold.Operation, &stateThreshold.Operation, types.StringValue("static_value"))
+			lenscommon.PreserveNullIfStateEquals(planThreshold.Operation, &stateThreshold.Operation, types.StringValue(operationStaticValue))
 			lenscommon.PreserveNullJSONIfStateMatchesDefault(planThreshold.ColorJSON, &stateThreshold.ColorJSON, `{"type":"auto"}`)
 			preserveThresholdValueJSONIfStateIsPlanValue(planThreshold.ValueJSON, &stateThreshold.ValueJSON, planThreshold.Operation)
 			lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planThreshold.ValueJSON, &stateThreshold.ValueJSON, "axis_id", "color", "axis")
@@ -287,9 +287,9 @@ func jsonObjectHasKey(j jsontypes.Normalized, key string) bool {
 
 func thresholdValueJSONIsStaticValue(planObj map[string]any, siblingOperation types.String) bool {
 	if operation, hasOp := planObj["operation"]; hasOp {
-		return operation == "static_value"
+		return operation == operationStaticValue
 	}
-	return typeutils.IsKnown(siblingOperation) && siblingOperation.ValueString() == "static_value"
+	return typeutils.IsKnown(siblingOperation) && siblingOperation.ValueString() == operationStaticValue
 }
 
 func xyLegendEffectivelyUnset(m *models.XYLegendModel) bool {

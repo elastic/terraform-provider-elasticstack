@@ -379,7 +379,7 @@ func referenceLineLayerFromAPINoESQL(m *models.ReferenceLineLayerModel, apiLayer
 			// Operation objects other than static_value are kept whole in value_json (with the typed axis
 			// mirrored from the key) because the typed shape only carries `value` for static_value.
 			operation, _ := probe["operation"].(string)
-			isOtherOperation := operation != "" && operation != "static_value" && probe["column"] == nil
+			isOtherOperation := operation != "" && operation != operationStaticValue && probe["column"] == nil
 			if (hasAxis && !isOtherOperation) || probe["column"] != nil {
 				var tm models.ThresholdModel
 				tmDiags := thresholdFromAPIJSON(&tm, thresholdJSON)

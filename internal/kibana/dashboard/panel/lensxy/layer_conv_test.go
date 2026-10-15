@@ -114,6 +114,9 @@ func TestReferenceLineLayerFromAPI_thresholdAxisRoundTrip(t *testing.T) {
 	const (
 		staticPlan = `{"operation":"static_value","value":42}`
 		countPlan  = `{"operation":"count"}`
+
+		staticAxisX = `{"operation":"static_value","value":42,"axis":"x"}`
+		countAxisY2 = `{"operation":"count","axis":"y2"}`
 	)
 	tests := []struct {
 		name         string
@@ -126,13 +129,13 @@ func TestReferenceLineLayerFromAPI_thresholdAxisRoundTrip(t *testing.T) {
 		{name: "static y2 echoed", planAxis: types.StringValue("y2"), planValue: staticPlan, apiThreshold: `{"operation":"static_value","value":42,"axis":"y2"}`, wantAxis: types.StringValue("y2")},
 		{name: "static y stripped", planAxis: types.StringValue("y"), planValue: staticPlan, apiThreshold: `{"operation":"static_value","value":42}`, wantAxis: types.StringValue("y")},
 		{name: "static omitted with injected y", planAxis: types.StringNull(), planValue: staticPlan, apiThreshold: `{"operation":"static_value","value":42,"axis":"y"}`, wantAxis: types.StringNull()},
-		{name: "static axis inside value_json", planAxis: types.StringNull(), planValue: `{"operation":"static_value","value":42,"axis":"x"}`, apiThreshold: `{"operation":"static_value","value":42,"axis":"x"}`, wantAxis: types.StringNull()},
+		{name: "static axis inside value_json", planAxis: types.StringNull(), planValue: staticAxisX, apiThreshold: staticAxisX, wantAxis: types.StringNull()},
 		{name: "count x echoed", planAxis: types.StringValue("x"), planValue: countPlan, apiThreshold: `{"operation":"count","axis":"x"}`, wantAxis: types.StringValue("x")},
 		{name: "count y2 echoed", planAxis: types.StringValue("y2"), planValue: countPlan, apiThreshold: `{"operation":"count","axis":"y2"}`, wantAxis: types.StringValue("y2")},
 		{name: "count y echoed", planAxis: types.StringValue("y"), planValue: countPlan, apiThreshold: `{"operation":"count","axis":"y"}`, wantAxis: types.StringValue("y")},
 		{name: "count y stripped", planAxis: types.StringValue("y"), planValue: countPlan, apiThreshold: `{"operation":"count"}`, wantAxis: types.StringValue("y")},
 		{name: "count omitted with injected y", planAxis: types.StringNull(), planValue: countPlan, apiThreshold: `{"operation":"count","axis":"y"}`, wantAxis: types.StringNull()},
-		{name: "count axis inside value_json echoed", planAxis: types.StringNull(), planValue: `{"operation":"count","axis":"y2"}`, apiThreshold: `{"operation":"count","axis":"y2"}`, wantAxis: types.StringNull()},
+		{name: "count axis inside value_json echoed", planAxis: types.StringNull(), planValue: countAxisY2, apiThreshold: countAxisY2, wantAxis: types.StringNull()},
 		{name: "count axis y inside value_json stripped", planAxis: types.StringNull(), planValue: `{"operation":"count","axis":"y"}`, apiThreshold: `{"operation":"count"}`, wantAxis: types.StringNull()},
 	}
 	for _, tt := range tests {
