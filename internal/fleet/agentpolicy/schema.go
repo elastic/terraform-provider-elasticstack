@@ -264,6 +264,20 @@ func getSchema() schema.Schema {
 							stringvalidator.OneOf("", "process", "otel"),
 						},
 					},
+					"features_disable_policy_change_acks_enabled": schema.BoolAttribute{
+						Description: "Disable policy change acknowledgements from agents (maps to `agent_features_disable_policy_change_acks_enabled`). Requires Elastic Stack 9.4.0 or above.",
+						Optional:    true,
+					},
+					"features_include_tags_in_events_enabled": schema.BoolAttribute{
+						Description: "Include the agent's tags in events it sends (maps to `agent_features_include_tags_in_events_enabled`). Requires Elastic Stack 9.6.0 or above.",
+						Optional:    true,
+					},
+					"internal": schema.StringAttribute{
+						Description: "Advanced internal agent settings as free-form YAML (maps to `agent_internal`). " +
+							"Kibana provides no stability guarantee for the keys accepted here. Requires Elastic Stack 9.3.0 or above.",
+						Optional:   true,
+						CustomType: customtypes.NormalizedYamlType{},
+					},
 				},
 			},
 			"advanced_monitoring_options": schema.SingleNestedAttribute{

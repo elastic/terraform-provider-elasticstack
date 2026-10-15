@@ -32,8 +32,11 @@ func TestAgentPolicyVersionRequirements(t *testing.T) {
 	ctx := context.Background()
 
 	advancedSettings, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), advancedSettingsModel{
-		LoggingLevel:                  types.StringValue("debug"),
-		MonitoringRuntimeExperimental: types.StringValue("process"),
+		LoggingLevel:                           types.StringValue("debug"),
+		MonitoringRuntimeExperimental:          types.StringValue("process"),
+		FeaturesDisablePolicyChangeAcksEnabled: types.BoolValue(false),
+		FeaturesIncludeTagsInEventsEnabled:     types.BoolValue(false),
+		Internal:                               customtypes.NewNormalizedYamlValue("a: 1"),
 	})
 	require.False(t, diags.HasError())
 
@@ -52,7 +55,7 @@ func TestAgentPolicyVersionRequirements(t *testing.T) {
 
 	reqs, reqDiags := model.GetVersionRequirements(ctx)
 	require.False(t, reqDiags.HasError())
-	require.Len(t, reqs, 11)
+	require.Len(t, reqs, 14)
 
 	expected := []struct {
 		path       string
@@ -69,6 +72,9 @@ func TestAgentPolicyVersionRequirements(t *testing.T) {
 		{"unenrollment_timeout", MinVersionUnenrollmentTimeout.String()},
 		{"space_ids", MinVersionSpaceIDs.String()},
 		{"advanced_settings.monitoring_runtime_experimental", ""},
+		{"advanced_settings.features_disable_policy_change_acks_enabled", MinVersionFeaturesDisablePolicyChangeAcksEnabled.String()},
+		{"advanced_settings.features_include_tags_in_events_enabled", MinVersionFeaturesIncludeTagsInEventsEnabled.String()},
+		{"advanced_settings.internal", MinVersionAgentInternal.String()},
 	}
 	for i, expected := range expected {
 		require.NotNil(t, reqs[i].AttributePath)
@@ -77,7 +83,29 @@ func TestAgentPolicyVersionRequirements(t *testing.T) {
 			require.Equal(t, expected.minVersion, reqs[i].MinVersion.String())
 		}
 	}
-	require.NotNil(t, reqs[len(reqs)-1].VersionCheck)
+	for _, req := range reqs {
+		if req.AttributePath.String() == "advanced_settings.monitoring_runtime_experimental" {
+			require.NotNil(t, req.VersionCheck)
+		}
+	}
+}
+
+func TestAgentPolicyVersionRequirementsAgentFeaturesUnset(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	advancedSettings, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), advancedSettingsModel{
+		LoggingLevel: types.StringValue("debug"),
+	})
+	require.False(t, diags.HasError())
+
+	reqs, reqDiags := agentPolicyModel{AdvancedSettings: advancedSettings}.GetVersionRequirements(ctx)
+	require.False(t, reqDiags.HasError())
+	for _, req := range reqs {
+		require.NotNil(t, req.AttributePath)
+		require.NotContains(t, req.AttributePath.String(), "features_")
+		require.NotEqual(t, "advanced_settings.internal", req.AttributePath.String())
+	}
 }
 
 func TestAgentPolicyVersionRequirementsIgnoreCompatibleDefaults(t *testing.T) {

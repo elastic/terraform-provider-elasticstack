@@ -196,3 +196,58 @@ resolved by the follow-up comment above:
   Kibana PR milestone labels rather than a second live stack probe (only 9.4.0 was available to the
   follow-up comment's author). Non-blocking for authoring this change; tracked as a pre-merge
   verification task in tasks.md.
+
+## Pre-implementation verification record (tasks 1.1-1.3)
+
+Only one live stack was reachable during implementation: Elasticsearch/Kibana **9.5.5** on
+`localhost:9200`/`localhost:5601` (the worktree's env-var ports were not listening, so the default
+ports were used). No 9.3.0 or 9.6.0 stack was started. Findings against 9.5.5 via direct Fleet API
+probes (`POST /api/fleet/agent_policies`):
+
+- `advanced_settings.agent_internal` (`"a: 1"`) and
+  `agent_features_disable_policy_change_acks_enabled` (`true`) are accepted and echoed back.
+  This is consistent with, but does not prove, the 9.3.0 / 9.4.0 minimums.
+- `agent_features_include_tags_in_events_enabled` is rejected with
+  `Additional properties are not allowed`. This is consistent with the 9.6.0 minimum (the
+  rejection reproduces on 9.4.0 per the issue and now also on 9.5.5, which is below 9.6.0).
+
+Not verified live: the exact 9.3.0 lower boundary for `agent_internal`, acceptance of
+`features_include_tags_in_events_enabled` on 9.6.0, and rejection of `agent_internal` below 9.3.0.
+No deviation from the documented 9.3.0 / 9.4.0 / 9.6.0 minimums was found; implementation
+proceeds with those minimums. Acceptance tests use per-field `SkipFunc`s so CI stacks at other
+versions exercise the remaining boundaries.
+
+## Implementation notes and deviations (acceptance tests)
+
+- Because the three fields have different minimums (9.3.0 / 9.4.0 / 9.6.0), the acceptance tests add
+  new per-field steps (`agent_internal_create`, `agent_acks_create`, `agent_features_create`,
+  `agent_internal_reformatted`, `agent_features_update`, `agent_features_removed`) to
+  `TestAccResourceAgentPolicyWithAdvancedSettings`, each with its own `SkipFunc`, instead of editing
+  the existing `create_with_logging`/`update_settings` configs (which must keep running on 8.17.0+).
+  Negative gating lives in `TestAccResourceAgentPolicyAgentFeaturesVersionGate`.
+- Semantic equality: Terraform requires the planned value of an `Optional` (non-`Computed`)
+  attribute to equal its configured value, so the framework cannot suppress the plan diff when only
+  the YAML formatting in configuration changes. The result is a single in-place update that leaves no
+  persistent diff; semantic equality still applies on refresh/apply (e.g. if Kibana normalised the
+  YAML). The delta spec scenario was reworded accordingly, and acceptance step 10 asserts a clean
+  apply with an empty post-apply plan rather than an empty pre-apply plan.
+
+## Validation record (group 9)
+
+Acceptance tests (`TestAccResourceAgentPolicy*`) were run against the 9.5.5 stack only. On it, the
+`internal` (9.3.0) and `features_disable_policy_change_acks_enabled` (9.4.0) positive steps and the
+`features_include_tags_in_events_enabled` negative version-gate step executed; the 9.6.0 positive
+steps and the lower-version negative steps for the other two fields were skipped by their `SkipFunc`s
+and remain to be exercised by CI stacks at those versions. `make check-lint`, `make check-openspec`
+and the `internal/fleet/agentpolicy` unit tests pass. Self-review against the delta spec (task 9.5)
+found the implementation consistent with every scenario; the only deviation is the semantic-equality
+wording noted above.
+- `convertAdvancedSettingsToAPI` returns nil when no emittable field remains (for example only
+  capability-unsupported fields are set), so `advanced_settings` is omitted from the request instead of
+  being sent as `{}`, which Fleet's wholesale PUT would treat as clearing every key. This is unreachable
+  on stacks where version-requirement diagnostics already stop the apply; it is a defensive guard covered
+  by a unit test.
+- `internal` population deviates from `typeutils.StringFromAny`: Kibana can return structured YAML as a
+  JSON object, so non-string values are JSON-marshalled (JSON is valid YAML) rather than read as null,
+  which would cause a permanent diff. A marshal failure surfaces as a warning diagnostic rather than
+  being silently dropped.

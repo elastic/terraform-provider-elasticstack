@@ -120,6 +120,24 @@ func (model agentPolicyModel) GetVersionRequirements(ctx context.Context) ([]ent
 			"monitoring_runtime_experimental is only supported in Elastic Stack 8.19.x or 9.1.0 and above",
 		))
 	}
+	addMinimum(
+		typeutils.IsKnown(settings.FeaturesDisablePolicyChangeAcksEnabled),
+		path.Root("advanced_settings").AtName("features_disable_policy_change_acks_enabled"),
+		MinVersionFeaturesDisablePolicyChangeAcksEnabled,
+		fmt.Sprintf("features_disable_policy_change_acks_enabled is only supported in Elastic Stack %s and above", MinVersionFeaturesDisablePolicyChangeAcksEnabled),
+	)
+	addMinimum(
+		typeutils.IsKnown(settings.FeaturesIncludeTagsInEventsEnabled),
+		path.Root("advanced_settings").AtName("features_include_tags_in_events_enabled"),
+		MinVersionFeaturesIncludeTagsInEventsEnabled,
+		fmt.Sprintf("features_include_tags_in_events_enabled is only supported in Elastic Stack %s and above", MinVersionFeaturesIncludeTagsInEventsEnabled),
+	)
+	addMinimum(
+		typeutils.IsKnown(settings.Internal),
+		path.Root("advanced_settings").AtName("internal"),
+		MinVersionAgentInternal,
+		fmt.Sprintf("internal is only supported in Elastic Stack %s and above", MinVersionAgentInternal),
+	)
 
 	return reqs, diags
 }

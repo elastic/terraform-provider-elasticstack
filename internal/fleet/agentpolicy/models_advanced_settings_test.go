@@ -19,6 +19,8 @@ package agentpolicy
 
 import (
 	"context"
+	"encoding/json"
+	"strconv"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -122,6 +124,50 @@ func TestPopulateAdvancedSettingsFromAPI(t *testing.T) {
 
 		assert.True(t, settings.LoggingLevel.IsNull())
 		assert.True(t, settings.LoggingToFiles.IsNull())
+	})
+
+	t.Run("agent feature fields populated from API values", func(t *testing.T) {
+		model := &agentPolicyModel{}
+		var data kbapi.KibanaHTTPAPIsAgentPolicyResponse
+		require.NoError(t, json.Unmarshal([]byte(`{"advanced_settings":{
+			"agent_features_disable_policy_change_acks_enabled": true,
+			"agent_features_include_tags_in_events_enabled": false,
+			"agent_internal": "a:\n  b: 1\n"
+		}}`), &data))
+
+		diags := model.populateAdvancedSettingsFromAPI(ctx, &data)
+		require.False(t, diags.HasError())
+
+		var settings advancedSettingsModel
+		diags = model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
+		require.False(t, diags.HasError())
+
+		assert.True(t, settings.FeaturesDisablePolicyChangeAcksEnabled.ValueBool())
+		assert.False(t, settings.FeaturesDisablePolicyChangeAcksEnabled.IsNull())
+		assert.False(t, settings.FeaturesIncludeTagsInEventsEnabled.ValueBool())
+		assert.False(t, settings.FeaturesIncludeTagsInEventsEnabled.IsNull())
+		assert.Equal(t, "a:\n  b: 1\n", settings.Internal.ValueString())
+	})
+
+	t.Run("agent feature fields explicit null from API", func(t *testing.T) {
+		model := &agentPolicyModel{}
+		var data kbapi.KibanaHTTPAPIsAgentPolicyResponse
+		require.NoError(t, json.Unmarshal([]byte(`{"advanced_settings":{
+			"agent_features_disable_policy_change_acks_enabled": null,
+			"agent_features_include_tags_in_events_enabled": null,
+			"agent_internal": null
+		}}`), &data))
+
+		diags := model.populateAdvancedSettingsFromAPI(ctx, &data)
+		require.False(t, diags.HasError())
+
+		var settings advancedSettingsModel
+		diags = model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
+		require.False(t, diags.HasError())
+
+		assert.True(t, settings.FeaturesDisablePolicyChangeAcksEnabled.IsNull())
+		assert.True(t, settings.FeaturesIncludeTagsInEventsEnabled.IsNull())
+		assert.True(t, settings.Internal.IsNull())
 	})
 }
 
@@ -249,4 +295,133 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConvertAdvancedSettingsToAPIAgentFeatures(t *testing.T) {
+	ctx := context.Background()
+	allSupported := agentPolicyFeatures{
+		SupportsAgentInternal:                          true,
+		SupportsFeaturesDisablePolicyChangeAcksEnabled: true,
+		SupportsFeaturesIncludeTagsInEventsEnabled:     true,
+	}
+
+	convert := func(t *testing.T, settings advancedSettingsModel, feat agentPolicyFeatures) *advancedSettingsAPIValues {
+		t.Helper()
+		obj, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), settings)
+		require.False(t, diags.HasError())
+		model := &agentPolicyModel{AdvancedSettings: obj}
+		got, diags := model.convertAdvancedSettingsToAPI(ctx, feat)
+		require.False(t, diags.HasError())
+		return got
+	}
+
+	for _, v := range []bool{true, false} {
+		t.Run("features_disable_policy_change_acks_enabled "+strconv.FormatBool(v), func(t *testing.T) {
+			got := convert(t, advancedSettingsModel{FeaturesDisablePolicyChangeAcksEnabled: types.BoolValue(v)}, allSupported)
+			require.NotNil(t, got)
+			assert.Equal(t, v, got.AgentFeaturesDisablePolicyChangeAcksEnabled)
+			assert.Nil(t, got.AgentFeaturesIncludeTagsInEventsEnabled)
+			assert.Nil(t, got.AgentInternal)
+		})
+		t.Run("features_include_tags_in_events_enabled "+strconv.FormatBool(v), func(t *testing.T) {
+			got := convert(t, advancedSettingsModel{FeaturesIncludeTagsInEventsEnabled: types.BoolValue(v)}, allSupported)
+			require.NotNil(t, got)
+			assert.Equal(t, v, got.AgentFeaturesIncludeTagsInEventsEnabled)
+			assert.Nil(t, got.AgentFeaturesDisablePolicyChangeAcksEnabled)
+			assert.Nil(t, got.AgentInternal)
+		})
+	}
+
+	t.Run("internal YAML string", func(t *testing.T) {
+		got := convert(t, advancedSettingsModel{Internal: customtypes.NewNormalizedYamlValue("a:\n  b: 1\n")}, allSupported)
+		require.NotNil(t, got)
+		assert.Equal(t, "a:\n  b: 1\n", got.AgentInternal)
+	})
+
+	t.Run("unsupported stack omits keys", func(t *testing.T) {
+		got := convert(t, advancedSettingsModel{
+			LoggingLevel:                           types.StringValue("info"),
+			FeaturesDisablePolicyChangeAcksEnabled: types.BoolValue(false),
+			FeaturesIncludeTagsInEventsEnabled:     types.BoolValue(false),
+			Internal:                               customtypes.NewNormalizedYamlValue("a: 1"),
+		}, agentPolicyFeatures{})
+		require.NotNil(t, got)
+		assert.Equal(t, "info", got.AgentLoggingLevel)
+		assert.Nil(t, got.AgentFeaturesDisablePolicyChangeAcksEnabled)
+		assert.Nil(t, got.AgentFeaturesIncludeTagsInEventsEnabled)
+		assert.Nil(t, got.AgentInternal)
+	})
+
+	t.Run("only unsupported new fields set returns nil", func(t *testing.T) {
+		got := convert(t, advancedSettingsModel{
+			FeaturesDisablePolicyChangeAcksEnabled: types.BoolValue(true),
+			FeaturesIncludeTagsInEventsEnabled:     types.BoolValue(true),
+			Internal:                               customtypes.NewNormalizedYamlValue("a: 1"),
+		}, agentPolicyFeatures{})
+		assert.Nil(t, got)
+	})
+
+	t.Run("only new fields null returns nil", func(t *testing.T) {
+		assert.Nil(t, convert(t, advancedSettingsModel{}, allSupported))
+	})
+}
+
+func TestPopulateAdvancedSettingsInternalNonString(t *testing.T) {
+	ctx := context.Background()
+	model := &agentPolicyModel{}
+	var data kbapi.KibanaHTTPAPIsAgentPolicyResponse
+	require.NoError(t, json.Unmarshal([]byte(`{"advanced_settings":{"agent_internal":{"agent":{"logging":{"level":"debug"}}}}}`), &data))
+
+	require.False(t, model.populateAdvancedSettingsFromAPI(ctx, &data).HasError())
+	var settings advancedSettingsModel
+	require.False(t, model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{}).HasError())
+	assert.JSONEq(t, `{"agent":{"logging":{"level":"debug"}}}`, settings.Internal.ValueString())
+}
+
+func TestInternalYAMLSemanticEqualityOnRead(t *testing.T) {
+	ctx := context.Background()
+	prior := customtypes.NewNormalizedYamlValue("agent:\n  logging:\n    level: info\n  # comment\n  monitoring:\n    http:\n      enabled: true\n")
+	model := &agentPolicyModel{}
+	var data kbapi.KibanaHTTPAPIsAgentPolicyResponse
+	require.NoError(t, json.Unmarshal([]byte(`{"advanced_settings":{"agent_internal":"agent:\n    monitoring:\n        http:\n            enabled: true\n    logging:\n        level: info\n"}}`), &data))
+	require.False(t, model.populateAdvancedSettingsFromAPI(ctx, &data).HasError())
+	var settings advancedSettingsModel
+	require.False(t, model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{}).HasError())
+
+	equal, diags := prior.StringSemanticEquals(ctx, settings.Internal)
+	require.False(t, diags.HasError())
+	assert.True(t, equal)
+}
+
+func TestToAPICreateModelEmitsAgentFeatureKeys(t *testing.T) {
+	ctx := context.Background()
+	obj, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), advancedSettingsModel{
+		FeaturesDisablePolicyChangeAcksEnabled: types.BoolValue(false),
+		FeaturesIncludeTagsInEventsEnabled:     types.BoolValue(true),
+		Internal:                               customtypes.NewNormalizedYamlValue("a: 1\n"),
+	})
+	require.False(t, diags.HasError())
+	model := &agentPolicyModel{
+		Name:             types.StringValue("p"),
+		Namespace:        types.StringValue("default"),
+		AdvancedSettings: obj,
+	}
+
+	body, diags := model.toAPICreateModel(ctx, agentPolicyFeatures{
+		SupportsAdvancedSettings:                       true,
+		SupportsAgentInternal:                          true,
+		SupportsFeaturesDisablePolicyChangeAcksEnabled: true,
+		SupportsFeaturesIncludeTagsInEventsEnabled:     true,
+	})
+	require.False(t, diags.HasError())
+
+	raw, err := json.Marshal(body)
+	require.NoError(t, err)
+	var got struct {
+		AdvancedSettings map[string]any `json:"advanced_settings"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &got))
+	assert.Equal(t, false, got.AdvancedSettings["agent_features_disable_policy_change_acks_enabled"])
+	assert.Equal(t, true, got.AdvancedSettings["agent_features_include_tags_in_events_enabled"])
+	assert.Equal(t, "a: 1\n", got.AdvancedSettings["agent_internal"])
 }

@@ -226,3 +226,22 @@ func TestFlavor_String(t *testing.T) {
 		})
 	}
 }
+
+func TestSkipWhenVersionSupported(t *testing.T) {
+	t.Parallel()
+
+	skip, err := skipWhenVersionSupported(context.Background(), testVer811, stubServerInfo(testVer812, "default", nil))
+	require.NoError(t, err)
+	require.True(t, skip, "stateful at/above min should skip")
+
+	skip, err = skipWhenVersionSupported(context.Background(), testVer811, stubServerInfo(testVer810, "default", nil))
+	require.NoError(t, err)
+	require.False(t, skip, "stateful below min should run")
+
+	skip, err = skipWhenVersionSupported(context.Background(), testVer811, stubServerInfo(testVer810, clients.ServerlessFlavor, nil))
+	require.NoError(t, err)
+	require.True(t, skip, "serverless should always skip")
+
+	_, err = skipWhenVersionSupported(context.Background(), testVer811, stubServerInfo(nil, "", errors.New("boom")))
+	require.Error(t, err)
+}

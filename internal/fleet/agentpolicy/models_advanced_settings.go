@@ -19,6 +19,7 @@ package agentpolicy
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -41,6 +42,10 @@ type advancedSettingsModel struct {
 	DownloadTimeout               customtypes.Duration `tfsdk:"download_timeout"`
 	DownloadTargetDirectory       types.String         `tfsdk:"download_target_directory"`
 	MonitoringRuntimeExperimental types.String         `tfsdk:"monitoring_runtime_experimental"`
+
+	FeaturesDisablePolicyChangeAcksEnabled types.Bool                      `tfsdk:"features_disable_policy_change_acks_enabled"`
+	FeaturesIncludeTagsInEventsEnabled     types.Bool                      `tfsdk:"features_include_tags_in_events_enabled"`
+	Internal                               customtypes.NormalizedYamlValue `tfsdk:"internal"`
 }
 
 // advancedSettingsAttrTypes returns attribute types for advanced_settings pulled from the schema
@@ -82,9 +87,27 @@ func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Conte
 		DownloadTimeout:               customtypes.NewDurationFromAny(data.AdvancedSettings.AgentDownloadTimeout),
 		DownloadTargetDirectory:       typeutils.StringFromAny(data.AdvancedSettings.AgentDownloadTargetDirectory),
 		MonitoringRuntimeExperimental: typeutils.StringFromAny(data.AdvancedSettings.AgentMonitoringRuntimeExperimental),
+
+		FeaturesDisablePolicyChangeAcksEnabled: typeutils.BoolFromAny(data.AdvancedSettings.AgentFeaturesDisablePolicyChangeAcksEnabled),
+		FeaturesIncludeTagsInEventsEnabled:     typeutils.BoolFromAny(data.AdvancedSettings.AgentFeaturesIncludeTagsInEventsEnabled),
+		Internal:                               customtypes.NewNormalizedYamlNull(),
+	}
+	var diags diag.Diagnostics
+	switch internal := data.AdvancedSettings.AgentInternal.(type) {
+	case nil:
+	case string:
+		settings.Internal = customtypes.NewNormalizedYamlValue(internal)
+	default:
+		// Kibana may return structured YAML as a JSON object; JSON is valid YAML.
+		if encoded, err := json.Marshal(internal); err == nil {
+			settings.Internal = customtypes.NewNormalizedYamlValue(string(encoded))
+		} else {
+			diags.AddWarning("Unable to read advanced_settings.internal", err.Error())
+		}
 	}
 
-	obj, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), settings)
+	obj, objDiags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), settings)
+	diags.Append(objDiags...)
 	if diags.HasError() {
 		return diags
 	}
@@ -114,7 +137,10 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 		typeutils.IsKnown(settings.GoMaxProcs) ||
 		typeutils.IsKnown(settings.DownloadTimeout) ||
 		typeutils.IsKnown(settings.DownloadTargetDirectory) ||
-		typeutils.IsKnown(settings.MonitoringRuntimeExperimental)
+		typeutils.IsKnown(settings.MonitoringRuntimeExperimental) ||
+		typeutils.IsKnown(settings.FeaturesDisablePolicyChangeAcksEnabled) ||
+		typeutils.IsKnown(settings.FeaturesIncludeTagsInEventsEnabled) ||
+		typeutils.IsKnown(settings.Internal)
 
 	if !hasValues {
 		return nil, nil
@@ -151,6 +177,20 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 	}
 	if typeutils.IsKnown(settings.MonitoringRuntimeExperimental) && feat.SupportsMonitoringRuntimeExperimental {
 		result.AgentMonitoringRuntimeExperimental = settings.MonitoringRuntimeExperimental.ValueString()
+	}
+	if typeutils.IsKnown(settings.FeaturesDisablePolicyChangeAcksEnabled) && feat.SupportsFeaturesDisablePolicyChangeAcksEnabled {
+		result.AgentFeaturesDisablePolicyChangeAcksEnabled = settings.FeaturesDisablePolicyChangeAcksEnabled.ValueBool()
+	}
+	if typeutils.IsKnown(settings.FeaturesIncludeTagsInEventsEnabled) && feat.SupportsFeaturesIncludeTagsInEventsEnabled {
+		result.AgentFeaturesIncludeTagsInEventsEnabled = settings.FeaturesIncludeTagsInEventsEnabled.ValueBool()
+	}
+	if typeutils.IsKnown(settings.Internal) && feat.SupportsAgentInternal {
+		result.AgentInternal = settings.Internal.ValueString()
+	}
+
+	if *result == (advancedSettingsAPIValues{}) {
+		// Every configured key was unsupported on this stack; never send an empty object.
+		return nil, diags
 	}
 
 	return result, diags

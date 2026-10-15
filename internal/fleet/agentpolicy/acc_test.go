@@ -939,6 +939,9 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 	})
 }
 
+// agentInternalYAML is the YAML written by the agent_*_set and on-create acceptance configs (heredoc output).
+const agentInternalYAML = "agent:\n  monitoring:\n    http:\n      enabled: true\n    # trailing comment\n  logging:\n    level: info\n"
+
 func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -1087,7 +1090,209 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.monitoring_runtime_experimental", ""),
 				),
 			},
+			// Step 8: set advanced_settings.internal (9.3.0+)
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionAgentInternal),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_internal_set"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", agentInternalYAML),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled"),
+				),
+			},
+			// Step 9: add features_disable_policy_change_acks_enabled (9.4.0+)
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_acks_set"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", agentInternalYAML),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "true"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled"),
+				),
+			},
+			// Step 10: reformatted-but-equivalent internal YAML applies cleanly and leaves no persistent diff (the harness
+			// asserts an empty post-apply plan); semantic equality absorbs any server-side normalisation on refresh
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_internal_reformatted"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "true"),
+					resource.TestMatchResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", regexp.MustCompile(`reformatted but semantically equal`)),
+				),
+			},
+			// Step 11: import round-trips internal and acks toggle
+			agentFeatureImportStep("agent_acks_set", agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled, policyName),
+			// Step 12: add features_include_tags_in_events_enabled (9.6.0+)
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_features_set"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", agentInternalYAML),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled", "true"),
+				),
+			},
+			// Step 13: import round-trips all three new fields
+			agentFeatureImportStep("agent_features_set", agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled, policyName),
+			// Step 14: flip toggles to false and change internal YAML
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_features_update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", "agent:\n  logging:\n    level: debug\n"),
+				),
+			},
+			// Step 15: omit the three new fields; they clear without a persistent diff
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionAgentInternal),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_features_removed"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.logging_level", "info"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal"),
+				),
+			},
+			// Step 16: set the acks toggle explicitly to false from unset, then import
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_acks_false"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "false"),
+				),
+			},
+			agentFeatureImportStep("agent_acks_false", agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled, policyName),
+			// Step 17: set both toggles explicitly to false from unset, then import
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_toggles_false"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled", "false"),
+				),
+			},
+			agentFeatureImportStep("agent_toggles_false", agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled, policyName),
 		},
+	})
+}
+
+// The OnCreate tests set each new advanced_settings field on the initial POST (not via update)
+// and verify read-back and import.
+func TestAccResourceAgentPolicyAgentInternalOnCreate(t *testing.T) {
+	testAccAgentFeatureOnCreate(t, "internal", agentpolicy.MinVersionAgentInternal, "internal", agentInternalYAML)
+}
+
+func TestAccResourceAgentPolicyAgentAcksOnCreate(t *testing.T) {
+	testAccAgentFeatureOnCreate(t, "acks", agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled,
+		"features_disable_policy_change_acks_enabled", "true")
+}
+
+func TestAccResourceAgentPolicyAgentTagsOnCreate(t *testing.T) {
+	testAccAgentFeatureOnCreate(t, "tags", agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled,
+		"features_include_tags_in_events_enabled", "true")
+}
+
+// agentFeatureImportStep returns an import-verify step for the named testdata directory, gated on minVersion.
+func agentFeatureImportStep(dir string, minVersion *version.Version, policyName string) resource.TestStep {
+	return resource.TestStep{
+		ProtoV6ProviderFactories: acctest.Providers,
+		SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersion),
+		ConfigDirectory:          acctest.NamedTestCaseDirectory(dir),
+		ConfigVariables: config.Variables{
+			"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+		},
+		ResourceName:            "elasticstack_fleet_agent_policy.test_policy",
+		ImportState:             true,
+		ImportStateVerify:       true,
+		ImportStateVerifyIgnore: []string{"skip_destroy"},
+	}
+}
+
+func testAccAgentFeatureOnCreate(t *testing.T, dir string, minVersion *version.Version, attr, want string) {
+	t.Helper()
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName))}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(dir),
+				ConfigVariables:          vars,
+				Check:                    resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings."+attr, want),
+			},
+			agentFeatureImportStep(dir, minVersion, policyName),
+		},
+	})
+}
+
+func TestAccResourceAgentPolicyAgentFeaturesVersionGate(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, agentpolicy.MinVersionAdvancedSettings, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	gated := []struct {
+		dir        string
+		minVersion *version.Version
+	}{
+		{"internal", agentpolicy.MinVersionAgentInternal},
+		{"features_disable_policy_change_acks_enabled", agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled},
+		{"features_include_tags_in_events_enabled", agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled},
+	}
+
+	var steps []resource.TestStep
+	for _, g := range gated {
+		steps = append(steps, resource.TestStep{
+			ProtoV6ProviderFactories: acctest.Providers,
+			SkipFunc:                 versionutils.CheckIfVersionIsSupported(g.minVersion),
+			ConfigDirectory:          acctest.NamedTestCaseDirectory(g.dir),
+			ConfigVariables: config.Variables{
+				"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+			},
+			ExpectError: regexp.MustCompile(`Unsupported server version[\s\S]*` + g.dir + `\s+is\s+only\s+supported`),
+		})
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps:        steps,
 	})
 }
 
