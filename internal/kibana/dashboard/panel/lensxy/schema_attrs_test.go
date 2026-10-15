@@ -51,26 +51,22 @@ func TestReferenceLineThresholdAxisValidator(t *testing.T) {
 	require.False(t, axisAttr.Computed)
 	require.True(t, axisAttr.Optional)
 
-	validate := func(value string) validator.StringResponse {
+	validate := func(value types.String) validator.StringResponse {
 		resp := validator.StringResponse{}
 		for _, v := range axisAttr.Validators {
-			v.ValidateString(context.Background(), validator.StringRequest{ConfigValue: types.StringValue(value)}, &resp)
+			v.ValidateString(context.Background(), validator.StringRequest{ConfigValue: value}, &resp)
 		}
 		return resp
 	}
 
 	for _, ok := range []string{"x", "y", "y2"} {
-		require.False(t, validate(ok).Diagnostics.HasError(), ok)
+		require.False(t, validate(types.StringValue(ok)).Diagnostics.HasError(), ok)
 	}
 	for _, v := range []types.String{types.StringNull(), types.StringUnknown()} {
-		resp := validator.StringResponse{}
-		for _, val := range axisAttr.Validators {
-			val.ValidateString(context.Background(), validator.StringRequest{ConfigValue: v}, &resp)
-		}
-		require.False(t, resp.Diagnostics.HasError(), v.String())
+		require.False(t, validate(v).Diagnostics.HasError(), v.String())
 	}
 	for _, bad := range []string{"left", "right", "bottom", "Y", "", "y1"} {
-		resp := validate(bad)
+		resp := validate(types.StringValue(bad))
 		require.True(t, resp.Diagnostics.HasError(), bad)
 		detail := resp.Diagnostics[0].Detail()
 		require.Contains(t, detail, "x")

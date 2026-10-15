@@ -206,35 +206,16 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
 			planThreshold := planLayer.ReferenceLineLayer.Thresholds[j]
 			stateThreshold := &stateLayer.ReferenceLineLayer.Thresholds[j]
 			restoreTypedOperationIfValueJSONOmitted(planThreshold, stateThreshold)
-			// An axis carried inside the plan's value_json is not mirrored into the typed attribute. Clear the
-			// returned typed axis only when it agrees with the authored one (an absent axis means "y" on
-			// Kibana 9.4/9.5); otherwise keep it, and do not restore plan JSON, so remote drift stays visible.
-			axisDrifted := false
-			if planThreshold.Axis.IsNull() {
-				if planJSONAxis, ok := jsonObjectStringKey(planThreshold.ValueJSON, thresholdAxisKey); ok {
-					if effectiveThresholdAxis(stateThreshold.Axis) == planJSONAxis {
-						stateThreshold.Axis = planThreshold.Axis
-					} else {
-						axisDrifted = true
-					}
-				}
-			}
-			if !axisDrifted {
-				lenscommon.PreserveNullIfStateEquals(planThreshold.Axis, &stateThreshold.Axis, types.StringValue("y"))
-			}
-			// Kibana 9.4/9.5 strip an explicit default "y" from the read-back; restore only an authored typed "y".
-			if planThreshold.Axis.Equal(types.StringValue("y")) && stateThreshold.Axis.IsNull() {
-				stateThreshold.Axis = planThreshold.Axis
-			}
+			drifted := reconcileThresholdAxis(planThreshold, stateThreshold)
 			lenscommon.PreserveNullIfStateEquals(planThreshold.Operation, &stateThreshold.Operation, types.StringValue(operationStaticValue))
 			lenscommon.PreserveNullJSONIfStateMatchesDefault(planThreshold.ColorJSON, &stateThreshold.ColorJSON, `{"type":"auto"}`)
-			if !axisDrifted {
+			if !drifted {
 				preserveThresholdValueJSONIfStateIsPlanValue(planThreshold.ValueJSON, &stateThreshold.ValueJSON, planThreshold.Operation)
 			}
 			// Kibana 9.4 adds `label: ""` to non-static operations; drop it when the plan did not set a label.
 			dropEmptyLabelIfPlanOmitsIt(planThreshold.ValueJSON, &stateThreshold.ValueJSON)
 			lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planThreshold.ValueJSON, &stateThreshold.ValueJSON, "axis_id", "color", thresholdAxisKey)
-			if !axisDrifted {
+			if !drifted {
 				lenscommon.PreservePlanJSONIfStateOmitsOptionalKeys(planThreshold.ValueJSON, &stateThreshold.ValueJSON, thresholdAxisKey)
 			}
 		}
@@ -297,8 +278,8 @@ func dropEmptyLabelIfPlanOmitsIt(plan jsontypes.Normalized, state *jsontypes.Nor
 	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) || jsonObjectHasKey(plan, "label") {
 		return
 	}
-	var stateObj map[string]any
-	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
+	stateObj, ok := parseJSONObject(*state)
+	if !ok {
 		return
 	}
 	if label, ok := stateObj["label"].(string); !ok || label != "" {
@@ -312,22 +293,47 @@ func dropEmptyLabelIfPlanOmitsIt(plan jsontypes.Normalized, state *jsontypes.Nor
 	*state = jsontypes.NewNormalizedValue(string(b))
 }
 
-const thresholdAxisKey = "axis"
-
-// effectiveThresholdAxis maps an absent axis (stripped by Kibana 9.4/9.5) to the default "y".
-func effectiveThresholdAxis(axis types.String) string {
-	if !typeutils.IsKnown(axis) {
-		return "y"
+// reconcileThresholdAxis aligns the returned typed axis with the plan. An axis carried inside the plan's
+// value_json is not mirrored into the typed attribute, so the returned typed axis is cleared only when it
+// agrees with the authored one (an absent axis means "y" on Kibana 9.4/9.5). Otherwise it is kept and
+// drifted is true, so remote drift stays visible and callers must not restore plan JSON.
+func reconcileThresholdAxis(plan models.ThresholdModel, state *models.ThresholdModel) (drifted bool) {
+	if plan.Axis.IsNull() {
+		if planJSONAxis, ok := jsonObjectStringKey(plan.ValueJSON, thresholdAxisKey); ok {
+			effective := defaultThresholdAxis
+			if typeutils.IsKnown(state.Axis) {
+				effective = state.Axis.ValueString()
+			}
+			if effective != planJSONAxis {
+				return true
+			}
+			state.Axis = plan.Axis
+			return false
+		}
 	}
-	return axis.ValueString()
+	lenscommon.PreserveNullIfStateEquals(plan.Axis, &state.Axis, types.StringValue(defaultThresholdAxis))
+	// Kibana 9.4/9.5 strip an explicit default "y" from the read-back; restore only an authored typed "y".
+	if plan.Axis.Equal(types.StringValue(defaultThresholdAxis)) && state.Axis.IsNull() {
+		state.Axis = plan.Axis
+	}
+	return false
 }
 
-func jsonObjectStringKey(j jsontypes.Normalized, key string) (string, bool) {
+// parseJSONObject decodes a known JSON object value; ok is false for unknown, invalid or non-object JSON.
+func parseJSONObject(j jsontypes.Normalized) (map[string]any, bool) {
 	if !typeutils.IsKnown(j) {
-		return "", false
+		return nil, false
 	}
 	var obj map[string]any
 	if err := json.Unmarshal([]byte(j.ValueString()), &obj); err != nil {
+		return nil, false
+	}
+	return obj, true
+}
+
+func jsonObjectStringKey(j jsontypes.Normalized, key string) (string, bool) {
+	obj, ok := parseJSONObject(j)
+	if !ok {
 		return "", false
 	}
 	v, ok := obj[key].(string)
@@ -341,8 +347,8 @@ func restoreTypedOperationIfValueJSONOmitted(plan models.ThresholdModel, state *
 	if !plan.ValueJSON.IsNull() || !typeutils.IsKnown(plan.Operation) || !typeutils.IsKnown(state.ValueJSON) || !state.Operation.IsNull() {
 		return
 	}
-	var obj map[string]any
-	if err := json.Unmarshal([]byte(state.ValueJSON.ValueString()), &obj); err != nil {
+	obj, ok := parseJSONObject(state.ValueJSON)
+	if !ok {
 		return
 	}
 	op, ok := obj["operation"].(string)
@@ -365,14 +371,11 @@ func restoreTypedOperationIfValueJSONOmitted(plan models.ThresholdModel, state *
 }
 
 func jsonObjectHasKey(j jsontypes.Normalized, key string) bool {
-	if !typeutils.IsKnown(j) {
+	obj, ok := parseJSONObject(j)
+	if !ok {
 		return false
 	}
-	var obj map[string]any
-	if err := json.Unmarshal([]byte(j.ValueString()), &obj); err != nil {
-		return false
-	}
-	_, ok := obj[key]
+	_, ok = obj[key]
 	return ok
 }
 

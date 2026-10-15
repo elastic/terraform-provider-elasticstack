@@ -20,6 +20,7 @@ package lensxy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -375,7 +376,7 @@ func referenceLineLayerFromAPINoESQL(m *models.ReferenceLineLayerModel, apiLayer
 
 			var probe map[string]any
 			_ = json.Unmarshal(thresholdJSON, &probe)
-			axisKey, hasAxis := probe["axis"].(string)
+			axisKey, hasAxis := probe[thresholdAxisKey].(string)
 			// Operation objects other than static_value are kept whole in value_json (with the typed axis
 			// mirrored from the key) because the typed shape only carries `value` for static_value.
 			operation, _ := probe["operation"].(string)
@@ -445,20 +446,13 @@ func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLa
 				}
 				// The typed axis sibling is part of the operation object on the wire.
 				if typeutils.IsKnown(t.Axis) {
-					opMap, isMap := op.(map[string]any)
-					if !isMap {
-						diags.AddError("Invalid reference line threshold",
-							"`axis` can only be combined with a `value_json` that is a JSON object.")
-						continue
-					}
-					if existing, hasAxis := opMap["axis"]; hasAxis {
-						if existing != t.Axis.ValueString() {
-							diags.AddError("Conflicting reference line threshold axis",
-								fmt.Sprintf("`axis` is %q but `value_json` also sets \"axis\" to %v; set only one or make them equal.", t.Axis.ValueString(), existing))
-							continue
+					if err := mergeThresholdAxis(op, t.Axis.ValueString()); err != nil {
+						if axisErr, ok := errors.AsType[*thresholdAxisError](err); ok {
+							diags.AddError(axisErr.title, axisErr.detail)
+						} else {
+							diags.AddError("Invalid reference line threshold", err.Error())
 						}
-					} else {
-						opMap["axis"] = t.Axis.ValueString()
+						continue
 					}
 				}
 				opBytes, err := json.Marshal(op)
@@ -496,6 +490,32 @@ func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLa
 }
 
 // fromAPIJSON populates threshold from JSON
+// thresholdAxisError carries the diagnostic summary alongside the detail for threshold axis merge failures.
+type thresholdAxisError struct {
+	title  string
+	detail string
+}
+
+func (e *thresholdAxisError) Error() string { return e.detail }
+
+// mergeThresholdAxis sets the typed axis on the operation object sent to Kibana. The operation must be a
+// JSON object, and an axis already present in it must equal the typed axis.
+func mergeThresholdAxis(op any, axis string) error {
+	opMap, isMap := op.(map[string]any)
+	if !isMap {
+		return &thresholdAxisError{"Invalid reference line threshold", "`axis` can only be combined with a `value_json` that is a JSON object."}
+	}
+	if existing, hasAxis := opMap[thresholdAxisKey]; hasAxis {
+		if existing != axis {
+			return &thresholdAxisError{"Conflicting reference line threshold axis",
+				fmt.Sprintf("`axis` is %q but `value_json` also sets \"axis\" to %v; set only one or make them equal.", axis, existing)}
+		}
+		return nil
+	}
+	opMap[thresholdAxisKey] = axis
+	return nil
+}
+
 func thresholdFromAPIJSON(m *models.ThresholdModel, jsonData []byte) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -505,7 +525,7 @@ func thresholdFromAPIJSON(m *models.ThresholdModel, jsonData []byte) diag.Diagno
 		return diags
 	}
 
-	if axis, ok := thresholdData["axis"].(string); ok {
+	if axis, ok := thresholdData[thresholdAxisKey].(string); ok {
 		m.Axis = types.StringValue(axis)
 	} else {
 		m.Axis = types.StringNull()
@@ -576,7 +596,7 @@ func thresholdToAPI(m *models.ThresholdModel) (map[string]any, diag.Diagnostics)
 	threshold := make(map[string]any)
 
 	if typeutils.IsKnown(m.Axis) {
-		threshold["axis"] = m.Axis.ValueString()
+		threshold[thresholdAxisKey] = m.Axis.ValueString()
 	}
 
 	if typeutils.IsKnown(m.ColorJSON) {

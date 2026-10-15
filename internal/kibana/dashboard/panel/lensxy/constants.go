@@ -25,3 +25,9 @@ const (
 
 // operationStaticValue is the reference-line threshold operation name for a static value.
 const operationStaticValue = "static_value"
+
+// thresholdAxisKey is the key carrying the axis inside a reference-line threshold operation object.
+const thresholdAxisKey = "axis"
+
+// defaultThresholdAxis is the axis Kibana assumes when a threshold omits one.
+const defaultThresholdAxis = "y"
