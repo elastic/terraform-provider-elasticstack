@@ -1665,35 +1665,6 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
-    },
-    {
-      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes.NewDurationPointerValue",
-      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
-      "attemptedAt": "2026-10-14T03:00:46.541519353Z",
-      "reason": "verification_timeout"
-    },
-    {
-      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes.NewMemorySizeUnknown",
-      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
-      "attemptedAt": "2026-10-14T03:23:08.742760231Z",
-      "reason": "verification_timeout",
-      "context": {
-        "referenceFileCount": 1,
-        "testCleanupEligible": true,
-        "buildExitCode": 124
-      }
-    },
-    {
-      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes.NewNormalizedYamlUnknown",
-      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
-      "attemptedAt": "2026-10-15T01:37:13.740861688Z",
-      "reason": "verification_timeout"
-    },
-    {
-      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils.FlipMap",
-      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils",
-      "attemptedAt": "2026-10-15T03:13:36.883299609Z",
-      "reason": "verification_timeout"
     }
   ]
 }
