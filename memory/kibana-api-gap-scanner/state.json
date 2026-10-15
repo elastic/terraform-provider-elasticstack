@@ -20,9 +20,17 @@
       "reason": "Real user-configurable feature (custom certificate/CA/key for a download host using self-signed or private certs); the resource has no SSL support today and no opaque attribute covers it, so this should be exposed.",
       "date": "2026-10-14",
       "issue": "elasticstack_fleet_agent_download_source#/paths/~1api~1fleet~1agent_download_sources/post/requestBody/content/application~1json/schema/properties/ssl"
+    },
+    "elasticstack_fleet_agent_policy#/components/schemas/Kibana_HTTP_APIs_new_agent_policy/properties/advanced_settings": {
+      "fingerprint": "3fb0d4cf7607e635a43816e7665615930917b588bafe8e0aa0a239441747bef3",
+      "verdict": "file",
+      "reason": "The advanced_settings block already mirrors most of this API sub-object (logging, download, go_max_procs, monitoring_runtime_experimental); these remaining agent feature toggles are a natural, low-risk extension of an attribute the resource already partially exposes, not computed or imperative fields.",
+      "date": "2026-10-15",
+      "issue": "elasticstack_fleet_agent_policy#/components/schemas/Kibana_HTTP_APIs_new_agent_policy/properties/advanced_settings"
     }
   },
   "resources": {
-    "elasticstack_fleet_agent_download_source": "2026-10-14T00:36:14Z"
+    "elasticstack_fleet_agent_download_source": "2026-10-14T00:36:14Z",
+    "elasticstack_fleet_agent_policy": "2026-10-15T01:31:24Z"
   }
 }
