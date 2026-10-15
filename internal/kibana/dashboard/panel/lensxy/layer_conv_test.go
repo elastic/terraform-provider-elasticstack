@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -47,4 +48,43 @@ func TestDataLayerFromAPINoESQL_preservesPriorYWhenKibanaInjectsAxis(t *testing.
 	require.False(t, diags.HasError(), "%v", diags)
 	require.Len(t, m.Y, 1)
 	assert.JSONEq(t, prior, m.Y[0].ConfigJSON.ValueString())
+}
+
+func TestReferenceLineLayerToAPI_thresholdAxisIsMergedIntoValueJSON(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name       string
+		axis       types.String
+		valueJSON  string
+		wantAxis   any
+		wantHasKey bool
+	}{
+		{name: "explicit axis is sent", axis: types.StringValue("y2"), valueJSON: `{"operation":"static_value","value":42}`, wantAxis: "y2", wantHasKey: true},
+		{name: "null axis is omitted", axis: types.StringNull(), valueJSON: `{"operation":"static_value","value":42}`},
+		{name: "axis already inside value_json wins", axis: types.StringValue("y2"), valueJSON: `{"operation":"static_value","value":42,"axis":"x"}`, wantAxis: "x", wantHasKey: true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			layer, diags := referenceLineLayerToAPIXyReferenceLineLayerNoESQL(&models.ReferenceLineLayerModel{
+				DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"metrics-*"}`),
+				Thresholds: []models.ThresholdModel{{
+					Axis:      tt.axis,
+					ValueJSON: jsontypes.NewNormalizedValue(tt.valueJSON),
+				}},
+			}, "reference_lines")
+			require.False(t, diags.HasError(), "%v", diags)
+			require.Len(t, layer.Thresholds, 1)
+
+			raw, err := layer.Thresholds[0].MarshalJSON()
+			require.NoError(t, err)
+			var got map[string]any
+			require.NoError(t, json.Unmarshal(raw, &got))
+			axis, has := got["axis"]
+			assert.Equal(t, tt.wantHasKey, has)
+			assert.Equal(t, tt.wantAxis, axis)
+		})
+	}
 }

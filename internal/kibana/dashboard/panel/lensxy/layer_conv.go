@@ -432,6 +432,12 @@ func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLa
 				if valueDiags.HasError() {
 					continue
 				}
+				// The typed axis sibling is part of the operation object on the wire.
+				if opMap, isMap := op.(map[string]any); isMap && typeutils.IsKnown(t.Axis) {
+					if _, hasAxis := opMap["axis"]; !hasAxis {
+						opMap["axis"] = t.Axis.ValueString()
+					}
+				}
 				opBytes, err := json.Marshal(op)
 				if err != nil {
 					diags.AddError("Failed to marshal reference line threshold", err.Error())
