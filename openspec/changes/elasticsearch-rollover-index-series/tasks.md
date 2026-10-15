@@ -107,10 +107,16 @@
   case with deterministic mock shrink/searchable-snapshot alias-transfer responses; document mock or
   source-backed snapshot evidence separately from live evidence rather than substituting mocks for
   all real shrink coverage.
-- [ ] 5.3 Validate lifecycle acceptance behavior against the provider's supported Elasticsearch version
+- [x] 5.3 Validate lifecycle acceptance behavior against the provider's supported Elasticsearch version
   matrix and record versions and results as implementation evidence. Do not infer a new minimum from
   the local 9.4.0 experiment, replace matrix validation with merely choosing a minimum, or silently skip
   unsupported behavior; surface evidence and obtain a support decision before narrowing compatibility.
+  Workflow run 38760463000 on cbdb54a5c passed every Matrix Acceptance Test job for the pinned matrix
+  in `.github/versions/acceptance-test-matrix.json`: 8.0.1, 8.1.3, 8.2.3, 8.3.3, 8.4.3, 8.5.3, 8.6.2,
+  8.7.1, 8.8.2, 8.9.2, 8.10.4, 8.11.4, 8.12.2, 8.13.4, 8.14.3, 8.15.5, 8.16.6, 8.17.10, 8.18.8,
+  8.19.23, 9.0.8, 9.1.10, 9.2.8, 9.3.8, 9.4.8, 9.5.5, and 9.6.0-SNAPSHOT. The 8.0.1 shard 1 and 8.7.1
+  shard 0 jobs failed once on an image-pull timeout and a module-proxy error, then passed on rerun.
+  No minimum version was added.
 - [x] 5.4 Deliver the integrated resource, examples and generated documentation with every delta-spec
   scenario mapped to tests. Verify repository OpenSpec validation, build, focused unit suites, lint,
   example validation and targeted live acceptance coverage are green, preserving directory-backed
