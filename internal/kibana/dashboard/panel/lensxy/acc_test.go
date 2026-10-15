@@ -391,6 +391,8 @@ func TestAccResourceDashboardXYChart_layers_reference(t *testing.T) {
 			referenceAxisStep(dashboardTitle, "y"),
 			referenceAxisStep(dashboardTitle, "y2"),
 			referenceAxisStep(dashboardTitle, "y"),
+			referenceAxisStep(dashboardTitle, ""),
+			referenceAxisStep(dashboardTitle, "y"),
 			// Import has no plan to align against: "y" is read back on 9.6+, absent on 9.4/9.5.
 			referenceAxisImportStep(dashboardTitle, ">= 9.6.0-SNAPSHOT", "y"),
 			referenceAxisImportStep(dashboardTitle, "< 9.6.0-SNAPSHOT", ""),
@@ -398,17 +400,26 @@ func TestAccResourceDashboardXYChart_layers_reference(t *testing.T) {
 	})
 }
 
+const referenceThresholdAxisKey2 = "panels.0.vis_config.by_value.xy_chart_config.layers.1.reference_line_layer.thresholds.1.axis"
+
 const referenceThresholdAxisKey = "panels.0.vis_config.by_value.xy_chart_config.layers.1.reference_line_layer.thresholds.0.axis"
 
+// referenceAxisStep applies the explicit axis (an empty axis means omitted, asserting the attribute is unset).
 func referenceAxisStep(dashboardTitle, axis string) resource.TestStep {
+	vars := config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)}
+	checkAxis := resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", referenceThresholdAxisKey)
+	if axis != "" {
+		vars["threshold_axis"] = config.StringVariable(axis)
+		checkAxis = resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", referenceThresholdAxisKey, axis)
+	}
 	return resource.TestStep{
 		ProtoV6ProviderFactories: acctest.Providers,
 		ConfigDirectory:          acctest.NamedTestCaseDirectory("layers_reference_axis"),
-		ConfigVariables: config.Variables{
-			"dashboard_title": config.StringVariable(dashboardTitle),
-			"threshold_axis":  config.StringVariable(axis),
-		},
-		Check: resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", referenceThresholdAxisKey, axis),
+		ConfigVariables:          vars,
+		Check: resource.ComposeTestCheckFunc(
+			checkAxis,
+			resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", referenceThresholdAxisKey2, "y2"),
+		),
 	}
 }
 

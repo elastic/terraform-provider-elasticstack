@@ -3,7 +3,8 @@ variable "dashboard_title" {
 }
 
 variable "threshold_axis" {
-  type = string
+  type    = string
+  default = null
 }
 
 resource "elasticstack_kibana_dashboard" "test" {
@@ -99,6 +100,14 @@ resource "elasticstack_kibana_dashboard" "test" {
                         compact  = false
                         decimals = 2
                       }
+                    })
+                  },
+                  {
+                    axis = "y2"
+                    value_json = jsonencode({
+                      operation     = "count"
+                      empty_as_null = false
+                      color         = { type = "auto" }
                     })
                   }
                 ]
