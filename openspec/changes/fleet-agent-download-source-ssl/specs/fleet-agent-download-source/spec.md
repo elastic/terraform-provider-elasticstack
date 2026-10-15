@@ -43,10 +43,20 @@ The resource SHALL expose an optional `ssl` single-nested-object attribute with 
 - **WHEN** the provider reads an existing download source whose stored `ssl` object has a non-null `certificate` and/or `certificate_authorities`
 - **THEN** state SHALL contain a non-null `ssl` object with `certificate`/`certificate_authorities` populated from the response
 
-#### Scenario: Read preserves key from prior state rather than the API response
+#### Scenario: Refresh preserves key from prior state rather than the API response
 
-- **WHEN** the provider reads an existing download source that has a previously-configured `ssl.key` in prior Terraform state
-- **THEN** state SHALL retain the prior `key` value regardless of what the API response's `ssl.key` or `secrets.ssl.key` fields contain
+- **WHEN** the provider refreshes an existing download source
+- **THEN** state SHALL retain the prior Terraform state's `ssl.key` value, or null if none exists, regardless of what the API response's `ssl.key` or `secrets.ssl.key` fields contain
+
+#### Scenario: Read-after-write preserves the applied key value
+
+- **WHEN** the provider reads a download source after creating or updating it
+- **THEN** state SHALL use the applied plan's `ssl.key` value, including null when removed, rather than the pre-write state or either API key field
+
+#### Scenario: Import does not recover key material
+
+- **WHEN** the provider imports an existing download source without a configured key in state
+- **THEN** `ssl.key` SHALL be null regardless of either API key field
 
 #### Scenario: Omitted ssl is null in state
 
