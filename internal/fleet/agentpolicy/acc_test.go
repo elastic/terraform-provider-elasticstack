@@ -1129,6 +1129,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "true"),
+					resource.TestMatchResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", regexp.MustCompile(`reformatted but semantically equal`)),
 				),
 			},
 			// Step 11: import round-trips internal and acks toggle
@@ -1200,25 +1201,57 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal"),
 				),
 			},
+			// Step 16: set the acks toggle explicitly to false from unset, then import
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_acks_false"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_acks_false"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				ResourceName:            "elasticstack_fleet_agent_policy.test_policy",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_destroy"},
+			},
+			// Step 17: set both toggles explicitly to false from unset, then import
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_toggles_false"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_toggles_false"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				ResourceName:            "elasticstack_fleet_agent_policy.test_policy",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"skip_destroy"},
+			},
 		},
 	})
-}
-
-// skipIfVersionIsSupported returns a SkipFunc that skips the step when the stack
-// version is at least minVersion. It is used for negative version-gating steps
-// that must only run against stacks below the minimum.
-func skipIfVersionIsSupported(minVersion *version.Version) func() (bool, error) {
-	return func() (bool, error) {
-		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
-		if err != nil {
-			return false, err
-		}
-		serverVersion, _, diags := clients.AcceptanceServerInfo(context.Background(), client)
-		if diags.HasError() {
-			return false, fmt.Errorf("failed to parse the elasticsearch version %v", diags)
-		}
-		return !serverVersion.LessThan(minVersion), nil
-	}
 }
 
 func TestAccResourceAgentPolicyAgentFeaturesVersionGate(t *testing.T) {
@@ -1239,7 +1272,7 @@ func TestAccResourceAgentPolicyAgentFeaturesVersionGate(t *testing.T) {
 	for _, g := range gated {
 		steps = append(steps, resource.TestStep{
 			ProtoV6ProviderFactories: acctest.Providers,
-			SkipFunc:                 skipIfVersionIsSupported(g.minVersion),
+			SkipFunc:                 versionutils.CheckIfVersionIsSupported(g.minVersion),
 			ConfigDirectory:          acctest.NamedTestCaseDirectory(g.dir),
 			ConfigVariables: config.Variables{
 				"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),

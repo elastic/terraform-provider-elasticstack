@@ -198,6 +198,21 @@ func CheckIfVersionIsUnsupported(minSupportedVersion *version.Version) func() (b
 	}
 }
 
+// CheckIfVersionIsSupported returns a SkipFunc that skips when the stack version is at least
+// minVersion, for negative (below-minimum) acceptance steps.
+func CheckIfVersionIsSupported(minVersion *version.Version) func() (bool, error) {
+	return func() (bool, error) {
+		if os.Getenv("TF_ACC") == "" {
+			return false, nil
+		}
+		serverVersion, _, err := fetchAcceptanceServerInfo(context.Background())
+		if err != nil {
+			return false, err
+		}
+		return !serverVersion.LessThan(minVersion), nil
+	}
+}
+
 func CheckIfVersionMeetsConstraints(constraints version.Constraints) func() (bool, error) {
 	return func() (b bool, err error) {
 		if os.Getenv("TF_ACC") == "" {
