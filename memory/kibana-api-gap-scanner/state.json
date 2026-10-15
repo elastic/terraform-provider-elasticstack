@@ -27,10 +27,42 @@
       "reason": "The advanced_settings block already mirrors most of this API sub-object (logging, download, go_max_procs, monitoring_runtime_experimental); these remaining agent feature toggles are a natural, low-risk extension of an attribute the resource already partially exposes, not computed or imperative fields.",
       "date": "2026-10-15",
       "issue": "elasticstack_fleet_agent_policy#/components/schemas/Kibana_HTTP_APIs_new_agent_policy/properties/advanced_settings"
+    },
+    "elasticstack_fleet_custom_integration#/paths/~1api~1fleet~1epm~1packages/get/parameters/category": {
+      "fingerprint": "cfeb58049f4b4249e90c97b2162e8e47ef0c61b46e34235221a0a588e9394377",
+      "verdict": "suppress",
+      "reason": "List-catalog filter for browsing by category; irrelevant once a package is identified by exact name+version.",
+      "date": "2026-10-15"
+    },
+    "elasticstack_fleet_custom_integration#/paths/~1api~1fleet~1epm~1packages/get/parameters/excludeInstallStatus": {
+      "fingerprint": "cfeb58049f4b4249e90c97b2162e8e47ef0c61b46e34235221a0a588e9394377",
+      "verdict": "suppress",
+      "reason": "List-catalog filter for UI browsing by install status; not meaningful when the resource already targets a specific name+version.",
+      "date": "2026-10-15"
+    },
+    "elasticstack_fleet_custom_integration#/paths/~1api~1fleet~1epm~1packages/get/parameters/withPackagePoliciesCount": {
+      "fingerprint": "cfeb58049f4b4249e90c97b2162e8e47ef0c61b46e34235221a0a588e9394377",
+      "verdict": "suppress",
+      "reason": "Server-computed display count of package policies; purely informational and unrelated to resource configuration.",
+      "date": "2026-10-15"
+    },
+    "elasticstack_fleet_custom_integration#/paths/~1api~1fleet~1epm~1packages~1{pkgName}~1{pkgVersion}/get/parameters/full": {
+      "fingerprint": "cfeb58049f4b4249e90c97b2162e8e47ef0c61b46e34235221a0a588e9394377",
+      "verdict": "suppress",
+      "reason": "Only toggles inclusion of optional descriptive/display metadata (readme, screenshots, assets) in the read response; none of that data is surfaced by this resource.",
+      "date": "2026-10-15"
+    },
+    "elasticstack_fleet_custom_integration#/paths/~1api~1fleet~1epm~1packages~1{pkgName}~1{pkgVersion}/get/parameters/ignoreUnverified": {
+      "fingerprint": "cfeb58049f4b4249e90c97b2162e8e47ef0c61b46e34235221a0a588e9394377",
+      "verdict": "file",
+      "reason": "Custom integrations are locally uploaded, EPR-unverified packages; the read step calls GetPackage without ignoreUnverified, so Kibana can reject reads for genuinely unsigned custom packages. Worth exposing so users can opt into tolerating unverified signatures on read.",
+      "date": "2026-10-15",
+      "issue": "elasticstack_fleet_custom_integration#/paths/~1api~1fleet~1epm~1packages~1{pkgName}~1{pkgVersion}/get/parameters/ignoreUnverified"
     }
   },
   "resources": {
     "elasticstack_fleet_agent_download_source": "2026-10-14T00:36:14Z",
-    "elasticstack_fleet_agent_policy": "2026-10-15T01:31:24Z"
+    "elasticstack_fleet_agent_policy": "2026-10-15T01:31:24Z",
+    "elasticstack_fleet_custom_integration": "2026-10-15T11:28:15Z"
   }
 }
