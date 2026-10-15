@@ -1682,6 +1682,12 @@
         "testCleanupEligible": true,
         "buildExitCode": 124
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes.NewNormalizedYamlUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
+      "attemptedAt": "2026-10-15T01:37:13.740861688Z",
+      "reason": "verification_timeout"
     }
   ]
 }
