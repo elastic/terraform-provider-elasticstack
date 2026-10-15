@@ -83,7 +83,11 @@ func TestAgentPolicyVersionRequirements(t *testing.T) {
 			require.Equal(t, expected.minVersion, reqs[i].MinVersion.String())
 		}
 	}
-	require.NotNil(t, reqs[10].VersionCheck)
+	for _, req := range reqs {
+		if req.AttributePath.String() == "advanced_settings.monitoring_runtime_experimental" {
+			require.NotNil(t, req.VersionCheck)
+		}
+	}
 }
 
 func TestAgentPolicyVersionRequirementsAgentFeaturesUnset(t *testing.T) {
