@@ -20,7 +20,7 @@ package githubx
 import (
 	"context"
 
-	"github.com/google/go-github/v92/github"
+	"github.com/google/go-github/v93/github"
 )
 
 const issueCommentsPageSize = 100
