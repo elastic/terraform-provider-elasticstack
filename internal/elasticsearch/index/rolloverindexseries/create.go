@@ -81,7 +81,8 @@ func bootstrapNameCollision(diags diag.Diagnostics) bool {
 			continue
 		}
 		text := d.Summary() + " " + d.Detail()
-		if strings.Contains(text, "resource_already_exists_exception") {
+		if strings.Contains(text, "resource_already_exists_exception") ||
+			(strings.Contains(text, "invalid_index_name_exception") && strings.Contains(text, "already exists as alias")) {
 			return true
 		}
 	}
