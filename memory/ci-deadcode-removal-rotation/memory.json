@@ -1737,6 +1737,16 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
       "attemptedAt": "2026-10-15T10:58:33.851162416Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes.NewMemorySizeUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
+      "attemptedAt": "2026-10-15T11:43:50.531855596Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
