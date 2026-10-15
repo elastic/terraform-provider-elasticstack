@@ -377,32 +377,48 @@ func TestAlignXYLayerStateFromPlan_explicitReferenceLineThresholdAxisIsNotOverri
 	assert.Equal(t, "y2", state.Layers[0].ReferenceLineLayer.Thresholds[0].Axis.ValueString())
 }
 
-func TestAlignXYLayerStateFromPlan_explicitLeftThresholdAxisIsNotTreatedAsOmitDefaultY(t *testing.T) {
+func TestAlignXYLayerStateFromPlan_referenceLineThresholdAxisRoundTrip(t *testing.T) {
 	t.Parallel()
 
-	plan := &models.XYChartConfigModel{
-		Layers: []models.XYLayerModel{{
-			ReferenceLineLayer: &models.ReferenceLineLayerModel{
-				Thresholds: []models.ThresholdModel{{
-					Axis: types.StringValue("left"),
-				}},
-			},
-		}},
-	}
-	state := &models.XYChartConfigModel{
-		Layers: []models.XYLayerModel{{
-			ReferenceLineLayer: &models.ReferenceLineLayerModel{
-				Thresholds: []models.ThresholdModel{{
-					Axis: types.StringValue("y"),
-				}},
-			},
-		}},
+	tests := []struct {
+		name  string
+		plan  types.String
+		state types.String
+		want  types.String
+	}{
+		{name: "explicit x is passed through", plan: types.StringValue("x"), state: types.StringValue("x"), want: types.StringValue("x")},
+		{name: "explicit y echoed (Kibana 9.6+) is a no-op", plan: types.StringValue("y"), state: types.StringValue("y"), want: types.StringValue("y")},
+		{name: "explicit y stripped (Kibana 9.4/9.5) is restored from plan", plan: types.StringValue("y"), state: types.StringNull(), want: types.StringValue("y")},
+		{name: "explicit y2 stripped is not restored", plan: types.StringValue("y2"), state: types.StringNull(), want: types.StringNull()},
+		{name: "explicit x stripped is not restored", plan: types.StringValue("x"), state: types.StringNull(), want: types.StringNull()},
+		{name: "omitted with injected y (Kibana 9.6+) stays null", plan: types.StringNull(), state: types.StringValue("y"), want: types.StringNull()},
+		{name: "omitted with absent axis (Kibana 9.4/9.5) stays null", plan: types.StringNull(), state: types.StringNull(), want: types.StringNull()},
 	}
 
-	alignXYChartStateFromPlan(plan, state)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 
-	assert.Equal(t, "y", state.Layers[0].ReferenceLineLayer.Thresholds[0].Axis.ValueString())
-	assert.False(t, state.Layers[0].ReferenceLineLayer.Thresholds[0].Axis.IsNull())
+			plan := &models.XYChartConfigModel{
+				Layers: []models.XYLayerModel{{
+					ReferenceLineLayer: &models.ReferenceLineLayerModel{
+						Thresholds: []models.ThresholdModel{{Axis: tt.plan}},
+					},
+				}},
+			}
+			state := &models.XYChartConfigModel{
+				Layers: []models.XYLayerModel{{
+					ReferenceLineLayer: &models.ReferenceLineLayerModel{
+						Thresholds: []models.ThresholdModel{{Axis: tt.state}},
+					},
+				}},
+			}
+
+			alignXYChartStateFromPlan(plan, state)
+
+			assert.True(t, tt.want.Equal(state.Layers[0].ReferenceLineLayer.Thresholds[0].Axis))
+		})
+	}
 }
 
 func TestPreserveThresholdValueJSONIfStateIsPlanValue_planWithoutValueDoesNotRestoreOnNullState(t *testing.T) {

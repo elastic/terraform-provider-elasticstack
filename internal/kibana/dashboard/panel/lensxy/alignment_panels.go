@@ -206,6 +206,10 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
 			planThreshold := planLayer.ReferenceLineLayer.Thresholds[j]
 			stateThreshold := &stateLayer.ReferenceLineLayer.Thresholds[j]
 			lenscommon.PreserveNullIfStateEquals(planThreshold.Axis, &stateThreshold.Axis, types.StringValue("y"))
+			// Kibana 9.4/9.5 strip an explicit default "y" from the read-back; restore the planned value.
+			if planThreshold.Axis.Equal(types.StringValue("y")) && stateThreshold.Axis.IsNull() {
+				stateThreshold.Axis = planThreshold.Axis
+			}
 			lenscommon.PreserveNullIfStateEquals(planThreshold.Operation, &stateThreshold.Operation, types.StringValue("static_value"))
 			lenscommon.PreserveNullJSONIfStateMatchesDefault(planThreshold.ColorJSON, &stateThreshold.ColorJSON, `{"type":"auto"}`)
 			preserveThresholdValueJSONIfStateIsPlanValue(planThreshold.ValueJSON, &stateThreshold.ValueJSON, planThreshold.Operation)
