@@ -96,12 +96,12 @@
 
 ## 5. Interoperate with supported lifecycle environments
 
-- [ ] 5.1 Deliver a live policy/template/series example and acceptance coverage proving bootstrap
+- [x] 5.1 Deliver a live policy/template/series example and acceptance coverage proving bootstrap
   inheritance and reverse dependency cleanup ordering. Verify deleting the owned series allows its
   unshared policy to be deleted while an independently retained policy reference still prevents policy
   deletion without causing unrelated index cleanup. Keep the rollover alias out of the template's
   aliases section and document settings/mappings as externally template-managed.
-- [ ] 5.2 Verify real ILM shrink interoperability in a suitable live acceptance environment: the
+- [x] 5.2 Verify real ILM shrink interoperability in a suitable live acceptance environment: the
   replacement retains alias membership and is removed on series deletion. Use a targeted step move
   only on fixture-owned indices if needed, with cleanup and no global ILM changes. Supplement the live
   case with deterministic mock shrink/searchable-snapshot alias-transfer responses; document mock or
@@ -111,7 +111,7 @@
   matrix and record versions and results as implementation evidence. Do not infer a new minimum from
   the local 9.4.0 experiment, replace matrix validation with merely choosing a minimum, or silently skip
   unsupported behavior; surface evidence and obtain a support decision before narrowing compatibility.
-- [ ] 5.4 Deliver the integrated resource, examples and generated documentation with every delta-spec
+- [x] 5.4 Deliver the integrated resource, examples and generated documentation with every delta-spec
   scenario mapped to tests. Verify repository OpenSpec validation, build, focused unit suites, lint,
   example validation and targeted live acceptance coverage are green, preserving directory-backed
   fixtures and the normal provider factories. Record any environment-limited verification explicitly

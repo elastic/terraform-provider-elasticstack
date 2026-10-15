@@ -148,6 +148,38 @@ func TestDelete_deletesLifecycleRenamedMemberNotHistoricalAlias(t *testing.T) {
 	}
 }
 
+// Mock alias transfer for searchable snapshots, source-backed by the ILM
+// searchable_snapshot action: mounted indices use a restored- prefix in hot or
+// cold and a partial- prefix in frozen, and aliases move to that mount.
+// This is not a live searchable-snapshot execution. Live shrink evidence is
+// TestAccRolloverIndexSeries_ilmShrinkRetainsAliasAndDeletesReplacement.
+func TestDelete_searchableSnapshotAliasTransferRemovesMountedIndex(t *testing.T) {
+	mock, client := newClusterMock(t)
+	mock.addMember("orders-write", "restored-id-orders-000001", new(false), false)
+	mock.addMember("orders-write", "partial-id-orders-000002", new(false), false)
+	mock.addMember("orders-write", "orders-000003", new(true), false)
+	mock.addAliasObject("orders-000001")
+	mock.addAliasObject("orders-000002")
+
+	diags := deleteRolloverIndexSeries(t.Context(), client, "orders-write", unprotectedPlan("orders", "orders-write"))
+	require.False(t, diags.HasError(), diagnosticText(diags))
+	require.NotContains(t, mock.indices, "restored-id-orders-000001")
+	require.NotContains(t, mock.indices, "partial-id-orders-000002")
+	require.NotContains(t, mock.indices, "orders-000003")
+	require.Contains(t, mock.aliasObjects, "orders-000001")
+	require.Contains(t, mock.aliasObjects, "orders-000002")
+	require.ElementsMatch(t, []string{
+		"DELETE /restored-id-orders-000001",
+		"DELETE /partial-id-orders-000002",
+		"DELETE /orders-000003",
+	}, deleteRequests(mock))
+	requireNoBroadCleanup(t, mock.requestPaths())
+	for _, request := range mock.requestPaths() {
+		require.NotContains(t, request, "DELETE /orders-000001")
+		require.NotContains(t, request, "DELETE /orders-000002")
+	}
+}
+
 func TestDelete_deletesOutOfPrefixMemberByConcreteName(t *testing.T) {
 	mock, client := newClusterMock(t)
 	mock.addMember("orders-write", "orders-000003", new(true), false)

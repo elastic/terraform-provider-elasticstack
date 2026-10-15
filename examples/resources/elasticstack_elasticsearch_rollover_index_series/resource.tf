@@ -2,15 +2,50 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
+resource "elasticstack_elasticsearch_index_lifecycle" "orders" {
+  name = "orders"
+
+  hot {
+    rollover {
+      max_primary_shard_size = "50gb"
+      max_age                = "30d"
+    }
+  }
+
+  warm {
+    shrink {
+      number_of_shards = 1
+    }
+  }
+
+  delete {
+    min_age = "90d"
+    delete {}
+  }
+}
+
 resource "elasticstack_elasticsearch_index_template" "orders" {
   name           = "orders"
   index_patterns = ["orders-*"]
   priority       = 500
 
   template {
+    # Settings and mappings are externally template-managed. Do not put
+    # rollover_alias in this template's aliases; the series bootstrap defines it once.
     settings = jsonencode({
-      number_of_shards   = 1
+      number_of_shards   = 2
       number_of_replicas = 1
+      index = {
+        lifecycle = {
+          name           = elasticstack_elasticsearch_index_lifecycle.orders.name
+          rollover_alias = "orders-write"
+        }
+      }
+    })
+    mappings = jsonencode({
+      properties = {
+        order_id = { type = "keyword" }
+      }
     })
   }
 }

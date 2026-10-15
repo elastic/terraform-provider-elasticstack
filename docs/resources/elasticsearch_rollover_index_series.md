@@ -3,7 +3,7 @@ page_title: "elasticstack_elasticsearch_rollover_index_series Resource - terrafo
 subcategory: "Index"
 description: |-
   Manages one alias-owned Elasticsearch index series for ILM rollover.
-  When rollover_alias is missing, Terraform creates <prefix>-000001 and attaches that alias as its only write alias. The create request does not set index settings or mappings. Put those on an index template that matches the series, including index.lifecycle.name and index.lifecycle.rollover_alias. The template must not also define rollover_alias in its aliases, because Elasticsearch then reports a duplicate alias during rollover.
+  When rollover_alias is missing, Terraform creates <prefix>-000001 and attaches that alias as its only write alias. The create request does not set index settings or mappings. Settings and mappings are externally template-managed: put them on an index template that matches the series, including index.lifecycle.name and index.lifecycle.rollover_alias. The template must not also define rollover_alias in its aliases, because Elasticsearch then reports a duplicate alias during rollover.
   When the alias already exists, Terraform adopts it without an extra flag and without changing indices or aliases, but only when it is an ordinary index alias with one effective writer whose name ends in -<digits>. Adoption includes every index currently attached to the alias, including indices whose names do not start with prefix. Adopting the alias acquires deletion rights over every one of those indices once deletion_protection is disabled. deletion_protection defaults to true, and destroy is rejected while it remains enabled. Disabling it takes a prior, separate apply. Destroy and replacement both read that previously applied value.
   Keep rollover_alias for this series alone. Do not also manage that alias with elasticstack_elasticsearch_alias, and do not manage its member indices with elasticstack_elasticsearch_index. Those resources would compete to own the same alias and indices.
   The series exists only while the exact rollover_alias exists. Refresh reads that alias's current members and effective writer. It does not restore a write flag, move the alias onto another index, or put a removed member back. A missing effective writer, or a writer whose name does not end in -<digits>, produces a warning only: membership is refreshed, state is kept, and write_index is null only when no effective writer exists. The actual writer name is still reported when one exists.
@@ -18,7 +18,7 @@ description: |-
 
 Manages one alias-owned Elasticsearch index series for ILM rollover.
 
-When `rollover_alias` is missing, Terraform creates `<prefix>-000001` and attaches that alias as its only write alias. The create request does not set index settings or mappings. Put those on an index template that matches the series, including `index.lifecycle.name` and `index.lifecycle.rollover_alias`. The template must not also define `rollover_alias` in its aliases, because Elasticsearch then reports a duplicate alias during rollover.
+When `rollover_alias` is missing, Terraform creates `<prefix>-000001` and attaches that alias as its only write alias. The create request does not set index settings or mappings. Settings and mappings are externally template-managed: put them on an index template that matches the series, including `index.lifecycle.name` and `index.lifecycle.rollover_alias`. The template must not also define `rollover_alias` in its aliases, because Elasticsearch then reports a duplicate alias during rollover.
 
 When the alias already exists, Terraform adopts it without an extra flag and without changing indices or aliases, but only when it is an ordinary index alias with one effective writer whose name ends in `-<digits>`. Adoption includes every index currently attached to the alias, including indices whose names do not start with `prefix`. Adopting the alias acquires deletion rights over every one of those indices once `deletion_protection` is disabled. `deletion_protection` defaults to `true`, and destroy is rejected while it remains enabled. Disabling it takes a prior, separate apply. Destroy and replacement both read that previously applied value.
 
@@ -43,15 +43,50 @@ provider "elasticstack" {
   elasticsearch {}
 }
 
+resource "elasticstack_elasticsearch_index_lifecycle" "orders" {
+  name = "orders"
+
+  hot {
+    rollover {
+      max_primary_shard_size = "50gb"
+      max_age                = "30d"
+    }
+  }
+
+  warm {
+    shrink {
+      number_of_shards = 1
+    }
+  }
+
+  delete {
+    min_age = "90d"
+    delete {}
+  }
+}
+
 resource "elasticstack_elasticsearch_index_template" "orders" {
   name           = "orders"
   index_patterns = ["orders-*"]
   priority       = 500
 
   template {
+    # Settings and mappings are externally template-managed. Do not put
+    # rollover_alias in this template's aliases; the series bootstrap defines it once.
     settings = jsonencode({
-      number_of_shards   = 1
+      number_of_shards   = 2
       number_of_replicas = 1
+      index = {
+        lifecycle = {
+          name           = elasticstack_elasticsearch_index_lifecycle.orders.name
+          rollover_alias = "orders-write"
+        }
+      }
+    })
+    mappings = jsonencode({
+      properties = {
+        order_id = { type = "keyword" }
+      }
     })
   }
 }

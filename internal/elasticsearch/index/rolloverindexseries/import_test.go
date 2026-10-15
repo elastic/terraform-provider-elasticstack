@@ -250,6 +250,27 @@ func TestDocs_importInstructionsUseThreePartIdentity(t *testing.T) {
 	require.NotContains(t, strings.ToLower(string(doc)), "adoption flag")
 }
 
+func TestDocs_settingsAndMappingsAreTemplateManaged(t *testing.T) {
+	t.Parallel()
+
+	require.Contains(t, strings.ToLower(resourceDescription), "externally template-managed")
+
+	root := repoRoot(t)
+	example, err := os.ReadFile(filepath.Join(root, "examples/resources/elasticstack_elasticsearch_rollover_index_series/resource.tf"))
+	require.NoError(t, err)
+	doc, err := os.ReadFile(filepath.Join(root, "docs/resources/elasticsearch_rollover_index_series.md"))
+	require.NoError(t, err)
+
+	for _, body := range []string{string(example), string(doc)} {
+		require.Contains(t, body, "elasticstack_elasticsearch_index_lifecycle")
+		require.Contains(t, body, "rollover_alias")
+		require.Contains(t, body, "mappings")
+		require.NotContains(t, body, "alias {")
+		require.NotContains(t, body, "aliases =")
+	}
+	require.Contains(t, strings.ToLower(string(doc)), "externally template-managed")
+}
+
 func repoRoot(t *testing.T) string {
 	t.Helper()
 	_, file, _, ok := runtime.Caller(0)

@@ -1710,6 +1710,7 @@ func importStateChecks(check resource.TestCheckFunc) resource.ImportStateCheckFu
 		if len(instances) != 1 {
 			return fmt.Errorf("import produced %d instances, want 1", len(instances))
 		}
+		//nolint:staticcheck // plugin-testing has no other state constructor for ImportStateCheckFunc
 		state := terraform.NewState()
 		state.RootModule().Resources[seriesAddr] = &terraform.ResourceState{
 			Type:    "elasticstack_elasticsearch_rollover_index_series",
