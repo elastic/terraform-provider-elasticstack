@@ -91,15 +91,6 @@ func TestClassifyPullRequestForChangelog_automatedDependabotInternal(t *testing.
 	}
 }
 
-func TestParseCommitShas(t *testing.T) {
-	t.Parallel()
-
-	got := evidence.ParseCommitShas("\nabc\n\ndef \n")
-	if !reflect.DeepEqual(got, []string{"abc", "def"}) {
-		t.Fatalf("got %#v", got)
-	}
-}
-
 func TestSelectMergedPullRequests_orderAndDedup(t *testing.T) {
 	t.Parallel()
 

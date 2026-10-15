@@ -90,18 +90,6 @@ func SelectMergedPullRequests(prs []MergeCandidate) []MergeCandidate {
 	return merged
 }
 
-// ParseCommitShas trims and filters git log `%H` output like parseCommitShas in changelog-pr-evidence.js.
-func ParseCommitShas(raw string) []string {
-	var out []string
-	for ln := range strings.SplitSeq(raw, "\n") {
-		s := strings.TrimSpace(ln)
-		if s != "" {
-			out = append(out, s)
-		}
-	}
-	return out
-}
-
 func filterUserFacing(labels []string) []string {
 	var names []string
 	for _, label := range labels {
