@@ -144,10 +144,3 @@ func NewDurationFromAny(v any) Duration {
 	}
 	return NewDurationNull()
 }
-
-// NewDurationPointerValue creates a Duration with a null value if nil or a known value. Access the value via ValueStringPointer method.
-func NewDurationPointerValue(value *string) Duration {
-	return Duration{
-		StringValue: basetypes.NewStringPointerValue(value),
-	}
-}
