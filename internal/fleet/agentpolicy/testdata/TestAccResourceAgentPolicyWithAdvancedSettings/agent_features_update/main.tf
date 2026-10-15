@@ -13,7 +13,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
   advanced_settings = {
     features_disable_policy_change_acks_enabled = false
     features_include_tags_in_events_enabled     = false
-    internal = <<-YAML
+    internal                                    = <<-YAML
       agent:
         logging:
           level: debug

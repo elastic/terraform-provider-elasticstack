@@ -939,6 +939,9 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 	})
 }
 
+// agentInternalYAMLCreate is the YAML written by the agent_*_create acceptance configs (heredoc output).
+const agentInternalYAMLCreate = "agent:\n  monitoring:\n    http:\n      enabled: true\n    # trailing comment\n  logging:\n    level: info\n"
+
 func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -1096,7 +1099,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", "agent:\n  monitoring:\n    http:\n      enabled: true\n    # trailing comment\n  logging:\n    level: info\n"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", agentInternalYAMLCreate),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled"),
 				),
@@ -1110,7 +1113,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", "agent:\n  monitoring:\n    http:\n      enabled: true\n    # trailing comment\n  logging:\n    level: info\n"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", agentInternalYAMLCreate),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "true"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled"),
 				),
@@ -1150,7 +1153,7 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", "agent:\n  monitoring:\n    http:\n      enabled: true\n    # trailing comment\n  logging:\n    level: info\n"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", agentInternalYAMLCreate),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "true"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled", "true"),
 				),

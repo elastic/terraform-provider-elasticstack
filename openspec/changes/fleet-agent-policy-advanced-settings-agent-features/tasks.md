@@ -85,10 +85,10 @@
 
 ## 8. Docs and spec sync
 
-- [ ] 8.1 Regenerate `docs/resources/fleet_agent_policy.md` via `make docs-generate`
-- [ ] 8.2 Add a CHANGELOG entry following the repo's existing format
-- [ ] 8.3 Sync this change's delta spec into `openspec/specs/fleet-agent-policy/spec.md` (schema
-  block and REQ-033) when archiving
+- [x] 8.1 Regenerate `docs/resources/fleet_agent_policy.md` via `make docs-generate`
+- [x] 8.2 Add a CHANGELOG entry following the repo's existing format
+- [x] 8.3 Sync this change's delta spec into `openspec/specs/fleet-agent-policy/spec.md` (schema
+  block and REQ-033; synced without archiving)
 
 ## 9. Validation and cleanup
 

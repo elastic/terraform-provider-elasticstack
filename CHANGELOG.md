@@ -6,6 +6,7 @@
 
 ### Changes
 
+- Add `features_disable_policy_change_acks_enabled`, `features_include_tags_in_events_enabled` and `internal` to `advanced_settings` on `elasticstack_fleet_agent_policy` (require Elastic Stack 9.4.0, 9.6.0 and 9.3.0 respectively). ([#5274](https://github.com/elastic/terraform-provider-elasticstack/issues/5274))
 - Add the `elasticstack_kibana_case_template` resource for managing Kibana Cases templates. ([#5268](https://github.com/elastic/terraform-provider-elasticstack/pull/5268))
 - Add optional auth to elasticstack_fleet_agent_download_source for private artifact registries. ([#5263](https://github.com/elastic/terraform-provider-elasticstack/pull/5263))
 - Reject Lens XY duration decimals and compact formatting on Kibana before 9.5.2 ([#5252](https://github.com/elastic/terraform-provider-elasticstack/pull/5252))

@@ -12,7 +12,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 
   advanced_settings = {
     features_disable_policy_change_acks_enabled = true
-    internal = <<-YAML
+    internal                                    = <<-YAML
       agent:
         monitoring:
           http:

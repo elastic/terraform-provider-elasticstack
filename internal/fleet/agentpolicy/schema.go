@@ -273,9 +273,10 @@ func getSchema() schema.Schema {
 						Optional:    true,
 					},
 					"internal": schema.StringAttribute{
-						Description: "Advanced internal agent settings as free-form YAML (maps to `agent_internal`). Kibana provides no stability guarantee for the keys accepted here. Requires Elastic Stack 9.3.0 or above.",
-						Optional:    true,
-						CustomType:  customtypes.NormalizedYamlType{},
+						Description: "Advanced internal agent settings as free-form YAML (maps to `agent_internal`). " +
+							"Kibana provides no stability guarantee for the keys accepted here. Requires Elastic Stack 9.3.0 or above.",
+						Optional:   true,
+						CustomType: customtypes.NormalizedYamlType{},
 					},
 				},
 			},
