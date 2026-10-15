@@ -74,7 +74,23 @@ func TestImportState_RejectsIdentifierWithoutSeparator(t *testing.T) {
 
 	require.True(t, imported.Diagnostics.HasError())
 	text := diagnosticText(imported.Diagnostics)
-	require.Contains(t, text, "<cluster_uuid>/<rollover_alias>/<prefix>")
+	require.Contains(t, text, "Wrong resource ID")
+	require.NotContains(t, text, "missing a separator")
+	require.Len(t, imported.Diagnostics.Errors(), 1)
+}
+
+func TestImportState_RejectsEmptyResourceSegmentWithoutMissingSeparator(t *testing.T) {
+	t.Parallel()
+
+	res := importable(t)
+	imported := resource.ImportStateResponse{State: providerfwtest.EmptyImportState(t, res)}
+	res.ImportState(context.Background(), resource.ImportStateRequest{ID: "abc123/"}, &imported)
+
+	require.True(t, imported.Diagnostics.HasError())
+	text := diagnosticText(imported.Diagnostics)
+	require.Contains(t, text, "Wrong resource ID")
+	require.NotContains(t, text, "missing a separator")
+	require.Len(t, imported.Diagnostics.Errors(), 1)
 }
 
 func TestImportState_RejectsEmptyPrefix(t *testing.T) {

@@ -85,6 +85,16 @@ func TestCreate_bootstrapCollisionDoesNotMutate(t *testing.T) {
 	requireNoSurvivorProbe(t, mock, "orders-000002")
 }
 
+func TestCreate_unrelatedAlreadyExistsIsNotABootstrapCollision(t *testing.T) {
+	var unrelated diag.Diagnostics
+	unrelated.AddError("Unable to create index", "alias [orders-write] already exists")
+	require.False(t, bootstrapNameCollision(unrelated))
+
+	var collision diag.Diagnostics
+	collision.AddError("Unable to create index", "type: resource_already_exists_exception, reason: index [orders-000001] already exists")
+	require.True(t, bootstrapNameCollision(collision))
+}
+
 func TestCreate_aliasOccupiedBootstrapNameDoesNotMutate(t *testing.T) {
 	mock, client := newClusterMock(t)
 	mock.addIndex("other-index")

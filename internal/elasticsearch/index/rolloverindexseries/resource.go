@@ -61,7 +61,6 @@ func NewRolloverIndexSeriesResource() resource.Resource {
 func (r *rolloverIndexSeriesResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	compID, ok := entitycore.ParseCompositeID(req, resp)
 	if !ok {
-		invalidImportID(resp, req.ID, "is missing a separator")
 		return
 	}
 	if compID.ClusterID == "" {
