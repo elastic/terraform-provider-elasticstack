@@ -18,7 +18,6 @@
 package schema
 
 import (
-	"fmt"
 	"maps"
 	"sync"
 
@@ -161,49 +160,4 @@ func elasticsearchConnectionBlockObjectAttrTypes() map[string]attr.Type {
 
 func kibanaConnectionBlockObjectAttrTypes() map[string]attr.Type {
 	return copyAttrTypes(kibanaConnectionBlockObjectAttrTypesVal())
-}
-
-func fwNestedBlockAttributesToAttrTypes(attrs map[string]fwschema.Attribute) (map[string]attr.Type, error) {
-	out := make(map[string]attr.Type, len(attrs))
-	for name, a := range attrs {
-		t, err := fwAttributeToAttrType(name, a)
-		if err != nil {
-			return nil, err
-		}
-		out[name] = t
-	}
-	return out, nil
-}
-
-func fwAttributeToAttrType(name string, a fwschema.Attribute) (attr.Type, error) {
-	switch a := a.(type) {
-	case fwschema.StringAttribute:
-		if a.CustomType != nil {
-			return a.CustomType, nil
-		}
-		return types.StringType, nil
-	case fwschema.BoolAttribute:
-		if a.CustomType != nil {
-			return a.CustomType, nil
-		}
-		return types.BoolType, nil
-	case fwschema.ListAttribute:
-		if a.CustomType != nil {
-			return a.CustomType, nil
-		}
-		if a.ElementType == nil {
-			return nil, fmt.Errorf("attribute %q: ListAttribute missing ElementType", name)
-		}
-		return types.ListType{ElemType: a.ElementType}, nil
-	case fwschema.MapAttribute:
-		if a.CustomType != nil {
-			return a.CustomType, nil
-		}
-		if a.ElementType == nil {
-			return nil, fmt.Errorf("attribute %q: MapAttribute missing ElementType", name)
-		}
-		return types.MapType{ElemType: a.ElementType}, nil
-	default:
-		return nil, fmt.Errorf("attribute %q: unsupported framework attribute type %T (extend fwAttributeToAttrType)", name, a)
-	}
 }
