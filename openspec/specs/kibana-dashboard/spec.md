@@ -675,19 +675,19 @@ For each Lens chart panel listed below, Kibana materializes hard-coded server de
 - `treemap_config.legend.truncate_after_lines` and `mosaic_config.legend.truncate_after_lines` default to `1` (Kibana 9.6.0-SNAPSHOT and later).
 - `treemap_config.legend.nested` and `mosaic_config.legend.nested` default to `false` (Kibana 9.6.0-SNAPSHOT and later).
 - `treemap_config.value_display` and `mosaic_config.value_display` default to the block `{mode="percentage", percent_decimals=2}` (Kibana 9.6.0-SNAPSHOT and later). The older shape `{mode="percentage", percent_decimals=null}` SHALL also be treated as a Kibana default. When the practitioner omitted `percent_decimals` and Kibana returns `2`, the resource SHALL preserve the null plan value regardless of `mode` (including `mode="absolute"`).
-- `xy_chart_config.layers[].reference_line_layer.thresholds[].axis` defaults to `"y"` (Kibana 9.6.0-SNAPSHOT and later).
+- `xy_chart_config.layers[].reference_line_layer.thresholds[].axis` defaults to `"y"` on every Kibana version with the Dashboard API (9.4+); omitted `axis` reads back absent on Kibana 9.4 and 9.5 (probed 9.4.0 and 9.5.5) and injected as `"y"` on Kibana 9.6.0-SNAPSHOT and later.
 - When the typed `xy_chart_config.layers[].reference_line_layer.thresholds[].operation` is omitted, Kibana echoes `value_json.operation` onto that sibling (Kibana 9.6.0-SNAPSHOT and later). The `_layers_reference` evidence is a `value_json` blob that already carries `"operation":"static_value"`. The resource SHALL restore the null plan value when that echo is `"static_value"`. Non-`static_value` omitted-operation paths are unprobed and SHALL NOT be assumed to use the same restore.
 - `xy_chart_config.layers[].reference_line_layer.thresholds[].color_json` defaults to `{"type":"auto"}` (Kibana 9.6.0-SNAPSHOT and later).
 
-These preservations are plan-relative. On `terraform import` there is no plan value, so Kibana-injected defaults (for example `percent_decimals = 2`, `truncate_after_lines = 1`, `thresholds[].axis = "y"`) SHALL be written to state and a subsequent plan MAY show changes for the affected attributes.
+These preservations are plan-relative. On `terraform import` there is no plan value, so Kibana-injected defaults (for example `percent_decimals = 2`, `truncate_after_lines = 1`, `thresholds[].axis = "y"` on Kibana 9.6+) SHALL be written to state and a subsequent plan MAY show changes for the affected attributes.
 
 For Lens partition charts (pie `group_by[].config_json`, treemap `group_by_json`, mosaic `group_by_json`/`group_breakdown_by_json`) and Lens datatable (`metrics[].config_json`, `rows[].config_json`, `split_metrics_by[].config_json`), Kibana re-emits each `terms` dimension with the following injected default keys: `rank_by = {type="metric", metric_index=0, direction="desc"}` and `color = {mode="categorical", palette="default", mapping=[]}`. The resource SHALL populate these defaults during semantic-equality comparison so the practitioner's authored JSON round-trips without drift.
 
 When the metric-default normalization injects the `empty_as_null` default into a Lens metric `config_json`, it SHALL inject `empty_as_null = false` ONLY for metric operations whose Kibana API schema accepts the property: `count`, `sum`, and `unique_count`. For all other operations — including `percentile`, `percentile_rank`, `average`, `min`, `max`, `median`, `standard_deviation`, `last_value`, and pipeline operations such as `formula`, `moving_average`, `cumulative_sum`, `differences`, and `counter_rate` — the resource SHALL NOT inject `empty_as_null`, because the corresponding Kibana API metric schema does not define that property and rejects the request with HTTP 400 (`Additional properties are not allowed ('empty_as_null' was unexpected)`). This rule SHALL apply uniformly to every Lens chart family whose metric normalization injects `empty_as_null` — XY (`y[].config_json`), datatable (`metrics[].config_json`), metric chart, pie, gauge, legacy metric, tagcloud, treemap, mosaic, and region map — because all of those families share the same Kibana metric schema in which only `count`, `sum`, and `unique_count` define `empty_as_null`. This gating applies to both the request payload sent to Kibana and the normalization used for semantic-equality comparison, so that operations without `empty_as_null` support neither fail on apply nor produce spurious drift.
 
-As of Kibana 9.6.0-SNAPSHOT, XY `y[].config_json` read-back injects `"axis":"y"` when the practitioner's metric configuration omits `axis`. When the practitioner already set `axis` (for example `"y2"`), Kibana preserves that value. The resource SHALL treat omitted metric `axis` as the default `"y"` on XY `y[]` metric-population paths only, SHALL preserve an explicit metric `axis`, and SHALL NOT derive `"y2"` (or any other axis) from chart-level `axis.y2`. The `color: {type:"auto"}` omit-default, when the practitioner omitted `color`, is already covered by existing metric-default normalization. This axis behavior SHALL NOT apply to grouping/dimension JSON paths such as datatable `rows[]` / `split_metrics_by[]`.
+As of Kibana 9.6.0-SNAPSHOT, XY `y[].config_json` read-back injects `"axis":"y"` when the practitioner's metric configuration omits `axis`. When the practitioner already set `axis` (for example `"y2"`), Kibana preserves that value. The resource SHALL treat omitted metric `axis` as the default `"y"` on XY `y[]` metric-population paths only, SHALL preserve an explicit metric `axis`, and SHALL NOT derive `"y2"` (or any other axis) from chart-level `axis.y2`. The `color: {type:"auto"}` omit-default, when the practitioner omitted `color`, is already covered by existing metric-default normalization. This axis behavior SHALL NOT apply to grouping/dimension JSON paths such as datatable `rows[]` / `split_metrics_by[]`. (This paragraph covers the free-form `y[].config_json` metric `axis` key, a distinct field from the typed `thresholds[].axis` attribute covered below.)
 
-As of Kibana 9.6.0-SNAPSHOT, XY reference-line `thresholds[]` inject omit-defaults when the practitioner omits them: `axis` defaults to `"y"` and `color_json` defaults to `{"type":"auto"}`. When the typed `operation` is omitted, Kibana echoes `value_json.operation` onto that sibling; the resource SHALL restore the null plan value when that echo is `"static_value"` (the only probed shape). When `value_json` is a `static_value` object, Kibana also read-backs a scalar equal to that object's `value` key; the resource SHALL restore the practitioner's authored object when the scalar matches. These defaults SHALL NOT apply to XY `y[]` metric `config_json` (they are sibling threshold attributes). When the practitioner already set `thresholds[].axis` to a value Kibana accepts (for example `"y2"`), Kibana preserves that value and the resource SHALL NOT overwrite it with `"y"`. The Terraform schema currently validates `thresholds[].axis` as `bottom|left|right`, all of which Kibana 9.6 rejects (HTTP 400); reconciling the enum is tracked separately (https://github.com/elastic/terraform-provider-elasticstack/issues/4958). Until then only the omitted-axis default path is reachable.
+The Terraform schema for `xy_chart_config.layers[].reference_line_layer.thresholds[].axis` SHALL validate the enum `x | y | y2`, matching what Kibana's Dashboard API accepts on every version that exposes it (9.4+). The schema SHALL NOT accept `bottom`, `left`, or `right`: Kibana's Dashboard API has rejected those values with HTTP 400 on every Kibana version supported by this resource (9.4+), so no persisted state can legally contain them. XY reference-line `thresholds[]` inject omit-defaults when the practitioner omits them: `axis` defaults to `"y"` and `color_json` defaults to `{"type":"auto"}`. When the typed `operation` is omitted, Kibana echoes `value_json.operation` onto that sibling; the resource SHALL restore the null plan value when that echo is `"static_value"` (the only probed shape). When `value_json` is a `static_value` object, Kibana also read-backs a scalar equal to that object's `value` key; the resource SHALL restore the practitioner's authored object when the scalar matches. These defaults SHALL NOT apply to XY `y[]` metric `config_json` (they are sibling threshold attributes). When the practitioner already set `thresholds[].axis` to a value Kibana accepts (`"x"`, `"y"`, or `"y2"`), Kibana preserves that value on Kibana 9.6.0-SNAPSHOT and later and the resource SHALL NOT overwrite it with `"y"`. On Kibana 9.4/9.5, an explicit `axis = "y"` is stripped from the read-back (the API omits the key entirely, matching its treatment of an omitted `axis`); when the plan value is known and equals `"y"` and the API read-back is null, the resource SHALL restore `"y"` into state from the plan so the configured value round-trips on 9.4/9.5 without "Provider produced inconsistent result after apply". This restoration SHALL apply only to the literal default value `"y"`; the API stripping any other explicit value (`"x"` or `"y2"`) is not a known default and SHALL still surface as a plan/state inconsistency.
 
 Datatable `metrics[].config_json` extras injected by Kibana 9.6.0-SNAPSHOT when omitted are `visible:true`, `alignment:"right"`, and `color: {type:"auto"}`. Datatable metrics SHALL NOT assume an `axis` default.
 
@@ -844,9 +844,36 @@ The resource SHALL NOT treat a practitioner-authored static Y-metric color as se
 - THEN the provider SHALL keep `axis`, `operation`, and `color_json` null in state and SHALL restore the practitioner's `value_json` object
 - AND a subsequent plan SHALL show no changes
 
+#### Scenario: XY reference-line threshold accepts x, y, and y2
+
+- GIVEN an XY chart with a reference-line layer whose `thresholds[].axis` is explicitly set to `"x"`, `"y"`, or `"y2"`
+- WHEN `terraform plan` runs
+- THEN the configuration SHALL pass schema validation for each of those three values
+
+#### Scenario: XY reference-line threshold rejects bottom, left, and right
+
+- GIVEN an XY chart with a reference-line layer whose `thresholds[].axis` is explicitly set to `"bottom"`, `"left"`, or `"right"`
+- WHEN `terraform plan` runs
+- THEN the provider SHALL report a validation error naming the allowed values `x`, `y`, `y2`
+- AND the configuration SHALL NOT reach `terraform apply`
+
+#### Scenario: XY reference-line threshold explicit y is preserved when Kibana strips it (Kibana 9.4/9.5)
+
+- GIVEN an XY chart with a reference-line layer whose `thresholds[].axis` is explicitly set to `"y"`
+- WHEN create runs against a Kibana 9.4/9.5 stack and its read-back omits the `axis` key entirely
+- THEN the provider SHALL restore `axis = "y"` in state from the plan and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: XY reference-line threshold explicit y round-trips unchanged on Kibana 9.6+
+
+- GIVEN an XY chart with a reference-line layer whose `thresholds[].axis` is explicitly set to `"y"`
+- WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back echoes `axis = "y"`
+- THEN the provider SHALL keep `axis = "y"` in state
+- AND a subsequent plan SHALL show no changes
+
 #### Scenario: Import writes Kibana-injected omit-defaults into state
 
-- GIVEN a Lens panel whose configuration omitted a field listed above (for example treemap `value_display.percent_decimals`, waffle `legend.truncate_after_lines`, or XY `thresholds[].axis`)
+- GIVEN a Lens panel whose configuration omitted a field listed above (for example treemap `value_display.percent_decimals`, waffle `legend.truncate_after_lines`, or XY `thresholds[].axis` on a Kibana 9.6+ stack)
 - WHEN `terraform import` runs against Kibana 9.6.0-SNAPSHOT (or later)
 - THEN state SHALL hold Kibana's injected default for that field
 - AND a subsequent plan MAY show changes relative to a configuration that still omits the field
