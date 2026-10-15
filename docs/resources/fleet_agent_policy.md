@@ -155,7 +155,10 @@ Optional:
 
 - `download_target_directory` (String) Target directory for downloading agent updates.
 - `download_timeout` (String) Timeout for downloading agent updates (e.g., '2h', '30m').
+- `features_disable_policy_change_acks_enabled` (Boolean) Disable policy change acknowledgements from agents (maps to `agent_features_disable_policy_change_acks_enabled`). Requires Elastic Stack 9.4.0 or above.
+- `features_include_tags_in_events_enabled` (Boolean) Include the agent's tags in events it sends (maps to `agent_features_include_tags_in_events_enabled`). Requires Elastic Stack 9.6.0 or above.
 - `go_max_procs` (Number) Maximum number of CPUs that the agent can use (GOMAXPROCS). Set to 0 to use all available CPUs.
+- `internal` (String) Advanced internal agent settings as free-form YAML (maps to `agent_internal`). Kibana provides no stability guarantee for the keys accepted here. Requires Elastic Stack 9.3.0 or above.
 - `logging_files_interval` (String) Interval for log file rotation (e.g., '30s', '1m', '1h').
 - `logging_files_keepfiles` (Number) Number of rotated log files to keep.
 - `logging_files_rotateeverybytes` (Number) Rotate log files when they reach this size in bytes.
