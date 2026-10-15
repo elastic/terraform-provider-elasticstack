@@ -46,11 +46,6 @@ func NewNormalizedYamlNull() NormalizedYamlValue {
 	return NormalizedYamlValue{StringValue: basetypes.NewStringNull()}
 }
 
-// NewNormalizedYamlUnknown creates a NormalizedYamlValue with an unknown value.
-func NewNormalizedYamlUnknown() NormalizedYamlValue {
-	return NormalizedYamlValue{StringValue: basetypes.NewStringUnknown()}
-}
-
 // NewNormalizedYamlValue creates a NormalizedYamlValue with a known value.
 func NewNormalizedYamlValue(value string) NormalizedYamlValue {
 	return NormalizedYamlValue{StringValue: basetypes.NewStringValue(value)}
