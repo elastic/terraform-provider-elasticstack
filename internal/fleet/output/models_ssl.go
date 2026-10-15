@@ -106,19 +106,15 @@ func sslToObjectValue(
 	key *string,
 	verificationMode *kbapi.KibanaHTTPAPIsOutputSslVerificationMode,
 ) (types.Object, diag.Diagnostics) {
-	if sslcore.AllNil(certificate, certificateAuthorities, key) && verificationMode == nil {
-		return types.ObjectNull(getSslAttrTypes(ctx)), nil
-	}
-
 	var diags diag.Diagnostics
-	values, allNull := sslcore.Hydrate(ctx, certificate, certificateAuthorities, key, path.Root("ssl").AtName("certificate_authorities"), &diags)
+	values := sslcore.Hydrate(ctx, certificate, certificateAuthorities, key, path.Root("ssl").AtName("certificate_authorities"), &diags)
 
 	sslModel := outputSslModel{
 		Values:           values,
 		VerificationMode: typeutils.StringishPointerValue(verificationMode),
 	}
 
-	if allNull && sslModel.VerificationMode.IsNull() {
+	if sslModel.AllNil() && sslModel.VerificationMode.IsNull() {
 		return types.ObjectNull(getSslAttrTypes(ctx)), nil
 	}
 

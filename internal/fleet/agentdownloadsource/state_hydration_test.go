@@ -31,6 +31,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/sslcore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -440,7 +441,7 @@ func TestReadAndHydrateStateHydratesSslFromReadPayload(t *testing.T) {
 	require.False(t, state.Ssl.IsNull(), "expected a populated ssl object in state")
 
 	var readDiags diag.Diagnostics
-	sslModel := typeutils.ObjectTypeAs[agentDownloadSourceSslModel](context.Background(), state.Ssl, fwpath.Root("ssl"), &readDiags)
+	sslModel := typeutils.ObjectTypeAs[sslcore.Values](context.Background(), state.Ssl, fwpath.Root("ssl"), &readDiags)
 	require.False(t, readDiags.HasError(), "unexpected diagnostics: %#v", readDiags)
 	require.Equal(t, "cert-from-read", sslModel.Certificate.ValueString())
 	var caDiags diag.Diagnostics
@@ -793,7 +794,7 @@ func TestReadAndHydrateStateHydratesAuthAndSSLTogether(t *testing.T) {
 	require.False(t, state.Ssl.IsNull(), "expected a populated ssl object in state")
 
 	var readDiags diag.Diagnostics
-	sslModel := typeutils.ObjectTypeAs[agentDownloadSourceSslModel](context.Background(), state.Ssl, fwpath.Root("ssl"), &readDiags)
+	sslModel := typeutils.ObjectTypeAs[sslcore.Values](context.Background(), state.Ssl, fwpath.Root("ssl"), &readDiags)
 	require.False(t, readDiags.HasError(), "unexpected diagnostics: %#v", readDiags)
 	require.Equal(t, "cert-from-read", sslModel.Certificate.ValueString())
 }

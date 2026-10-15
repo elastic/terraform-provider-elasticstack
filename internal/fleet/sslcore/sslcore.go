@@ -21,8 +21,8 @@
 // pointer-to-tfsdk-value mapping only has to be correct in one place.
 // Resource-specific concerns -- extra sub-attributes such as output's
 // verification_mode, update "clear" semantics, and schema-level validation
-// -- stay in each resource package. The tfsdk object models embed Values
-// by value so the shared attributes are declared once.
+// -- stay in each resource package. agentdownloadsource's ssl object is
+// exactly Values. output embeds Values and adds verification_mode.
 package sslcore
 
 import (
@@ -34,21 +34,21 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// Values holds the tfsdk-typed representation of the ssl sub-attributes
-// common to every Fleet ssl block: certificate, certificate_authorities, and
-// key. Embed it by value. terraform-plugin-framework promotes these fields
-// onto the parent object, so the tags must match the schema attribute names
-// on every embedder, and the embedded field itself must not carry a tfsdk tag.
+// Values is the tfsdk object for an ssl block whose attributes are exactly
+// certificate, certificate_authorities, and key. A resource that adds
+// attributes embeds Values by value, with no tfsdk tag on the embed.
+// terraform-plugin-framework promotes these fields onto the parent object,
+// so the tags must match the schema attribute names on every embedder.
 type Values struct {
 	Certificate            types.String `tfsdk:"certificate"`
 	CertificateAuthorities types.List   `tfsdk:"certificate_authorities"` // > string
 	Key                    types.String `tfsdk:"key"`
 }
 
-// AllNil reports whether the certificate, certificate_authorities, and key
-// API model fields are all absent.
-func AllNil(certificate *string, certificateAuthorities *[]string, key *string) bool {
-	return certificate == nil && certificateAuthorities == nil && key == nil
+// AllNil reports whether certificate, certificate_authorities, and key are
+// all null.
+func (v Values) AllNil() bool {
+	return v.Certificate.IsNull() && v.CertificateAuthorities.IsNull() && v.Key.IsNull()
 }
 
 // Extract reads the certificate, certificate_authorities, and key
@@ -65,10 +65,10 @@ func Extract(ctx context.Context, values Values, certificateAuthoritiesPath path
 // Hydrate builds the tfsdk-typed certificate, certificate_authorities, and
 // key values from a Fleet API response's ssl fields, normalizing an empty
 // certificate_authorities list to null the same way a practitioner-omitted
-// attribute would decode. allNull reports whether every resulting value
-// ended up null, so callers can collapse a present-but-empty ssl object down
-// to ObjectNull.
-func Hydrate(ctx context.Context, certificate *string, certificateAuthorities *[]string, key *string, certificateAuthoritiesPath path.Path, diags *diag.Diagnostics) (values Values, allNull bool) {
+// attribute would decode. Callers use Values.AllNil to collapse a
+// present-but-empty ssl object down to ObjectNull.
+func Hydrate(ctx context.Context, certificate *string, certificateAuthorities *[]string, key *string, certificateAuthoritiesPath path.Path, diags *diag.Diagnostics) Values {
+	var values Values
 	values.Certificate = typeutils.NonEmptyStringishPointerValue(certificate)
 	values.Key = typeutils.NonEmptyStringishPointerValue(key)
 
@@ -78,6 +78,5 @@ func Hydrate(ctx context.Context, certificate *string, certificateAuthorities *[
 		values.CertificateAuthorities = types.ListNull(types.StringType)
 	}
 
-	allNull = values.Certificate.IsNull() && values.CertificateAuthorities.IsNull() && values.Key.IsNull()
-	return values, allNull
+	return values
 }
