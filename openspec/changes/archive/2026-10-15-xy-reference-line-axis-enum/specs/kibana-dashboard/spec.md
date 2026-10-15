@@ -43,6 +43,8 @@ As of Kibana 9.6.0-SNAPSHOT, XY `y[].config_json` read-back injects `"axis":"y"`
 
 The Terraform schema for `xy_chart_config.layers[].reference_line_layer.thresholds[].axis` SHALL validate the enum `x | y | y2`, matching what Kibana's Dashboard API accepts on every version that exposes it (9.4+). The schema SHALL NOT accept `bottom`, `left`, or `right`: Kibana's Dashboard API has rejected those values with HTTP 400 on every Kibana version supported by this resource (9.4+), so no persisted state can legally contain them. XY reference-line `thresholds[]` inject omit-defaults when the practitioner omits them: `axis` defaults to `"y"` and `color_json` defaults to `{"type":"auto"}`. When the typed `operation` is omitted, Kibana echoes `value_json.operation` onto that sibling; the resource SHALL restore the null plan value when that echo is `"static_value"` (the only probed shape). When `value_json` is a `static_value` object, Kibana also read-backs a scalar equal to that object's `value` key; the resource SHALL restore the practitioner's authored object when the scalar matches. These defaults SHALL NOT apply to XY `y[]` metric `config_json` (they are sibling threshold attributes). When the practitioner already set `thresholds[].axis` to a value Kibana accepts (`"x"`, `"y"`, or `"y2"`), Kibana preserves that value on Kibana 9.6.0-SNAPSHOT and later and the resource SHALL NOT overwrite it with `"y"`. On Kibana 9.4/9.5, an explicit `axis = "y"` is stripped from the read-back (the API omits the key entirely, matching its treatment of an omitted `axis`); when the plan value is known and equals `"y"` and the API read-back is null, the resource SHALL restore `"y"` into state from the plan so the configured value round-trips on 9.4/9.5 without "Provider produced inconsistent result after apply". This restoration SHALL apply only to the literal default value `"y"`; the API stripping any other explicit value (`"x"` or `"y2"`) is not a known default and SHALL still surface as a plan/state inconsistency.
 
+When `thresholds[].axis` is set together with `value_json`, the provider SHALL send the axis inside the operation object (the typed `axis` is merged into the `value_json` object on write). If `value_json` already contains an `axis` key that differs from the typed `axis`, or `value_json` is not a JSON object, the provider SHALL return a diagnostic error instead of silently dropping or overriding either value; an equal `axis` in both is accepted. On read-back, operation objects other than `static_value` that echo an `axis` SHALL be kept whole in `value_json`, and an `axis` authored inside the plan's `value_json` SHALL NOT be mirrored into the typed `axis` attribute. The Kibana 9.4/9.5 stripping of an explicit `"y"` and the 9.6+ injection are backed by manual probes (9.4.0, 9.5.5, 9.6.x); the automated acceptance run covers 9.5.5 only. When the plan authors `axis` inside `value_json`, a read-back axis that differs from the authored one (an absent axis counting as `"y"`) SHALL remain observable as drift: the provider SHALL NOT clear the typed `axis` or restore the planned `value_json` in that case. When a threshold sets typed `operation` (and optionally `axis`) with no `value_json` and Kibana echoes a bare `{operation, axis}` object (an empty `label` tolerated), the provider SHALL map it back to the typed attributes and keep `value_json` null.
+
 Datatable `metrics[].config_json` extras injected by Kibana 9.6.0-SNAPSHOT when omitted are `visible:true`, `alignment:"right"`, and `color: {type:"auto"}`. Datatable metrics SHALL NOT assume an `axis` default.
 
 When omitted, the provider SHALL inject `legacy_metric_config.metric_json` extras `color: {type:"auto"}` and `size:"m"` only for field-metric operations (`count`, `sum`, `unique_count`, `min`, `max`, `average`, `median`, `standard_deviation`, `last_value`, `percentile`, `percentile_rank`). Injection of these extras is confirmed for `count`; the remaining field-metric operations are inferred from the shared Kibana metric schema. The provider SHALL NOT inject these extras for pipeline operations such as `formula`. Legacy metrics SHALL NOT assume an `axis` default.
@@ -224,6 +226,18 @@ The resource SHALL NOT treat a practitioner-authored static Y-metric color as se
 - WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back echoes `axis = "y"`
 - THEN the provider SHALL keep `axis = "y"` in state
 - AND a subsequent plan SHALL show no changes
+
+#### Scenario: XY reference-line threshold axis is sent with value_json
+
+- GIVEN an XY chart with a reference-line layer whose threshold sets both `axis = "y2"` and a `value_json` object without an `axis` key
+- WHEN create runs
+- THEN the request SHALL contain `axis = "y2"` inside that threshold's operation object
+
+#### Scenario: XY reference-line threshold axis conflicts with value_json axis
+
+- GIVEN a threshold whose typed `axis` differs from the `axis` key inside `value_json`, or whose `value_json` is not a JSON object while `axis` is set
+- WHEN the provider builds the request
+- THEN it SHALL return a diagnostic error and SHALL NOT send the threshold
 
 #### Scenario: Import writes Kibana-injected omit-defaults into state
 

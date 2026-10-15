@@ -18,15 +18,18 @@
 package lensxy_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
 // TestAccResourceDashboardXYChartMinimalConfig is a regression test for
@@ -382,8 +385,75 @@ func TestAccResourceDashboardXYChart_layers_reference(t *testing.T) {
 					"panels.0.vis_config.by_value.xy_chart_config.layers.1.reference_line_layer.thresholds.0.operation",
 				},
 			},
+			// Explicit threshold axis values. Kibana 9.4/9.5 strip an explicit "y" from the
+			// read-back and 9.6+ echoes it; both must apply with an empty follow-up plan.
+			referenceAxisStep(dashboardTitle, "x"),
+			referenceAxisStep(dashboardTitle, "y"),
+			referenceAxisStep(dashboardTitle, "y2"),
+			referenceAxisStep(dashboardTitle, "y"),
+			referenceAxisStep(dashboardTitle, ""),
+			referenceAxisStep(dashboardTitle, "y"),
+			// Import has no plan to align against: "y" is read back on 9.6+, absent on 9.4/9.5.
+			referenceAxisImportStep(dashboardTitle, ">= 9.6.0-SNAPSHOT", "y"),
+			referenceAxisImportStep(dashboardTitle, "< 9.6.0-SNAPSHOT", ""),
 		},
 	})
+}
+
+const referenceThresholdAxisKey2 = "panels.0.vis_config.by_value.xy_chart_config.layers.1.reference_line_layer.thresholds.1.axis"
+
+const referenceThresholdAxisKey = "panels.0.vis_config.by_value.xy_chart_config.layers.1.reference_line_layer.thresholds.0.axis"
+
+// referenceAxisStep applies the explicit axis (an empty axis means omitted, asserting the attribute is unset).
+func referenceAxisStep(dashboardTitle, axis string) resource.TestStep {
+	vars := config.Variables{"dashboard_title": config.StringVariable(dashboardTitle)}
+	checkAxis := resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", referenceThresholdAxisKey)
+	if axis != "" {
+		vars["threshold_axis"] = config.StringVariable(axis)
+		checkAxis = resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", referenceThresholdAxisKey, axis)
+	}
+	return resource.TestStep{
+		ProtoV6ProviderFactories: acctest.Providers,
+		ConfigDirectory:          acctest.NamedTestCaseDirectory("layers_reference_axis"),
+		ConfigVariables:          vars,
+		Check: resource.ComposeTestCheckFunc(
+			checkAxis,
+			resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", referenceThresholdAxisKey2, "y2"),
+		),
+	}
+}
+
+// referenceAxisImportStep imports the explicit axis = "y" configuration and asserts the
+// per-stack imported axis value (wantAxis == "" means the attribute is absent).
+func referenceAxisImportStep(dashboardTitle, versionConstraint, wantAxis string) resource.TestStep {
+	constraints, err := version.NewConstraint(versionConstraint)
+	if err != nil {
+		panic(err)
+	}
+	return resource.TestStep{
+		SkipFunc:                 versionutils.CheckIfVersionMeetsConstraints(constraints),
+		ProtoV6ProviderFactories: acctest.Providers,
+		ConfigDirectory:          acctest.NamedTestCaseDirectory("layers_reference_axis"),
+		ConfigVariables: config.Variables{
+			"dashboard_title": config.StringVariable(dashboardTitle),
+			"threshold_axis":  config.StringVariable("y"),
+		},
+		ResourceName: "elasticstack_kibana_dashboard.test",
+		ImportState:  true,
+		ImportStateCheck: func(states []*terraform.InstanceState) error {
+			if len(states) != 1 {
+				return fmt.Errorf("expected 1 imported instance state, got %d", len(states))
+			}
+			got, present := states[0].Attributes[referenceThresholdAxisKey]
+			switch {
+			case wantAxis == "" && present:
+				return fmt.Errorf("expected imported threshold axis to be absent, got %q", got)
+			case wantAxis != "" && got != wantAxis:
+				return fmt.Errorf("expected imported threshold axis %q, got %q (present=%t)", wantAxis, got, present)
+			}
+			return nil
+		},
+	}
 }
 
 func TestAccResourceDashboardXYChart_chartTimeRangeLifecycle(t *testing.T) {

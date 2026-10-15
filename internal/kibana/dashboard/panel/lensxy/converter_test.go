@@ -45,7 +45,7 @@ func minimalXYNoESQLChartForRoundTrip() *models.XYChartConfigModel {
 				DataLayer: &models.DataLayerModel{
 					DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"dataView","id":"logs-*"}`),
 					Y: []models.YMetricModel{
-						{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","axis":"left"}`)},
+						{ConfigJSON: jsontypes.NewNormalizedValue(`{"operation":"count","axis":"y"}`)},
 					},
 				},
 			},

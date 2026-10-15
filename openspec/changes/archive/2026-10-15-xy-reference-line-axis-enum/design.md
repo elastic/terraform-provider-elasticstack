@@ -136,10 +136,19 @@ recorded for anyone picking up related work:
    requires and was already rejected for the related `#4948` change for the
    same reason (see that change's design doc, "Non-Goals").
 
-The write path (`thresholdToAPI`) and read path (`thresholdFromAPIJSON`) in
-`internal/kibana/dashboard/panel/lensxy/layer_conv.go` need no change — they
-already pass the `axis` string through verbatim; only the schema validator and
-the alignment logic change.
+6. **Send the typed `axis` inside the `value_json` operation object.**
+   Verification found that `referenceLineLayerToAPIXyReferenceLineLayerNoESQL`
+   in `layer_conv.go` sent only the `value_json` object whenever it was set and
+   silently dropped the typed `axis` sibling, so an explicit axis never reached
+   Kibana. The write path now merges a known `axis` into the `value_json`
+   object. If `value_json` already has a different `axis`, or is not a JSON
+   object, the provider returns an error rather than picking a winner or
+   dropping the value; equal values are accepted. The read path
+   (`referenceLineLayerFromAPINoESQL`) keeps operation objects other than
+   `static_value` whole in `value_json` (mirroring the key into the typed
+   `axis`), and alignment does not mirror an `axis` authored inside the plan's
+   `value_json` into the typed attribute and tolerates Kibana adding or
+   stripping that key.
 
 ## Risks / Trade-offs
 
@@ -165,3 +174,10 @@ the alignment logic change.
   diff to `"y"` until the next apply. This is accepted (it is consistent with the
   other import omit-defaults and harmless) and is covered by an import test step
   (tasks 4.4) so the behavior is documented rather than accidental.
+- **Evidence scope.** The 9.4.0/9.5.5/9.6.x read-back behaviours in this
+  document come from manual probes. The automated acceptance run
+  (`TestAccResourceDashboardXYChart_layers_reference`) passed in CI on the 9.4.8,
+  9.5.5 (stripped explicit `"y"`) and 9.6.0-SNAPSHOT stacks, in addition to unit tests.
+- **Write-path merge.** Merging `axis` into `value_json` changes the request
+  for configurations that set both; the conflict error makes disagreements
+  explicit instead of silently preferring one.

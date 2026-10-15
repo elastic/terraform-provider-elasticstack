@@ -44,6 +44,9 @@ still works), but practitioners should also be able to set it explicitly.
   back `"y"`; it does not yet restore a **known** plan value of `"y"` when state
   reads back null/absent (the 9.4/9.5 shape). Add that missing direction so both
   stacks avoid "Provider produced inconsistent result after apply".
+- Send the typed `axis` inside the `value_json` operation object on write
+  (`layer_conv.go`), which previously dropped it; conflicting or non-object
+  `value_json` is a diagnostic error.
 - Update the one test fixture that encodes the old Y-metric `config_json` axis
   value (`converter_test.go:48`, `"axis":"left"` → `"axis":"y"` — Y-metric
   `config_json` is free-form JSON already using Kibana's `y|y2` values in
@@ -82,6 +85,10 @@ None.
   `axis` validator and `MarkdownDescription`.
 - `internal/kibana/dashboard/panel/lensxy/alignment_panels.go` — add the
   missing plan-known/state-null restoration direction for `thresholds[].axis`.
+- `internal/kibana/dashboard/panel/lensxy/layer_conv.go` — send the typed
+  `axis` inside the `value_json` operation object (error on conflict or a
+  non-object `value_json`) and keep non-`static_value` operation objects whole
+  on read-back.
 - `internal/kibana/dashboard/panel/lensxy/converter_test.go` — fix the stale
   `"axis":"left"` fixture.
 - `internal/kibana/dashboard/panel/lensxy/alignment_panels_test.go` — replace

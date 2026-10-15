@@ -39,10 +39,8 @@ const (
 	referenceLineIconDescription = "Icon to display on the reference line. Valid values: 'alert', 'asterisk', 'bell', 'bolt', 'bug', 'circle', " +
 		"'editorComment', 'flag', 'heart', 'mapMarker', 'pinFilled', 'starEmpty', 'starFilled', 'tag', 'triangle'."
 
-	referenceLineAxisDescription = "Which axis the reference line applies to. Not settable against Kibana 9.6: " +
-		"the schema accepts `bottom`/`left`/`right`, all of which Kibana 9.6 rejects, while the values it accepts " +
-		"(`y`, `y2`) are not in the schema. Omit this attribute; it defaults to the Y axis. " +
-		"Tracked in https://github.com/elastic/terraform-provider-elasticstack/issues/4958."
+	referenceLineAxisDescription = "Which axis the reference line is drawn on. Valid values: `x` (the chart's X axis), " +
+		"`y` (the primary Y axis), `y2` (the secondary Y axis). Defaults to `y` when omitted."
 )
 
 // getXYAxisSchema returns the schema for XY chart axis configuration
@@ -400,7 +398,7 @@ func xyReferenceLineLayerAttributes() map[string]schema.Attribute {
 						MarkdownDescription: referenceLineAxisDescription,
 						Optional:            true,
 						Validators: []validator.String{
-							stringvalidator.OneOf("bottom", "left", "right"),
+							stringvalidator.OneOf("x", "y", "y2"),
 						},
 					},
 					"color_json": schema.StringAttribute{

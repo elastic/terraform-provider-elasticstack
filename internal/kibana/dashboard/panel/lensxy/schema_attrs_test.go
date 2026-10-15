@@ -18,9 +18,12 @@
 package lensxy
 
 import (
+	"context"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
@@ -36,4 +39,37 @@ func TestXYMetricConfigJSONDocumentsDurationFormatMinimumVersion(t *testing.T) {
 	require.Contains(t, configAttr.MarkdownDescription, "duration")
 	require.Contains(t, configAttr.MarkdownDescription, "decimals")
 	require.Contains(t, configAttr.MarkdownDescription, "compact")
+}
+
+func TestReferenceLineThresholdAxisValidator(t *testing.T) {
+	t.Parallel()
+
+	thresholdsAttr, ok := xyReferenceLineLayerAttributes()["thresholds"].(schema.ListNestedAttribute)
+	require.True(t, ok)
+	axisAttr, ok := thresholdsAttr.NestedObject.Attributes["axis"].(schema.StringAttribute)
+	require.True(t, ok)
+	require.False(t, axisAttr.Computed)
+	require.True(t, axisAttr.Optional)
+
+	validate := func(value types.String) validator.StringResponse {
+		resp := validator.StringResponse{}
+		for _, v := range axisAttr.Validators {
+			v.ValidateString(context.Background(), validator.StringRequest{ConfigValue: value}, &resp)
+		}
+		return resp
+	}
+
+	for _, ok := range []string{"x", "y", "y2"} {
+		require.False(t, validate(types.StringValue(ok)).Diagnostics.HasError(), ok)
+	}
+	for _, v := range []types.String{types.StringNull(), types.StringUnknown()} {
+		require.False(t, validate(v).Diagnostics.HasError(), v.String())
+	}
+	for _, bad := range []string{"left", "right", "bottom", "Y", "", "y1"} {
+		resp := validate(types.StringValue(bad))
+		require.True(t, resp.Diagnostics.HasError(), bad)
+		detail := resp.Diagnostics[0].Detail()
+		require.Contains(t, detail, "x")
+		require.Contains(t, detail, "y2")
+	}
 }
