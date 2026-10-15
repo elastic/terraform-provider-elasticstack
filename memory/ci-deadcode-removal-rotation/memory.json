@@ -1719,6 +1719,24 @@
       "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
       "attemptedAt": "2026-10-15T10:14:21.831443743Z",
       "reason": "pr_created"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes.NewIndexSettingsUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
+      "attemptedAt": "2026-10-15T10:43:26.367272262Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes.NewJSONWithDefaultsUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
+      "attemptedAt": "2026-10-15T10:43:26.367272383Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes.NewMemorySizePointerValue",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
+      "attemptedAt": "2026-10-15T10:58:33.851162416Z",
+      "reason": "pr_created"
     }
   ]
 }
