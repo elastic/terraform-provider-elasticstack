@@ -1665,6 +1665,60 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.AcceptanceServerInfo",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-10-15T09:52:59.151663177Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewAcceptanceTestingElasticsearchScopedClient",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-10-15T09:52:59.151663318Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewAcceptanceTestingKibanaScopedClient",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-10-15T09:52:59.151663398Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewElasticsearchScopedClientForTest",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-10-15T09:52:59.151663468Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.newAcceptanceTestingClient",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-10-15T09:52:59.151663548Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients/config.NewFromEnv",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients/config",
+      "attemptedAt": "2026-10-15T09:52:59.151663618Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit.unknownPanelBlockPanic",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit",
+      "attemptedAt": "2026-10-15T09:52:59.151663678Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview.NewFieldAttrsNull",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview",
+      "attemptedAt": "2026-10-15T09:52:59.151663748Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes.NewDurationPointerValue",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
+      "attemptedAt": "2026-10-15T10:14:21.831443743Z",
+      "reason": "pr_created"
     }
   ]
 }
