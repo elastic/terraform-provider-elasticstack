@@ -2,7 +2,7 @@
 
 ### Requirement: Auth and secrets not in v1 schema
 
-The resource SHALL expose an optional `auth` nested attribute mapping to the Fleet API's `auth` request/response field: `username` (string), `password` (string, sensitive), `api_key` (string, sensitive), and `headers` (list of `{key, value}`, up to 100 entries). The resource SHALL NOT expose the Fleet download source `secrets.auth` or `secrets.ssl.key` secret-reference mechanisms (referencing an existing Fleet secret store entry by ID) as Terraform schema attributes; those remain managed outside this resource's schema. This exclusion no longer covers the plain `ssl` object (`certificate`, `certificate_authorities`, `key`), which is exposed per the "Optional ssl attribute" requirement below.
+The resource SHALL expose an optional `auth` nested attribute mapping to the Fleet API's `auth` request/response field: `username` (string), `password` (string, sensitive), `api_key` (string, sensitive), and `headers` (list of `{key, value}`, up to 100 entries). The resource SHALL expose an optional `ssl` nested attribute per the "Optional ssl attribute" requirement below, including `key`, which the provider SHALL submit through the Fleet `secrets.ssl.key` managed-secret field rather than the plain `ssl.key` field. The resource SHALL NOT expose the `{id}`-reference form of the Fleet download source `secrets.auth.*` or `secrets.ssl.key` fields (referencing a pre-existing Fleet secret store entry by ID, as opposed to submitting a raw value for Fleet to store) as Terraform schema attributes; that reference form remains managed outside this resource's schema.
 
 #### Scenario: Auth attribute present in schema
 
@@ -12,37 +12,45 @@ The resource SHALL expose an optional `auth` nested attribute mapping to the Fle
 #### Scenario: No sensitive auth attributes
 
 - **WHEN** the practitioner inspects the resource schema
-- **THEN** there SHALL be no Terraform attributes exposing the `secrets.auth` or `secrets.ssl.key` `{id}` reference mechanisms for this resource
+- **THEN** there SHALL be no Terraform attributes exposing the `{id}`-reference form of `secrets.auth.*` or `secrets.ssl.key` for this resource
 
-#### Scenario: Plain ssl object is exposed
+#### Scenario: ssl object is exposed, with key routed through the Fleet secrets field
 
 - **WHEN** the practitioner inspects the resource schema
 - **THEN** there SHALL be an `ssl` attribute exposing `certificate`, `certificate_authorities`, and `key`
+- **AND** the provider SHALL submit a configured `key` value through the Fleet `secrets.ssl.key` field, not the plain `ssl.key` field
 
 ## ADDED Requirements
 
 ### Requirement: Optional ssl attribute
 
-The resource SHALL expose an optional `ssl` single-nested-object attribute with the sub-attributes `certificate_authorities` (list of string, optional), `certificate` (string, optional), and `key` (string, optional, sensitive). The provider SHALL map `ssl` to and from the `ssl` object on the Fleet create, update, and read response bodies.
+The resource SHALL expose an optional `ssl` single-nested-object attribute with sub-attributes `certificate_authorities` (list of string, optional), `certificate` (string, optional), and `key` (string, optional, sensitive). The provider SHALL map these to/from the Fleet API per the scenarios below.
 
 #### Scenario: Create sends ssl fields
 
 - **WHEN** the practitioner sets `ssl.certificate_authorities`, `ssl.certificate`, and/or `ssl.key` on a new resource
-- **THEN** the provider SHALL include the corresponding `ssl` object in the create request body
+- **THEN** the provider SHALL include `certificate`/`certificate_authorities` in the create request body's plain `ssl` object
+- **AND** the provider SHALL include a configured `key` in the create request body's `secrets.ssl.key` field, not the plain `ssl.key` field
 
 #### Scenario: Update sends changed ssl fields
 
 - **WHEN** the practitioner changes any `ssl` sub-attribute on an existing resource and applies
-- **THEN** the provider SHALL include the corresponding `ssl` object in the update request body
+- **THEN** the provider SHALL include `certificate`/`certificate_authorities` in the update request body's plain `ssl` object
+- **AND** the provider SHALL include a changed `key` in the update request body's `secrets.ssl.key` field, not the plain `ssl.key` field
 
-#### Scenario: Read hydrates ssl from the API response
+#### Scenario: Read hydrates certificate and certificate_authorities from the API response
 
-- **WHEN** the provider reads an existing download source whose stored `ssl` object has at least one non-null field
-- **THEN** state SHALL contain a non-null `ssl` object populated with the response's `certificate`, `certificate_authorities`, and `key` values
+- **WHEN** the provider reads an existing download source whose stored `ssl` object has a non-null `certificate` and/or `certificate_authorities`
+- **THEN** state SHALL contain a non-null `ssl` object with `certificate`/`certificate_authorities` populated from the response
+
+#### Scenario: Read preserves key from prior state rather than the API response
+
+- **WHEN** the provider reads an existing download source that has a previously-configured `ssl.key` in prior Terraform state
+- **THEN** state SHALL retain the prior `key` value regardless of what the API response's `ssl.key` or `secrets.ssl.key` fields contain
 
 #### Scenario: Omitted ssl is null in state
 
-- **WHEN** the practitioner does not set `ssl` and the API response's `ssl` object is absent or has no non-null fields
+- **WHEN** the practitioner does not set `ssl` and the API response's `ssl` object is absent or has no non-null fields, and no `key` is present in prior state
 - **THEN** state SHALL contain a null `ssl` object
 
 #### Scenario: key is marked sensitive
@@ -57,22 +65,22 @@ The resource SHALL expose an optional `ssl` single-nested-object attribute with 
 
 ### Requirement: ssl empty-value validation
 
-The resource SHALL reject, at plan time, any configuration where `ssl` is set but ambiguously empty, rather than silently normalizing the ambiguity to null on a later read.
+The resource SHALL accept a configuration where `ssl` is set but has empty or omitted children, matching the existing `auth` attribute's permissiveness, rather than rejecting the ambiguity at plan time. The resource SHALL continue to reject a non-empty `certificate_authorities` list that contains an empty-string element.
 
-#### Scenario: Empty ssl object rejected
+#### Scenario: Empty ssl object accepted
 
 - **WHEN** the practitioner configures `ssl = {}`
-- **THEN** Terraform SHALL report a validation error before any API call
+- **THEN** Terraform SHALL accept the configuration and SHALL NOT report a validation error
 
-#### Scenario: Empty string certificate or key rejected
+#### Scenario: Empty string certificate or key accepted
 
 - **WHEN** the practitioner configures `ssl.certificate = ""` or `ssl.key = ""`
-- **THEN** Terraform SHALL report a validation error before any API call
+- **THEN** Terraform SHALL accept the configuration and SHALL NOT report a validation error
 
-#### Scenario: Empty certificate_authorities list rejected
+#### Scenario: Empty certificate_authorities list accepted
 
 - **WHEN** the practitioner configures `ssl.certificate_authorities = []`
-- **THEN** Terraform SHALL report a validation error before any API call
+- **THEN** Terraform SHALL accept the configuration and SHALL NOT report a validation error
 
 #### Scenario: Empty-string CA element rejected
 
@@ -111,16 +119,16 @@ The `ssl` attribute SHALL be guarded by its own attribute-scoped minimum Kibana 
 
 ### Requirement: ssl removal consistency with PUT semantics
 
-When removing a previously-set `ssl` from configuration would produce a plan/state inconsistency because the Fleet PUT API does not honor that removal in place (as determined by a pre-implementation probe against a live Kibana instance), the resource SHALL force replacement for that specific transition via a plan modifier, instead of issuing an in-place update that silently leaves the stale `ssl` value on the server while the plan shows it removed.
+Removing a previously-set `ssl` (in whole or in part) from configuration SHALL always be performed as an in-place update, never a forced replacement. Omitting `ssl` entirely from a PUT body leaves the prior value unchanged server-side, so the provider SHALL send an explicit `ssl: {}` to fully clear it; omitting a single child (`certificate`, `key`, or `certificate_authorities`) from an otherwise-populated `ssl`/`secrets.ssl` object on PUT clears only that child.
 
-#### Scenario: In-place removal when the API honors it
+#### Scenario: Full removal sends an explicit empty ssl object
 
-- **GIVEN** the pre-implementation probe determines that omitting `ssl` (or a specific `ssl` child) from the PUT body clears it server-side
-- **WHEN** the practitioner removes `ssl` (or that child) from configuration and applies
-- **THEN** the provider SHALL perform an in-place update, and a subsequent read SHALL show the removed value as null
+- **WHEN** the practitioner removes a previously-set `ssl` entirely from configuration and applies
+- **THEN** the provider SHALL send an explicit `ssl: {}` (not an omitted `ssl` field) in the update request body
+- **AND** the provider SHALL perform an in-place update, and a subsequent read SHALL show `ssl` as null
 
-#### Scenario: Forced replacement when the API cannot honor in-place removal
+#### Scenario: Per-child removal clears only that child
 
-- **GIVEN** the pre-implementation probe determines that neither omitting `ssl` nor sending `ssl = {}` clears a previously-set `ssl`, or that omitting a specific child does not clear that child
-- **WHEN** the practitioner removes `ssl` (or that child) from configuration and applies
-- **THEN** Terraform SHALL plan a replace operation for the resource
+- **WHEN** the practitioner removes a single `ssl` child (`certificate`, `key`, or `certificate_authorities`) from an otherwise-populated `ssl` configuration and applies
+- **THEN** the provider SHALL omit only that child from the update request body's `ssl`/`secrets.ssl` object while still sending the other configured children
+- **AND** the provider SHALL perform an in-place update, and a subsequent read SHALL show the removed child as null while the other children persist
