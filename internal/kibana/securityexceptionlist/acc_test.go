@@ -20,6 +20,7 @@ package securityexceptionlist_test
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -29,6 +30,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -237,7 +239,7 @@ func TestAccResourceExceptionListWithSpace(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "namespace_type", "single"),
 					resource.TestCheckTypeSetElemAttr(resourceName, "tags.*", "test"),
 					resource.TestCheckTypeSetElemAttr(resourceName, "tags.*", "space"),
-					resource.TestCheckResourceAttrSet(resourceName, "id"),
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile("^"+regexp.QuoteMeta(spaceID)+"/.+")),
 					resource.TestCheckResourceAttrSet(resourceName, "created_at"),
 					resource.TestCheckResourceAttrSet(resourceName, "created_by"),
 				),
@@ -366,6 +368,174 @@ func TestAccResourceExceptionList_EmptyTags(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_list.test", "tags.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceExceptionList_Meta covers the `meta` attribute's unset/default
+// behavior. Note: the live exception-list API maps `meta` to an Elasticsearch
+// `keyword` field internally, which rejects any JSON object value (including
+// `{}`) with a `document_parsing_exception`, regardless of the OpenAPI spec and
+// provider schema both typing `meta` as an object. This mirrors the existing
+// behavior exercised in internal/kibana/security_exception_item's acceptance
+// tests, which also never configure `meta` with a real value.
+func TestAccResourceExceptionList_Meta(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_exception_list.test"
+	listID := fmt.Sprintf("test-exception-list-meta-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionListDestroy,
+		Steps: []resource.TestStep{
+			{ // meta omitted
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_meta"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable(listID),
+					"name":           config.StringVariable("Test Exception List Meta"),
+					"description":    config.StringVariable("Test exception list without metadata"),
+					"type":           config.StringVariable("detection"),
+					"namespace_type": config.StringVariable("single"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "meta"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionList_ListIDComputedAndReplace(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_exception_list.test"
+	explicitListID := fmt.Sprintf("test-exception-list-explicit-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionListDestroy,
+		Steps: []resource.TestStep{
+			{ // list_id omitted: server generates it
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_list_id"),
+				ConfigVariables: config.Variables{
+					"name":           config.StringVariable("Test Exception List Computed List ID"),
+					"description":    config.StringVariable("Test exception list with a server-generated list_id"),
+					"type":           config.StringVariable("detection"),
+					"namespace_type": config.StringVariable("single"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(resourceName, "list_id"),
+				),
+			},
+			{ // Explicitly configuring list_id forces replacement
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_list_id"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable(explicitListID),
+					"name":           config.StringVariable("Test Exception List Computed List ID"),
+					"description":    config.StringVariable("Test exception list with a server-generated list_id"),
+					"type":           config.StringVariable("detection"),
+					"namespace_type": config.StringVariable("single"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "list_id", explicitListID),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionList_InvalidType(t *testing.T) {
+	listID := fmt.Sprintf("test-exception-list-invalid-type-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionListDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_type"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable(listID),
+					"name":           config.StringVariable("Test Exception List Invalid Type"),
+					"description":    config.StringVariable("Test exception list with an invalid type"),
+					"namespace_type": config.StringVariable("single"),
+				},
+				ExpectError: regexp.MustCompile("value must be one of"),
+				PlanOnly:    true,
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionList_TypeReplace(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_exception_list.test"
+	listID := fmt.Sprintf("test-exception-list-type-replace-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionListDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("type_detection"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable(listID),
+					"name":           config.StringVariable("Test Exception List Type Replace"),
+					"description":    config.StringVariable("Test exception list type replacement"),
+					"namespace_type": config.StringVariable("single"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "type", "detection"),
+				),
+			},
+			{ // Changing type forces replacement
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("type_endpoint"),
+				ConfigVariables: config.Variables{
+					"list_id":        config.StringVariable(listID),
+					"name":           config.StringVariable("Test Exception List Type Replace"),
+					"description":    config.StringVariable("Test exception list type replacement"),
+					"namespace_type": config.StringVariable("single"),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "type", "endpoint"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionList_NamespaceTypeDefault(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_exception_list.test"
+	listID := fmt.Sprintf("test-exception-list-ns-default-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionListDestroy,
+		Steps: []resource.TestStep{
+			{ // namespace_type omitted: schema default "single" applies
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_namespace_type"),
+				ConfigVariables: config.Variables{
+					"list_id":     config.StringVariable(listID),
+					"name":        config.StringVariable("Test Exception List Namespace Default"),
+					"description": config.StringVariable("Test exception list default namespace_type"),
+					"type":        config.StringVariable("detection"),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "namespace_type", "single"),
 				),
 			},
 		},
