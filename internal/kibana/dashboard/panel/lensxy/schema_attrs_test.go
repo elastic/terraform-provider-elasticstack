@@ -62,7 +62,14 @@ func TestReferenceLineThresholdAxisValidator(t *testing.T) {
 	for _, ok := range []string{"x", "y", "y2"} {
 		require.False(t, validate(ok).Diagnostics.HasError(), ok)
 	}
-	for _, bad := range []string{"left", "right", "bottom"} {
+	for _, v := range []types.String{types.StringNull(), types.StringUnknown()} {
+		resp := validator.StringResponse{}
+		for _, val := range axisAttr.Validators {
+			val.ValidateString(context.Background(), validator.StringRequest{ConfigValue: v}, &resp)
+		}
+		require.False(t, resp.Diagnostics.HasError(), v.String())
+	}
+	for _, bad := range []string{"left", "right", "bottom", "Y", "", "y1"} {
 		resp := validate(bad)
 		require.True(t, resp.Diagnostics.HasError(), bad)
 		detail := resp.Diagnostics[0].Detail()

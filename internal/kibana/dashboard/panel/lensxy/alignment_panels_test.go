@@ -421,6 +421,38 @@ func TestAlignXYLayerStateFromPlan_referenceLineThresholdAxisRoundTrip(t *testin
 	}
 }
 
+func TestAlignXYLayerStateFromPlan_referenceLineThresholdAxisMultipleThresholds(t *testing.T) {
+	t.Parallel()
+
+	mk := func(axes ...types.String) *models.XYChartConfigModel {
+		ths := make([]models.ThresholdModel, len(axes))
+		for i, a := range axes {
+			ths[i] = models.ThresholdModel{Axis: a}
+		}
+		return &models.XYChartConfigModel{Layers: []models.XYLayerModel{{
+			ReferenceLineLayer: &models.ReferenceLineLayerModel{Thresholds: ths},
+		}}}
+	}
+
+	t.Run("y stripped and y2 kept", func(t *testing.T) {
+		t.Parallel()
+		state := mk(types.StringNull(), types.StringValue("y2"))
+		alignXYChartStateFromPlan(mk(types.StringValue("y"), types.StringValue("y2")), state)
+		got := state.Layers[0].ReferenceLineLayer.Thresholds
+		assert.Equal(t, "y", got[0].Axis.ValueString())
+		assert.Equal(t, "y2", got[1].Axis.ValueString())
+	})
+
+	t.Run("plan longer than state leaves extra plan thresholds alone", func(t *testing.T) {
+		t.Parallel()
+		state := mk(types.StringNull())
+		alignXYChartStateFromPlan(mk(types.StringValue("y"), types.StringValue("y")), state)
+		got := state.Layers[0].ReferenceLineLayer.Thresholds
+		require.Len(t, got, 1)
+		assert.Equal(t, "y", got[0].Axis.ValueString())
+	})
+}
+
 func TestPreserveThresholdValueJSONIfStateIsPlanValue_planWithoutValueDoesNotRestoreOnNullState(t *testing.T) {
 	t.Parallel()
 

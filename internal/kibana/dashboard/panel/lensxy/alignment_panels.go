@@ -205,6 +205,10 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
 		for j := range m {
 			planThreshold := planLayer.ReferenceLineLayer.Thresholds[j]
 			stateThreshold := &stateLayer.ReferenceLineLayer.Thresholds[j]
+			// An axis carried inside the plan's value_json is not mirrored into the typed attribute.
+			if planThreshold.Axis.IsNull() && jsonObjectHasKey(planThreshold.ValueJSON, "axis") {
+				stateThreshold.Axis = planThreshold.Axis
+			}
 			lenscommon.PreserveNullIfStateEquals(planThreshold.Axis, &stateThreshold.Axis, types.StringValue("y"))
 			// Kibana 9.4/9.5 strip an explicit default "y" from the read-back; restore the planned value.
 			if planThreshold.Axis.Equal(types.StringValue("y")) && stateThreshold.Axis.IsNull() {
@@ -213,7 +217,8 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
 			lenscommon.PreserveNullIfStateEquals(planThreshold.Operation, &stateThreshold.Operation, types.StringValue("static_value"))
 			lenscommon.PreserveNullJSONIfStateMatchesDefault(planThreshold.ColorJSON, &stateThreshold.ColorJSON, `{"type":"auto"}`)
 			preserveThresholdValueJSONIfStateIsPlanValue(planThreshold.ValueJSON, &stateThreshold.ValueJSON, planThreshold.Operation)
-			lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planThreshold.ValueJSON, &stateThreshold.ValueJSON, "axis_id", "color")
+			lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planThreshold.ValueJSON, &stateThreshold.ValueJSON, "axis_id", "color", "axis")
+			lenscommon.PreservePlanJSONIfStateOmitsOptionalKeys(planThreshold.ValueJSON, &stateThreshold.ValueJSON, "axis")
 		}
 	}
 }
@@ -266,6 +271,18 @@ func preserveThresholdValueJSONIfStateIsPlanValue(plan jsontypes.Normalized, sta
 	if reflect.DeepEqual(planValue, stateVal) {
 		*state = plan
 	}
+}
+
+func jsonObjectHasKey(j jsontypes.Normalized, key string) bool {
+	if !typeutils.IsKnown(j) {
+		return false
+	}
+	var obj map[string]any
+	if err := json.Unmarshal([]byte(j.ValueString()), &obj); err != nil {
+		return false
+	}
+	_, ok := obj[key]
+	return ok
 }
 
 func thresholdValueJSONIsStaticValue(planObj map[string]any, siblingOperation types.String) bool {

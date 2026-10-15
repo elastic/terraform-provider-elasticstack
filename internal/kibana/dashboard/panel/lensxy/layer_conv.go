@@ -20,6 +20,7 @@ package lensxy
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
@@ -374,7 +375,12 @@ func referenceLineLayerFromAPINoESQL(m *models.ReferenceLineLayerModel, apiLayer
 
 			var probe map[string]any
 			_ = json.Unmarshal(thresholdJSON, &probe)
-			if _, hasAxis := probe["axis"].(string); hasAxis || probe["column"] != nil {
+			axisKey, hasAxis := probe["axis"].(string)
+			// Operation objects other than static_value are kept whole in value_json (with the typed axis
+			// mirrored from the key) because the typed shape only carries `value` for static_value.
+			operation, _ := probe["operation"].(string)
+			isOtherOperation := operation != "" && operation != "static_value" && probe["column"] == nil
+			if (hasAxis && !isOtherOperation) || probe["column"] != nil {
 				var tm models.ThresholdModel
 				tmDiags := thresholdFromAPIJSON(&tm, thresholdJSON)
 				diags.Append(tmDiags...)
@@ -384,10 +390,15 @@ func referenceLineLayerFromAPINoESQL(m *models.ReferenceLineLayerModel, apiLayer
 				}
 			}
 
+			thresholdAxisValue := types.StringNull()
+			if hasAxis {
+				thresholdAxisValue = types.StringValue(axisKey)
+			}
+
 			// NoESQL reference line thresholds are operation definitions (count, sum, static_value, formula, etc)
 			// rather than the richer object shape used by ES|QL reference lines.
 			m.Thresholds = append(m.Thresholds, models.ThresholdModel{
-				Axis:        types.StringNull(),
+				Axis:        thresholdAxisValue,
 				ColorJSON:   jsontypes.NewNormalizedNull(),
 				Column:      types.StringNull(),
 				ValueJSON:   jsontypes.NewNormalizedValue(string(thresholdJSON)),
@@ -433,8 +444,20 @@ func referenceLineLayerToAPIXyReferenceLineLayerNoESQL(m *models.ReferenceLineLa
 					continue
 				}
 				// The typed axis sibling is part of the operation object on the wire.
-				if opMap, isMap := op.(map[string]any); isMap && typeutils.IsKnown(t.Axis) {
-					if _, hasAxis := opMap["axis"]; !hasAxis {
+				if typeutils.IsKnown(t.Axis) {
+					opMap, isMap := op.(map[string]any)
+					if !isMap {
+						diags.AddError("Invalid reference line threshold",
+							"`axis` can only be combined with a `value_json` that is a JSON object.")
+						continue
+					}
+					if existing, hasAxis := opMap["axis"]; hasAxis {
+						if existing != t.Axis.ValueString() {
+							diags.AddError("Conflicting reference line threshold axis",
+								fmt.Sprintf("`axis` is %q but `value_json` also sets \"axis\" to %v; set only one or make them equal.", t.Axis.ValueString(), existing))
+							continue
+						}
+					} else {
 						opMap["axis"] = t.Axis.ValueString()
 					}
 				}
