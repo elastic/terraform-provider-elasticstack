@@ -28,6 +28,11 @@
       `alignment_panels.go` per the existing style of
       `preserveThresholdValueJSONIfStateIsPlanValue`.
 
+- [x] 2.3 In `layer_conv.go`, merge the typed `axis` into the `value_json`
+      operation object on write (error on conflicting `axis` or non-object
+      `value_json`), keep non-`static_value` operation objects whole on read,
+      and extend alignment for an `axis` carried inside `value_json`.
+
 ## 3. Fixture and test fixes
 
 - [x] 3.1 Update `internal/kibana/dashboard/panel/lensxy/converter_test.go:48`:
