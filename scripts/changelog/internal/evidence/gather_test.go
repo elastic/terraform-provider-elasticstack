@@ -91,31 +91,6 @@ func TestClassifyPullRequestForChangelog_automatedDependabotInternal(t *testing.
 	}
 }
 
-func TestSelectMergedPullRequests_orderAndDedup(t *testing.T) {
-	t.Parallel()
-
-	open := MergeCand(2, "open", false, "x")
-	noMerge := MergeCand(3, "closed", false, "z")
-
-	got := evidence.SelectMergedPullRequests([]evidence.MergeCandidate{
-		MergeCand(1, "closed", true, "first"),
-		open,
-		MergeCand(1, "closed", true, "dup"),
-		noMerge,
-	})
-
-	if len(got) != 1 || got[0].Number != 1 {
-		t.Fatalf("got %+v", got)
-	}
-	if got[0].Title != "first" {
-		t.Fatalf("first-wins title: got %q want first", got[0].Title)
-	}
-}
-
-func MergeCand(n int, state string, merged bool, title string) evidence.MergeCandidate {
-	return evidence.MergeCandidate{Number: n, State: state, MergedAt: merged, Title: title}
-}
-
 func TestBuildPullRequestEvidence_normalizedRow(t *testing.T) {
 	t.Parallel()
 

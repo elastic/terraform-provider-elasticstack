@@ -73,23 +73,6 @@ type MergeCandidate struct {
 	Title    string // carried through for reorder tests (unused in filtering)
 }
 
-// SelectMergedPullRequests keeps merged closed PRs and de-duplicates by number (first occurrence wins).
-func SelectMergedPullRequests(prs []MergeCandidate) []MergeCandidate {
-	seen := make(map[int]struct{})
-	var merged []MergeCandidate
-
-	for _, pr := range prs {
-		if pr.State == "closed" && pr.MergedAt {
-			if _, dup := seen[pr.Number]; dup {
-				continue
-			}
-			seen[pr.Number] = struct{}{}
-			merged = append(merged, pr)
-		}
-	}
-	return merged
-}
-
 func filterUserFacing(labels []string) []string {
 	var names []string
 	for _, label := range labels {
