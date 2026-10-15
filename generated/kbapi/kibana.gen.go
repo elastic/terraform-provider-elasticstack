@@ -37030,20 +37030,20 @@ type KibanaHTTPAPIsWiredStreamUpsertRequestStreamIngestWiredRoutingStatus string
 // KibanaHTTPAPIsWiredStreamUpsertRequestStreamType defines model for KibanaHTTPAPIsWiredStreamUpsertRequest.Stream.Type.
 type KibanaHTTPAPIsWiredStreamUpsertRequestStreamType string
 
-// KibanaHTTPAPIsZodV4383Schema0 defines model for Kibana_HTTP_APIs__zod_v4_383___schema0.
-type KibanaHTTPAPIsZodV4383Schema0 struct {
+// KibanaHTTPAPIsZodV456Schema0 defines model for Kibana_HTTP_APIs__zod_v4_56___schema0.
+type KibanaHTTPAPIsZodV456Schema0 struct {
 	union json.RawMessage
 }
 
-// KibanaHTTPAPIsZodV4383Schema00 defines model for .
-type KibanaHTTPAPIsZodV4383Schema00 struct {
+// KibanaHTTPAPIsZodV456Schema00 defines model for .
+type KibanaHTTPAPIsZodV456Schema00 struct {
 	Objects struct {
 		All map[string]interface{} `json:"all"`
 	} `json:"objects"`
 }
 
-// KibanaHTTPAPIsZodV4383Schema01 defines model for .
-type KibanaHTTPAPIsZodV4383Schema01 struct {
+// KibanaHTTPAPIsZodV456Schema01 defines model for .
+type KibanaHTTPAPIsZodV456Schema01 struct {
 	Objects struct {
 		Mappings bool `json:"mappings"`
 		Routing  []struct {
@@ -92055,10 +92055,10 @@ type PutStreamsNameQueryJSONBody struct {
 
 // PostStreamsNameContentExportJSONBody defines parameters for PostStreamsNameContentExport.
 type PostStreamsNameContentExportJSONBody struct {
-	Description string                        `json:"description"`
-	Include     KibanaHTTPAPIsZodV4383Schema0 `json:"include"`
-	Name        string                        `json:"name"`
-	Version     string                        `json:"version"`
+	Description string                       `json:"description"`
+	Include     KibanaHTTPAPIsZodV456Schema0 `json:"include"`
+	Name        string                       `json:"name"`
+	Version     string                       `json:"version"`
 }
 
 // PostStreamsNameContentImportMultipartBody defines parameters for PostStreamsNameContentImport.
@@ -121870,22 +121870,22 @@ func (t *KibanaHTTPAPIsWiredStreamUpsertRequest_Stream_Ingest_Settings_IndexRefr
 	return err
 }
 
-// AsKibanaHTTPAPIsZodV4383Schema00 returns the union data inside the KibanaHTTPAPIsZodV4383Schema0 as a KibanaHTTPAPIsZodV4383Schema00
-func (t KibanaHTTPAPIsZodV4383Schema0) AsKibanaHTTPAPIsZodV4383Schema00() (KibanaHTTPAPIsZodV4383Schema00, error) {
-	var body KibanaHTTPAPIsZodV4383Schema00
+// AsKibanaHTTPAPIsZodV456Schema00 returns the union data inside the KibanaHTTPAPIsZodV456Schema0 as a KibanaHTTPAPIsZodV456Schema00
+func (t KibanaHTTPAPIsZodV456Schema0) AsKibanaHTTPAPIsZodV456Schema00() (KibanaHTTPAPIsZodV456Schema00, error) {
+	var body KibanaHTTPAPIsZodV456Schema00
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromKibanaHTTPAPIsZodV4383Schema00 overwrites any union data inside the KibanaHTTPAPIsZodV4383Schema0 as the provided KibanaHTTPAPIsZodV4383Schema00
-func (t *KibanaHTTPAPIsZodV4383Schema0) FromKibanaHTTPAPIsZodV4383Schema00(v KibanaHTTPAPIsZodV4383Schema00) error {
+// FromKibanaHTTPAPIsZodV456Schema00 overwrites any union data inside the KibanaHTTPAPIsZodV456Schema0 as the provided KibanaHTTPAPIsZodV456Schema00
+func (t *KibanaHTTPAPIsZodV456Schema0) FromKibanaHTTPAPIsZodV456Schema00(v KibanaHTTPAPIsZodV456Schema00) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeKibanaHTTPAPIsZodV4383Schema00 performs a merge with any union data inside the KibanaHTTPAPIsZodV4383Schema0, using the provided KibanaHTTPAPIsZodV4383Schema00
-func (t *KibanaHTTPAPIsZodV4383Schema0) MergeKibanaHTTPAPIsZodV4383Schema00(v KibanaHTTPAPIsZodV4383Schema00) error {
+// MergeKibanaHTTPAPIsZodV456Schema00 performs a merge with any union data inside the KibanaHTTPAPIsZodV456Schema0, using the provided KibanaHTTPAPIsZodV456Schema00
+func (t *KibanaHTTPAPIsZodV456Schema0) MergeKibanaHTTPAPIsZodV456Schema00(v KibanaHTTPAPIsZodV456Schema00) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -121896,22 +121896,22 @@ func (t *KibanaHTTPAPIsZodV4383Schema0) MergeKibanaHTTPAPIsZodV4383Schema00(v Ki
 	return err
 }
 
-// AsKibanaHTTPAPIsZodV4383Schema01 returns the union data inside the KibanaHTTPAPIsZodV4383Schema0 as a KibanaHTTPAPIsZodV4383Schema01
-func (t KibanaHTTPAPIsZodV4383Schema0) AsKibanaHTTPAPIsZodV4383Schema01() (KibanaHTTPAPIsZodV4383Schema01, error) {
-	var body KibanaHTTPAPIsZodV4383Schema01
+// AsKibanaHTTPAPIsZodV456Schema01 returns the union data inside the KibanaHTTPAPIsZodV456Schema0 as a KibanaHTTPAPIsZodV456Schema01
+func (t KibanaHTTPAPIsZodV456Schema0) AsKibanaHTTPAPIsZodV456Schema01() (KibanaHTTPAPIsZodV456Schema01, error) {
+	var body KibanaHTTPAPIsZodV456Schema01
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromKibanaHTTPAPIsZodV4383Schema01 overwrites any union data inside the KibanaHTTPAPIsZodV4383Schema0 as the provided KibanaHTTPAPIsZodV4383Schema01
-func (t *KibanaHTTPAPIsZodV4383Schema0) FromKibanaHTTPAPIsZodV4383Schema01(v KibanaHTTPAPIsZodV4383Schema01) error {
+// FromKibanaHTTPAPIsZodV456Schema01 overwrites any union data inside the KibanaHTTPAPIsZodV456Schema0 as the provided KibanaHTTPAPIsZodV456Schema01
+func (t *KibanaHTTPAPIsZodV456Schema0) FromKibanaHTTPAPIsZodV456Schema01(v KibanaHTTPAPIsZodV456Schema01) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeKibanaHTTPAPIsZodV4383Schema01 performs a merge with any union data inside the KibanaHTTPAPIsZodV4383Schema0, using the provided KibanaHTTPAPIsZodV4383Schema01
-func (t *KibanaHTTPAPIsZodV4383Schema0) MergeKibanaHTTPAPIsZodV4383Schema01(v KibanaHTTPAPIsZodV4383Schema01) error {
+// MergeKibanaHTTPAPIsZodV456Schema01 performs a merge with any union data inside the KibanaHTTPAPIsZodV456Schema0, using the provided KibanaHTTPAPIsZodV456Schema01
+func (t *KibanaHTTPAPIsZodV456Schema0) MergeKibanaHTTPAPIsZodV456Schema01(v KibanaHTTPAPIsZodV456Schema01) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -121922,12 +121922,12 @@ func (t *KibanaHTTPAPIsZodV4383Schema0) MergeKibanaHTTPAPIsZodV4383Schema01(v Ki
 	return err
 }
 
-func (t KibanaHTTPAPIsZodV4383Schema0) MarshalJSON() ([]byte, error) {
+func (t KibanaHTTPAPIsZodV456Schema0) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *KibanaHTTPAPIsZodV4383Schema0) UnmarshalJSON(b []byte) error {
+func (t *KibanaHTTPAPIsZodV456Schema0) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
