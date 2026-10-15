@@ -134,13 +134,14 @@ models:
             "output": "1.5e-05"
             "cache_read": "3e-07"
             "cache_write": "3.75e-06"
+timeout-minutes: 30
 permissions:
   contents: read
   issues: read
   pull-requests: read
 tools:
   cli-proxy: true
-  timeout: 600
+  timeout: 900
   repo-memory:
     - id: ci-deadcode-removal-rotation
       # NOTE: This branch name must match the repo-memory checkout step above.
@@ -264,11 +265,11 @@ After recording the filtered candidates, proceed with the main task below.
    - Run the full build **exactly once**, using the sandbox's memory-aware settings from the first attempt:
 
      ```bash
-     GOMEMLIMIT=4GiB GOGC=20 timeout 600 make build GOLANGCIFLAGS='--concurrency=1'
+     GOMEMLIMIT=4GiB GOGC=20 make build
      ```
 
-     `GOMEMLIMIT` is a soft Go runtime limit, leaving headroom under the sandbox's 6 GiB cgroup limit; reduced GC target and lint concurrency further reduce peak memory. This remains the full `make build` gate, not a compilation-only substitute.
-   - The build has a 10-minute timeout. Preserve its exit status: run it directly, or capture the status before printing logs; never hide a failing build behind a successful pipe or log command.
+     `GOMEMLIMIT` is a soft Go runtime limit, leaving headroom under the sandbox's 6 GiB cgroup limit; reduced GC target further reduces peak memory. This remains the full `make build` gate, not a compilation-only substitute.
+   - Preserve its exit status: run it directly, or capture the status before printing logs; never hide a failing build behind a successful pipe or log command.
    - **Do not retry the build**, including after a kill, timeout, or failure, and do not try alternative lint flags, GC settings, or compilation-only commands as a substitute. Reserve the remaining execution time for recording the outcome and calling `noop`.
    - If the build fails or times out:
      - Record the attempt as `build_failed` (or `verification_timeout` on timeout):
