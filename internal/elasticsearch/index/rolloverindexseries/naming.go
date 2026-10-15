@@ -19,12 +19,17 @@ package rolloverindexseries
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"unicode/utf8"
 
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexname"
 )
+
+// aliasNameChars follows alias naming, which allows uppercase letters. Index
+// prefixes stay on indexname.AllowedCharsRegexp, so bootstrap names remain lowercase.
+var aliasNameChars = regexp.MustCompile(`^[A-Za-z0-9!$%&'()+.;=@[\]^{}~_-]+$`)
 
 const (
 	maxElasticsearchNameBytes = 255
@@ -36,7 +41,7 @@ func bootstrapIndexName(prefix string) string {
 }
 
 func validatePrefix(prefix string) error {
-	if err := validateLiteralName(prefix, "prefix"); err != nil {
+	if err := validateLiteralName(prefix, "prefix", indexname.AllowedCharsRegexp); err != nil {
 		return err
 	}
 	bootstrap := bootstrapIndexName(prefix)
@@ -52,11 +57,8 @@ func validatePrefix(prefix string) error {
 }
 
 func validateRolloverAlias(alias string) error {
-	if err := validateLiteralName(alias, "rollover_alias"); err != nil {
+	if err := validateLiteralName(alias, "rollover_alias", aliasNameChars); err != nil {
 		return err
-	}
-	if strings.HasPrefix(alias, ".") {
-		return fmt.Errorf("rollover_alias %q must not start with '.'; Elasticsearch alias names cannot start with a dot", alias)
 	}
 	if len(alias) > maxElasticsearchNameBytes {
 		return fmt.Errorf(
@@ -79,7 +81,7 @@ func ValidateNamingFields(prefix, rolloverAlias string) error {
 	return validateRolloverAlias(rolloverAlias)
 }
 
-func validateLiteralName(name, label string) error {
+func validateLiteralName(name, label string, chars *regexp.Regexp) error {
 	if name == "" {
 		return fmt.Errorf("%s must not be empty", label)
 	}
@@ -102,7 +104,7 @@ func validateLiteralName(name, label string) error {
 	if r == '-' || r == '_' || r == '+' {
 		return fmt.Errorf("%s %q must not start with '-', '_', or '+'", label, name)
 	}
-	if !indexname.AllowedCharsRegexp.MatchString(name) {
+	if !chars.MatchString(name) {
 		return fmt.Errorf("%s %q contains characters that are not allowed in an Elasticsearch name", label, name)
 	}
 	return nil

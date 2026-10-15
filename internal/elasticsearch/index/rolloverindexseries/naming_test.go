@@ -96,10 +96,12 @@ func TestNaming_charsetAndLengthBoundaries(t *testing.T) {
 	require.Error(t, validateRolloverAlias(maxAlias+"c"))
 }
 
-func TestNaming_aliasRejectsLeadingDotAllowedOnIndexPrefix(t *testing.T) {
+func TestNaming_aliasAllowsLeadingDotAndUppercase(t *testing.T) {
 	require.NoError(t, validatePrefix(".orders"))
-	err := validateRolloverAlias(".orders-write")
-	require.Error(t, err)
-	require.Contains(t, err.Error(), ".orders-write")
-	require.Error(t, ValidateNamingFields("orders", ".orders-write"))
+	require.NoError(t, validateRolloverAlias(".orders-write"))
+	require.NoError(t, validateRolloverAlias("ORDERS-WRITE"))
+	require.NoError(t, ValidateNamingFields("orders", ".orders-write"))
+	require.Error(t, validatePrefix("Orders"))
+	require.Error(t, validateRolloverAlias("."))
+	require.Error(t, validateRolloverAlias(".."))
 }

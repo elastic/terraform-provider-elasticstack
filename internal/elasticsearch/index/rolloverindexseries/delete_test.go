@@ -55,6 +55,40 @@ func TestDelete_rolloverAfterEnumerationDeletesNewMember(t *testing.T) {
 	requireNoBroadCleanup(t, mock.requestPaths())
 }
 
+func TestDelete_memberDisappearsBeforeTypeResolutionIsRediscovered(t *testing.T) {
+	mock, client := newClusterMock(t)
+	mock.addMember("orders-write", "orders-000002", new(false), false)
+	mock.addMember("orders-write", "orders-000003", new(true), false)
+	mock.onResolve = func(name string) {
+		if name != "orders-000002" {
+			return
+		}
+		delete(mock.indices, name)
+		delete(mock.membership["orders-write"], name)
+	}
+
+	diags := deleteRolloverIndexSeries(t.Context(), client, "orders-write", unprotectedPlan("orders", "orders-write"))
+	require.False(t, diags.HasError(), diagnosticText(diags))
+	require.NotContains(t, mock.indices, "orders-000003")
+	require.NotContains(t, deleteRequests(mock), "DELETE /orders-000002")
+	require.Contains(t, deleteRequests(mock), "DELETE /orders-000003")
+}
+
+func TestDelete_memberStillUnresolvableAfterRediscoveryFails(t *testing.T) {
+	mock, client := newClusterMock(t)
+	mock.addMember("orders-write", "orders-000002", new(false), false)
+	mock.addMember("orders-write", "orders-000003", new(true), false)
+	mock.mu.Lock()
+	delete(mock.indices, "orders-000002")
+	mock.mu.Unlock()
+
+	diags := deleteRolloverIndexSeries(t.Context(), client, "orders-write", unprotectedPlan("orders", "orders-write"))
+	require.True(t, diags.HasError())
+	require.Contains(t, diagnosticText(diags), "could not be resolved")
+	require.Contains(t, mock.indices, "orders-000003")
+	require.Empty(t, deleteRequests(mock))
+}
+
 func TestDelete_memberDisappearsBeforeDeletionIsTolerated(t *testing.T) {
 	mock, client := newClusterMock(t)
 	mock.addMember("orders-write", "orders-000002", new(false), false)

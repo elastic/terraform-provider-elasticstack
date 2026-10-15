@@ -53,8 +53,9 @@ type clusterMock struct {
 	failAliasCode  int
 	failTransport  bool
 	aliasBody      string
-	// onDelete runs with the mock lock held and must not lock again.
+	// onDelete and onResolve run with the mock lock held and must not lock again.
 	onDelete     func(name string)
+	onResolve    func(name string)
 	deleteStatus map[string]int
 }
 
@@ -233,6 +234,9 @@ func (m *clusterMock) getAlias(w http.ResponseWriter, aliasName string) {
 }
 
 func (m *clusterMock) resolve(w http.ResponseWriter, target string) {
+	if m.onResolve != nil {
+		m.onResolve(target)
+	}
 	if _, ok := m.dataStreams[target]; ok {
 		backing := ".ds-" + target + "-000001"
 		writeJSON(w, http.StatusOK, map[string]any{
