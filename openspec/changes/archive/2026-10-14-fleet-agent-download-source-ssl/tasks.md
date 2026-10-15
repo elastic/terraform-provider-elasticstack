@@ -1,4 +1,4 @@
-## 1. Pre-implementation probe
+## 1. PUT-clearing semantics (resolved; confirm before merge)
 
 - [x] 1.1 Against a live Kibana ≥ 9.1, create an `elasticstack_fleet_agent_download_source`-equivalent download source with `ssl` fully populated (certificate + CA list + key) via the generated client
 - [x] 1.2 PUT an update that omits `ssl` entirely; independently GET the source afterward; record whether `ssl` persisted or was cleared
