@@ -1747,6 +1747,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes.NewNormalizedYamlUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes",
+      "attemptedAt": "2026-10-15T12:38:00.034956692Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
