@@ -80,7 +80,7 @@ func run() error {
 		classified = NewClassifier(modulePath).Classify(changedFiles)
 		if classified.ForceAll {
 			rationale = append(rationale, "force-all prefix matched; selecting all acceptance test packages")
-		} else if !classified.HasCode {
+		} else if !classified.HasCode && len(classified.ExtraPackages) == 0 {
 			rationale = append(rationale, "no changed files map to a Go package; zero packages selected")
 		}
 	}
@@ -102,6 +102,18 @@ func run() error {
 		accSet[p] = struct{}{}
 	}
 
+	if !classified.ForceAll {
+		// Packages that must run regardless of the import graph (e.g. the
+		// examples harness when examples/ changes).
+		for _, p := range classified.ExtraPackages {
+			if _, ok := accSet[p]; !ok {
+				continue
+			}
+			phase1Packages = append(phase1Packages, p)
+			phaseReasons[p] = append(phaseReasons[p], "examples/ changed: runs TestAccExamples_planOnly")
+		}
+	}
+
 	if !classified.ForceAll && classified.HasCode {
 		graph, err := BuildImportGraph()
 		if err != nil {
@@ -116,7 +128,6 @@ func run() error {
 				phaseReasons[p] = append(phaseReasons[p], "phase-1 reverse dependency")
 			}
 		}
-		sort.Strings(phase1Packages)
 
 		// Phase 2: entity grep across testdata and _test.go files.
 		pkgDir := func(importPath string) string {
@@ -177,6 +188,8 @@ func run() error {
 		phase2Packages = stringsSorted(phase2Packages)
 	}
 
+	phase1Packages = stringsSorted(phase1Packages)
+
 	selected := SelectPackages(classified.ForceAll, phase1Packages, phase2Packages, allAccPackages, runAllThreshold)
 	if verbose {
 		fmt.Fprintf(os.Stderr, "selected %d packages\n", len(selected))
@@ -191,7 +204,7 @@ func run() error {
 	}
 
 	plan := BuildShardPlan(selected, totalShards, minShardPackages)
-	if !classified.ForceAll && classified.HasCode {
+	if !classified.ForceAll {
 		for pkg := range phaseReasons {
 			plan.Rationale = append(plan.Rationale, packageRationale(pkg, phaseReasons[pkg]))
 		}

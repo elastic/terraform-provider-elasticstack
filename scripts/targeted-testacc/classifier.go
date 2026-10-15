@@ -37,14 +37,7 @@ var forceAllPrefixes = []string{
 	// CI helper scripts that compute, classify and gate the selection: a PR
 	// touching only these would otherwise select zero packages.
 	".github/scripts/",
-	// The embedded example tree: consumed only from test code
-	// (internal/acctest/examples_plan_test.go embeds examples/ and drives
-	// TestAccExamples_planOnly over every embedded example), so examples/ is
-	// outside the enumeration roots and outside the go list pattern that
-	// builds the import graph, so phase 1 has no reverse-dependency edges
-	// into it, and is excluded from the unit-test job by -skip '^TestAcc'.
-	// An examples-only PR would otherwise select zero packages on every shard.
-	"examples/",
+	// examples/ is deliberately not force-all: see examplesPrefix.
 	// The tool's own package: a PR touching only scripts/targeted-testacc/
 	// would otherwise select zero acceptance packages, so changes to the
 	// selection tool are always exercised by the full acceptance suite.
@@ -57,6 +50,19 @@ var forceAllPrefixes = []string{
 	"internal/kibana/dashboard/panelkit/contracttest/",
 	"internal/providerfwtest/",
 }
+
+// examplesPrefix is the embedded example tree. It is consumed only by the
+// examples harness test (TestAccExamples_planOnly), which embeds examples/ and
+// plans every example. examples/ sits outside the import graph, so phase 1 has
+// no edge into the harness; a change under it selects examplesHarnessPackage
+// directly (see ClassifyResult.ExtraPackages) instead of forcing the full suite.
+// The rule is intentionally conservative: any path under examples/ counts,
+// including the directories the harness itself skips.
+const examplesPrefix = "examples/"
+
+// examplesHarnessPackage is the repo-relative path of the package holding
+// TestAccExamples_planOnly.
+const examplesHarnessPackage = "internal/acctest"
 
 // Force-all files. When any changed file path equals one of these, the tool
 // selects the full acceptance test package set. These are module-level files
@@ -119,6 +125,9 @@ type ClassifyResult struct {
 	// .go file exists (testdata fixtures, go:embed'ed description files,
 	// fixture directories not named exactly testdata).
 	HasCode bool
+	// ExtraPackages are packages that must be selected regardless of the
+	// import graph, e.g. the examples harness when examples/ changes.
+	ExtraPackages []string
 }
 
 // Classify maps changed file paths to their owning Go package import paths.
@@ -136,6 +145,13 @@ func (c *Classifier) Classify(changedFiles []string) *ClassifyResult {
 
 		if matchesForceAll(file) {
 			res.ForceAll = true
+		}
+
+		if strings.HasPrefix(file, examplesPrefix) {
+			harness := c.ModulePath + "/" + examplesHarnessPackage
+			if !slices.Contains(res.ExtraPackages, harness) {
+				res.ExtraPackages = append(res.ExtraPackages, harness)
+			}
 		}
 
 		pkgDir, ok := c.packageDir(file)
