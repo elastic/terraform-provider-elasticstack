@@ -50,6 +50,24 @@ func TestSHA256HexDigest_missingFile(t *testing.T) {
 	require.Error(t, err)
 }
 
+func TestReadFileWithSHA256HexDigest(t *testing.T) {
+	fpath := writeTempFile(t, "hello world")
+	sum := sha256.Sum256([]byte("hello world"))
+	wantDigest := hex.EncodeToString(sum[:])
+
+	data, digest, err := fileutil.ReadFileWithSHA256HexDigest(fpath)
+	require.NoError(t, err)
+	require.Equal(t, "hello world", string(data))
+	require.Equal(t, wantDigest, digest)
+}
+
+func TestReadFileWithSHA256HexDigest_missingFile(t *testing.T) {
+	data, digest, err := fileutil.ReadFileWithSHA256HexDigest(filepath.Join(t.TempDir(), "missing"))
+	require.Error(t, err)
+	require.Nil(t, data)
+	require.Empty(t, digest)
+}
+
 func TestFileChecksumDrifted_noPriorStateAlwaysChanged(t *testing.T) {
 	fpath := writeTempFile(t, "body")
 

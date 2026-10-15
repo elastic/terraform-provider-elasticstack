@@ -26,9 +26,63 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/providerfwtest"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
+
+func TestResource_schemaAuthExposesCredentialAndHeaderAttributes(t *testing.T) {
+	t.Parallel()
+
+	authAttr, ok := getSchema(context.Background()).Attributes["auth"].(schema.SingleNestedAttribute)
+	require.True(t, ok)
+	require.True(t, authAttr.Optional)
+
+	username, ok := authAttr.Attributes["username"].(schema.StringAttribute)
+	require.True(t, ok)
+	require.True(t, username.Optional)
+	require.False(t, username.Sensitive)
+
+	password, ok := authAttr.Attributes["password"].(schema.StringAttribute)
+	require.True(t, ok)
+	require.True(t, password.Optional)
+	require.True(t, password.Sensitive)
+
+	apiKey, ok := authAttr.Attributes["api_key"].(schema.StringAttribute)
+	require.True(t, ok)
+	require.True(t, apiKey.Optional)
+	require.True(t, apiKey.Sensitive)
+
+	headers, ok := authAttr.Attributes["headers"].(schema.ListNestedAttribute)
+	require.True(t, ok)
+	require.True(t, headers.Optional)
+
+	key, ok := headers.NestedObject.Attributes["key"].(schema.StringAttribute)
+	require.True(t, ok)
+	require.True(t, key.Required)
+
+	value, ok := headers.NestedObject.Attributes["value"].(schema.StringAttribute)
+	require.True(t, ok)
+	require.True(t, value.Required)
+}
+
+func TestResource_schemaOmitsSecretsReferences(t *testing.T) {
+	t.Parallel()
+
+	attrs := getSchema(context.Background()).Attributes
+	_, hasSecrets := attrs["secrets"]
+	require.False(t, hasSecrets)
+
+	authAttr, ok := attrs["auth"].(schema.SingleNestedAttribute)
+	require.True(t, ok)
+	_, hasNestedSecrets := authAttr.Attributes["secrets"]
+	require.False(t, hasNestedSecrets)
+
+	slAttr, ok := attrs["ssl"].(schema.SingleNestedAttribute)
+	require.True(t, ok, "ssl attribute must exist as a single nested attribute")
+	_, hasSslNestedSecrets := slAttr.Attributes["secrets"]
+	require.False(t, hasSslNestedSecrets)
+}
 
 func TestResource_embedsKibanaResource(t *testing.T) {
 	t.Parallel()
