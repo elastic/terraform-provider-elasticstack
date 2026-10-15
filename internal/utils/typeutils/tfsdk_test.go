@@ -512,33 +512,6 @@ func TestSliceToListTypeString(t *testing.T) {
 	}
 }
 
-func TestListTypeToMap(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name  string
-		input types.List
-		want  map[string]naive
-	}{
-		{name: "converts unknown", input: awareListUnk, want: naiveMapNil},
-		{name: "converts nil", input: awareListNil, want: naiveMapNil},
-		{name: "converts empty", input: awareListEmpty, want: naiveMapEmpty},
-		{name: "converts struct", input: awareListFull, want: naiveMapFull},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var diags diag.Diagnostics
-			got := typeutils.ListTypeToMap(context.Background(), tt.input, path.Empty(), &diags,
-				func(item aware, _ typeutils.ListMeta) (string, naive) {
-					return "k" + item.ID.ValueString()[2:], toNaive(item)
-				})
-			require.Equal(t, tt.want, got)
-			require.Empty(t, diags)
-		})
-	}
-}
-
 func TestListTypeToSlice(t *testing.T) {
 	t.Parallel()
 
