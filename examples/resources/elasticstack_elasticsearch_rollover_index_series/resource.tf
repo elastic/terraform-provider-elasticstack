@@ -19,7 +19,14 @@ resource "elasticstack_elasticsearch_rollover_index_series" "orders" {
   prefix         = "orders"
   rollover_alias = "orders-write"
 
-  # Defaults to true. Destroy deletes every current alias member once this is false.
+  # Defaults to true. A prior, separate apply must set this to false before destroy
+  # or replacement. Setting it false in the same operation that replaces the resource
+  # still uses the previously applied protection, so destroy deletes nothing.
+  # After that apply, destroy deletes every current alias member by concrete name.
+  # Quiesce producers and let in-flight replacements finish first. Membership
+  # rechecks do not see a transformation target that is not yet attached.
+  # Searchable snapshots and detached indices need separate cleanup, and other
+  # series can still block deletion of a shared ILM policy.
   deletion_protection = false
 
   # Changing prefix or rollover_alias replaces the resource. Terraform Core orders

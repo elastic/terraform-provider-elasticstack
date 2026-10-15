@@ -28,6 +28,7 @@ import (
 	"testing"
 
 	elasticsearchclient "github.com/elastic/go-elasticsearch/v8"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/expandwildcard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -557,6 +558,406 @@ func TestAccRolloverIndexSeries_aliasReplacementDestroysBeforeCreate(t *testing.
 	})
 }
 
+func TestAccRolloverIndexSeries_missingAliasDeleteLeavesDetachedIndex(t *testing.T) {
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skipf("Acceptance tests skipped unless env '%s' set", resource.EnvTfAcc)
+	}
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+	t.Cleanup(func() {
+		deleteIndex(t, bootstrap)
+	})
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			requireDestructiveRequiresName(t)
+		},
+		CheckDestroy: checkIndicesPresent(bootstrap),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+					checkIndexPresent(bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				PreConfig: func() {
+					removeAlias(t, bootstrap, alias)
+				},
+				Destroy: true,
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_deleteRemovesLifecycleRenamedMember(t *testing.T) {
+	prefix, alias := accNames()
+	shrink := "shrink-" + prefix + "-000001"
+	historical := prefix + "-000001"
+	writer := prefix + "-000002"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			requireDestructiveRequiresName(t)
+		},
+		CheckDestroy: checkIndicesAbsent(shrink, writer),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				PreConfig: func() {
+					putIndex(t, shrink, map[string]*bool{alias: new(false), historical: new(false)})
+					putIndex(t, writer, map[string]*bool{alias: new(true)})
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", writer),
+					resource.TestCheckResourceAttr(seriesAddr, "indices.#", "2"),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", shrink),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", writer),
+					checkWriteIndex(shrink, historical, false),
+					checkWriteIndex(writer, alias, true),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_deleteLeavesDetachedPrefixIndices(t *testing.T) {
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skipf("Acceptance tests skipped unless env '%s' set", resource.EnvTfAcc)
+	}
+	prefix, alias := accNames()
+	detachedFirst := prefix + "-000001"
+	detachedSecond := prefix + "-000002"
+	writer := prefix + "-000003"
+	t.Cleanup(func() {
+		deleteIndex(t, detachedFirst)
+		deleteIndex(t, detachedSecond)
+	})
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			requireDestructiveRequiresName(t)
+		},
+		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
+			checkIndicesAbsent(writer),
+			checkIndicesPresent(detachedFirst, detachedSecond),
+			checkIndexHasNoAlias(detachedFirst, alias),
+			checkIndexHasNoAlias(detachedSecond, alias),
+		),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				PreConfig: func() {
+					putIndex(t, detachedFirst, nil)
+					putIndex(t, detachedSecond, nil)
+					putIndex(t, writer, map[string]*bool{alias: new(true)})
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", writer),
+					resource.TestCheckResourceAttr(seriesAddr, "indices.#", "1"),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", writer),
+					checkIndexPresent(detachedFirst),
+					checkIndexPresent(detachedSecond),
+					checkIndexHasNoAlias(detachedFirst, alias),
+					checkIndexHasNoAlias(detachedSecond, alias),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_deleteRemovesOutOfPrefixMember(t *testing.T) {
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+	unrelated := "u" + strings.ToLower(sdkacctest.RandStringFromCharSet(8, "abcdefghijklmnopqrstuvwxyz")) + "-1"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			requireDestructiveRequiresName(t)
+		},
+		CheckDestroy: checkIndicesAbsent(bootstrap, unrelated),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				Check:                    resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				PreConfig: func() {
+					putIndex(t, unrelated, map[string]*bool{alias: new(false)})
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "indices.#", "2"),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", unrelated),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", bootstrap),
+					checkIndexPresent(unrelated),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_deleteRemovesHiddenAndClosedMembers(t *testing.T) {
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+	closedName := prefix + "-closed"
+	hiddenName := prefix + "-hidden"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			requireDestructiveRequiresName(t)
+		},
+		CheckDestroy: checkIndicesAbsentExpanded(bootstrap, closedName, hiddenName),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				Check:                    resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				PreConfig: func() {
+					putIndex(t, closedName, map[string]*bool{alias: new(false)})
+					closeIndex(t, closedName)
+					putHiddenIndex(t, hiddenName, map[string]*bool{alias: new(false)})
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "indices.#", "3"),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", closedName),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", hiddenName),
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+					checkIndicesPresentExpanded(closedName, hiddenName),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_deleteRemovesConcreteMembers(t *testing.T) {
+	prefix, alias := accNames()
+	first := prefix + "-000001"
+	second := prefix + "-000002"
+	third := prefix + "-000003"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			requireDestructiveRequiresName(t)
+		},
+		CheckDestroy: checkIndicesAbsent(first, second, third),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", first),
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "false"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				PreConfig: func() {
+					require.Equal(t, second, rolloverAlias(t, alias))
+					require.Equal(t, third, rolloverAlias(t, alias))
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", third),
+					resource.TestCheckResourceAttr(seriesAddr, "indices.#", "3"),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", second),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", third),
+					checkWriteIndex(second, alias, false),
+					checkWriteIndex(third, alias, true),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_externalAliasRemovalDropsProtectedState(t *testing.T) {
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(bootstrap),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, true, "1m"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "true"),
+					checkIndexPresent(bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, true, "1m"),
+				PreConfig: func() {
+					deleteIndex(t, bootstrap)
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(seriesAddr, plancheck.ResourceActionCreate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "true"),
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+					checkIndexPresent(bootstrap),
+					checkWriteIndex(bootstrap, alias, true),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				Check:                    resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "false"),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_replacementKeepsPriorProtection(t *testing.T) {
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+	replacement := prefix + "v2"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(bootstrap),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, true, "1m"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "true"),
+					resource.TestCheckResourceAttr(seriesAddr, "prefix", prefix),
+					checkIndexPresent(bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(replacement, alias, false, "1m"),
+				ExpectError:              regexp.MustCompile("deletion_protection=false"),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "false"),
+					resource.TestCheckResourceAttr(seriesAddr, "prefix", prefix),
+					checkIndexPresent(bootstrap),
+					checkIndicesAbsent(replacement+"-000001"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_priorApplyDisablesProtection(t *testing.T) {
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(bootstrap),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, true, "1m"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "true"),
+					checkIndexPresent(bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "false"),
+					checkIndexPresent(bootstrap),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_protectedDestroyDeletesNothing(t *testing.T) {
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(bootstrap),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, true, "1m"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "true"),
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+					checkIndexPresent(bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, true, "1m"),
+				Destroy:                  true,
+				ExpectError:              regexp.MustCompile("deletion_protection=false"),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, true, "1m"),
+				Check:                    checkIndexPresent(bootstrap),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "false"),
+					checkIndexPresent(bootstrap),
+				),
+			},
+		},
+	})
+}
+
 func TestAccRolloverIndexSeries_deletionProtectionUpdatesStateOnly(t *testing.T) {
 	prefix, alias := accNames()
 	bootstrap := prefix + "-000001"
@@ -729,11 +1130,31 @@ func mustTypedClient(t *testing.T) *elasticsearchclient.TypedClient {
 	return client.GetESClient()
 }
 
+func putHiddenIndex(t *testing.T, name string, aliases map[string]*bool) {
+	t.Helper()
+	putIndexWithSettings(t, name, map[string]any{
+		"number_of_replicas": 0,
+		"index.hidden":       true,
+	}, aliases)
+}
+
+func closeIndex(t *testing.T, name string) {
+	t.Helper()
+	es := mustTypedClient(t)
+	_, err := es.Indices.Close(name).Do(context.Background())
+	require.NoError(t, err)
+}
+
 func putIndex(t *testing.T, name string, aliases map[string]*bool) {
+	t.Helper()
+	putIndexWithSettings(t, name, map[string]any{"number_of_replicas": 0}, aliases)
+}
+
+func putIndexWithSettings(t *testing.T, name string, settings map[string]any, aliases map[string]*bool) {
 	t.Helper()
 	es := mustTypedClient(t)
 	body := map[string]any{
-		"settings": map[string]any{"number_of_replicas": 0},
+		"settings": settings,
 	}
 	if aliases != nil {
 		encoded := make(map[string]any, len(aliases))
@@ -848,6 +1269,51 @@ func checkIndicesPresent(names ...string) resource.TestCheckFunc {
 		}
 		return nil
 	}
+}
+
+func checkIndicesPresentExpanded(names ...string) resource.TestCheckFunc {
+	return func(*terraform.State) error {
+		for _, name := range names {
+			if err := requireIndexExpanded(name, true); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func checkIndicesAbsentExpanded(names ...string) resource.TestCheckFunc {
+	return func(*terraform.State) error {
+		for _, name := range names {
+			if err := requireIndexExpanded(name, false); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func requireIndexExpanded(name string, present bool) error {
+	es, err := typedClient()
+	if err != nil {
+		return err
+	}
+	_, err = es.Indices.Get(name).
+		ExpandWildcards(expandwildcard.Open, expandwildcard.Closed, expandwildcard.Hidden).
+		Do(context.Background())
+	if present {
+		if err != nil {
+			return fmt.Errorf("index %s: %w", name, err)
+		}
+		return nil
+	}
+	if err == nil {
+		return fmt.Errorf("index %s still exists", name)
+	}
+	if esclient.IsNotFoundElasticsearchError(err) {
+		return nil
+	}
+	return err
 }
 
 func checkIndicesAbsent(names ...string) resource.TestCheckFunc {
@@ -986,6 +1452,22 @@ func checkDataStreamPresent(name string) resource.TestCheckFunc {
 		}
 		return nil
 	}
+}
+
+func requireDestructiveRequiresName(t *testing.T) {
+	t.Helper()
+	es := mustTypedClient(t)
+	settings, err := es.Cluster.GetSettings().IncludeDefaults(true).FlatSettings(true).Do(context.Background())
+	require.NoError(t, err)
+	effective := ""
+	for _, source := range []map[string]json.RawMessage{settings.Defaults, settings.Persistent, settings.Transient} {
+		raw, ok := source["action.destructive_requires_name"]
+		if !ok {
+			continue
+		}
+		effective = strings.Trim(string(raw), `"`)
+	}
+	require.Equal(t, "true", effective)
 }
 
 func typedClient() (*elasticsearchclient.TypedClient, error) {

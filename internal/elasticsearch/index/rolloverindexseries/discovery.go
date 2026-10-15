@@ -24,6 +24,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/expandwildcard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -81,6 +83,25 @@ func discoverAlias(ctx context.Context, client *clients.ElasticsearchScopedClien
 	if diags.HasError() {
 		return seriesView{}, diags
 	}
+	return interpretAlias(ctx, client, aliasName, indices)
+}
+
+// discoverAliasForDelete requests open, closed, and hidden indices. The alias
+// argument stays a concrete name; expand_wildcards selects index state only.
+func discoverAliasForDelete(ctx context.Context, client *clients.ElasticsearchScopedClient, aliasName string) (seriesView, diag.Diagnostics) {
+	indices, diags := elasticsearch.CallOrNotFound(func() (map[string]types.IndexAliases, error) {
+		return client.GetESClient().Indices.GetAlias().
+			Name(aliasName).
+			ExpandWildcards(expandwildcard.Open, expandwildcard.Closed, expandwildcard.Hidden).
+			Do(ctx)
+	}, "Unable to get index alias")
+	if diags.HasError() {
+		return seriesView{}, diags
+	}
+	return interpretAlias(ctx, client, aliasName, indices)
+}
+
+func interpretAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, aliasName string, indices map[string]types.IndexAliases) (seriesView, diag.Diagnostics) {
 	if len(indices) == 0 {
 		return seriesView{}, nil
 	}
@@ -100,6 +121,7 @@ func discoverAlias(ctx context.Context, client *clients.ElasticsearchScopedClien
 		return seriesView{}, nil
 	}
 
+	var diags diag.Diagnostics
 	for i := range members {
 		kind, kindDiags := resolveTargetKind(ctx, client, aliasName, members[i].Name)
 		diags.Append(kindDiags...)

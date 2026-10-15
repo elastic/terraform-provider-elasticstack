@@ -51,26 +51,26 @@
 
 ## 3. Destroy only current alias members under explicit protection
 
-- [ ] 3.1 Deliver "Deletion protection guards provider-initiated deletes" using prior applied state.
+- [x] 3.1 Deliver "Deletion protection guards provider-initiated deletes" using prior applied state.
   Verify live and unit coverage for protected destroy/replacement, a prior apply disabling protection,
   rejection when protection is only disabled in the replacing operation, and external alias removal
   being observed as absence even from protected state.
-- [ ] 3.2 Deliver "Delete removes current alias membership, never a prefix sweep" through fresh,
+- [x] 3.2 Deliver "Delete removes current alias membership, never a prefix sweep" through fresh,
   type-checked discovery and concrete-name deletion. Verify live acceptance coverage with the normal
   destructive-name safeguard enabled for out-of-prefix, hidden, closed and lifecycle-renamed members;
   assert detached prefix-matching indices survive. Verify missing-alias no-op success without survivor
   lookups and concrete-member cleanup regardless of writer health.
-- [ ] 3.3 Deliver bounded rediscovery for rollover during cleanup. Verify deterministic unit/mock
+- [x] 3.3 Deliver bounded rediscovery for rollover during cleanup. Verify deterministic unit/mock
   interleavings in which rollover occurs after enumeration and the newly observed member is deleted,
   a member disappears before deletion and is tolerated, and any data-stream target or non-absence
   discovery/deletion error is surfaced before unsafe deletion. Verify no alias/wildcard deletion,
   cluster-safeguard changes, global ILM stop or policy-wide inventory is used.
-- [ ] 3.4 Deliver recoverable partial-failure and timeout behavior. Verify deterministic tests for a
+- [x] 3.4 Deliver recoverable partial-failure and timeout behavior. Verify deterministic tests for a
   successful member deletion followed by a permission failure retaining state, then a fresh successful
   retry; verify continual new members lead to a timeout error rather than false success. Use the shared
   configured delete deadline or its standard default, including retry delays, with no resource-specific
   minimum or independent deadline extension.
-- [ ] 3.5 Deliver the documentation required by "Operational cleanup boundaries are documented".
+- [x] 3.5 Deliver the documentation required by "Operational cleanup boundaries are documented".
   Verify guidance explains quiescing producers, waiting for in-flight replacements, and the limits of
   discovering not-yet-attached transformation targets. Explain that direct index deletion leaves
   searchable snapshots and that detached indices or other series can still block shared-policy deletion;

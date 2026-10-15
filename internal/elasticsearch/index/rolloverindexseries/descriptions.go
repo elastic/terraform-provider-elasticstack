@@ -30,9 +30,10 @@ const (
 	descRolloverAlias = "Dedicated ordinary-index alias. It is the series identity and the only membership boundary. " +
 		"Changing it forces replacement."
 	descDeletionProtection = "Whether Terraform may destroy this series. Defaults to `true`. " +
-		"While enabled, destroy is rejected and no index is deleted. " +
-		"Set it to `false` and apply that change before a destroy. " +
-		"Destroy then deletes every index currently attached to `rollover_alias`, including indices outside `prefix`."
+		"While enabled, destroy is rejected and no index is deleted, including when a replacement destroys this resource. " +
+		"Set it to `false` in a prior, separate apply before a destroy or replacement. " +
+		"Setting it to `false` only in the same operation that replaces the resource leaves the previously applied protection in place, so destroy is still rejected. " +
+		"After that prior apply, destroy deletes every index currently attached to `rollover_alias`, including indices outside `prefix`."
 	descWriteIndex = "Concrete name of the effective write index. Null when the alias has no effective writer."
 	descIndices    = "Concrete indices currently attached to `rollover_alias`, including members that do not match `prefix`."
 )

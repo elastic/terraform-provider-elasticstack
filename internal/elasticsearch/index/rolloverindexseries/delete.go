@@ -19,6 +19,8 @@ package rolloverindexseries
 
 import (
 	"context"
+	"fmt"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -26,6 +28,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 )
+
+// deleteRediscoveryDelay pauses between membership passes. The wait stops when
+// the delete context ends, so it cannot run past timeouts.delete.
+var deleteRediscoveryDelay = 50 * time.Millisecond
 
 const deletionProtectionError = "cannot destroy rollover index series without setting deletion_protection=false and running `terraform apply`"
 
@@ -49,21 +55,68 @@ func deleteRolloverIndexSeries(
 	if aliasName == "" {
 		aliasName = state.RolloverAlias.ValueString()
 	}
-	series, diags := discoverAlias(ctx, client, aliasName)
-	if diags.HasError() {
-		return diags
-	}
-	if !series.Found {
-		return nil
-	}
-	if streamDiags := rejectDataStreamTargets(aliasName, series); streamDiags.HasError() {
-		return streamDiags
-	}
-	for _, member := range series.Members {
-		diags.Append(elasticsearch.DeleteIndex(ctx, client, member.Name)...)
-		if diags.HasError() {
+	for {
+		if diags := deleteTimeoutIfDone(ctx, aliasName); diags.HasError() {
 			return diags
 		}
+		series, diags := discoverAliasForDelete(ctx, client, aliasName)
+		if diags.HasError() {
+			if timedOut := deleteTimeoutIfDone(ctx, aliasName); timedOut.HasError() {
+				return timedOut
+			}
+			return diags
+		}
+		if !series.Found {
+			return nil
+		}
+		if streamDiags := rejectDataStreamTargets(aliasName, series); streamDiags.HasError() {
+			return streamDiags
+		}
+		for _, member := range series.Members {
+			if diags := deleteTimeoutIfDone(ctx, aliasName); diags.HasError() {
+				return diags
+			}
+			diags.Append(elasticsearch.DeleteIndex(ctx, client, member.Name)...)
+			if diags.HasError() {
+				if timedOut := deleteTimeoutIfDone(ctx, aliasName); timedOut.HasError() {
+					return timedOut
+				}
+				return diags
+			}
+		}
+		if !waitForDeleteRediscovery(ctx) {
+			return deleteTimeoutDiagnostics(aliasName)
+		}
 	}
-	return nil
+}
+
+func deleteTimeoutIfDone(ctx context.Context, aliasName string) diag.Diagnostics {
+	if ctx.Err() == nil {
+		return nil
+	}
+	return deleteTimeoutDiagnostics(aliasName)
+}
+
+func waitForDeleteRediscovery(ctx context.Context) bool {
+	timer := time.NewTimer(deleteRediscoveryDelay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
+	}
+}
+
+func deleteTimeoutDiagnostics(aliasName string) diag.Diagnostics {
+	var diags diag.Diagnostics
+	diags.AddError(
+		"Timed out deleting rollover index series",
+		fmt.Sprintf(
+			"Deleting indices attached to alias %q did not finish before the delete timeout. "+
+				"Observed members may still exist. Terraform kept this resource in state so a later destroy can rediscover current membership.",
+			aliasName,
+		),
+	)
+	return diags
 }

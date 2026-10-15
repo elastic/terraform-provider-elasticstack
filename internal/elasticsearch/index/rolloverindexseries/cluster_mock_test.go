@@ -53,6 +53,9 @@ type clusterMock struct {
 	failAliasCode  int
 	failTransport  bool
 	aliasBody      string
+	// onDelete runs with the mock lock held and must not lock again.
+	onDelete     func(name string)
+	deleteStatus map[string]int
 }
 
 func newClusterMock(t *testing.T) (*clusterMock, *clients.ElasticsearchScopedClient) {
@@ -135,7 +138,7 @@ func (m *clusterMock) putMember(aliasName, target string, member aliasTarget) {
 func (m *clusterMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
-	m.requests = append(m.requests, r.Method+" "+r.URL.Path)
+	m.requests = append(m.requests, r.Method+" "+r.URL.RequestURI())
 	if m.failTransport {
 		hijacker, ok := w.(http.Hijacker)
 		if !ok {
@@ -323,6 +326,19 @@ func (m *clusterMock) nameTaken(name string) bool {
 }
 
 func (m *clusterMock) deleteIndex(w http.ResponseWriter, name string) {
+	if m.onDelete != nil {
+		m.onDelete(name)
+	}
+	if code := m.deleteStatus[name]; code != 0 {
+		writeJSON(w, code, map[string]any{
+			"error": map[string]any{
+				"type":   "security_exception",
+				"reason": "unauthorized to delete [" + name + "]",
+			},
+			"status": code,
+		})
+		return
+	}
 	if _, ok := m.indices[name]; !ok {
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"error": map[string]any{

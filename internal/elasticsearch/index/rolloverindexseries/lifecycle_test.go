@@ -669,6 +669,7 @@ func planModel(prefix, alias string) Model {
 	}
 }
 
+//nolint:unparam // delete tests share one prefix; callers still pass the series name explicitly
 func unprotectedPlan(prefix, alias string) Model {
 	model := planModel(prefix, alias)
 	model.DeletionProtection = types.BoolValue(false)
