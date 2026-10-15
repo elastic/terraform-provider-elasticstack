@@ -1,0 +1,208 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package rolloverindexseries
+
+import (
+	"context"
+	"fmt"
+	"regexp"
+	"sort"
+	"strings"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+)
+
+type targetKind int
+
+const (
+	targetKindIndex targetKind = iota
+	targetKindDataStream
+)
+
+type aliasMember struct {
+	Name         string
+	IsWriteIndex *bool
+	Kind         targetKind
+}
+
+type seriesView struct {
+	Found     bool
+	Members   []aliasMember
+	Writer    string
+	HasWriter bool
+}
+
+var generationSuffix = regexp.MustCompile(`-[0-9]+$`)
+
+func hasGenerationSuffix(name string) bool {
+	return generationSuffix.MatchString(name)
+}
+
+func effectiveWriter(members []aliasMember) (string, bool) {
+	var explicit []string
+	for _, member := range members {
+		if member.IsWriteIndex != nil && *member.IsWriteIndex {
+			explicit = append(explicit, member.Name)
+		}
+	}
+	if len(explicit) == 1 {
+		return explicit[0], true
+	}
+	if len(explicit) > 0 {
+		return "", false
+	}
+	if len(members) == 1 && members[0].IsWriteIndex == nil {
+		return members[0].Name, true
+	}
+	return "", false
+}
+
+// discoverAlias loads one concrete alias. GetAlias uses the same object shape
+// for an index and a data stream, so each target's kind comes from resolve-index.
+func discoverAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, aliasName string) (seriesView, diag.Diagnostics) {
+	indices, diags := elasticsearch.GetAlias(ctx, client, aliasName)
+	if diags.HasError() {
+		return seriesView{}, diags
+	}
+	if len(indices) == 0 {
+		return seriesView{}, nil
+	}
+
+	members := make([]aliasMember, 0, len(indices))
+	for targetName, indexAliases := range indices {
+		definition, ok := indexAliases.Aliases[aliasName]
+		if !ok {
+			continue
+		}
+		members = append(members, aliasMember{
+			Name:         targetName,
+			IsWriteIndex: definition.IsWriteIndex,
+		})
+	}
+	if len(members) == 0 {
+		return seriesView{}, nil
+	}
+
+	for i := range members {
+		kind, kindDiags := resolveTargetKind(ctx, client, aliasName, members[i].Name)
+		diags.Append(kindDiags...)
+		if diags.HasError() {
+			return seriesView{}, diags
+		}
+		members[i].Kind = kind
+	}
+
+	writer, hasWriter := effectiveWriter(members)
+	return seriesView{
+		Found:     true,
+		Members:   members,
+		Writer:    writer,
+		HasWriter: hasWriter,
+	}, nil
+}
+
+func resolveTargetKind(ctx context.Context, client *clients.ElasticsearchScopedClient, aliasName, targetName string) (targetKind, diag.Diagnostics) {
+	resolved, diags := elasticsearch.ResolveIndexExpression(ctx, client, targetName, aliasName)
+	if diags.HasError() {
+		return targetKindIndex, diags
+	}
+	if resolved.Kind == elasticsearch.DataStreamTarget {
+		return targetKindDataStream, nil
+	}
+	if len(resolved.Names) == 0 {
+		var unresolved diag.Diagnostics
+		unresolved.AddError(
+			"Unable to resolve alias target type",
+			fmt.Sprintf("Alias %q member %q could not be resolved as an index or a data stream. This resource will not treat it as an ordinary index.", aliasName, targetName),
+		)
+		return targetKindIndex, unresolved
+	}
+	return targetKindIndex, nil
+}
+
+func rejectDataStreamTargets(aliasName string, series seriesView) diag.Diagnostics {
+	names := dataStreamNames(series.Members)
+	if len(names) == 0 {
+		return nil
+	}
+	var diags diag.Diagnostics
+	diags.AddError(
+		"Rollover alias targets a data stream",
+		fmt.Sprintf(
+			"Alias %q resolves to data stream %s. This resource manages ordinary index aliases only and will not adopt, modify, or delete data stream targets.",
+			aliasName,
+			strings.Join(names, ", "),
+		),
+	)
+	return diags
+}
+
+func rejectUnadoptable(aliasName string, series seriesView) diag.Diagnostics {
+	if diags := rejectDataStreamTargets(aliasName, series); diags.HasError() {
+		return diags
+	}
+	if !series.HasWriter {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Rollover alias has no effective writer",
+			fmt.Sprintf(
+				"Alias %q has no effective writer among members [%s]. "+
+					"A member must be marked is_write_index=true, or be the sole member with that flag unset. "+
+					"This resource will not choose a writer or modify the alias.",
+				aliasName,
+				strings.Join(memberNames(series.Members), ", "),
+			),
+		)
+		return diags
+	}
+	if !hasGenerationSuffix(series.Writer) {
+		var diags diag.Diagnostics
+		diags.AddError(
+			"Rollover writer cannot support automatic rollover",
+			fmt.Sprintf(
+				"Alias %q has effective writer %q, which does not end in -<digits>. Automatic rollover cannot derive a successor name from that writer, and this resource will not rename it or modify the alias.",
+				aliasName,
+				series.Writer,
+			),
+		)
+		return diags
+	}
+	return nil
+}
+
+func memberNames(members []aliasMember) []string {
+	names := make([]string, len(members))
+	for i, member := range members {
+		names[i] = member.Name
+	}
+	sort.Strings(names)
+	return names
+}
+
+func dataStreamNames(members []aliasMember) []string {
+	names := make([]string, 0)
+	for _, member := range members {
+		if member.Kind == targetKindDataStream {
+			names = append(names, member.Name)
+		}
+	}
+	sort.Strings(names)
+	return names
+}

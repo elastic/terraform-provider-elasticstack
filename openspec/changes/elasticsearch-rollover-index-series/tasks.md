@@ -1,25 +1,25 @@
 ## 1. Bootstrap or adopt an alias-owned series
 
-- [ ] 1.1 Expose the registered `elasticstack_elasticsearch_rollover_index_series` resource through
+- [x] 1.1 Expose the registered `elasticstack_elasticsearch_rollover_index_series` resource through
   the Plugin Framework and shared Elasticsearch envelope with the schema, stable identity and
   operation timeouts specified in "Schema and identity" and "Shared operation timeouts". Verify
   provider-schema coverage for every attribute, replacement modifiers on both naming inputs, default
   protection, nullable computed writer, and rejection of unsupported settings, mappings and extra aliases.
-- [ ] 1.2 Enforce "Naming validation" for both configured and imported names, validating the entire
+- [x] 1.2 Enforce "Naming validation" for both configured and imported names, validating the entire
   generated bootstrap name and applying alias-appropriate constraints. Verify unit coverage for
   length/charset boundaries and literal-name rejection of wildcard, comma, remote-cluster and date-math
   syntax rather than treating those inputs as discovery expressions.
-- [ ] 1.3 Deliver shared exact-alias discovery and "Effective-writer resolution" without membership
+- [x] 1.3 Deliver shared exact-alias discovery and "Effective-writer resolution" without membership
   reconciliation or generation guessing. Verify tests for explicit writers, sole implicit writers,
   explicit false, multiple members with no writer, and non-numeric writer suffixes; resolve target
   types independently of alias-response shape and reject data streams before adoption, Read/import
   hydration or deletion, including numerically suffixed data-stream names with explicit writers.
-- [ ] 1.4 Deliver "Create bootstraps a missing alias" with an alias-only initial index, fresh state
+- [x] 1.4 Deliver "Create bootstraps a missing alias" with an alias-only initial index, fresh state
   readback and no survivor probes. Verify unit/API and directory-backed acceptance coverage for
   template-inherited settings, fixed generation naming, detached later-generation coexistence, and
   occupied index/alias bootstrap names failing without repair, fallback generation or mutation of
   existing objects. Verify interrupted bootstrap can be rediscovered rather than blindly recreated.
-- [ ] 1.5 Deliver automatic healthy adoption and strict unhealthy-alias rejection without an opt-in
+- [x] 1.5 Deliver automatic healthy adoption and strict unhealthy-alias rejection without an opt-in
   flag or mutating call, including out-of-prefix members. Verify unit and acceptance cases for each
   adoption branch and live readback of canonical identity, membership and writer. Deliver resource
   documentation explaining that adoption acquires deletion rights over every current member, with

@@ -43,6 +43,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexmappings"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexsettings"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/rolloverindexseries"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/template"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/inference/inferenceendpoint"
@@ -289,6 +290,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		ingest.NewIngestPipelineResource,
 		rolemapping.NewRoleMappingResource,
 		alias.NewAliasResource,
+		rolloverindexseries.NewRolloverIndexSeriesResource,
 		indexmappings.NewIndexMappingsResource,
 		indexsettings.NewIndexSettingsResource,
 		templateilmattachment.NewResource,

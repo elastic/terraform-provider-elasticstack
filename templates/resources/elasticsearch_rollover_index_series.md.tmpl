@@ -1,0 +1,16 @@
+---
+page_title: "{{.Name}} {{.Type}} - {{.RenderedProviderName}}"
+subcategory: "Index"
+description: |-
+{{ .Description | plainmarkdown | trimspace | prefixlines "  " }}
+---
+
+# {{.Name}} ({{.Type}})
+
+{{ .Description | trimspace }}
+
+## Example Usage
+
+{{ tffile "examples/resources/elasticstack_elasticsearch_rollover_index_series/resource.tf" }}
+
+{{ .SchemaMarkdown | trimspace }}
