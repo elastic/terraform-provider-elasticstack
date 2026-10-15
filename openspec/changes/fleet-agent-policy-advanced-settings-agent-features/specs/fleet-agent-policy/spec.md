@@ -34,7 +34,7 @@ The Terraform attributes `features_disable_policy_change_acks_enabled` (bool), `
 
 - GIVEN a resource was created with `advanced_settings.internal` set to a valid YAML string
 - WHEN the configuration is reapplied with YAML content that is textually different but parses to the same data (e.g. different indentation, comment placement, or key order)
-- THEN Terraform SHALL report no diff for `advanced_settings.internal`
+- THEN the apply SHALL succeed and Terraform SHALL report no persistent diff for `advanced_settings.internal` after apply, and a refresh in which Kibana returns textually different but equivalent YAML SHALL NOT produce a diff
 
 ## ADDED Requirements
 

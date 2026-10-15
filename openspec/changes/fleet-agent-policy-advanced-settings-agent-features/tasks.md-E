@@ -9,35 +9,35 @@
 
 ## 2. Constants and capability flags
 
-- [ ] 2.1 Add `MinVersionAgentInternal` (9.3.0), `MinVersionFeaturesDisablePolicyChangeAcksEnabled`
+- [x] 2.1 Add `MinVersionAgentInternal` (9.3.0), `MinVersionFeaturesDisablePolicyChangeAcksEnabled`
   (9.4.0), `MinVersionFeaturesIncludeTagsInEventsEnabled` (9.6.0) to
   `internal/fleet/agentpolicy/resource.go`, alongside the existing `MinVersion...` constants
-- [ ] 2.2 Add `SupportsAgentInternal`, `SupportsFeaturesDisablePolicyChangeAcksEnabled`,
+- [x] 2.2 Add `SupportsAgentInternal`, `SupportsFeaturesDisablePolicyChangeAcksEnabled`,
   `SupportsFeaturesIncludeTagsInEventsEnabled` to `agentPolicyFeatures` in
   `internal/fleet/agentpolicy/capabilities.go`, resolved via `client.EnforceMinVersion` in
   `resolveAgentPolicyFeatures`
 
 ## 3. Schema
 
-- [ ] 3.1 Add `features_disable_policy_change_acks_enabled` (`schema.BoolAttribute`, Optional) and
+- [x] 3.1 Add `features_disable_policy_change_acks_enabled` (`schema.BoolAttribute`, Optional) and
   `features_include_tags_in_events_enabled` (`schema.BoolAttribute`, Optional) to the
   `advanced_settings` nested attribute in `internal/fleet/agentpolicy/schema.go`
-- [ ] 3.2 Add `internal` (`schema.StringAttribute`, Optional, `CustomType: customtypes.NormalizedYamlType{}`)
+- [x] 3.2 Add `internal` (`schema.StringAttribute`, Optional, `CustomType: customtypes.NormalizedYamlType{}`)
   to the same block; schema description SHALL note the field holds free-form YAML with no stability
   guarantee, per Kibana's own UI copy
-- [ ] 3.3 Confirm `advancedSettingsAttrTypes()` picks up the three new attributes automatically (it
+- [x] 3.3 Confirm `advancedSettingsAttrTypes()` picks up the three new attributes automatically (it
   derives types from the schema)
 
 ## 4. Model and mapping
 
-- [ ] 4.1 Add `FeaturesDisablePolicyChangeAcksEnabled types.Bool`, `FeaturesIncludeTagsInEventsEnabled types.Bool`,
+- [x] 4.1 Add `FeaturesDisablePolicyChangeAcksEnabled types.Bool`, `FeaturesIncludeTagsInEventsEnabled types.Bool`,
   and `Internal customtypes.NormalizedYamlValue` fields (with matching `tfsdk` tags) to
   `advancedSettingsModel` in `internal/fleet/agentpolicy/models_advanced_settings.go`
-- [ ] 4.2 Extend `hasValues` to include all three new fields
-- [ ] 4.3 Extend `populateAdvancedSettingsFromAPI` to populate the two booleans via
+- [x] 4.2 Extend `hasValues` to include all three new fields
+- [x] 4.3 Extend `populateAdvancedSettingsFromAPI` to populate the two booleans via
   `typeutils.BoolFromAny(...)` and `Internal` via the string-from-`any` equivalent already used for
   other string fields in that function
-- [ ] 4.4 Extend `convertAdvancedSettingsToAPI` to emit `agent_features_disable_policy_change_acks_enabled`,
+- [x] 4.4 Extend `convertAdvancedSettingsToAPI` to emit `agent_features_disable_policy_change_acks_enabled`,
   `agent_features_include_tags_in_events_enabled`, and `agent_internal` only when the corresponding
   `agentPolicyFeatures.Supports...` flag is true and the attribute is known
   (`typeutils.IsKnown`), mirroring the existing `monitoring_runtime_experimental` gating in that
@@ -45,20 +45,20 @@
 
 ## 5. Version requirements
 
-- [ ] 5.1 In `version_requirements.go`'s `GetVersionRequirements`, after decoding `settings`, add one
+- [x] 5.1 In `version_requirements.go`'s `GetVersionRequirements`, after decoding `settings`, add one
   `entitycore.NewAttributeVersionRequirement` call per new field
   (`path.Root("advanced_settings").AtName("features_disable_policy_change_acks_enabled")`, etc.),
   guarded by `typeutils.IsKnown(settings.<Field>)`, using the corresponding `MinVersion...` constant
 
 ## 6. Unit tests
 
-- [ ] 6.1 Extend `TestPopulateAdvancedSettingsFromAPI` (`models_advanced_settings_test.go`) with
+- [x] 6.1 Extend `TestPopulateAdvancedSettingsFromAPI` (`models_advanced_settings_test.go`) with
   explicit-value and explicit-null subtests for all three new fields
-- [ ] 6.2 Extend `TestConvertAdvancedSettingsToAPI` with table-driven cases per field: explicit
+- [x] 6.2 Extend `TestConvertAdvancedSettingsToAPI` with table-driven cases per field: explicit
   `true`/`false` (both booleans), a non-empty YAML string (`internal`), and known-but-unsupported
   (capability flag false) asserting the JSON key is omitted — new coverage, not mirrored from an
   existing case, per the issue's research comment
-- [ ] 6.3 Extend `TestAgentPolicyVersionRequirements` (`version_requirements_test.go`) with an entry
+- [x] 6.3 Extend `TestAgentPolicyVersionRequirements` (`version_requirements_test.go`) with an entry
   per new field asserting its `path`/`MinVersion` pair appears in the returned requirements slice,
   and a case exercising the check when the field is unset (no requirement emitted)
 

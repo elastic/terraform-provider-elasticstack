@@ -216,3 +216,18 @@ Not verified live: the exact 9.3.0 lower boundary for `agent_internal`, acceptan
 No deviation from the documented 9.3.0 / 9.4.0 / 9.6.0 minimums was found; implementation
 proceeds with those minimums. Acceptance tests use per-field `SkipFunc`s so CI stacks at other
 versions exercise the remaining boundaries.
+
+## Implementation notes and deviations (acceptance tests)
+
+- Because the three fields have different minimums (9.3.0 / 9.4.0 / 9.6.0), the acceptance tests add
+  new per-field steps (`agent_internal_create`, `agent_acks_create`, `agent_features_create`,
+  `agent_internal_reformatted`, `agent_features_update`, `agent_features_removed`) to
+  `TestAccResourceAgentPolicyWithAdvancedSettings`, each with its own `SkipFunc`, instead of editing
+  the existing `create_with_logging`/`update_settings` configs (which must keep running on 8.17.0+).
+  Negative gating lives in `TestAccResourceAgentPolicyAgentFeaturesVersionGate`.
+- Semantic equality: Terraform requires the planned value of an `Optional` (non-`Computed`)
+  attribute to equal its configured value, so the framework cannot suppress the plan diff when only
+  the YAML formatting in configuration changes. The result is a single in-place update that leaves no
+  persistent diff; semantic equality still applies on refresh/apply (e.g. if Kibana normalised the
+  YAML). The delta spec scenario was reworded accordingly, and acceptance step 10 asserts a clean
+  apply with an empty post-apply plan rather than an empty pre-apply plan.

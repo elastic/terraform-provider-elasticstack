@@ -64,22 +64,22 @@
 
 ## 7. Acceptance tests
 
-- [ ] 7.1 Extend `TestAccResourceAgentPolicyWithAdvancedSettings` (`acc_test.go`)'s `create_with_logging`
+- [x] 7.1 Extend `TestAccResourceAgentPolicyWithAdvancedSettings` (`acc_test.go`)'s `create_with_logging`
   step to also set all three new fields (two booleans `true`, `internal` a short valid YAML string);
   assert via `resource.TestCheckResourceAttr`
-- [ ] 7.2 Extend the existing `update_settings` step to flip both booleans to `false` and change
+- [x] 7.2 Extend the existing `update_settings` step to flip both booleans to `false` and change
   `internal`'s YAML content; assert the new values, following the existing `logging_to_files`
   true→false precedent
-- [ ] 7.3 Extend the `remove_settings`/`set_to_defaults` steps to omit the three new fields; assert
+- [x] 7.3 Extend the `remove_settings`/`set_to_defaults` steps to omit the three new fields; assert
   the resource still applies without a persistent diff
-- [ ] 7.4 Confirm the existing `import` step's `ImportStateVerify` round-trips all three new fields
-- [ ] 7.5 Add a `SkipFunc` per field (9.3.0 / 9.4.0 / 9.6.0), following the
+- [x] 7.4 Confirm the existing `import` step's `ImportStateVerify` round-trips all three new fields
+- [x] 7.5 Add a `SkipFunc` per field (9.3.0 / 9.4.0 / 9.6.0), following the
   `monitoring_runtime_experimental` version-aware `SkipFunc` precedent (lines 1039-1052)
-- [ ] 7.6 Add an apply-time negative version-gating case per field: configuring the field (including
+- [x] 7.6 Add an apply-time negative version-gating case per field: configuring the field (including
   explicit `false`) against a stack below its confirmed minimum SHALL surface the diagnostic
   `entitycore.EnforceVersionRequirements` raises from `Create`/`Update`, asserted as an `ExpectError`
   acceptance step
-- [ ] 7.7 Add an `internal` YAML-specific case asserting semantic equality: reformatted-but-equivalent
+- [x] 7.7 Add an `internal` YAML-specific case asserting semantic equality: reformatted-but-equivalent
   YAML (different indentation/comment placement, same parsed content) produces no plan diff after
   apply
 
