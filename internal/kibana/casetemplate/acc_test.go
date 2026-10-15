@@ -611,7 +611,7 @@ func createCaseFromTemplate(t *testing.T, title, templateID string) string {
 		Connector:   connector,
 		Settings:    kbapi.CasesSettings{SyncAlerts: false},
 		Template: &struct {
-			Id      string `json:"id"`
+			Id      string `json:"id"` //nolint:revive // The generated API type uses this field name.
 			Version *int   `json:"version,omitempty"`
 		}{Id: templateID},
 	}
