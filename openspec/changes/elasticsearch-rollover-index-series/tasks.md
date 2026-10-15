@@ -27,23 +27,23 @@
 
 ## 2. Observe lifecycle changes without repairing them
 
-- [ ] 2.1 Deliver "Read distinguishes health from existence" and "No configuration-drift repair".
+- [x] 2.1 Deliver "Read distinguishes health from existence" and "No configuration-drift repair".
   Verify tests that refresh membership and actual writer, emit warning-only diagnostics for missing
   or non-numeric writers, expose null only when no writer exists, and never restore flags or members.
   Verify data-stream rejection and authorization, timeout, decoding and transport failures retain state
   as errors rather than becoming absence or writer-health warnings.
-- [ ] 2.2 Preserve ordinary refresh across external rollover and bootstrap-index deletion. Verify
+- [x] 2.2 Preserve ordinary refresh across external rollover and bootstrap-index deletion. Verify
   directory-backed live acceptance steps that the writer and member outputs follow Elasticsearch
   while the next plan performs no corrective mutation or recreation of the bootstrap index.
-- [ ] 2.3 Deliver unconditional state removal for exact-alias absence, without prefix or last-known
+- [x] 2.3 Deliver unconditional state removal for exact-alias absence, without prefix or last-known
   member probes. Verify acceptance sequences for alias removal with detached data, a successful new
   bootstrap when the initial name is free, and collision without repair when it remains occupied;
   assert detached former members are unchanged in both cases.
-- [ ] 2.4 Deliver state-only protection/timeout updates with required non-mutating readback. Verify
+- [x] 2.4 Deliver state-only protection/timeout updates with required non-mutating readback. Verify
   API-level assertions that Update performs the required alias discovery but no mutating or placeholder
   API calls, remains successful with writer-health warnings, and preserves the applied Terraform-only
   fields. Document alias-defined existence, automatic rebootstrap, and the absence of survivor cleanup.
-- [ ] 2.5 Deliver replacement behavior for changed prefix or alias while documenting "Replacement
+- [x] 2.5 Deliver replacement behavior for changed prefix or alias while documenting "Replacement
   ordering is a user precondition". Verify replacement plans for both inputs and a same-alias prefix
   replacement using normal destroy-before-create ordering. Document that Terraform Core, not the
   provider, controls ordering and that direct or propagated create-before-destroy is unsafe; do not

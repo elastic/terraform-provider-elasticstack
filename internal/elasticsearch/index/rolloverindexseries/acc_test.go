@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -33,6 +34,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/require"
 )
@@ -280,6 +282,434 @@ func TestAccRolloverIndexSeries_rejectNumericDataStream(t *testing.T) {
 	})
 }
 
+func TestAccRolloverIndexSeries_externalRolloverDoesNotRepair(t *testing.T) {
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+	successor := prefix + "-000002"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(bootstrap, successor),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				PreConfig: func() {
+					rolled := rolloverAlias(t, alias)
+					require.Equal(t, successor, rolled)
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(seriesAddr, plancheck.ResourceActionNoop),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", successor),
+					resource.TestCheckResourceAttr(seriesAddr, "indices.#", "2"),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", bootstrap),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", successor),
+					checkSeriesID(alias),
+					checkWriteIndex(bootstrap, alias, false),
+					checkWriteIndex(successor, alias, true),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_deletedBootstrapIsNotRecreated(t *testing.T) {
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+	successor := prefix + "-000002"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(successor),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				PreConfig: func() {
+					require.Equal(t, successor, rolloverAlias(t, alias))
+					deleteIndex(t, bootstrap)
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(seriesAddr, plancheck.ResourceActionNoop),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", successor),
+					resource.TestCheckResourceAttr(seriesAddr, "indices.#", "1"),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", successor),
+					checkSeriesID(alias),
+					checkIndicesAbsent(bootstrap),
+					checkWriteIndex(successor, alias, true),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_aliasAbsenceRebootstrapsDetachedData(t *testing.T) {
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skipf("Acceptance tests skipped unless env '%s' set", resource.EnvTfAcc)
+	}
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+	detached := prefix + "-000002"
+	t.Cleanup(func() {
+		deleteIndex(t, detached)
+	})
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(bootstrap),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				PreConfig: func() {
+					require.Equal(t, detached, rolloverAlias(t, alias))
+					deleteIndex(t, bootstrap)
+					removeAlias(t, detached, alias)
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(seriesAddr, plancheck.ResourceActionCreate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+					resource.TestCheckResourceAttr(seriesAddr, "indices.#", "1"),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", bootstrap),
+					checkSeriesID(alias),
+					checkIndexPresent(detached),
+					checkIndexHasNoAlias(detached, alias),
+					checkWriteIndex(bootstrap, alias, true),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_aliasAbsenceBootstrapCollision(t *testing.T) {
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skipf("Acceptance tests skipped unless env '%s' set", resource.EnvTfAcc)
+	}
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+	var before string
+	t.Cleanup(func() {
+		deleteIndex(t, bootstrap)
+	})
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		CheckDestroy: func(*terraform.State) error {
+			if err := requireIndex(bootstrap, true); err != nil {
+				return err
+			}
+			if err := checkIndexHasNoAlias(bootstrap, alias)(nil); err != nil {
+				return err
+			}
+			after, err := indexJSON(bootstrap)
+			if err != nil {
+				return err
+			}
+			if after != before {
+				return fmt.Errorf("index %s changed after the failed create\nbefore %s\nafter %s", bootstrap, before, after)
+			}
+			return nil
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				PreConfig: func() {
+					removeAlias(t, bootstrap, alias)
+					raw, err := indexJSON(bootstrap)
+					require.NoError(t, err)
+					before = raw
+				},
+				ExpectError: regexp.MustCompile("Bootstrap index name is already in use"),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_prefixReplacementDestroysBeforeCreate(t *testing.T) {
+	prefix, alias := accNames()
+	replacement := prefix + "v2"
+	bootstrap := prefix + "-000001"
+	next := replacement + "-000001"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(next),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+					resource.TestCheckResourceAttr(seriesAddr, "rollover_alias", alias),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(replacement, alias),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(seriesAddr, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "prefix", replacement),
+					resource.TestCheckResourceAttr(seriesAddr, "rollover_alias", alias),
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", next),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", next),
+					checkSeriesID(alias),
+					checkIndicesAbsent(bootstrap),
+					checkWriteIndex(next, alias, true),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_aliasReplacementDestroysBeforeCreate(t *testing.T) {
+	prefix, alias := accNames()
+	replacement := prefix + "-v2"
+	bootstrap := prefix + "-000001"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(bootstrap),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "rollover_alias", alias),
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, replacement),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(seriesAddr, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "prefix", prefix),
+					resource.TestCheckResourceAttr(seriesAddr, "rollover_alias", replacement),
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+					checkSeriesID(replacement),
+					checkWriteIndex(bootstrap, replacement, true),
+					checkIndexHasNoAlias(bootstrap, alias),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_deletionProtectionUpdatesStateOnly(t *testing.T) {
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+	var before string
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(bootstrap),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, true, "1m"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "true"),
+					resource.TestCheckResourceAttr(seriesAddr, "timeouts.update", "1m"),
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+					checkWriteIndex(bootstrap, alias, true),
+					func(*terraform.State) error {
+						raw, err := indexJSON(bootstrap)
+						before = raw
+						return err
+					},
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "4m"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(seriesAddr, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "false"),
+					resource.TestCheckResourceAttr(seriesAddr, "timeouts.update", "4m"),
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+					resource.TestCheckResourceAttr(seriesAddr, "indices.#", "1"),
+					checkSeriesID(alias),
+					checkWriteIndex(bootstrap, alias, true),
+					func(*terraform.State) error {
+						after, err := indexJSON(bootstrap)
+						if err != nil {
+							return err
+						}
+						if after != before {
+							return fmt.Errorf("index %s changed during a state-only update\nbefore %s\nafter %s", bootstrap, before, after)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func accVarsWithProtection(prefix, alias string, protection bool, updateTimeout string) config.Variables {
+	vars := accVars(prefix, alias)
+	vars["deletion_protection"] = config.BoolVariable(protection)
+	vars["update_timeout"] = config.StringVariable(updateTimeout)
+	return vars
+}
+
+func TestAccRolloverIndexSeries_missingWriterRefreshKeepsState(t *testing.T) {
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+	second := prefix + "-000002"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(bootstrap, second),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				PreConfig: func() {
+					putIndex(t, second, map[string]*bool{alias: new(false)})
+					setAliasWriteIndex(t, bootstrap, alias, false)
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(seriesAddr, plancheck.ResourceActionNoop),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					checkNullAttr(seriesAddr, "write_index"),
+					resource.TestCheckResourceAttr(seriesAddr, "indices.#", "2"),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", bootstrap),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", second),
+					resource.TestCheckResourceAttr(seriesAddr, "prefix", prefix),
+					checkSeriesID(alias),
+					checkWriteIndex(bootstrap, alias, false),
+					checkWriteIndex(second, alias, false),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_nonNumericWriterRefreshExposesName(t *testing.T) {
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+	current := prefix + "-current"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(bootstrap, current),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, alias),
+				PreConfig: func() {
+					setAliasWriteIndex(t, bootstrap, alias, false)
+					putIndex(t, current, map[string]*bool{alias: new(true)})
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(seriesAddr, plancheck.ResourceActionNoop),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", current),
+					resource.TestCheckResourceAttr(seriesAddr, "indices.#", "2"),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", bootstrap),
+					resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", current),
+					checkSeriesID(alias),
+					checkWriteIndex(current, alias, true),
+					checkWriteIndex(bootstrap, alias, false),
+				),
+			},
+		},
+	})
+}
+
 func accNames() (string, string) {
 	prefix := "a" + sdkacctest.RandStringFromCharSet(10, "abcdefghijklmnopqrstuvwxyz")
 	return prefix, prefix + "-write"
@@ -376,21 +806,29 @@ func checkSeriesID(alias string) resource.TestCheckFunc {
 	}
 }
 
+func indexJSON(name string) (string, error) {
+	es, err := typedClient()
+	if err != nil {
+		return "", err
+	}
+	indices, err := es.Indices.Get(name).FlatSettings(true).Do(context.Background())
+	if err != nil {
+		return "", err
+	}
+	raw, err := json.Marshal(indices[name])
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
+}
+
 func checkIndexJSONContains(name, needle string) resource.TestCheckFunc {
 	return func(*terraform.State) error {
-		es, err := typedClient()
+		raw, err := indexJSON(name)
 		if err != nil {
 			return err
 		}
-		indices, err := es.Indices.Get(name).FlatSettings(true).Do(context.Background())
-		if err != nil {
-			return err
-		}
-		raw, err := json.Marshal(indices[name])
-		if err != nil {
-			return err
-		}
-		if !strings.Contains(string(raw), needle) {
+		if !strings.Contains(raw, needle) {
 			return fmt.Errorf("index %s json %s does not contain %s", name, raw, needle)
 		}
 		return nil
@@ -442,6 +880,78 @@ func requireIndex(name string, present bool) error {
 		return nil
 	}
 	return err
+}
+
+func rolloverAlias(t *testing.T, alias string) string {
+	t.Helper()
+	es := mustTypedClient(t)
+	res, err := es.Indices.Rollover(alias).Do(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, res)
+	return res.NewIndex
+}
+
+func deleteIndex(t *testing.T, name string) {
+	t.Helper()
+	es := mustTypedClient(t)
+	_, err := es.Indices.Delete(name).IgnoreUnavailable(true).Do(context.Background())
+	require.NoError(t, err)
+}
+
+func setAliasWriteIndex(t *testing.T, indexName, alias string, write bool) {
+	t.Helper()
+	es := mustTypedClient(t)
+	body, err := json.Marshal(map[string]any{
+		"actions": []any{map[string]any{"add": map[string]any{
+			"index":          indexName,
+			"alias":          alias,
+			"is_write_index": write,
+		}}},
+	})
+	require.NoError(t, err)
+	_, err = es.Indices.UpdateAliases().Raw(bytes.NewReader(body)).Do(context.Background())
+	require.NoError(t, err)
+}
+
+func checkNullAttr(addr, name string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		rs, ok := state.RootModule().Resources[addr]
+		if !ok {
+			return fmt.Errorf("resource %s is missing", addr)
+		}
+		if value, exists := rs.Primary.Attributes[name]; exists && value != "" {
+			return fmt.Errorf("%s = %q, want null", name, value)
+		}
+		return nil
+	}
+}
+
+func removeAlias(t *testing.T, indexName, alias string) {
+	t.Helper()
+	es := mustTypedClient(t)
+	_, err := es.Indices.DeleteAlias(indexName, alias).Do(context.Background())
+	require.NoError(t, err)
+}
+
+func checkWriteIndex(indexName, alias string, write bool) resource.TestCheckFunc {
+	return func(*terraform.State) error {
+		es, err := typedClient()
+		if err != nil {
+			return err
+		}
+		indices, err := es.Indices.Get(indexName).Do(context.Background())
+		if err != nil {
+			return err
+		}
+		definition, ok := indices[indexName].Aliases[alias]
+		if !ok {
+			return fmt.Errorf("index %s has no alias %s", indexName, alias)
+		}
+		if definition.IsWriteIndex == nil || *definition.IsWriteIndex != write {
+			return fmt.Errorf("index %s alias %s is_write_index = %v, want %v", indexName, alias, definition.IsWriteIndex, write)
+		}
+		return nil
+	}
 }
 
 func checkIndexHasNoAlias(indexName, alias string) resource.TestCheckFunc {

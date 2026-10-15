@@ -18,12 +18,15 @@
 package rolloverindexseries
 
 import (
+	"context"
 	"encoding/json"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -244,6 +247,345 @@ func TestCreate_aliasLookupErrorIsNotAbsence(t *testing.T) {
 	require.Empty(t, mock.putBodies)
 }
 
+func TestRead_healthyAliasRefreshesWithoutWarning(t *testing.T) {
+	mock, client := newClusterMock(t)
+	state := applySeries(t, client)
+	mock.addMember("orders-write", "orders-000002", new(true), false)
+	mock.setWriteFlag("orders-write", "orders-000001", new(false))
+	before := len(mock.requestPaths())
+
+	refreshed, found, diags := readRolloverIndexSeries(t.Context(), client, "orders-write", state)
+
+	require.True(t, found)
+	require.Empty(t, diags)
+	require.Equal(t, "orders-000002", refreshed.WriteIndex.ValueString())
+	requireIndices(t, refreshed.Indices, "orders-000001", "orders-000002")
+	require.Equal(t, state.ID.ValueString(), refreshed.ID.ValueString())
+	require.Equal(t, state.Prefix.ValueString(), refreshed.Prefix.ValueString())
+	requireReadOnlyRequests(t, mock.requestPaths()[before:])
+	require.Zero(t, mock.aliasMutations)
+}
+
+func TestRead_externalRolloverDoesNotRestoreWriter(t *testing.T) {
+	mock, client := newClusterMock(t)
+	state := applySeries(t, client)
+	require.Equal(t, "orders-000001", state.WriteIndex.ValueString())
+	mock.addMember("orders-write", "orders-000002", new(true), false)
+	mock.setWriteFlag("orders-write", "orders-000001", new(false))
+	before := len(mock.requestPaths())
+
+	refreshed, found, diags := readRolloverIndexSeries(t.Context(), client, "orders-write", state)
+
+	require.True(t, found)
+	require.Empty(t, diags)
+	require.Equal(t, "orders-000002", refreshed.WriteIndex.ValueString())
+	requireIndices(t, refreshed.Indices, "orders-000001", "orders-000002")
+	require.Equal(t, state.ID.ValueString(), refreshed.ID.ValueString())
+	write := mock.membership["orders-write"]["orders-000001"].write
+	require.NotNil(t, write)
+	require.False(t, *write)
+	requireReadOnlyRequests(t, mock.requestPaths()[before:])
+	require.Zero(t, mock.aliasMutations)
+	require.Empty(t, mock.putBodies[1:])
+}
+
+func TestRead_deletedBootstrapIsNotRecreated(t *testing.T) {
+	mock, client := newClusterMock(t)
+	state := applySeries(t, client)
+	mock.addMember("orders-write", "orders-000002", new(true), false)
+	mock.dropIndex("orders-000001")
+	puts := len(mock.putBodies)
+
+	refreshed, found, diags := readRolloverIndexSeries(t.Context(), client, "orders-write", state)
+
+	require.True(t, found)
+	require.Empty(t, diags)
+	require.Equal(t, "orders-000002", refreshed.WriteIndex.ValueString())
+	requireIndices(t, refreshed.Indices, "orders-000002")
+	require.NotContains(t, mock.indices, "orders-000001")
+	require.Len(t, mock.putBodies, puts)
+	require.Zero(t, mock.aliasMutations)
+}
+
+func TestRead_removedMemberIsNotReattached(t *testing.T) {
+	mock, client := newClusterMock(t)
+	state := applySeries(t, client)
+	mock.addMember("orders-write", "orders-000002", new(true), false)
+	mock.removeMember("orders-write", "orders-000001")
+
+	refreshed, found, diags := readRolloverIndexSeries(t.Context(), client, "orders-write", state)
+
+	require.True(t, found)
+	require.Empty(t, diags)
+	require.Equal(t, "orders-000002", refreshed.WriteIndex.ValueString())
+	requireIndices(t, refreshed.Indices, "orders-000002")
+	require.Contains(t, mock.indices, "orders-000001")
+	_, attached := mock.membership["orders-write"]["orders-000001"]
+	require.False(t, attached)
+	require.Zero(t, mock.aliasMutations)
+	require.Len(t, mock.putBodies, 1)
+}
+
+func TestRead_unhealthyAliasWarnsAndKeepsNullWriteIndex(t *testing.T) {
+	mock, client := newClusterMock(t)
+	state := applySeries(t, client)
+	mock.addMember("orders-write", "orders-000002", new(false), false)
+	mock.setWriteFlag("orders-write", "orders-000001", new(false))
+	before := len(mock.requestPaths())
+
+	refreshed, found, diags := readRolloverIndexSeries(t.Context(), client, "orders-write", state)
+
+	require.True(t, found)
+	require.False(t, diags.HasError(), diagnosticText(diags))
+	requireWarning(t, diags, "orders-write", "will not repair")
+	require.True(t, refreshed.WriteIndex.IsNull())
+	requireIndices(t, refreshed.Indices, "orders-000001", "orders-000002")
+	require.Equal(t, state.ID.ValueString(), refreshed.ID.ValueString())
+	require.True(t, refreshed.DeletionProtection.ValueBool())
+	requireReadOnlyRequests(t, mock.requestPaths()[before:])
+	require.Zero(t, mock.aliasMutations)
+}
+
+func TestRead_nonNumericWriterWarnsAndExposesName(t *testing.T) {
+	mock, client := newClusterMock(t)
+	state := applySeries(t, client)
+	mock.addMember("orders-write", "orders-current", new(true), false)
+	mock.removeMember("orders-write", "orders-000001")
+	before := len(mock.requestPaths())
+
+	refreshed, found, diags := readRolloverIndexSeries(t.Context(), client, "orders-write", state)
+
+	require.True(t, found)
+	require.False(t, diags.HasError(), diagnosticText(diags))
+	requireWarning(t, diags, "orders-current", "will not repair")
+	require.Equal(t, "orders-current", refreshed.WriteIndex.ValueString())
+	requireIndices(t, refreshed.Indices, "orders-current")
+	require.Equal(t, state.ID.ValueString(), refreshed.ID.ValueString())
+	requireReadOnlyRequests(t, mock.requestPaths()[before:])
+	require.Contains(t, mock.indices, "orders-current")
+	require.Zero(t, mock.aliasMutations)
+}
+
+func TestRead_dataStreamTargetRetainsState(t *testing.T) {
+	mock, client := newClusterMock(t)
+	state := applySeries(t, client)
+	mock.removeMember("orders-write", "orders-000001")
+	mock.addMember("orders-write", "orders-stream", new(true), true)
+	before := len(mock.requestPaths())
+
+	refreshed, found, diags := readRolloverIndexSeries(t.Context(), client, "orders-write", state)
+
+	require.False(t, found)
+	require.True(t, diags.HasError())
+	require.Contains(t, strings.ToLower(diagnosticText(diags)), "ordinary index aliases")
+	require.Contains(t, diagnosticText(diags), "orders-stream")
+	require.Empty(t, warningText(diags))
+	require.Equal(t, state.ID.ValueString(), refreshed.ID.ValueString())
+	require.Equal(t, state.Prefix.ValueString(), refreshed.Prefix.ValueString())
+	require.Equal(t, state.WriteIndex.ValueString(), refreshed.WriteIndex.ValueString())
+	require.True(t, refreshed.DeletionProtection.ValueBool())
+	require.Contains(t, mock.dataStreams, "orders-stream")
+	for _, request := range mock.requestPaths()[before:] {
+		require.NotContains(t, request, "DELETE ")
+		require.NotContains(t, request, "PUT ")
+		require.NotContains(t, request, "POST ")
+	}
+}
+
+func TestRead_authorizationErrorIsNotAbsence(t *testing.T) {
+	mock, client := newClusterMock(t)
+	state := applySeries(t, client)
+	mock.failAliasCode = 401
+
+	refreshed, found, diags := readRolloverIndexSeries(t.Context(), client, "orders-write", state)
+
+	require.False(t, found)
+	require.True(t, diags.HasError())
+	require.Empty(t, warningText(diags))
+	require.NotContains(t, strings.ToLower(diagnosticText(diags)), "no effective writer")
+	require.Equal(t, state.ID.ValueString(), refreshed.ID.ValueString())
+	require.Equal(t, "orders-000001", refreshed.WriteIndex.ValueString())
+	require.Contains(t, mock.indices, "orders-000001")
+	require.NotEmpty(t, mock.membership["orders-write"])
+}
+
+func TestRead_transportErrorIsNotAbsence(t *testing.T) {
+	mock, client := newClusterMock(t)
+	state := applySeries(t, client)
+	mock.failTransport = true
+
+	refreshed, found, diags := readRolloverIndexSeries(t.Context(), client, "orders-write", state)
+
+	require.False(t, found)
+	require.True(t, diags.HasError())
+	require.Empty(t, warningText(diags))
+	require.NotContains(t, strings.ToLower(diagnosticText(diags)), "no effective writer")
+	require.Equal(t, state.ID.ValueString(), refreshed.ID.ValueString())
+	require.Equal(t, "orders-000001", refreshed.WriteIndex.ValueString())
+	require.Contains(t, mock.indices, "orders-000001")
+}
+
+func TestRead_decodingErrorIsNotAbsence(t *testing.T) {
+	mock, client := newClusterMock(t)
+	state := applySeries(t, client)
+	mock.aliasBody = "not-json"
+
+	refreshed, found, diags := readRolloverIndexSeries(t.Context(), client, "orders-write", state)
+
+	require.False(t, found)
+	require.True(t, diags.HasError())
+	require.Empty(t, warningText(diags))
+	require.NotContains(t, strings.ToLower(diagnosticText(diags)), "no effective writer")
+	require.Equal(t, state.ID.ValueString(), refreshed.ID.ValueString())
+	require.Equal(t, "orders-000001", refreshed.WriteIndex.ValueString())
+	require.Contains(t, mock.indices, "orders-000001")
+}
+
+func TestRead_timeoutErrorIsNotAbsence(t *testing.T) {
+	mock, client := newClusterMock(t)
+	state := applySeries(t, client)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Nanosecond)
+	defer cancel()
+	time.Sleep(time.Millisecond)
+
+	refreshed, found, diags := readRolloverIndexSeries(ctx, client, "orders-write", state)
+
+	require.False(t, found)
+	require.True(t, diags.HasError())
+	require.Empty(t, warningText(diags))
+	require.NotContains(t, strings.ToLower(diagnosticText(diags)), "no effective writer")
+	require.Equal(t, state.ID.ValueString(), refreshed.ID.ValueString())
+	require.Equal(t, "orders-000001", refreshed.WriteIndex.ValueString())
+	require.Contains(t, mock.indices, "orders-000001")
+}
+
+func TestRead_aliasAbsenceRebootstrapsWhenNameIsFree(t *testing.T) {
+	mock, client := newClusterMock(t)
+	_ = applySeries(t, client)
+	mock.addMember("orders-write", "orders-000002", new(true), false)
+	mock.dropIndex("orders-000001")
+	mock.removeMember("orders-write", "orders-000002")
+	before := len(mock.requestPaths())
+
+	_, found, diags := readRolloverIndexSeries(t.Context(), client, "orders-write", planModel("orders", "orders-write"))
+	require.False(t, diags.HasError(), diagnosticText(diags))
+	require.False(t, found)
+
+	state := applySeries(t, client)
+	require.Equal(t, "orders-000001", state.WriteIndex.ValueString())
+	requireIndices(t, state.Indices, "orders-000001")
+	require.Contains(t, mock.indices, "orders-000002")
+	_, attached := mock.membership["orders-write"]["orders-000002"]
+	require.False(t, attached)
+	for _, request := range mock.requestPaths()[before:] {
+		require.NotContains(t, request, "orders-000002")
+		require.NotContains(t, request, "*")
+	}
+}
+
+func TestRead_aliasAbsenceBootstrapCollisionDoesNotRepair(t *testing.T) {
+	mock, client := newClusterMock(t)
+	_ = applySeries(t, client)
+	mock.removeMember("orders-write", "orders-000001")
+	mock.addIndex("orders-000002")
+	before := len(mock.requestPaths())
+
+	_, found, diags := readRolloverIndexSeries(t.Context(), client, "orders-write", planModel("orders", "orders-write"))
+	require.False(t, diags.HasError(), diagnosticText(diags))
+	require.False(t, found)
+
+	_, createDiags := createSeries(t, client)
+	require.True(t, createDiags.HasError())
+	text := diagnosticText(createDiags)
+	require.Contains(t, text, "orders-000001")
+	require.Contains(t, strings.ToLower(text), "already")
+	require.Contains(t, mock.indices, "orders-000001")
+	require.Contains(t, mock.indices, "orders-000002")
+	_, attached := mock.membership["orders-write"]
+	require.False(t, attached)
+	require.Zero(t, mock.aliasMutations)
+	for _, request := range mock.requestPaths()[before:] {
+		require.NotContains(t, request, "orders-000002")
+		require.NotContains(t, request, "*")
+	}
+}
+
+func TestUpdate_disablingDeletionProtectionReadsBackWithoutMutation(t *testing.T) {
+	mock, client := newClusterMock(t)
+	state := applySeries(t, client)
+	mock.addMember("orders-write", "orders-000002", new(true), false)
+	mock.setWriteFlag("orders-write", "orders-000001", new(false))
+	before := len(mock.requestPaths())
+
+	plan := state
+	plan.DeletionProtection = types.BoolValue(false)
+	refreshed := applyUpdate(t, client, plan)
+
+	require.False(t, refreshed.DeletionProtection.ValueBool())
+	require.Equal(t, "orders-000002", refreshed.WriteIndex.ValueString())
+	requireIndices(t, refreshed.Indices, "orders-000001", "orders-000002")
+	require.Equal(t, state.ID.ValueString(), refreshed.ID.ValueString())
+	require.Equal(t, state.Prefix.ValueString(), refreshed.Prefix.ValueString())
+	require.Equal(t, state.RolloverAlias.ValueString(), refreshed.RolloverAlias.ValueString())
+	write := mock.membership["orders-write"]["orders-000001"].write
+	require.NotNil(t, write)
+	require.False(t, *write)
+	requireReadOnlyRequests(t, mock.requestPaths()[before:])
+	require.Zero(t, mock.aliasMutations)
+	require.Len(t, mock.putBodies, 1)
+	requireAliasDiscovery(t, mock.requestPaths()[before:])
+}
+
+func TestUpdate_writerWarningPreservesTimeouts(t *testing.T) {
+	mock, client := newClusterMock(t)
+	state := applySeries(t, client)
+	mock.setWriteFlag("orders-write", "orders-000001", new(false))
+	before := len(mock.requestPaths())
+
+	plan := state
+	plan.DeletionProtection = types.BoolValue(false)
+	plan.Timeouts = operationTimeouts("4m")
+	written, diags := updateRolloverIndexSeries(t.Context(), client, entitycore.WriteRequest[Model]{
+		Plan:    plan,
+		WriteID: "orders-write",
+	})
+	require.False(t, diags.HasError(), diagnosticText(diags))
+	require.Empty(t, warningText(diags))
+
+	refreshed, found, readDiags := readRolloverIndexSeries(t.Context(), client, "orders-write", written.Model)
+	require.True(t, found)
+	require.False(t, readDiags.HasError(), diagnosticText(readDiags))
+	requireWarning(t, readDiags, "will not repair")
+	require.True(t, refreshed.WriteIndex.IsNull())
+	require.False(t, refreshed.DeletionProtection.ValueBool())
+	require.True(t, refreshed.Timeouts.Equal(plan.Timeouts))
+	requireIndices(t, refreshed.Indices, "orders-000001")
+	requireReadOnlyRequests(t, mock.requestPaths()[before:])
+	require.NotContains(t, strings.Join(mock.requestPaths()[before:], "\n"), "_validate/query")
+	require.Zero(t, mock.aliasMutations)
+	require.Len(t, mock.putBodies, 1)
+}
+
+func TestResourceDescription_documentsAliasExistenceAndReplacementOrdering(t *testing.T) {
+	for _, needle := range []string{
+		"exact `rollover_alias`",
+		"removes this resource from state",
+		"`<prefix>-000001`",
+		"does not look up former members",
+		"detached",
+		"destroy before create",
+		"Terraform Core",
+		"`create_before_destroy`",
+		"propagated through dependencies",
+		"does not enforce",
+	} {
+		require.Contains(t, resourceDescription, needle)
+	}
+	lower := strings.ToLower(resourceDescription)
+	require.NotContains(t, lower, "the provider enforces")
+	require.NotContains(t, lower, "prevents create_before_destroy")
+}
+
 func TestRead_missingAliasIsAbsenceWithoutSurvivorProbe(t *testing.T) {
 	mock, client := newClusterMock(t)
 	mock.addIndex("orders-000002")
@@ -269,6 +611,20 @@ func TestDelete_missingAliasSucceedsWithoutDeletingDetachedIndex(t *testing.T) {
 	}
 }
 
+func applyUpdate(t *testing.T, client *clients.ElasticsearchScopedClient, plan Model) Model {
+	t.Helper()
+	written, diags := updateRolloverIndexSeries(t.Context(), client, entitycore.WriteRequest[Model]{
+		Plan:    plan,
+		WriteID: plan.RolloverAlias.ValueString(),
+	})
+	require.False(t, diags.HasError(), diagnosticText(diags))
+	state, found, readDiags := readRolloverIndexSeries(t.Context(), client, plan.RolloverAlias.ValueString(), written.Model)
+	require.False(t, readDiags.HasError(), diagnosticText(readDiags))
+	require.Empty(t, warningText(readDiags))
+	require.True(t, found)
+	return state
+}
+
 func applySeries(t *testing.T, client *clients.ElasticsearchScopedClient) Model {
 	t.Helper()
 	written, diags := createSeries(t, client)
@@ -285,6 +641,24 @@ func createSeries(t *testing.T, client *clients.ElasticsearchScopedClient) (enti
 		Plan:    planModel("orders", "orders-write"),
 		WriteID: "orders-write",
 	})
+}
+
+func operationTimeouts(update string) timeouts.Value {
+	null := types.StringNull()
+	return timeouts.Value{Object: types.ObjectValueMust(
+		map[string]attr.Type{
+			"create": types.StringType,
+			"read":   types.StringType,
+			"update": types.StringType,
+			"delete": types.StringType,
+		},
+		map[string]attr.Value{
+			"create": null,
+			"read":   null,
+			"update": types.StringValue(update),
+			"delete": null,
+		},
+	)}
 }
 
 func planModel(prefix, alias string) Model {
@@ -310,6 +684,45 @@ func requireIndices(t *testing.T, got types.Set, names ...string) {
 	want, diags := types.SetValue(types.StringType, elements)
 	require.False(t, diags.HasError())
 	require.Truef(t, got.Equal(want), "indices = %s, want %s", got, want)
+}
+
+func warningText(diags diag.Diagnostics) string {
+	var warnings []string
+	for _, d := range diags {
+		if d.Severity() != diag.SeverityWarning {
+			continue
+		}
+		warnings = append(warnings, d.Summary()+" "+d.Detail())
+	}
+	return strings.Join(warnings, "; ")
+}
+
+func requireWarning(t *testing.T, diags diag.Diagnostics, needles ...string) {
+	t.Helper()
+	text := warningText(diags)
+	require.NotEmpty(t, text)
+	for _, needle := range needles {
+		require.Contains(t, text, needle)
+	}
+}
+
+func requireAliasDiscovery(t *testing.T, requests []string) {
+	t.Helper()
+	var gets int
+	for _, request := range requests {
+		if strings.HasPrefix(request, "GET /_alias/") {
+			gets++
+		}
+	}
+	require.Positive(t, gets)
+}
+
+func requireReadOnlyRequests(t *testing.T, requests []string) {
+	t.Helper()
+	for _, request := range requests {
+		require.Truef(t, strings.HasPrefix(request, "GET "), "mutating request %s", request)
+		require.NotContains(t, request, "_validate/query")
+	}
 }
 
 func requireNoSurvivorProbe(t *testing.T, mock *clusterMock, detached string) {

@@ -38,7 +38,7 @@ func newRolloverIndexSeriesResource() *rolloverIndexSeriesResource {
 			Read:   readRolloverIndexSeries,
 			Delete: deleteRolloverIndexSeries,
 			Create: createRolloverIndexSeries,
-			Update: entitycore.UpdateNotSupportedWriteCallback[Model](),
+			Update: updateRolloverIndexSeries,
 		}),
 	}
 }

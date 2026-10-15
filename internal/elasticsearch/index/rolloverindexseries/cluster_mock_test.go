@@ -51,6 +51,8 @@ type clusterMock struct {
 	putBodies      []map[string]json.RawMessage
 	aliasMutations int
 	failAliasCode  int
+	failTransport  bool
+	aliasBody      string
 }
 
 func newClusterMock(t *testing.T) (*clusterMock, *clients.ElasticsearchScopedClient) {
@@ -81,6 +83,37 @@ func (m *clusterMock) addAliasObject(name string) {
 	m.aliasObjects[name] = struct{}{}
 }
 
+func (m *clusterMock) dropIndex(name string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.indices, name)
+	for aliasName, members := range m.membership {
+		delete(members, name)
+		if len(members) == 0 {
+			delete(m.membership, aliasName)
+		}
+	}
+}
+
+//nolint:unparam // aliasName stays general for the mock even though these tests use one alias
+func (m *clusterMock) removeMember(aliasName, target string) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	delete(m.membership[aliasName], target)
+	if len(m.membership[aliasName]) == 0 {
+		delete(m.membership, aliasName)
+	}
+}
+
+//nolint:unparam // aliasName stays general for the mock even though these tests use one alias
+func (m *clusterMock) setWriteFlag(aliasName, target string, write *bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	member := m.membership[aliasName][target]
+	member.write = write
+	m.membership[aliasName][target] = member
+}
+
 func (m *clusterMock) addMember(aliasName, target string, write *bool, dataStream bool) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -103,6 +136,19 @@ func (m *clusterMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.requests = append(m.requests, r.Method+" "+r.URL.Path)
+	if m.failTransport {
+		hijacker, ok := w.(http.Hijacker)
+		if !ok {
+			http.Error(w, "cannot interrupt transport", http.StatusBadGateway)
+			return
+		}
+		conn, _, err := hijacker.Hijack()
+		if err != nil {
+			return
+		}
+		_ = conn.Close()
+		return
+	}
 
 	switch {
 	case r.URL.Path == "/":
@@ -144,6 +190,13 @@ func (m *clusterMock) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func (m *clusterMock) getAlias(w http.ResponseWriter, aliasName string) {
+	if m.aliasBody != "" {
+		w.Header().Set("X-Elastic-Product", "Elasticsearch")
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = io.WriteString(w, m.aliasBody)
+		return
+	}
 	if m.failAliasCode != 0 {
 		writeJSON(w, m.failAliasCode, map[string]any{
 			"error": map[string]any{

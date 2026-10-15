@@ -19,6 +19,7 @@ package rolloverindexseries
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -44,11 +45,40 @@ func readRolloverIndexSeries(
 	if streamDiags := rejectDataStreamTargets(aliasName, series); streamDiags.HasError() {
 		return state, false, streamDiags
 	}
+	diags.Append(writerHealthWarning(aliasName, series)...)
 
 	id, idDiags := client.ID(ctx, aliasName)
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return state, false, diags
 	}
-	return state.withObservedSeries(id.String(), series), true, nil
+	return state.withObservedSeries(id.String(), series), true, diags
+}
+
+func writerHealthWarning(aliasName string, series seriesView) diag.Diagnostics {
+	var diags diag.Diagnostics
+	if !series.HasWriter {
+		diags.AddWarning(
+			"Rollover alias has no effective writer",
+			fmt.Sprintf(
+				"Alias %q has no effective writer. Writes and automatic rollover may fail. This resource will not repair the alias or its members.",
+				aliasName,
+			),
+		)
+		return diags
+	}
+	if hasGenerationSuffix(series.Writer) {
+		return nil
+	}
+	diags.AddWarning(
+		"Rollover writer cannot support automatic rollover",
+		fmt.Sprintf(
+			"Alias %q has effective writer %q, which does not end in -<digits>. "+
+				"Automatic rollover cannot derive a successor name, and writes may fail. "+
+				"This resource will not repair the alias or rename the writer.",
+			aliasName,
+			series.Writer,
+		),
+	)
+	return diags
 }
