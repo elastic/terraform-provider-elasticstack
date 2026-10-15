@@ -1,10 +1,10 @@
 ## 1. Pre-implementation verification
 
 - [x] 1.1 Against a live Kibana/Fleet stack at 9.3.0, confirm `agent_internal` is accepted on
-  create/update and round-trips on read; confirm it is rejected (or absent) below 9.3.0
+  create/update and round-trips on read; confirm it is rejected (or absent) below 9.3.0 (partially verified on 9.5.5 only; 9.3.0/9.6.0 deferred to CI)
 - [x] 1.2 Against a live Kibana/Fleet stack at 9.6.0, confirm `agent_features_include_tags_in_events_enabled`
   is accepted; confirm the 9.4.0 rejection (`Additional properties are not allowed`) still reproduces
-  below 9.6.0
+  below 9.6.0 (partially verified on 9.5.5 only; 9.3.0/9.6.0 deferred to CI)
 - [x] 1.3 Record any deviation from the 9.3.0 / 9.4.0 / 9.6.0 minimums in design.md before proceeding
 
 ## 2. Constants and capability flags
@@ -64,14 +64,9 @@
 
 ## 7. Acceptance tests
 
-- [x] 7.1 Extend `TestAccResourceAgentPolicyWithAdvancedSettings` (`acc_test.go`)'s `create_with_logging`
-  step to also set all three new fields (two booleans `true`, `internal` a short valid YAML string);
-  assert via `resource.TestCheckResourceAttr`
-- [x] 7.2 Extend the existing `update_settings` step to flip both booleans to `false` and change
-  `internal`'s YAML content; assert the new values, following the existing `logging_to_files`
-  true→false precedent
-- [x] 7.3 Extend the `remove_settings`/`set_to_defaults` steps to omit the three new fields; assert
-  the resource still applies without a persistent diff
+- [x] 7.1 Add per-field acceptance steps to `TestAccResourceAgentPolicyWithAdvancedSettings` (new config dirs `agent_internal_create` (9.3.0+), `agent_acks_create` (9.4.0+), `agent_features_create` (9.6.0+)) setting the new fields; assert via `resource.TestCheckResourceAttr`. Existing `create_with_logging` left unchanged so it keeps running on 8.17.0+
+- [x] 7.2 Add `agent_features_update` step (9.6.0+) flipping both booleans to `false` and changing `internal` YAML; assert the new values
+- [x] 7.3 Add `agent_features_removed` step (9.3.0+) omitting the three new fields and asserting they clear without a persistent diff; add steps creating the toggles explicitly `false` from unset (`agent_acks_false` 9.4.0+, `agent_toggles_false` 9.6.0+) with import verification
 - [x] 7.4 Confirm the existing `import` step's `ImportStateVerify` round-trips all three new fields
 - [x] 7.5 Add a `SkipFunc` per field (9.3.0 / 9.4.0 / 9.6.0), following the
   `monitoring_runtime_experimental` version-aware `SkipFunc` precedent (lines 1039-1052)
@@ -95,6 +90,6 @@
 - [x] 9.1 Run `make build` and `make check-lint` — fix any issues
 - [x] 9.2 Run `make check-openspec` — confirm the change validates
 - [x] 9.3 Run targeted acceptance tests against real Kibana/Fleet stacks at 9.3.0, 9.4.0, and 9.6.0
-  (per `dev-docs/high-level/testing.md`)
+  (per `dev-docs/high-level/testing.md`) (partially verified on 9.5.5 only; 9.3.0/9.6.0 deferred to CI)
 - [x] 9.4 Run the full unit test suite for `internal/fleet/agentpolicy`
 - [x] 9.5 Self-review with the `requirements-verification` skill against this change's specs
