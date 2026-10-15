@@ -39,19 +39,6 @@ func ReadEventPayload(path string) ([]byte, error) {
 	return content, nil
 }
 
-// LoadEvent decodes the JSON workflow event at path into a typed value T.
-func LoadEvent[T any](path string) (T, error) {
-	var zero T
-	raw, err := ReadEventPayload(path)
-	if err != nil {
-		return zero, err
-	}
-	if err := json.Unmarshal(raw, &zero); err != nil {
-		return zero, fmt.Errorf("unmarshal event payload: %w", err)
-	}
-	return zero, nil
-}
-
 type pullRequestEventPayload struct {
 	PullRequest *struct {
 		Number int `json:"number"`

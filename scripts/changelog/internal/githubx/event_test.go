@@ -51,19 +51,6 @@ func TestReadEventPayload_validJSONFile(t *testing.T) {
 	}
 }
 
-func TestLoadEvent_malformedJSONFile(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	path := filepath.Join(dir, "event.json")
-	if err := os.WriteFile(path, []byte(`{not json`), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	_, err := githubx.LoadEvent[map[string]any](path)
-	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
-		t.Fatalf("expected unmarshal error, got %v", err)
-	}
-}
-
 func TestOptionalPullRequestNumberFromEventPath_emptyPath(t *testing.T) {
 	t.Parallel()
 	n, err := githubx.OptionalPullRequestNumberFromEventPath("")
