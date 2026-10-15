@@ -19,25 +19,10 @@ package githubx
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"os"
 	"strings"
 )
-
-// ReadEventPayload reads the raw JSON payload from path (typically
-// $GITHUB_EVENT_PATH).
-func ReadEventPayload(path string) ([]byte, error) {
-	path = strings.TrimSpace(path)
-	if path == "" {
-		return nil, errors.New("missing GITHUB_EVENT_PATH")
-	}
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return nil, fmt.Errorf("read event payload: %w", err)
-	}
-	return content, nil
-}
 
 type pullRequestEventPayload struct {
 	PullRequest *struct {

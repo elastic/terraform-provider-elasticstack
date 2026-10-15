@@ -26,31 +26,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/githubx"
 )
 
-func TestReadEventPayload_emptyPath(t *testing.T) {
-	t.Parallel()
-	_, err := githubx.ReadEventPayload("")
-	if err == nil || !strings.Contains(err.Error(), "GITHUB_EVENT_PATH") {
-		t.Fatalf("expected GITHUB_EVENT_PATH error, got %v", err)
-	}
-}
-
-func TestReadEventPayload_validJSONFile(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	path := filepath.Join(dir, "event.json")
-	want := []byte(`{"action":"opened","number":1}`)
-	if err := os.WriteFile(path, want, 0o644); err != nil {
-		t.Fatal(err)
-	}
-	got, err := githubx.ReadEventPayload(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(got) != string(want) {
-		t.Fatalf("got %q want %q", got, want)
-	}
-}
-
 func TestOptionalPullRequestNumberFromEventPath_emptyPath(t *testing.T) {
 	t.Parallel()
 	n, err := githubx.OptionalPullRequestNumberFromEventPath("")
