@@ -15,9 +15,10 @@ Improve axes schemas" #261254 and "[Lens as code] Fix Axis definitions"
 | v9.3.0, v9.3.4 | `bottom \| left \| right` | `left` |
 | v9.4.0, v9.4.1, v9.5.0, 9.4/9.5 branches, `main` | `x \| y \| y2` | `y` |
 
-The 9.3 enum predates the Dashboard API (no `/api/dashboards` as-code endpoint
-exists on 9.3), so no supported Kibana version accepts the provider's current
-schema values. The generated client (`generated/kbapi`,
+The 9.3 enum belongs to the Lens config-builder schema that predates the provider's
+Dashboard API support (9.4+). Whether 9.3 exposes that schema over an HTTP endpoint
+was not verified; it does not matter here, because no Kibana version the resource
+supports accepts the provider's current schema values. The generated client (`generated/kbapi`,
 `KibanaHTTPAPIsVisXyReferenceLineLayerESQLStaticThresholdsAxis`) already models
 `x|y|y2`.
 
@@ -27,18 +28,22 @@ Issue #4902 / PR #4948 found and fixed the read-back side of this for Kibana
 rewrite — tracked by this issue — because it is a breaking contract change
 distinct from omit-default normalization.
 
-### Live evidence (disposable 9.4.0 and 9.6.0-SNAPSHOT stacks)
+### Live evidence (disposable 9.4.0, 9.5.5, 9.6.0-SNAPSHOT and 9.6.0 stacks)
 
 `POST /api/dashboards` with an XY panel containing a `reference_lines` layer and
 one `static_value` threshold, varying only `axis`:
 
-| `axis` sent | 9.4.0 read-back | 9.6.0 read-back |
-|---|---|---|
-| omitted | absent | `"y"` (injected) |
-| `left` / `right` / `bottom` | HTTP 400 | HTTP 400 |
-| `x` | echoed | echoed |
-| `y` | **absent (stripped)** | echoed |
-| `y2` | echoed | echoed |
+| `axis` sent | 9.4.0 read-back | 9.5.5 read-back | 9.6.0 read-back |
+|---|---|---|---|
+| omitted | absent | absent | `"y"` (injected) |
+| `left` / `right` / `bottom` | HTTP 400 | HTTP 400 | HTTP 400 |
+| `x` | echoed | echoed | echoed |
+| `y` | **absent (stripped)** | **absent (stripped)** | echoed |
+| `y2` | echoed | echoed | echoed |
+
+9.6.0-SNAPSHOT behaved identically to 9.6.0. Only 9.4.0, 9.5.5 and 9.6.x were probed;
+other patch releases are assumed to match their minor series. The behavior change
+therefore sits between 9.5.5 and 9.6.0.
 
 The only 9.4-vs-9.6 difference is read-back normalization of the default axis,
 not the accepted enum:
@@ -47,7 +52,7 @@ not the accepted enum:
   `PreserveNullIfStateEquals(planThreshold.Axis, &stateThreshold.Axis,
   types.StringValue("y"))` at `alignment_panels.go:208`.
 - 9.4.0 strips an explicit `"y"` from the read-back. Once `y` is a valid
-  schema value, a practitioner who sets `axis = "y"` on a 9.4.x stack would hit
+  schema value, a practitioner who sets `axis = "y"` on a 9.4/9.5 stack would hit
   "Provider produced inconsistent result after apply" (planned `"y"`, state
   null) unless the alignment logic also restores the plan value in that
   direction. This is a new case introduced by this change, not something
@@ -68,7 +73,7 @@ recorded for anyone picking up related work:
 **Goals:**
 - Make `thresholds[].axis` accept exactly what Kibana's Dashboard API accepts
   on every supported version: `x`, `y`, `y2`.
-- Round-trip without plan/state drift on both Kibana 9.4.x (omitted and
+- Round-trip without plan/state drift on both Kibana 9.4/9.5 (omitted and
   explicit `"y"` are not echoed) and Kibana 9.6+ (omitted injects `"y"`,
   explicit `"y"` is echoed).
 - Remove the now-obsolete "omit this attribute" workaround language from the
@@ -103,7 +108,7 @@ recorded for anyone picking up related work:
 2. **Expose `x`.** Kibana accepts it and the generated client already models
    it; omitting it from the Terraform schema while Kibana allows it would be
    an unnecessary gap.
-3. **Preserve an explicit `y` in state, including on 9.4.x where Kibana drops
+3. **Preserve an explicit `y` in state, including on 9.4/9.5 where Kibana drops
    it**, so the practitioner's configured value round-trips regardless of
    stack version. Implementation: extend the existing
    `alignXYLayerStateFromPlan` threshold loop
@@ -115,8 +120,8 @@ recorded for anyone picking up related work:
    | plan | state (from API) | result |
    |---|---|---|
    | null | `"y"` (9.6 injected) | null (existing behavior, unchanged) |
-   | null | null (9.4.x omitted) | null (existing behavior, unchanged) |
-   | `"y"` | null (9.4.x stripped) | `"y"` (new) |
+   | null | null (9.4/9.5 omitted) | null (existing behavior, unchanged) |
+   | `"y"` | null (9.4/9.5 stripped) | `"y"` (new) |
    | `"y"` | `"y"` (9.6 echoed) | `"y"` (unchanged; already equal) |
    | `"x"` / `"y2"` | echoed | unchanged (Kibana never strips these) |
 
@@ -143,16 +148,20 @@ the alignment logic change.
   where it previously failed at `terraform apply`. This is treated as a
   strict improvement (earlier, clearer error) rather than a regression,
   because no such configuration could ever reach a successful `apply`.
-  Mitigate by calling this out explicitly in the changelog as a breaking
-  change with rationale.
+  Mitigate by flagging it as breaking in the implementation PR title/body with
+  the rationale (the changelog is generated from merged PR history).
 - **New plan-known/state-null restoration direction for `axis = "y"`
   specifically** (Decision 3) is new code, not a port of an existing pattern
   in the other direction. Mitigate with unit tests covering every row of the
-  table above, plus an acceptance test run against a 9.4.x stack to confirm
+  table above, plus an acceptance test run against 9.4 and 9.5 stacks to confirm
   the stripped-`"y"` case is observed and handled (the acceptance matrix in
   `lens-kibana-9-6-readback-defaults` only ran against 9.6.0-SNAPSHOT).
 - **Import has no plan to align against.** An imported threshold shows
-  `axis = "y"` on Kibana 9.6+ (injected) and `axis = null` on Kibana 9.4.x
+  `axis = "y"` on Kibana 9.6+ (injected) and `axis = null` on Kibana 9.4/9.5
   (stripped), matching the existing documented import behavior for other
-  omit-defaults in REQ-011. This is pre-existing behavior for omit-defaults,
-  not a new risk introduced here.
+  omit-defaults in REQ-011. For the omitted-axis case this is pre-existing
+  behavior. One case is new: because `y` is now configurable, a practitioner on
+  9.4/9.5 who sets `axis = "y"` and imports will see `null` in state and a plan
+  diff to `"y"` until the next apply. This is accepted (it is consistent with the
+  other import omit-defaults and harmless) and is covered by an import test step
+  (tasks 4.4) so the behavior is documented rather than accidental.

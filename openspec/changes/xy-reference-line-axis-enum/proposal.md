@@ -4,12 +4,15 @@
 (`internal/kibana/dashboard/panel/lensxy/schema_attrs.go`) validates
 `stringvalidator.OneOf("bottom", "left", "right")`. Kibana's Dashboard API rejects
 all three values with HTTP 400 (`Invalid input: expected "y"`) and instead accepts
-`x`, `y`, and `y2`. This is not version-specific to 9.6: the Dashboard API has only
-ever existed from Kibana 9.4.0 onward, and `x|y|y2` has been the enum on every
-9.4+ release checked (9.4.0, 9.4.1, 9.5.0, the 9.4/9.5 branches, and `main`). The
-provider schema's `bottom|left|right` enum has therefore never been usable against
-any Kibana version that has the as-code Dashboard API — practitioners who set
-`axis` following the documented schema get a failed apply on every supported stack.
+`x`, `y`, and `y2`. This is not version-specific to 9.6: `x|y|y2` has been the enum
+in every Kibana release checked from 9.4.0 onward (9.4.0, 9.4.1, 9.5.0, the 9.4/9.5
+branches, and `main`), and the 9.4.0 and 9.5.5 stacks rejected the old values live.
+Kibana 9.3 still used `bottom|left|right` in its Lens config-builder schema, but the
+provider's `elasticstack_kibana_dashboard` Dashboard API support starts at 9.4 (whether
+9.3 exposes an HTTP endpoint for that schema was not verified), so the provider
+schema's `bottom|left|right` enum has never been usable against any stack the resource
+supports — practitioners who set `axis` following the documented schema get a failed
+apply.
 
 This was discovered while implementing #4902 / PR #4948, which added read-back
 normalization for Kibana 9.6's server-injected `thresholds[].axis = "y"` default
@@ -34,12 +37,12 @@ still works), but practitioners should also be able to set it explicitly.
   "omit this attribute" workaround language and the back-link to this issue.
 - Extend the existing omit-default alignment in
   `alignXYLayerStateFromPlan`/`alignment_panels.go` so an explicit `axis = "y"`
-  configured by the practitioner round-trips on Kibana 9.4.x, which strips an
-  explicit `"y"` from its read-back (only Kibana 9.6+ echoes it). Today's
+  configured by the practitioner round-trips on Kibana 9.4 and 9.5, which strip an
+  explicit `"y"` from their read-back (only Kibana 9.6+ echoes it). Today's
   `PreserveNullIfStateEquals(planThreshold.Axis, &stateThreshold.Axis,
   types.StringValue("y"))` only restores a **null** plan value when state reads
   back `"y"`; it does not yet restore a **known** plan value of `"y"` when state
-  reads back null/absent (the 9.4.x shape). Add that missing direction so both
+  reads back null/absent (the 9.4/9.5 shape). Add that missing direction so both
   stacks avoid "Provider produced inconsistent result after apply".
 - Update the one test fixture that encodes the old Y-metric `config_json` axis
   value (`converter_test.go:48`, `"axis":"left"` → `"axis":"y"` — Y-metric
@@ -57,7 +60,7 @@ still works), but practitioners should also be able to set it explicitly.
 - No version gating: the accepted enum is identical on every Kibana version that
   exposes the Dashboard API (9.4+). The only version-dependent behavior is
   read-back normalization (omitted-axis injection on 9.6+, explicit-`"y"`
-  stripping on 9.4.x), which is already handled by inspecting the API response
+  stripping on 9.4/9.5), which is already handled by inspecting the API response
   rather than branching on the stack version.
 
 ## Capabilities
@@ -71,7 +74,7 @@ None.
 - `kibana-dashboard`: change the XY reference-line `thresholds[].axis` contract
   from the unusable `bottom|left|right` enum to the Kibana-accepted `x|y|y2`
   enum, and extend REQ-011's omit-default normalization to cover the Kibana
-  9.4.x case where an explicit `axis = "y"` is dropped from the read-back.
+  9.4/9.5 case where an explicit `axis = "y"` is dropped from the read-back.
 
 ## Impact
 
@@ -83,7 +86,7 @@ None.
   `"axis":"left"` fixture.
 - `internal/kibana/dashboard/panel/lensxy/alignment_panels_test.go` — replace
   `TestAlignXYLayerStateFromPlan_explicitLeftThresholdAxisIsNotTreatedAsOmitDefaultY`
-  with cases covering `x`/`y`/`y2` pass-through and the new 9.4.x restoration
+  with cases covering `x`/`y`/`y2` pass-through and the new 9.4/9.5 restoration
   direction.
 - `internal/kibana/dashboard/panel/lensxy/acc_test.go` and
   `internal/kibana/dashboard/panel/lensxy/testdata/` — new fixtures for
@@ -94,6 +97,8 @@ None.
   bidirectional omit-default rule.
 - `docs/resources/kibana_dashboard.md` — regenerate (`make docs-generate`) to
   reflect the new `MarkdownDescription`.
-- Changelog entry flagging the enum change as breaking, with rationale that
-  the removed values (`bottom`, `left`, `right`) never applied successfully
-  against any Kibana version with the Dashboard API.
+- Flag the enum change as breaking in the implementation PR title/body (the
+  `CHANGELOG.md` `[Unreleased]` section is generated from merged PR history, so no
+  manual changelog file is added), with rationale that the removed values
+  (`bottom`, `left`, `right`) never applied successfully against any supported
+  Kibana version.
