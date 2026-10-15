@@ -111,11 +111,3 @@ func TestOptionalPullRequestNumberFromEventPath_invalidJSON_file(t *testing.T) {
 		t.Fatalf("expected unmarshal-related error, got %v", err)
 	}
 }
-
-func TestDecodeEvent_malformedJSON(t *testing.T) {
-	t.Parallel()
-	_, err := githubx.DecodeEvent[map[string]any]([]byte(`{`))
-	if err == nil || !strings.Contains(err.Error(), "unmarshal") {
-		t.Fatalf("expected unmarshal error, got %v", err)
-	}
-}

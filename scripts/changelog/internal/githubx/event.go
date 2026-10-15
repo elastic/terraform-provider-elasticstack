@@ -52,15 +52,6 @@ func LoadEvent[T any](path string) (T, error) {
 	return zero, nil
 }
 
-// DecodeEvent unmarshals raw JSON workflow event bytes into T.
-func DecodeEvent[T any](data []byte) (T, error) {
-	var v T
-	if err := json.Unmarshal(data, &v); err != nil {
-		return v, fmt.Errorf("unmarshal event payload: %w", err)
-	}
-	return v, nil
-}
-
 type pullRequestEventPayload struct {
 	PullRequest *struct {
 		Number int `json:"number"`
