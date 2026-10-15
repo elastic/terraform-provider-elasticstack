@@ -21,14 +21,15 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
-	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	listvalidator "github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
+	stringvalidator "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const spaceIDsDescription = "The Kibana space IDs where this download source is available. When set, the download source will be created " +
@@ -79,6 +80,40 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: "The ID of the proxy to use for this download source.",
 				Optional:    true,
 			},
+			"ssl": schema.SingleNestedAttribute{
+				Description: "SSL/TLS configuration for the download source host.",
+				Optional:    true,
+				Validators: []validator.Object{
+					sslAtLeastOneSubattrValidator{},
+				},
+				Attributes: map[string]schema.Attribute{
+					"certificate_authorities": schema.ListAttribute{
+						Description: "Server SSL certificate authorities trusted for the download source host.",
+						Optional:    true,
+						ElementType: types.StringType,
+						Validators: []validator.List{
+							listvalidator.SizeAtLeast(1),
+							listvalidator.SizeAtMost(10),
+							listvalidator.ValueStringsAre(stringvalidator.LengthAtLeast(1)),
+						},
+					},
+					"certificate": schema.StringAttribute{
+						Description: "Client SSL certificate for the download source host.",
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.LengthAtLeast(1),
+						},
+					},
+					keyAttributeName: schema.StringAttribute{
+						Description: "Client SSL certificate key for the download source host.",
+						Optional:    true,
+						Sensitive:   true,
+						Validators: []validator.String{
+							stringvalidator.LengthAtLeast(1),
+						},
+					},
+				},
+			},
 			"auth": schema.SingleNestedAttribute{
 				Description: "Authentication used by Elastic Agents when downloading binaries from this source.",
 				Optional:    true,
@@ -114,7 +149,7 @@ func getSchema(_ context.Context) schema.Schema {
 						},
 						NestedObject: schema.NestedAttributeObject{
 							Attributes: map[string]schema.Attribute{
-								"key": schema.StringAttribute{
+								keyAttributeName: schema.StringAttribute{
 									Description: "HTTP header name.",
 									Required:    true,
 								},

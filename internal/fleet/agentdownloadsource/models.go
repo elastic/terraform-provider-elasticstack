@@ -40,6 +40,7 @@ type model struct {
 	Host             types.String `tfsdk:"host"`
 	Default          types.Bool   `tfsdk:"default"`
 	ProxyID          types.String `tfsdk:"proxy_id"`
+	Ssl              types.Object `tfsdk:"ssl"`
 	Auth             *authModel   `tfsdk:"auth"`
 	SpaceIDs         types.Set    `tfsdk:"space_ids"`         // > string
 	KibanaConnection types.List   `tfsdk:"kibana_connection"` // > provider schema connection block
@@ -77,6 +78,10 @@ var (
 	agentDownloadSourceAuthMinVersion = version.Must(version.NewVersion("9.4.0"))
 )
 
+// agentDownloadSourceSslMinVersion gates the ssl attribute on its own so
+// configurations without ssl keep the 8.13.0 resource floor.
+var agentDownloadSourceSslMinVersion = version.Must(version.NewVersion("9.1.0"))
+
 func (m model) GetID() types.String             { return m.ID }
 func (m model) GetResourceID() types.String     { return m.SourceID }
 func (m model) GetKibanaConnection() types.List { return m.KibanaConnection }
@@ -90,6 +95,13 @@ func (m model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRe
 		*agentDownloadSourceMinVersion,
 		fmt.Sprintf("This resource requires stack version %s or higher.", agentDownloadSourceMinVersion),
 	)
+	if typeutils.IsKnown(m.Ssl) {
+		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
+			path.Root("ssl"),
+			*agentDownloadSourceSslMinVersion,
+			fmt.Sprintf("ssl is only supported in Elastic Stack %s and above", agentDownloadSourceSslMinVersion),
+		))
+	}
 	if m.Auth != nil {
 		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
 			path.Root("auth"),
@@ -116,6 +128,17 @@ func (m model) toAPICreateModel(ctx context.Context) (kbapi.PostFleetAgentDownlo
 		id := m.SourceID.ValueString()
 		body.Id = &id
 	}
+
+	if diags.HasError() {
+		return kbapi.PostFleetAgentDownloadSourcesJSONRequestBody{}, diags
+	}
+
+	ssl, sslDiags := objectValueToSSL(ctx, m.Ssl)
+	diags.Append(sslDiags...)
+	if diags.HasError() {
+		return kbapi.PostFleetAgentDownloadSourcesJSONRequestBody{}, diags
+	}
+	body.Ssl = sslToKibana(ssl)
 
 	return body, diags
 }
@@ -146,13 +169,25 @@ func (m authModel) toAPIHeaders(ctx context.Context) (*[]downloadSourceAuthHeade
 
 func (m model) toAPIUpdateModel(ctx context.Context, prior model) (kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody, diag.Diagnostics) {
 	auth, diags := m.authForUpdate(ctx, prior)
-	return kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{
+	if diags.HasError() {
+		return kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{}, diags
+	}
+	body := kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{
 		Host:      m.Host.ValueString(),
 		Name:      m.Name.ValueString(),
 		IsDefault: m.Default.ValueBoolPointer(),
 		ProxyId:   fleet.ProxyIDForUpdate(m.ProxyID, prior.ProxyID),
 		Auth:      auth,
-	}, diags
+	}
+
+	ssl, sslDiags := objectValueToSSLUpdate(ctx, m.Ssl, prior.Ssl)
+	diags.Append(sslDiags...)
+	if diags.HasError() {
+		return kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{}, diags
+	}
+	body.Ssl = sslToKibana(ssl)
+
+	return body, diags
 }
 
 // authForUpdate builds the update body's auth field. A planned auth block is

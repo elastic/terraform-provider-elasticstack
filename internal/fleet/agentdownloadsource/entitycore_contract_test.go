@@ -66,21 +66,22 @@ func TestResource_schemaAuthExposesCredentialAndHeaderAttributes(t *testing.T) {
 	require.True(t, value.Required)
 }
 
-func TestResource_schemaOmitsSecretsAuthAndSSL(t *testing.T) {
+func TestResource_schemaOmitsSecretsReferences(t *testing.T) {
 	t.Parallel()
 
 	attrs := getSchema(context.Background()).Attributes
 	_, hasSecrets := attrs["secrets"]
-	_, hasSSL := attrs["ssl"]
 	require.False(t, hasSecrets)
-	require.False(t, hasSSL)
 
 	authAttr, ok := attrs["auth"].(schema.SingleNestedAttribute)
 	require.True(t, ok)
 	_, hasNestedSecrets := authAttr.Attributes["secrets"]
-	_, hasNestedSSL := authAttr.Attributes["ssl"]
 	require.False(t, hasNestedSecrets)
-	require.False(t, hasNestedSSL)
+
+	slAttr, ok := attrs["ssl"].(schema.SingleNestedAttribute)
+	require.True(t, ok, "ssl attribute must exist as a single nested attribute")
+	_, hasSslNestedSecrets := slAttr.Attributes["secrets"]
+	require.False(t, hasSslNestedSecrets)
 }
 
 func TestResource_embedsKibanaResource(t *testing.T) {

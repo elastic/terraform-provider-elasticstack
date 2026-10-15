@@ -34,11 +34,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
+
+const testResourceName = "elasticstack_fleet_agent_download_source.test"
 
 var (
 	minVersionFleetAgentDownloadSource     = version.Must(version.NewVersion("8.13.0"))
+	minVersionFleetAgentDownloadSourceSsl  = version.Must(version.NewVersion("9.1.0"))
 	minVersionFleetAgentDownloadSourceAuth = version.Must(version.NewVersion("9.4.0"))
 )
 
@@ -719,6 +724,9 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "host", "https://artifacts.elastic.co/downloads/elastic-agent"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_download_source.test", "proxy_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "source_id", fmt.Sprintf("agent-download-source-%s", random)),
+					resource.TestCheckNoResourceAttr(testResourceName, "ssl.certificate"),
+					resource.TestCheckNoResourceAttr(testResourceName, "ssl.key"),
+					resource.TestCheckNoResourceAttr(testResourceName, "ssl.certificate_authorities.#"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "id", fmt.Sprintf("agent-download-source-%s", random)),
 					resource.TestCheckResourceAttrPair("elasticstack_fleet_agent_download_source.test", "id", "elasticstack_fleet_agent_download_source.test", "source_id"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "space_ids.#", "1"),
@@ -751,13 +759,7 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 				ImportState:             true,
 				ImportStateVerify:       true,
 				ImportStateVerifyIgnore: []string{"space_ids"},
-				ImportStateIdFunc: func(s *terraform.State) (string, error) {
-					res := s.RootModule().Resources["elasticstack_fleet_agent_download_source.test"]
-					if res == nil || res.Primary == nil {
-						return "", fmt.Errorf("resource elasticstack_fleet_agent_download_source.test not found in state")
-					}
-					return fmt.Sprintf("default/%s", res.Primary.ID), nil
-				},
+				ImportStateIdFunc:       testFleetAgentDownloadSourceImportStateIDDefaultSpace,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -784,7 +786,7 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 					"suffix": config.StringVariable(random),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					testCheckFleetAgentDownloadSourceCaptureID("elasticstack_fleet_agent_download_source.test", &idBeforeReplacement),
+					testCheckFleetAgentDownloadSourceCaptureID(&idBeforeReplacement),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "name", fmt.Sprintf("No Optionals Agent Download Source %s", random)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "false"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "host", "https://artifacts.elastic.co/downloads/elastic-agent-no-optionals"),
@@ -813,7 +815,7 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 					"suffix": config.StringVariable(random),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					testCheckFleetAgentDownloadSourceIDChanged("elasticstack_fleet_agent_download_source.test", &idBeforeReplacement),
+					testCheckFleetAgentDownloadSourceIDChanged(&idBeforeReplacement),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "source_id", fmt.Sprintf("agent-download-source-replaced-%s", random)),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "id", fmt.Sprintf("agent-download-source-replaced-%s", random)),
 					resource.TestCheckResourceAttrPair("elasticstack_fleet_agent_download_source.test", "id", "elasticstack_fleet_agent_download_source.test", "source_id"),
@@ -835,28 +837,126 @@ func TestAccResourceFleetAgentDownloadSource(t *testing.T) {
 	})
 }
 
-func testCheckFleetAgentDownloadSourceCaptureID(resourceName string, target *string) resource.TestCheckFunc {
+func TestAccResourceFleetAgentDownloadSource_SSL(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceSsl, versionutils.FlavorAny)
+
+	random := sdkacctest.RandString(8)
+	var idBeforeSSLUpdate string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_ssl"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectSensitiveValue("elasticstack_fleet_agent_download_source.test", tfjsonpath.New("ssl").AtMapKey("key")),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCheckFleetAgentDownloadSourceCaptureID(&idBeforeSSLUpdate),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "ssl.certificate", "PEM-CERT"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "ssl.key", "PEM-KEY"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "ssl.certificate_authorities.#", "2"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "ssl.certificate_authorities.*", "PEM-CA-1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "ssl.certificate_authorities.*", "PEM-CA-2"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_ssl_updated"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "ssl.certificate", "PEM-CERT-2"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "ssl.key", "PEM-KEY-2"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "ssl.certificate_authorities.#", "3"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "ssl.certificate_authorities.*", "PEM-CA-3"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "ssl.certificate_authorities.*", "PEM-CA-4"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "ssl.certificate_authorities.*", "PEM-CA-5"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_ssl_updated"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				ResourceName:            "elasticstack_fleet_agent_download_source.test",
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"space_ids"},
+				ImportStateIdFunc:       testFleetAgentDownloadSourceImportStateIDDefaultSpace,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("clear_ssl"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(random),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					testCheckFleetAgentDownloadSourceIDUnchanged(&idBeforeSSLUpdate),
+					resource.TestCheckNoResourceAttr(testResourceName, "ssl.certificate"),
+					resource.TestCheckNoResourceAttr(testResourceName, "ssl.key"),
+					testCheckNoFlatmapKeyPrefix("ssl.certificate_authorities."),
+				),
+			},
+		},
+	})
+}
+
+func testFleetAgentDownloadSourceImportStateIDDefaultSpace(s *terraform.State) (string, error) {
+	res := s.RootModule().Resources[testResourceName]
+	if res == nil || res.Primary == nil {
+		return "", fmt.Errorf("resource %s not found in state", testResourceName)
+	}
+	return fmt.Sprintf("default/%s", res.Primary.ID), nil
+}
+
+func testCheckFleetAgentDownloadSourceCaptureID(target *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		res, ok := s.RootModule().Resources[resourceName]
+		res, ok := s.RootModule().Resources[testResourceName]
 		if !ok || res.Primary == nil {
-			return fmt.Errorf("resource %s not found in state", resourceName)
+			return fmt.Errorf("resource %s not found in state", testResourceName)
 		}
 		*target = res.Primary.ID
 		return nil
 	}
 }
 
-func testCheckFleetAgentDownloadSourceIDChanged(resourceName string, previousID *string) resource.TestCheckFunc {
+func testCheckFleetAgentDownloadSourceIDChanged(previousID *string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
-		res, ok := s.RootModule().Resources[resourceName]
+		res, ok := s.RootModule().Resources[testResourceName]
 		if !ok || res.Primary == nil {
-			return fmt.Errorf("resource %s not found in state", resourceName)
+			return fmt.Errorf("resource %s not found in state", testResourceName)
 		}
 		if *previousID == "" {
 			return fmt.Errorf("previous ID was not captured")
 		}
 		if res.Primary.ID == *previousID {
 			return fmt.Errorf("expected resource ID to change after source_id replacement, but remained %q", res.Primary.ID)
+		}
+		return nil
+	}
+}
+
+func testCheckFleetAgentDownloadSourceIDUnchanged(previousID *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		res, ok := s.RootModule().Resources[testResourceName]
+		if !ok || res.Primary == nil {
+			return fmt.Errorf("resource %s not found in state", testResourceName)
+		}
+		if *previousID == "" {
+			return fmt.Errorf("previous ID was not captured")
+		}
+		if res.Primary.ID != *previousID {
+			return fmt.Errorf("expected resource ID to remain %q, but changed to %q", *previousID, res.Primary.ID)
 		}
 		return nil
 	}
@@ -1032,6 +1132,151 @@ func getOperationalSpaceFromResourceState(rs *terraform.ResourceState) string {
 	return ""
 }
 
+func TestAccResourceFleetAgentDownloadSource_SSLChildRemoval(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceSsl, versionutils.FlavorAny)
+
+	for _, transition := range []string{"drop_key", "drop_cas", "drop_cert"} {
+		random := sdkacctest.RandString(8)
+		var idBeforeChildRemoval string
+
+		resource.Test(t, resource.TestCase{
+			PreCheck:     func() { acctest.PreCheck(t) },
+			CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+			Steps: []resource.TestStep{
+				{
+					ProtoV6ProviderFactories: acctest.Providers,
+					ConfigDirectory:          acctest.NamedTestCaseDirectory("with_ssl"),
+					ConfigVariables: config.Variables{
+						"suffix": config.StringVariable(random),
+					},
+					Check: testCheckFleetAgentDownloadSourceCaptureID(&idBeforeChildRemoval),
+				},
+				{
+					ProtoV6ProviderFactories: acctest.Providers,
+					ConfigDirectory:          acctest.NamedTestCaseDirectory(transition),
+					ConfigVariables: config.Variables{
+						"suffix": config.StringVariable(random),
+					},
+					Check: resource.ComposeTestCheckFunc(
+						testCheckFleetAgentDownloadSourceIDUnchanged(&idBeforeChildRemoval),
+						childRemovalChecks(transition),
+					),
+				},
+			},
+		})
+	}
+}
+
+func childRemovalChecks(transition string) resource.TestCheckFunc {
+	const (
+		caList = "ssl.certificate_authorities"
+		ca1    = "PEM-CA-1"
+		ca2    = "PEM-CA-2"
+	)
+
+	retainedCAs := resource.ComposeTestCheckFunc(
+		resource.TestCheckResourceAttr(testResourceName, caList+".#", "2"),
+		resource.TestCheckResourceAttr(testResourceName, caList+".0", ca1),
+		resource.TestCheckResourceAttr(testResourceName, caList+".1", ca2),
+	)
+
+	switch transition {
+	case "drop_key":
+		return resource.ComposeTestCheckFunc(
+			resource.TestCheckResourceAttr(testResourceName, "ssl.certificate", "PEM-CERT"),
+			retainedCAs,
+			resource.TestCheckNoResourceAttr(testResourceName, "ssl.key"),
+		)
+	case "drop_cas":
+		return resource.ComposeTestCheckFunc(
+			resource.TestCheckResourceAttr(testResourceName, "ssl.certificate", "PEM-CERT"),
+			resource.TestCheckResourceAttr(testResourceName, "ssl.key", "PEM-KEY"),
+			testCheckNoFlatmapKeyPrefix(caList+"."),
+		)
+	case "drop_cert":
+		return resource.ComposeTestCheckFunc(
+			resource.TestCheckResourceAttr(testResourceName, "ssl.key", "PEM-KEY"),
+			retainedCAs,
+			resource.TestCheckNoResourceAttr(testResourceName, "ssl.certificate"),
+		)
+	}
+	return func(*terraform.State) error { return fmt.Errorf("unknown transition %q", transition) }
+}
+
+// testCheckNoFlatmapKeyPrefix asserts no state flatmap key carries the given
+// prefix, catching leftover list elements that a key-absence check on the
+// "#" count alone would miss.
+func testCheckNoFlatmapKeyPrefix(prefix string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		res, ok := s.RootModule().Resources[testResourceName]
+		if !ok || res.Primary == nil {
+			return fmt.Errorf("resource %s not found in state", testResourceName)
+		}
+		for k := range res.Primary.Attributes {
+			if strings.HasPrefix(k, prefix) {
+				return fmt.Errorf("expected no state keys with prefix %q, found %q", prefix, k)
+			}
+		}
+		return nil
+	}
+}
+
+func TestAccResourceFleetAgentDownloadSource_SSLValidation(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSourceSsl, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ssl_empty_object"),
+				ExpectError:              regexp.MustCompile(`(?s)Empty ssl configuration.*At least one of certificate_authorities, certificate, or key`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ssl_empty_certificate"),
+				ExpectError:              regexp.MustCompile(`(?i)certificate.*string length must be at least 1`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ssl_empty_key"),
+				ExpectError:              regexp.MustCompile(`(?i)key.*string length must be at least 1`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ssl_empty_ca_list"),
+				ExpectError:              regexp.MustCompile(`(?i)certificate_authorities.*must contain at least 1`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ssl_empty_ca_element"),
+				ExpectError:              regexp.MustCompile(`(?s)(?i)certificate_authorities.*string length must be at least 1`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ssl_ca_11"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(sdkacctest.RandString(8)),
+				},
+				ExpectError: regexp.MustCompile(`(?i)certificate_authorities.*at most 10`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ssl_ca_10"),
+				ConfigVariables: config.Variables{
+					"suffix": config.StringVariable(sdkacctest.RandString(8)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "ssl.certificate_authorities.#", "10"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "ssl.certificate_authorities.*", "PEM-CA-1"),
+					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "ssl.certificate_authorities.*", "PEM-CA-10"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccResourceFleetAgentDownloadSource_ProxyID exercises the proxy_id attribute with a
 // real value, wiring in an elasticstack_fleet_proxy resource. This covers the non-empty
 // ProxyId code paths in create.go/update.go, and the update path back to an unset proxy_id.
@@ -1142,7 +1387,7 @@ func TestAccResourceFleetAgentDownloadSource_SpaceIDsUpdate(t *testing.T) {
 					"third_space_id":  config.StringVariable(thirdSpaceID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					testCheckFleetAgentDownloadSourceCaptureID("elasticstack_fleet_agent_download_source.test", &idBeforeUpdate),
+					testCheckFleetAgentDownloadSourceCaptureID(&idBeforeUpdate),
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "space_ids.#", "1"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_fleet_agent_download_source.test", "space_ids.*", "default"),
 				),

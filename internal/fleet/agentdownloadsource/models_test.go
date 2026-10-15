@@ -411,6 +411,208 @@ func TestModelToAPIUpdateModelOmitsAlreadyUnsetProxyID(t *testing.T) {
 	require.Nil(t, body.ProxyId)
 }
 
+func TestModelToAPICreateModelSendsSSL(t *testing.T) {
+	ctx := context.Background()
+	state := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(true),
+		Ssl: types.ObjectValueMust(getSslAttrTypes(ctx), map[string]attr.Value{
+			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
+			"certificate":             types.StringValue("cert"),
+			"key":                     types.StringValue("key"),
+		}),
+	}
+
+	body, bodyDiags := state.toAPICreateModel(ctx)
+	require.False(t, bodyDiags.HasError())
+	require.NotNil(t, body.Ssl)
+	require.Equal(t, "cert", *body.Ssl.Certificate)
+	require.Equal(t, []string{"ca"}, *body.Ssl.CertificateAuthorities)
+	require.Equal(t, "key", *body.Ssl.Key)
+}
+
+func TestModelToAPICreateModelOmitsNullCertificateAuthorities(t *testing.T) {
+	ctx := context.Background()
+	state := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(true),
+		Ssl: types.ObjectValueMust(getSslAttrTypes(ctx), map[string]attr.Value{
+			"certificate_authorities": types.ListNull(types.StringType),
+			"certificate":             types.StringValue("cert"),
+			"key":                     types.StringValue("key"),
+		}),
+	}
+
+	body, bodyDiags := state.toAPICreateModel(ctx)
+	require.False(t, bodyDiags.HasError())
+	require.NotNil(t, body.Ssl)
+	require.Nil(t, body.Ssl.CertificateAuthorities)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.NotContains(t, string(encoded), "certificate_authorities")
+	require.Contains(t, string(encoded), `"ssl":{"certificate":"cert","key":"key"}`)
+}
+
+func TestModelToAPICreateModelOmitsNullSSL(t *testing.T) {
+	ctx := context.Background()
+	state := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(true),
+	}
+
+	body, bodyDiags := state.toAPICreateModel(ctx)
+	require.False(t, bodyDiags.HasError())
+	require.Nil(t, body.Ssl)
+}
+
+func TestModelToAPIUpdateModelSendsSSL(t *testing.T) {
+	ctx := context.Background()
+	plan := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(true),
+		Ssl: types.ObjectValueMust(getSslAttrTypes(ctx), map[string]attr.Value{
+			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
+			"certificate":             types.StringValue("cert"),
+			"key":                     types.StringValue("key"),
+		}),
+	}
+
+	body, bodyDiags := plan.toAPIUpdateModel(ctx, model{})
+	require.False(t, bodyDiags.HasError())
+	require.NotNil(t, body.Ssl)
+	require.Equal(t, "cert", *body.Ssl.Certificate)
+	require.Equal(t, []string{"ca"}, *body.Ssl.CertificateAuthorities)
+	require.Equal(t, "key", *body.Ssl.Key)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), `"ssl":{"certificate":"cert","certificate_authorities":["ca"],"key":"key"}`)
+}
+
+func TestModelToAPIUpdateModelOmitsDroppedCertificateAuthorities(t *testing.T) {
+	ctx := context.Background()
+	sslObject := func(cas types.List) types.Object {
+		return types.ObjectValueMust(getSslAttrTypes(ctx), map[string]attr.Value{
+			"certificate_authorities": cas,
+			"certificate":             types.StringValue("cert"),
+			"key":                     types.StringValue("key"),
+		})
+	}
+	plan := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(true),
+		Ssl:     sslObject(types.ListNull(types.StringType)),
+	}
+	prior := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(true),
+		Ssl:     sslObject(types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")})),
+	}
+
+	body, bodyDiags := plan.toAPIUpdateModel(ctx, prior)
+	require.False(t, bodyDiags.HasError())
+	require.NotNil(t, body.Ssl)
+	require.Nil(t, body.Ssl.CertificateAuthorities)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.NotContains(t, string(encoded), "certificate_authorities")
+	require.Contains(t, string(encoded), `"ssl":{"certificate":"cert","key":"key"}`)
+}
+
+func TestModelToAPIUpdateModelRemovesSSLWithEmptyObject(t *testing.T) {
+	ctx := context.Background()
+	plan := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(true),
+	}
+	prior := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(true),
+		Ssl: types.ObjectValueMust(getSslAttrTypes(ctx), map[string]attr.Value{
+			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
+			"certificate":             types.StringValue("cert"),
+			"key":                     types.StringValue("key"),
+		}),
+	}
+
+	body, bodyDiags := plan.toAPIUpdateModel(ctx, prior)
+	require.False(t, bodyDiags.HasError())
+	require.NotNil(t, body.Ssl)
+	require.Nil(t, body.Ssl.Certificate)
+	require.Nil(t, body.Ssl.CertificateAuthorities)
+	require.Nil(t, body.Ssl.Key)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), `"ssl":{}`)
+}
+
+func TestModelToAPIUpdateModelOmitsSSLOnUnchangedAbsence(t *testing.T) {
+	ctx := context.Background()
+	plan := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(true),
+	}
+
+	body, bodyDiags := plan.toAPIUpdateModel(ctx, model{})
+	require.False(t, bodyDiags.HasError())
+	require.Nil(t, body.Ssl)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.NotContains(t, string(encoded), "ssl")
+}
+
+func TestModelGetVersionRequirementsWithSSL(t *testing.T) {
+	ctx := context.Background()
+	m := model{
+		Name: types.StringValue("download-source"),
+		Host: types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Ssl: types.ObjectValueMust(getSslAttrTypes(ctx), map[string]attr.Value{
+			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
+			"certificate":             types.StringValue("cert"),
+			"key":                     types.StringNull(),
+		}),
+	}
+
+	reqs, diags := m.GetVersionRequirements(ctx)
+	require.False(t, diags.HasError())
+	require.Len(t, reqs, 2)
+
+	resourceRequirement := reqs[0]
+	require.Nil(t, resourceRequirement.AttributePath)
+	require.Equal(t, "8.13.0", resourceRequirement.MinVersion.String())
+
+	sslRequirement := reqs[1]
+	require.NotNil(t, sslRequirement.AttributePath)
+	require.Equal(t, "ssl", sslRequirement.AttributePath.String())
+	require.Equal(t, "9.1.0", sslRequirement.MinVersion.String())
+}
+
+func TestModelGetVersionRequirementsWithoutSSL(t *testing.T) {
+	ctx := context.Background()
+	m := model{
+		Name: types.StringValue("download-source"),
+		Host: types.StringValue("https://artifacts.example.com/elastic-agent"),
+	}
+
+	reqs, diags := m.GetVersionRequirements(ctx)
+	require.False(t, diags.HasError())
+	require.Len(t, reqs, 1)
+	require.Nil(t, reqs[0].AttributePath)
+}
+
 func TestModelToAPIUpdateModelSendsEmptyAuthWhenRemoved(t *testing.T) {
 	ctx := context.Background()
 	plan := model{
@@ -492,4 +694,37 @@ func mustAuthHeaders(t *testing.T, headers ...authHeaderModel) types.List {
 	list, diags := types.ListValueFrom(context.Background(), authHeadersElementType(context.Background()), headers)
 	require.Empty(t, diags)
 	return list
+}
+
+func TestModelToAPICreateModelSendsAuthAndSSLTogether(t *testing.T) {
+	ctx := context.Background()
+	state := model{
+		Name:    types.StringValue("download-source"),
+		Host:    types.StringValue("https://artifacts.example.com/elastic-agent"),
+		Default: types.BoolValue(true),
+		Auth: &authModel{
+			Username: types.StringValue("svc-account"),
+			Password: types.StringValue("secret"),
+		},
+		Ssl: types.ObjectValueMust(getSslAttrTypes(ctx), map[string]attr.Value{
+			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
+			"certificate":             types.StringValue("cert"),
+			"key":                     types.StringValue("key"),
+		}),
+	}
+
+	body, diags := state.toAPICreateModel(ctx)
+	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
+	require.NotNil(t, body.Auth)
+	require.Equal(t, "svc-account", *body.Auth.Username)
+	require.Equal(t, "secret", *body.Auth.Password)
+	require.NotNil(t, body.Ssl)
+	require.Equal(t, "cert", *body.Ssl.Certificate)
+	require.Equal(t, []string{"ca"}, *body.Ssl.CertificateAuthorities)
+	require.Equal(t, "key", *body.Ssl.Key)
+
+	encoded, err := json.Marshal(body)
+	require.NoError(t, err)
+	require.Contains(t, string(encoded), `"ssl":{"certificate":"cert","certificate_authorities":["ca"],"key":"key"}`)
+	require.Contains(t, string(encoded), `"username":"svc-account"`)
 }

@@ -407,10 +407,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 ### Changes
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 7346053b2 (docs(changelog): add entity store timing/isolation fix entry (#4062))
 
 - Add parameter validation and default normalization for `elasticstack_kibana_alerting_rule` to prevent inconsistent state errors caused by API-injected defaults. ([#1648](https://github.com/elastic/terraform-provider-elasticstack/pull/1648))
 - Fix JSON marshaling error in `elasticstack_kibana_slo` when `good` or `total` fields in `kql_custom_indicator` are empty or null. ([#1729](https://github.com/elastic/terraform-provider-elasticstack/pull/1729))
@@ -419,10 +415,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 ### Changes
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 7346053b2 (docs(changelog): add entity store timing/isolation fix entry (#4062))
 
 - Fix provider panic in `elasticstack_kibana_slo` when SLO updates error without a HTTP response. ([#1725](https://github.com/elastic/terraform-provider-elasticstack/pull/1725))
 - Fix inconsistent state error in `elasticstack_kibana_alerting_rule` when `alert_delay` is not specified. ([#1726](https://github.com/elastic/terraform-provider-elasticstack/pull/1726))
@@ -465,10 +457,6 @@ resource "elasticstack_fleet_integration" "tcp-o11y" {
 
 The `input` block in the `elasticstack_fleet_integration_policy` resource has been restructured into the `inputs` map attribute.
 This transition:
-<<<<<<< HEAD
-
-=======
->>>>>>> 7346053b2 (docs(changelog): add entity store timing/isolation fix entry (#4062))
 
 - Allows the provider to implement semantic equality checking across all inputs within the integration policy. This change:
   - Prevents several state consistency errors experienced whilst using this resource
