@@ -42,8 +42,8 @@ It does not change the existing index resource's one-concrete-index semantics.
 
 - `internal/elasticsearch/index/rolloverindexseries/` — Plugin Framework resource (schema, models,
   create/read/update/delete, entitycore wiring, import), built on `entitycore.NewElasticsearchResource`.
-- Reuses the existing `internal/clients/elasticsearch` alias/index helpers (`GetAlias`, `DeleteIndex`,
-  `UpdateIndexAlias`) rather than the alias resource's membership-reconciliation logic in
+- Reuses the existing `internal/clients/elasticsearch` alias/index helpers (`GetAlias`, `PutIndex`,
+  `DeleteIndex`) rather than the alias resource's membership-reconciliation logic in
   `internal/elasticsearch/index/aliasutil`, since this resource observes membership instead of
   restoring it.
 

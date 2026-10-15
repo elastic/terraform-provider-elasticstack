@@ -1,15 +1,16 @@
+## Purpose
+
+Define an alias-owned rollover index series that Terraform can bootstrap or adopt, observe without
+repairing lifecycle changes, and destroy by current concrete alias membership with deletion safeguards.
+
 ## ADDED Requirements
 
 ### Requirement: Schema and identity
 
-The `elasticstack_elasticsearch_rollover_index_series` resource SHALL require `prefix` (string,
-`RequiresReplace`) and `rollover_alias` (string, `RequiresReplace`), SHALL expose optional
-`deletion_protection` (bool, default `true`), and SHALL expose computed `id` (string),
-`write_index` (string, nullable), and `indices` (set of string). `id` SHALL be set to
-`"<cluster_uuid>/<rollover_alias>"`. The resource SHALL NOT expose `settings`, `settings_raw`,
-shard/replica attributes, mappings, additional aliases, alias filter/routing configuration,
-lifecycle-policy selection, rollover conditions, a configurable initial index name, date math, or an
-initial-generation override.
+The resource SHALL require string `prefix` and `rollover_alias`, both replacement-only, and expose
+optional boolean `deletion_protection` defaulting to `true`. Computed outputs SHALL be string `id`,
+nullable string `write_index`, and set-of-string `indices`. Identity SHALL be
+`"<cluster_uuid>/<rollover_alias>"`, stable across changes to writer and membership.
 
 #### Scenario: Computed id is cluster-and-alias scoped
 - **WHEN** the resource is created or adopted against cluster UUID `abc123` with `rollover_alias = "orders-write"`
@@ -24,9 +25,17 @@ initial-generation override.
 - **WHEN** `rollover_alias` is changed in config
 - **THEN** Terraform SHALL destroy and recreate the resource
 
-#### Scenario: Unsupported attributes are rejected
-- **WHEN** config sets an attribute outside `prefix`, `rollover_alias`, `deletion_protection`, or `timeouts`
-- **THEN** Terraform SHALL reject the configuration at schema validation
+### Requirement: Unsupported index configuration is excluded
+
+The resource SHALL NOT expose settings, raw settings, shard/replica attributes, mappings, additional
+aliases, alias filter/routing configuration, lifecycle-policy selection, rollover conditions,
+configurable initial index names, date math, or an initial-generation override. Templates remain
+responsible for index settings and mappings.
+
+#### Scenario: Unsupported index configuration is rejected
+- **GIVEN** configuration for a rollover index series
+- **WHEN** it supplies index settings, mappings, or configurable additional aliases
+- **THEN** Terraform SHALL reject those unsupported inputs at schema validation
 
 ### Requirement: Naming validation
 
@@ -50,13 +59,10 @@ alias-naming rules rather than assuming identical constraints to index names.
 
 ### Requirement: Effective-writer resolution
 
-The resource SHALL resolve the effective writer of `rollover_alias` using the following precedence,
-and SHALL NOT select a writer by sorting names, by generation number, or by creation time:
-1. A member with `is_write_index=true` is the writer.
-2. A sole member with an unset write flag is the implicit writer.
-3. A sole member with `is_write_index=false` and no other member marked true is NOT a writer (no
-   effective writer).
-4. Multiple members with no member marked `is_write_index=true` have no effective writer.
+A member explicitly marked `is_write_index=true` SHALL be the effective writer. A sole member with
+an unset flag SHALL be an implicit writer; explicit `false` SHALL NOT qualify. Multiple members
+without a designated writer SHALL have no effective writer. The provider SHALL NOT choose by name
+sorting, generation number, or creation time.
 
 #### Scenario: Explicit writer flag
 - **WHEN** `rollover_alias` has two members and one has `is_write_index=true`
@@ -76,13 +82,10 @@ and SHALL NOT select a writer by sorting names, by generation number, or by crea
 
 ### Requirement: Create bootstraps a missing alias
 
-When `rollover_alias` does not exist, Create SHALL send
-`PUT /<prefix>-000001` with a body containing only
-`{"aliases": {"<rollover_alias>": {"is_write_index": true}}}` — no index settings or mappings. If
-`<prefix>-000001` already exists as an index, alias, or other incompatible object, Create SHALL fail
-with the collision error and SHALL NOT adopt, delete, rename, or attach the alias to that object.
-Create SHALL NOT scan `<prefix>-*` or any previously observed member names to decide whether
-bootstrapping is allowed.
+When the exact alias is absent, Create SHALL create `<prefix>-000001` with only its write-alias
+definition, without settings or mappings. An occupied bootstrap name SHALL cause a collision error,
+without adopting, deleting, renaming, or attaching the alias to that object or choosing another
+generation. Create SHALL NOT scan the prefix namespace or previously observed members.
 
 #### Scenario: Successful bootstrap of a missing alias
 - **WHEN** `rollover_alias = "orders-write"` does not exist and `prefix = "orders"`
@@ -101,12 +104,10 @@ bootstrapping is allowed.
 
 ### Requirement: Create adopts a healthy existing alias automatically
 
-When `rollover_alias` exists with exactly one effective writer whose name ends in `-<digits>` and all
-targets resolve to ordinary indices, Create SHALL adopt the series automatically, without requiring
-an opt-in adoption flag, and SHALL NOT create an index, add or rewrite any alias, normalize write
-flags, or mutate member settings. All current members SHALL be adopted regardless of whether their
-names match `prefix`. Automatic adoption SHALL acquire the ability to delete every then-current alias
-member once `deletion_protection` is disabled.
+Create SHALL automatically adopt an ordinary-index alias with exactly one effective writer ending
+in `-<digits>`, without an opt-in flag or any mutation. Adoption SHALL include all current members,
+regardless of prefix, acquiring deletion ownership once protection is disabled. It SHALL NOT create
+indices, rewrite aliases, normalize write flags, or change settings.
 
 #### Scenario: Adoption of a healthy alias with a numerically-suffixed writer
 - **WHEN** `rollover_alias = "orders-write"` already exists with writer `orders-000003`
@@ -147,22 +148,29 @@ shape; any data-stream target SHALL be rejected before adoption.
 
 ### Requirement: Read distinguishes health from existence
 
-Read SHALL call the alias lookup for `rollover_alias` and resolve target types. When the alias is
-absent, Read SHALL remove the resource from state. When the alias exists with a valid,
-numerically-suffixed writer, Read SHALL refresh `indices` and `write_index` without warnings. When the
-alias exists but is unhealthy (no effective writer, or a writer name lacking `-<digits>`), Read SHALL
-emit a warning diagnostic, retain the resource in state, refresh `indices`, and set `write_index` to
-null or to the actual non-conforming writer name (never hidden). Read SHALL treat authorization,
-connection, timeout, decoding, or other unexpected API failures as errors, never as alias absence,
-and SHALL NOT discard state on such errors. Read SHALL reject a data-stream alias or any data-stream
-target with an error and retain state. Read SHALL NOT query `<prefix>-*` or any previously observed
-membership when the exact alias is absent. Import hydration SHALL use this same Read behavior and
-reject data-stream targets rather than adopting them.
+Read SHALL discover exact-alias membership and writer. Absence SHALL remove state without prefix or
+former-member probes. A healthy alias SHALL refresh outputs without warnings. Missing or
+non-numeric-suffixed writers SHALL produce warnings only: retain state, refresh members, and expose
+null for no writer or the actual incompatible name. Import hydration SHALL use the same Read behavior.
 
 #### Scenario: Alias absence removes state
 - **WHEN** `rollover_alias` no longer exists on refresh
 - **THEN** the resource SHALL be removed from Terraform state
 - **AND** no lookup of `<prefix>-*` or previously known members SHALL be performed
+
+#### Scenario: Alias absence with detached data allows rebootstrap
+- **GIVEN** a managed alias whose bootstrap index has been deleted and a surviving former member `orders-000002`
+- **AND** an external actor removes the alias from all remaining members
+- **WHEN** Terraform refreshes and subsequently applies the unchanged configuration
+- **THEN** Read SHALL remove the resource from state without probing former members
+- **AND** Create SHALL bootstrap `orders-000001` if that name is available
+- **AND** detached `orders-000002` SHALL remain unchanged and outside the new alias
+
+#### Scenario: Alias absence followed by a bootstrap collision does not repair data
+- **GIVEN** the alias has been removed but its former bootstrap index `orders-000001` remains
+- **WHEN** Read removes the resource from state and the next apply attempts Create
+- **THEN** Create SHALL fail on the occupied bootstrap name without attaching an alias or modifying the existing index
+- **AND** no prefix or former-member survivor lookup SHALL be performed
 
 #### Scenario: Bootstrap index deleted but alias survives
 - **WHEN** `orders-000001` has been deleted by ILM but `rollover_alias` remains attached to `orders-000002`
@@ -178,6 +186,18 @@ reject data-stream targets rather than adopting them.
 - **WHEN** `rollover_alias`'s sole writer is named `orders-current`
 - **THEN** Read SHALL emit a warning diagnostic
 - **AND** `write_index` SHALL be set to `"orders-current"`
+
+### Requirement: Read errors do not imply alias absence
+
+Read SHALL resolve alias target types and reject data streams with an error, retaining state.
+Authorization, connection, timeout, decoding and unexpected API failures SHALL be errors, never
+absence or writer-health warnings. These rules SHALL also apply during import hydration.
+
+#### Scenario: Data-stream target rejected on refresh
+- **GIVEN** resource state referring to an alias now targeting a data stream
+- **WHEN** Read refreshes the resource
+- **THEN** Read SHALL return an unsupported-target error and retain state
+- **AND** no index or alias mutation SHALL be attempted
 
 #### Scenario: API failure is not treated as absence
 - **WHEN** the alias lookup fails with an authorization or transport error
@@ -207,17 +227,15 @@ has changed.
 #### Scenario: Disabling deletion_protection updates state only
 - **WHEN** `deletion_protection` is changed from `true` to `false`
 - **THEN** Update SHALL perform no mutating Elasticsearch API call as a result of that change
-- **AND** Update MAY issue the required readback GET for membership and writer
+- **AND** Update SHALL read back membership and writer without mutating them
 - **AND** state SHALL reflect `deletion_protection = false` after apply
 
 ### Requirement: Replacement ordering is a user precondition
 
-Changing `prefix` or `rollover_alias` SHALL force replacement. Terraform Core controls replacement
-ordering, and the provider SHALL NOT claim it can enforce destroy-before-create or prevent
-`create_before_destroy`, which may be configured directly or propagated through dependencies. The
-user SHALL ensure destroy-before-create ordering: otherwise automatic adoption of the same alias by
-the replacement instance can be followed by the old instance's Delete removing the replacement's
-members. The resource documentation SHALL explicitly warn about this lifecycle precondition.
+Changing either naming field SHALL force replacement. Documentation SHALL require users to ensure
+destroy-before-create: same-alias adoption followed by old-instance deletion can delete replacement
+members. Terraform Core controls ordering; the provider SHALL NOT claim to enforce it or prevent
+direct or propagated `create_before_destroy`.
 
 #### Scenario: Prefix replacement with the same alias destroys before creating
 - **WHEN** `prefix` changes from `"orders"` to `"orders-v2"` while `rollover_alias` remains `"orders-write"` and the user has ensured the lifecycle graph orders destroy before create
@@ -247,17 +265,16 @@ deletes the resource is attempted in the same operation.
 
 ### Requirement: Delete removes current alias membership, never a prefix sweep
 
-Delete SHALL, after passing the protection check, discover the exact alias's current concrete
-membership (including hidden and closed indices), resolve target types, and delete exactly those
-ordinary concrete index names. Shared discovery SHALL reject data-stream targets before any deletion.
-Delete SHALL NOT delete by alias name, by wildcard, or by prefix match. Delete SHALL treat a concrete member
-already removed by ILM between discovery and deletion as a success (not an error) while still
-surfacing permission or other non-absence failures. Delete SHALL re-discover membership and repeat
-deletion within the delete timeout if a rollover introduces new members during the operation. If
-cleanup cannot converge before timeout, Delete SHALL error and retain state for retry.
+After the protection check, Delete SHALL discover current exact-alias membership, including hidden
+and closed indices, and delete only those ordinary concrete names. It SHALL reject data-stream
+targets before mutation. It SHALL NOT delete by alias, wildcard, prefix match, or stale inventory.
+Detached indices SHALL remain untouched. Genuine alias absence SHALL succeed without survivor probes;
+writer health SHALL NOT block member cleanup.
 
 #### Scenario: Delete removes all current concrete members
-- **WHEN** `rollover_alias` currently has members `orders-000002` (writer) and `orders-000003` (writer)
+- **GIVEN** deletion protection has been disabled in a prior apply
+- **AND** `rollover_alias` has non-writer member `orders-000002` and writer `orders-000003`
+- **WHEN** Delete runs
 - **THEN** Delete SHALL delete both `orders-000002` and `orders-000003` by concrete name
 - **AND** Delete SHALL NOT issue a delete request against `rollover_alias` or any wildcard pattern
 
@@ -274,6 +291,20 @@ cleanup cannot converge before timeout, Delete SHALL error and retain state for 
 - **WHEN** an adopted member `unrelated-index-1` (not matching `prefix`) is still attached to `rollover_alias`
 - **THEN** Delete SHALL include `unrelated-index-1` in the concrete names it deletes
 
+#### Scenario: Detached prefix-matching indices are excluded from Delete
+- **GIVEN** deletion protection has been disabled and `rollover_alias` owns `orders-000003`
+- **AND** `orders-000001` and `orders-000002` exist but are detached from the alias
+- **WHEN** Delete runs
+- **THEN** only currently attached concrete members SHALL be deleted
+- **AND** both detached prefix-matching indices SHALL remain unchanged
+
+#### Scenario: Lifecycle-renamed member remains in Delete scope
+- **GIVEN** deletion protection has been disabled and ILM has replaced a former member with `shrink-id-orders-000001`
+- **AND** the replacement and writer `orders-000002` are attached to `rollover_alias`
+- **WHEN** Delete runs
+- **THEN** both current concrete members SHALL be deleted regardless of the replacement's name
+- **AND** the provider SHALL NOT try to restore or delete through the historical original-name alias
+
 #### Scenario: Concurrently-deleted member does not fail Delete
 - **WHEN** a discovered member is already deleted by ILM before the provider's delete request reaches it
 - **THEN** Delete SHALL treat that member's absence as success
@@ -284,9 +315,26 @@ cleanup cannot converge before timeout, Delete SHALL error and retain state for 
 - **THEN** Delete SHALL succeed without deleting any index
 - **AND** Delete SHALL NOT attempt to locate or delete detached prefix-matching indices
 
+### Requirement: Delete retries preserve failures and current membership
+
+Delete SHALL tolerate members already deleted by ILM but surface permission and other non-absence
+failures. It SHALL rediscover and delete new members during rollover races within the delete timeout.
+Failure or non-convergence SHALL retain state and report an error rather than success while observed
+members remain. A subsequent retry SHALL rediscover current membership rather than require stale
+members to exist.
+
 #### Scenario: Rollover race during delete is re-discovered
 - **WHEN** a rollover introduces a new alias member after initial discovery but before deletion completes, within the delete timeout
 - **THEN** Delete SHALL re-discover membership and delete the newly observed member too
+
+#### Scenario: Partial deletion failure retains state for a fresh retry
+- **GIVEN** deletion protection has been disabled and the alias has multiple concrete members
+- **AND** one member is deleted successfully before a permission error prevents deleting another
+- **WHEN** Delete receives the permission error
+- **THEN** Delete SHALL report failure and retain resource state
+- **AND** it SHALL NOT treat the permission error as absence or report cleanup success
+- **WHEN** permission is restored and Delete is retried
+- **THEN** it SHALL rediscover current membership and delete remaining members without requiring already-deleted indices to exist
 
 #### Scenario: Unhealthy writer does not block delete
 - **WHEN** `rollover_alias` has no effective writer at Delete time
@@ -294,14 +342,11 @@ cleanup cannot converge before timeout, Delete SHALL error and retain state for 
 
 ### Requirement: Stable composite identity and three-part import
 
-The resource SHALL use `"<cluster_uuid>/<rollover_alias>"` as its Terraform state `id`, independent
-of the writer, any index UUID, or generation number. Import SHALL accept the three-part identifier
-`"<cluster_uuid>/<rollover_alias>/<prefix>"`, populating `rollover_alias` and `prefix` from the parsed
-parts and setting `deletion_protection = true` before the subsequent Read hydrates remaining attributes.
-This explicit initialization is required because alias readback cannot provide the Terraform-only
-attribute and the schema default does not initialize imported state. Read SHALL preserve the imported
-value and subsequently applied values. Import hydration SHALL reject data-stream targets as specified
-by the Read requirement.
+Import SHALL accept `<cluster_uuid>/<rollover_alias>/<prefix>` and explicitly set canonical
+`id = <cluster_uuid>/<rollover_alias>`, both names, and protection `true` before Read. The raw
+three-part input SHALL NOT become `id`. Read SHALL preserve these fields and subsequently applied
+values, independent of writer naming, index UUIDs or generation. Import SHALL reject malformed names
+and segments and follow Read's data-stream rejection contract.
 
 #### Scenario: Import populates both required naming attributes
 - **WHEN** `terraform import elasticstack_elasticsearch_rollover_index_series.orders '<cluster_uuid>/orders-write/orders'` is run
@@ -319,8 +364,15 @@ by the Read requirement.
 - **THEN** import SHALL still succeed, using the imported `prefix` only for any future bootstrap, never to infer or validate the current writer's name
 
 #### Scenario: Malformed import identifier rejected
-- **WHEN** an import ID is supplied without three `/`-separated segments
-- **THEN** Terraform SHALL reject the import with an actionable error describing the expected `<cluster_uuid>/<rollover_alias>/<prefix>` format
+- **GIVEN** an import identifier with a missing, empty, or extra segment, or an invalid literal naming field
+- **WHEN** import is attempted
+- **THEN** Terraform SHALL reject the import with an actionable error describing the expected `<cluster_uuid>/<rollover_alias>/<prefix>` format and naming constraints
+
+#### Scenario: Data-stream target rejected during import hydration
+- **GIVEN** a well-formed import identifier whose alias targets a data stream
+- **WHEN** import hydrates the resource through Read
+- **THEN** import SHALL fail with an unsupported-target diagnostic
+- **AND** it SHALL NOT adopt or mutate the data stream
 
 ### Requirement: Shared operation timeouts
 
@@ -329,5 +381,33 @@ and SHALL use it to bound Create/adoption polling and Delete's re-discovery loop
 implementing resource-specific timeout parsing.
 
 #### Scenario: Delete respects the configured delete timeout
-- **WHEN** `timeouts.delete` is configured and membership re-discovery has not converged before it elapses
+- **GIVEN** deletion protection is disabled and repeated rollovers keep introducing members
+- **AND** `timeouts.delete` sets the operation deadline
+- **WHEN** membership rediscovery has not converged before that deadline
 - **THEN** Delete SHALL stop retrying, return a timeout error, and retain state for a subsequent retry
+- **AND** retry delays SHALL NOT extend the operation beyond the configured timeout
+
+### Requirement: Operational cleanup boundaries are documented
+
+Documentation SHALL require quiesced producers and completion of in-flight lifecycle replacements
+before destroy. It SHALL disclose that alias-member deletion cannot guarantee cleanup of unattached
+transformation targets, detached indices, other series' policy references or backing searchable
+snapshots; such data needs separate cleanup.
+
+#### Scenario: Concurrent transformation limits are explicit
+- **GIVEN** a user preparing to destroy a series with active lifecycle replacements
+- **WHEN** they consult the resource's deletion guidance
+- **THEN** it SHALL instruct them to quiesce producers and let in-flight replacements finish
+- **AND** it SHALL explain that membership rechecks cannot guarantee discovery of targets not yet attached to the alias
+
+### Requirement: Cleanup never broadens ownership or weakens safeguards
+
+The resource SHALL NOT broaden inventory, remove unrelated policy references, delete snapshots,
+stop ILM globally, or weaken cluster deletion safeguards to compensate for incomplete historical
+cleanup. Documentation SHALL disclose that surviving references can still block policy deletion.
+
+#### Scenario: Remaining data and policy references are not claimed as cleaned up
+- **GIVEN** resource deletion guidance for a series with searchable snapshots or detached or shared-policy indices
+- **WHEN** the guidance describes successful series deletion
+- **THEN** it SHALL state that snapshots and detached indices require separate cleanup
+- **AND** it SHALL state that other references may still block policy deletion without authorizing unrelated cleanup

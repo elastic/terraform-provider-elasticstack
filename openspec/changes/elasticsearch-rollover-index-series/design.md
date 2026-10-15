@@ -4,7 +4,7 @@ This design follows the exploration and decisions recorded by the issue reporter
 [issue #94](https://github.com/elastic/terraform-provider-elasticstack/issues/94#issuecomment-6182116998)
 (local experiments against Elasticsearch 9.4.0) and the detailed resource contract posted immediately
 after in
-[this follow-up comment](https://github.com/elastic/terraform-provider-elasticstack/issues/94#issuecomment-6182117013).
+[this follow-up comment](https://github.com/elastic/terraform-provider-elasticstack/issues/94#issuecomment-6182119019).
 Both comments were authored by the issue's own triaging maintainer (`@tobio`, the actor who triggered
 this proposal) and are the most specific, actionable statement of scope in the thread; this design
 treats that contract as the spine of the proposal rather than re-deriving alternatives it already
@@ -34,7 +34,8 @@ Existing building blocks this design relies on:
   `Indices.GetAlias().Name(aliasName)` and returns `map[string]types.IndexAliases` keyed by target
   name. Because data-stream aliases can have the same response shape, shared discovery must also
   resolve target types and reject data streams before treating those keys as concrete indices.
-  `DeleteIndexAlias` and `UpdateIndexAlias` exist but are not reused here (see Decisions).
+  `DeleteIndexAlias` and `UpdateIndexAlias` exist but are not reused: membership and writer flags are
+  observed, not reconciled through separate alias mutations.
 - `internal/clients/elasticsearch/index.go`'s `DeleteIndex` and `PutIndex` cover concrete-index
   create/delete.
 - `internal/entitycore` provides the Elasticsearch resource envelope
@@ -50,7 +51,8 @@ Existing building blocks this design relies on:
 - Let Terraform bootstrap (or adopt) a rollover series once, then leave ILM free to roll over, rename
   (shrink), and delete generations without the provider trying to undo those changes.
 - Provide a single resource whose destroy cleans up every index currently attached to the series,
-  unblocking ILM policy deletion.
+  removing those indices' references to an ILM policy without claiming to clear references from other
+  series or detached indices.
 - Make series existence and identity independent of the volatile writer/generation, so plans stay
   stable across rollovers.
 - Default to safe deletion (`deletion_protection = true`), consistent with `elasticstack_elasticsearch_index`.
@@ -270,11 +272,14 @@ terraform import \
 Implementation: use `entitycore.ParseCompositeID` to split off `<cluster_uuid>`, then split the
 remaining `<rollover_alias>/<prefix>` resource-ID portion on the first `/` (consistent with the doc
 comment on `ParseCompositeID` recommending direct use when a resource needs to derive more than a
-single passthrough field). The importer sets `rollover_alias`, `prefix`, and
-`deletion_protection = true` before Read hydrates the remaining attributes; alias readback cannot
-initialize this Terraform-only attribute. Read must preserve that imported value as well as any
-subsequently applied value. If the alias resolves to a data-stream target, import hydration fails
-rather than adopting it. Disabling protection still requires a subsequent apply.
+single passthrough field). `ParseCompositeID` only parses and does not set state. Before Read, the
+importer explicitly sets the canonical `id = <cluster_uuid>/<rollover_alias>`, `rollover_alias`,
+`prefix`, and `deletion_protection = true`; the three-part import input is never stored as `id`.
+Reject missing, empty, or extra segments and validate the imported naming fields before hydration.
+Alias readback cannot initialize Terraform-only protection or reconstruct the imported bootstrap
+prefix. Read must preserve the canonical identity, imported prefix and protection, and subsequently
+applied values. If the alias resolves to a data-stream target, import hydration fails rather than
+adopting it. Disabling protection still requires a subsequent apply.
 
 ### Why not extend an existing resource
 
@@ -297,29 +302,65 @@ unchanged and gives the series its own identity, schema, and destroy path.
   package exists to make `elasticstack_elasticsearch_alias` restore configured membership, which is
   the opposite of this resource's observe-don't-restore contract. A new, small alias-membership /
   effective-writer helper is shared internally between this resource's own Create/Read/Delete only.
-- Derive final state from a post-mutation read on every operation, consistent with repository
-  convention elsewhere in `entitycore`-based resources.
+- Derive successful Create/Update state from a fresh read, consistent with repository convention
+  elsewhere in `entitycore`-based resources. Delete instead confirms absence through rediscovery.
+- Bound delete rediscovery and any backoff with the shared operation context: the configured
+  `timeouts.delete`, or the standard entitycore delete default when omitted. Do not introduce a
+  resource-specific minimum or an independent retry deadline that extends the user's timeout.
 
-## Open questions
+### Verification strategy
 
-- **Stack version matrix**: live exploration covered Elasticsearch 9.4.0 only, including an actual
-  ILM shrink transition (via a targeted `_ilm/move` step bypass) and alias-transfer behavior.
-  Searchable-snapshot alias transfer is documentation/source-backed but not live-tested. This proposal
-  does not establish a new minimum supported Stack version; acceptance testing on the provider's full
-  supported version matrix is needed before claiming broader support, and should be tracked explicitly
-  in `tasks.md` rather than assumed.
-- **Delete convergence timeout**: the exploration establishes that delete must re-poll briefly for a
-  rollover race between discovery and deletion, but does not fix a specific timeout/retry budget.
-  This needs to be pinned down against the shared entitycore operation-timeouts convention during
-  implementation (e.g. whether the existing `delete` timeout default is sufficient or needs a
-  resource-specific minimum).
-- **CI acceptance environment**: triggering an actual ILM shrink in CI required a targeted
-  `_ilm/move` step bypass locally (see the linked exploration comment) rather than natural ILM timing.
-  Implementation should confirm whether the existing acceptance-test Elasticsearch fixture can safely
-  perform the same targeted step move, or whether shrink/searchable-snapshot membership-transfer
-  coverage needs a different mechanism (e.g. a unit test against a hand-built `GetAlias` response).
+Map every delta-spec scenario to at least one test. Use focused unit/mock tests for alias response
+interpretation, literal-name validation, strict adoption versus warning-only Read, data-stream target
+rejection in every discovery path, canonical import state, and readback without mutation on Update.
+Use deterministic mock interleavings for rollover after enumeration, disappearance during deletion,
+partial permission failures followed by a fresh retry, and timeout non-convergence; timing-dependent
+live races are not sufficient evidence.
 
-## References
+Use directory-backed acceptance fixtures and the provider's normal factories for bootstrap/template
+inheritance, adoption without mutation, rollover, bootstrap retention deletion, alias disappearance
+and rebootstrap with detached data, collision without repair, hidden/closed member deletion,
+out-of-prefix membership, detached-prefix exclusion, protected destruction, and import followed by
+immediate protected destroy. Verify series -> template -> policy cleanup ordering and the case where
+an independently retained policy reference still blocks policy deletion.
+
+Require a real ILM shrink acceptance case in a suitable live test environment, using targeted
+`_ilm/move` only on test-owned indices when necessary to avoid natural lifecycle waits. Do not change
+global ILM mode or poll settings. Supplement that case with mock alias-transfer responses, including
+searchable-snapshot naming; mocks alone do not establish real shrink interoperability. Searchable
+snapshot execution remains documentation/source-backed until separately live-tested.
+
+Run the lifecycle acceptance coverage against the provider's supported Elasticsearch version matrix
+and record the versions and results. The earlier local 9.4.0 experiments are evidence for that version
+only, not justification for a new minimum or unverified support claims. A discovered incompatibility
+must be surfaced with evidence before narrowing support or adding a version gate. The implementation
+must also satisfy repository build, unit-test, lint and generated-documentation checks.
+
+## Risks / Trade-offs
+
+- **Alias adoption acquires deletion rights over existing data** -> Document that all current members,
+  even out-of-prefix ones, are owned; keep protection enabled by default and avoid overlapping
+  resource ownership.
+- **Alias removal or member detachment relinquishes inventory** -> Read treats an absent alias as
+  absence and Delete never performs survivor probes or a prefix sweep. Document detached-data cleanup
+  as the operator's responsibility, including bootstrap-name collisions on re-creation.
+- **Concurrent producers or lifecycle replacements can outlive discovery** -> Quiesce producers and
+  let in-flight shrink/searchable-snapshot actions finish before destroy. Rechecks handle observed
+  rollover races but cannot guarantee cleanup of a transformation target not yet attached to the
+  alias. Do not silently broaden ownership or stop ILM globally to compensate.
+- **Direct index deletion does not execute ILM snapshot cleanup** -> Warn that backing searchable
+  snapshots remain in their repositories and require separate cleanup. This resource never deletes
+  snapshots or repository contents.
+- **An ILM policy may remain in use after this series is deleted** -> Remove only this alias's current
+  members; detached indices and other series sharing the policy may still prevent policy deletion.
+  Preserve the normal dependency chain and surface the policy API error rather than force-detaching
+  unrelated indices.
+- **Replacement ordering is controlled by Terraform Core** -> Document destroy-before-create as a
+  user precondition, including propagated `create_before_destroy`; do not promise provider enforcement.
+- **Compatibility and transformation evidence is incomplete** -> Complete the supported-version
+  acceptance matrix and distinguish real shrink evidence from mock or source-backed snapshot claims.
+
+### References
 
 - [Elastic: bootstrap alias-based time series using policies and templates](https://www.elastic.co/docs/manage-data/lifecycle/index-lifecycle-management/tutorial-time-series-without-data-streams)
 - [Elastic: aliases and implicit write-index semantics](https://www.elastic.co/docs/manage-data/data-store/aliases)
@@ -329,4 +370,4 @@ unchanged and gives the series its own identity, schema, and destroy path.
 - [Elastic: searchable-snapshot naming](https://www.elastic.co/docs/reference/elasticsearch/index-lifecycle-actions/ilm-searchable-snapshot)
 - [Elastic: manual index deletion does not delete the underlying searchable snapshot](https://www.elastic.co/docs/reference/elasticsearch/index-lifecycle-actions/ilm-delete)
 - [Issue #94 exploration comment](https://github.com/elastic/terraform-provider-elasticstack/issues/94#issuecomment-6182116998)
-- [Issue #94 proposed design comment](https://github.com/elastic/terraform-provider-elasticstack/issues/94#issuecomment-6182117013)
+- [Issue #94 proposed design comment](https://github.com/elastic/terraform-provider-elasticstack/issues/94#issuecomment-6182119019)
