@@ -185,10 +185,3 @@ func NewMemorySizeValue(value string) MemorySize {
 		StringValue: basetypes.NewStringValue(value),
 	}
 }
-
-// NewMemorySizePointerValue creates a MemorySize with a null value if nil or a known value. Access the value via ValueStringPointer method.
-func NewMemorySizePointerValue(value *string) MemorySize {
-	return MemorySize{
-		StringValue: basetypes.NewStringPointerValue(value),
-	}
-}
