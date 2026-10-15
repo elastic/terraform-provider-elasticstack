@@ -92,6 +92,7 @@ func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Conte
 		FeaturesIncludeTagsInEventsEnabled:     typeutils.BoolFromAny(data.AdvancedSettings.AgentFeaturesIncludeTagsInEventsEnabled),
 		Internal:                               customtypes.NewNormalizedYamlNull(),
 	}
+	var diags diag.Diagnostics
 	switch internal := data.AdvancedSettings.AgentInternal.(type) {
 	case nil:
 	case string:
@@ -100,10 +101,13 @@ func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Conte
 		// Kibana may return structured YAML as a JSON object; JSON is valid YAML.
 		if encoded, err := json.Marshal(internal); err == nil {
 			settings.Internal = customtypes.NewNormalizedYamlValue(string(encoded))
+		} else {
+			diags.AddWarning("Unable to read advanced_settings.internal", err.Error())
 		}
 	}
 
-	obj, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), settings)
+	obj, objDiags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), settings)
+	diags.Append(objDiags...)
 	if diags.HasError() {
 		return diags
 	}

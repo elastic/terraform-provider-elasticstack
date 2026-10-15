@@ -242,3 +242,12 @@ and remain to be exercised by CI stacks at those versions. `make check-lint`, `m
 and the `internal/fleet/agentpolicy` unit tests pass. Self-review against the delta spec (task 9.5)
 found the implementation consistent with every scenario; the only deviation is the semantic-equality
 wording noted above.
+- `convertAdvancedSettingsToAPI` returns nil when no emittable field remains (for example only
+  capability-unsupported fields are set), so `advanced_settings` is omitted from the request instead of
+  being sent as `{}`, which Fleet's wholesale PUT would treat as clearing every key. This is unreachable
+  on stacks where version-requirement diagnostics already stop the apply; it is a defensive guard covered
+  by a unit test.
+- `internal` population deviates from `typeutils.StringFromAny`: Kibana can return structured YAML as a
+  JSON object, so non-string values are JSON-marshalled (JSON is valid YAML) rather than read as null,
+  which would cause a permanent diff. A marshal failure surfaces as a warning diagnostic rather than
+  being silently dropped.
