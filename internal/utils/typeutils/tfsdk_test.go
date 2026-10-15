@@ -787,32 +787,6 @@ func TestTransformSlice(t *testing.T) {
 	}
 }
 
-func TestTransformSliceToMap(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name  string
-		input []aware
-		want  map[string]naive
-	}{
-		{name: "converts nil", input: awareSliceNil, want: naiveMapNil},
-		{name: "converts empty", input: awareSliceEmpty, want: naiveMapEmpty},
-		{name: "converts struct", input: awareSliceFull, want: naiveMapFull},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var diags diag.Diagnostics
-			got := typeutils.TransformSliceToMap(context.Background(), tt.input, path.Empty(), &diags,
-				func(item aware, _ typeutils.ListMeta) (string, naive) {
-					return "k" + item.ID.ValueString()[2:], toNaive(item)
-				})
-			require.Equal(t, tt.want, got)
-			require.Empty(t, diags)
-		})
-	}
-}
-
 // Sets
 
 func TestSetTypeAs(t *testing.T) {
