@@ -79,17 +79,17 @@
 
 ## 4. Import with stable identity and safe Terraform-only state
 
-- [ ] 4.1 Deliver "Stable composite identity and three-part import". Before Read, explicitly populate
+- [x] 4.1 Deliver "Stable composite identity and three-part import". Before Read, explicitly populate
   canonical two-part `id`, both required names and protection enabled from the validated three-part
   input; parsing alone must not be treated as state assignment. Verify unit tests for missing, empty,
   extra and invalid naming segments, exact canonical ID rather than raw import input, and preservation
   of imported fields across readback.
-- [ ] 4.2 Verify live import after rollover with a writer whose naming differs from the imported
+- [x] 4.2 Verify live import after rollover with a writer whose naming differs from the imported
   prefix, without inferring or replacing the configured bootstrap prefix. Verify an immediate destroy
   without an intervening apply remains protected, and that applying protection disabled is preserved by
   later reads and allows intentional cleanup. Verify unsupported data-stream import hydration errors
   without adoption or mutation.
-- [ ] 4.3 Deliver import instructions and a self-contained directory-backed example using the explicit
+- [x] 4.3 Deliver import instructions and a self-contained directory-backed example using the explicit
   three-part identifier, canonical state identity and default protection. Verify generated documentation
   and import acceptance checks match the same contract and do not require an opt-in flag for healthy
   Create/adoption.

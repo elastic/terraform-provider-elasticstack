@@ -11,6 +11,7 @@ description: |-
   Changing prefix or rollover_alias replaces the resource. The old instance must be destroyed before the replacement is created: destroy before create. Terraform Core controls that ordering. This provider does not enforce it, and it does not block create_before_destroy set on this resource or propagated through dependencies. If a replacement adopts the same alias before the old instance is destroyed, the old instance can delete the replacement's members. Setting deletion_protection = false in the same operation that replaces the resource does not disable protection, because destroy still uses the previously applied state. Apply deletion_protection = false first, then replace or destroy.
   Before a destroy, quiesce producers and let in-flight lifecycle replacements finish. Destroy then deletes only the concrete indices currently attached to rollover_alias, including hidden and closed members, and it rediscovers membership until the delete timeout. Those rechecks can pick up a rollover that attaches during destroy. They cannot guarantee discovery of a transformation target that is not yet attached to the alias, such as a shrink index or searchable snapshot ILM has not swapped onto the alias yet.
   Direct index deletion leaves searchable snapshots in their repositories. Snapshots and detached indices need separate cleanup. Detached indices, and other series that still reference the same ILM policy, can still block policy deletion. None of that authorizes broader cleanup: this resource does not delete snapshots, remove another series' policy reference, stop ILM, or change action.destructive_requires_name.
+  Import an existing series with <cluster_uuid>/<rollover_alias>/<prefix>. Terraform stores id as <cluster_uuid>/<rollover_alias> and sets prefix from the import identifier. It does not store the three-part string as id, and it does not infer prefix from the current writer's name. Import initializes deletion_protection to true. Destroy stays blocked until a later apply sets deletion_protection to false. Import reads a healthy ordinary alias and does not mutate it. Create adopts a healthy alias the same way, with no extra flag.
 ---
 
 # elasticstack_elasticsearch_rollover_index_series (Resource)
@@ -32,6 +33,8 @@ Changing `prefix` or `rollover_alias` replaces the resource. The old instance mu
 Before a destroy, quiesce producers and let in-flight lifecycle replacements finish. Destroy then deletes only the concrete indices currently attached to `rollover_alias`, including hidden and closed members, and it rediscovers membership until the delete timeout. Those rechecks can pick up a rollover that attaches during destroy. They cannot guarantee discovery of a transformation target that is not yet attached to the alias, such as a shrink index or searchable snapshot ILM has not swapped onto the alias yet.
 
 Direct index deletion leaves searchable snapshots in their repositories. Snapshots and detached indices need separate cleanup. Detached indices, and other series that still reference the same ILM policy, can still block policy deletion. None of that authorizes broader cleanup: this resource does not delete snapshots, remove another series' policy reference, stop ILM, or change `action.destructive_requires_name`.
+
+Import an existing series with `<cluster_uuid>/<rollover_alias>/<prefix>`. Terraform stores `id` as `<cluster_uuid>/<rollover_alias>` and sets `prefix` from the import identifier. It does not store the three-part string as `id`, and it does not infer `prefix` from the current writer's name. Import initializes `deletion_protection` to `true`. Destroy stays blocked until a later apply sets `deletion_protection` to `false`. Import reads a healthy ordinary alias and does not mutate it. Create adopts a healthy alias the same way, with no extra flag.
 
 ## Example Usage
 
@@ -127,3 +130,18 @@ Optional:
 - `delete` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Setting a timeout for a Delete operation is only applicable if changes are saved into state before the destroy operation occurs.
 - `read` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours). Read operations occur during any refresh or planning operation when refresh is enabled.
 - `update` (String) A string that can be [parsed as a duration](https://pkg.go.dev/time#ParseDuration) consisting of numbers and unit suffixes, such as "30s" or "2h45m". Valid time units are "s" (seconds), "m" (minutes), "h" (hours).
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+```shell
+# Import identifier: <cluster_uuid>/<rollover_alias>/<prefix>
+# State id is <cluster_uuid>/<rollover_alias>. The three-part import string is not stored as id.
+# prefix is taken from this identifier and is not inferred from the current writer.
+# deletion_protection is initialized to true. A later apply must set it to false before destroy.
+# Healthy create and import read an ordinary alias and do not require an extra flag.
+terraform import elasticstack_elasticsearch_rollover_index_series.orders '<cluster_uuid>/orders-write/orders'
+```

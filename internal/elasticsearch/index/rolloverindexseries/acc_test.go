@@ -1470,6 +1470,314 @@ func requireDestructiveRequiresName(t *testing.T) {
 	require.Equal(t, "true", effective)
 }
 
+func TestAccRolloverIndexSeries_importDifferentlyNamedWriter(t *testing.T) {
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skipf("Acceptance tests skipped unless env '%s' set", resource.EnvTfAcc)
+	}
+	prefix, alias := accNames()
+	writerPrefix := "w" + strings.ToLower(sdkacctest.RandStringFromCharSet(8, "abcdefghijklmnopqrstuvwxyz"))
+	bootstrap := writerPrefix + "-000001"
+	successor := writerPrefix + "-000002"
+	if strings.HasPrefix(successor, prefix) {
+		t.Fatalf("writer %q shares imported prefix %q", successor, prefix)
+	}
+	t.Cleanup(func() {
+		deleteIndex(t, bootstrap)
+		deleteIndex(t, successor)
+	})
+
+	imported := rolledWriterImportChecks(prefix, alias, bootstrap, successor)
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(prefix+"-000001", bootstrap, successor),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          accImportVars(prefix, alias, true),
+				ResourceName:             seriesAddr,
+				ImportState:              true,
+				ImportStatePersist:       true,
+				ImportStateIdFunc:        seriesImportID(alias, prefix),
+				ImportStateCheck:         importStateChecks(imported),
+				PreConfig: func() {
+					putIndex(t, bootstrap, map[string]*bool{alias: new(true)})
+					require.Equal(t, successor, rolloverAlias(t, alias))
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          accImportVars(prefix, alias, true),
+				Check:                    imported,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          accImportVars(prefix, alias, false),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_importDestroyRemainsProtected(t *testing.T) {
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skipf("Acceptance tests skipped unless env '%s' set", resource.EnvTfAcc)
+	}
+	prefix, alias := accNames()
+	writer := prefix + "-000003"
+	t.Cleanup(func() {
+		deleteIndex(t, writer)
+	})
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(writer, prefix+"-000001"),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          accImportVars(prefix, alias, true),
+				ResourceName:             seriesAddr,
+				ImportState:              true,
+				ImportStatePersist:       true,
+				ImportStateIdFunc:        seriesImportID(alias, prefix),
+				PreConfig: func() {
+					putIndex(t, writer, map[string]*bool{alias: new(true)})
+				},
+				ImportStateCheck: importStateChecks(resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "true"),
+					resource.TestCheckResourceAttr(seriesAddr, "prefix", prefix),
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", writer),
+					checkSeriesID(alias),
+					checkIndexPresent(writer),
+				)),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          accImportVars(prefix, alias, true),
+				Destroy:                  true,
+				ExpectError:              regexp.MustCompile("deletion_protection=false"),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          accImportVars(prefix, alias, true),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "true"),
+					resource.TestCheckResourceAttr(seriesAddr, "prefix", prefix),
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", writer),
+					checkSeriesID(alias),
+					checkIndexPresent(writer),
+					checkIndicesAbsent(prefix+"-000001"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          accImportVars(prefix, alias, false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "false"),
+					checkIndexPresent(writer),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_importDisableProtectionPreservedAndCleansUp(t *testing.T) {
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skipf("Acceptance tests skipped unless env '%s' set", resource.EnvTfAcc)
+	}
+	prefix, alias := accNames()
+	writerPrefix := "w" + strings.ToLower(sdkacctest.RandStringFromCharSet(8, "abcdefghijklmnopqrstuvwxyz"))
+	bootstrap := writerPrefix + "-000001"
+	successor := writerPrefix + "-000002"
+	t.Cleanup(func() {
+		deleteIndex(t, bootstrap)
+		deleteIndex(t, successor)
+	})
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(prefix+"-000001", bootstrap, successor),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          accImportVars(prefix, alias, true),
+				ResourceName:             seriesAddr,
+				ImportState:              true,
+				ImportStatePersist:       true,
+				ImportStateIdFunc:        seriesImportID(alias, prefix),
+				PreConfig: func() {
+					putIndex(t, bootstrap, map[string]*bool{alias: new(true)})
+					require.Equal(t, successor, rolloverAlias(t, alias))
+				},
+				ImportStateCheck: importStateChecks(resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "true"),
+					resource.TestCheckResourceAttr(seriesAddr, "prefix", prefix),
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", successor),
+					checkSeriesID(alias),
+				)),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          accImportVars(prefix, alias, false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "false"),
+					resource.TestCheckResourceAttr(seriesAddr, "prefix", prefix),
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", successor),
+					checkSeriesID(alias),
+					checkIndicesPresent(bootstrap, successor),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          accImportVars(prefix, alias, false),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(seriesAddr, plancheck.ResourceActionNoop),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "false"),
+					resource.TestCheckResourceAttr(seriesAddr, "prefix", prefix),
+					resource.TestCheckResourceAttr(seriesAddr, "write_index", successor),
+					checkSeriesID(alias),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_importDataStreamRejected(t *testing.T) {
+	if os.Getenv(resource.EnvTfAcc) == "" {
+		t.Skipf("Acceptance tests skipped unless env '%s' set", resource.EnvTfAcc)
+	}
+	prefix, alias := accNames()
+	dataStream := prefix + "-stream"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          accVars(prefix, alias),
+				ResourceName:             seriesAddr,
+				ImportState:              true,
+				ImportStateIdFunc:        seriesImportID(alias, prefix),
+				PreConfig: func() {
+					putDataStreamAlias(t, dataStream, alias, nil)
+				},
+				ExpectError: regexp.MustCompile("resolves to data stream"),
+			},
+		},
+	})
+
+	require.NoError(t, checkDataStreamPresent(dataStream)(nil))
+}
+
+func accImportVars(prefix, alias string, protection bool) config.Variables {
+	vars := accVars(prefix, alias)
+	vars["deletion_protection"] = config.BoolVariable(protection)
+	return vars
+}
+
+func rolledWriterImportChecks(prefix, alias, bootstrap, successor string) resource.TestCheckFunc {
+	return resource.ComposeAggregateTestCheckFunc(
+		resource.TestCheckResourceAttr(seriesAddr, "prefix", prefix),
+		resource.TestCheckResourceAttr(seriesAddr, "rollover_alias", alias),
+		resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "true"),
+		resource.TestCheckResourceAttr(seriesAddr, "write_index", successor),
+		resource.TestCheckResourceAttr(seriesAddr, "indices.#", "2"),
+		resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", bootstrap),
+		resource.TestCheckTypeSetElemAttr(seriesAddr, "indices.*", successor),
+		checkCanonicalSeriesID(alias, prefix),
+		checkPrefixNotInferredFromWriter(prefix, successor),
+		checkIndicesAbsent(prefix+"-000001"),
+		checkIndicesPresent(bootstrap, successor),
+		checkWriteIndex(successor, alias, true),
+	)
+}
+
+func importStateChecks(check resource.TestCheckFunc) resource.ImportStateCheckFunc {
+	return func(instances []*terraform.InstanceState) error {
+		if len(instances) != 1 {
+			return fmt.Errorf("import produced %d instances, want 1", len(instances))
+		}
+		state := terraform.NewState()
+		state.RootModule().Resources[seriesAddr] = &terraform.ResourceState{
+			Type:    "elasticstack_elasticsearch_rollover_index_series",
+			Primary: instances[0],
+		}
+		return check(state)
+	}
+}
+
+func checkCanonicalSeriesID(alias, prefix string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			return err
+		}
+		uuid, diags := client.ClusterID(context.Background())
+		if diags.HasError() {
+			return fmt.Errorf("cluster uuid: %v", diags)
+		}
+		canonical := *uuid + "/" + alias
+		raw := canonical + "/" + prefix
+		rs, ok := state.RootModule().Resources[seriesAddr]
+		if !ok || rs.Primary == nil {
+			return fmt.Errorf("resource %s is missing", seriesAddr)
+		}
+		id := rs.Primary.Attributes["id"]
+		if id != canonical {
+			return fmt.Errorf("id = %q, want canonical %q, not raw import id %q", id, canonical, raw)
+		}
+		return nil
+	}
+}
+
+func checkPrefixNotInferredFromWriter(prefix, writer string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		if strings.HasPrefix(writer, prefix) {
+			return fmt.Errorf("writer %q shares imported prefix %q", writer, prefix)
+		}
+		rs, ok := state.RootModule().Resources[seriesAddr]
+		if !ok || rs.Primary == nil {
+			return fmt.Errorf("resource %s is missing", seriesAddr)
+		}
+		got := rs.Primary.Attributes["prefix"]
+		if got != prefix {
+			return fmt.Errorf("prefix = %q, want imported %q", got, prefix)
+		}
+		inferred := strings.TrimSuffix(writer, "-000002")
+		if got == inferred {
+			return fmt.Errorf("prefix %q was inferred from writer %q", got, writer)
+		}
+		return nil
+	}
+}
+
+func seriesImportID(alias, prefix string) resource.ImportStateIdFunc {
+	return func(*terraform.State) (string, error) {
+		client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+		if err != nil {
+			return "", err
+		}
+		uuid, diags := client.ClusterID(context.Background())
+		if diags.HasError() {
+			return "", fmt.Errorf("cluster uuid: %v", diags)
+		}
+		return *uuid + "/" + alias + "/" + prefix, nil
+	}
+}
+
 func typedClient() (*elasticsearchclient.TypedClient, error) {
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {

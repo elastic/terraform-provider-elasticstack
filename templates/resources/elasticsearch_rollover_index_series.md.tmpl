@@ -14,3 +14,11 @@ description: |-
 {{ tffile "examples/resources/elasticstack_elasticsearch_rollover_index_series/resource.tf" }}
 
 {{ .SchemaMarkdown | trimspace }}
+
+## Import
+
+Import is supported using the following syntax:
+
+The [`terraform import` command](https://developer.hashicorp.com/terraform/cli/commands/import) can be used, for example:
+
+{{ codefile "shell" "examples/resources/elasticstack_elasticsearch_rollover_index_series/import.sh" }}
