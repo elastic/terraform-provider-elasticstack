@@ -20,12 +20,18 @@ package casetemplate_test
 import (
 	"context"
 	"fmt"
+	"io"
+	"net/http"
+	"net/url"
 	"regexp"
 	"testing"
+	"time"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
@@ -551,4 +557,112 @@ func TestAccResourceKibanaCaseTemplateDefinitionTooLong(t *testing.T) {
 		PreCheck: func() { preCheck(t, supported) },
 		Steps:    []resource.TestStep{planErrStep(`(?is)Invalid Attribute Value Length.*at most 30000`)},
 	})
+}
+
+// TestAccResourceKibanaCaseTemplateUsageCount verifies usage_count reflects a
+// real populated value. A case is created against the template through the
+// Cases API (not the template resource), which is the only way to drive
+// usage_count server-side; the subsequent step's refresh picks up the change.
+func TestAccResourceKibanaCaseTemplateUsageCount(t *testing.T) {
+	name := uniqueName()
+	vars := nameVars(name)
+	var templateID, caseID string
+
+	t.Cleanup(func() {
+		if caseID != "" {
+			deleteCase(t, caseID)
+		}
+	})
+
+	useTemplate := step("minimal", vars, attr("usage_count", "1"))
+	useTemplate.PreConfig = func() { caseID = createCaseFromTemplate(t, name, templateID) }
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { preCheck(t, supported) },
+		CheckDestroy: checkTemplatesDestroyed(t),
+		Steps: []resource.TestStep{
+			step("minimal", vars,
+				resource.TestCheckNoResourceAttr(resourceName, "usage_count"),
+				captureID(&templateID),
+			),
+			useTemplate,
+		},
+	})
+}
+
+// createCaseFromTemplate creates a case against templateID via the Cases API
+// and returns the new case's ID.
+func createCaseFromTemplate(t *testing.T, title, templateID string) string {
+	t.Helper()
+	client := kibanaClient(t)
+
+	// The API requires an explicit "fields": null, but CasesConnectorPropertiesNone.Fields
+	// is *string with omitempty, so FromCasesConnectorPropertiesNone would omit it entirely.
+	var connector kbapi.CasesCreateCaseRequest_Connector
+	if err := connector.UnmarshalJSON([]byte(`{"id":"none","name":"none","type":".none","fields":null}`)); err != nil {
+		t.Fatalf("failed to build connector: %v", err)
+	}
+
+	req := kbapi.CasesCreateCaseRequest{
+		Title:       title,
+		Description: "created by acceptance test to exercise case_template usage_count",
+		Tags:        []string{},
+		Owner:       "cases",
+		Connector:   connector,
+		Settings:    kbapi.CasesSettings{SyncAlerts: false},
+		Template: &struct {
+			Id      string `json:"id"` //nolint:revive // The generated API type uses this field name.
+			Version *int   `json:"version,omitempty"`
+		}{Id: templateID},
+	}
+
+	resp, err := client.API.CreateCaseDefaultSpaceWithResponse(context.Background(), req, kibanautil.SpaceAwarePathRequestEditor("default"))
+	if err != nil {
+		t.Fatalf("failed to create case: %v", err)
+	}
+	if resp.StatusCode() != 200 || resp.JSON200 == nil {
+		t.Fatalf("failed to create case: got HTTP %d: %s", resp.StatusCode(), string(resp.Body))
+	}
+
+	// usageCount is updated asynchronously, so poll until the template reflects
+	// the new case before letting the test step refresh it.
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		tpl, diags := kibanaoapi.GetCaseTemplate(context.Background(), client, "default", templateID)
+		if diags.HasError() {
+			t.Fatalf("failed to read template %s while waiting for usage_count: %v", templateID, diags)
+		}
+		if tpl != nil && tpl.UsageCount != nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("timed out waiting for template %s usage_count to reflect the new case", templateID)
+		}
+		time.Sleep(time.Second)
+	}
+
+	return resp.JSON200.Id
+}
+
+// deleteCase deletes a case by ID via the Cases API. The generated
+// DeleteCaseDefaultSpaceWithResponse encodes "ids" as a repeated query
+// parameter, but the API requires a single JSON-encoded array, so the
+// request is built directly here.
+func deleteCase(t *testing.T, caseID string) {
+	t.Helper()
+	client := kibanaClient(t)
+
+	req, err := http.NewRequest(http.MethodDelete, client.URL+"/api/cases?ids="+url.QueryEscape(`["`+caseID+`"]`), nil)
+	if err != nil {
+		t.Fatalf("failed to build delete request for case %s: %v", caseID, err)
+	}
+	resp, err := client.HTTP.Do(req)
+	if err != nil {
+		t.Fatalf("failed to delete case %s: %v", caseID, err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusNoContent {
+		body, _ := io.ReadAll(resp.Body)
+		t.Fatalf("failed to delete case %s: got HTTP %d: %s", caseID, resp.StatusCode, string(body))
+	}
 }
