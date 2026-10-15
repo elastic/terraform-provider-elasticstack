@@ -37,6 +37,10 @@ type agentPolicyFeatures struct {
 	SupportsAdvancedSettings              bool
 	SupportsMonitoringRuntimeExperimental bool
 	SupportsTamperProtection              bool
+
+	SupportsAgentInternal                          bool
+	SupportsFeaturesDisablePolicyChangeAcksEnabled bool
+	SupportsFeaturesIncludeTagsInEventsEnabled     bool
 }
 
 func resolveAgentPolicyFeatures(ctx context.Context, client *clients.KibanaScopedClient) (agentPolicyFeatures, diag.Diagnostics) {
@@ -65,6 +69,12 @@ func resolveAgentPolicyFeatures(ctx context.Context, client *clients.KibanaScope
 	f.SupportsTamperProtection, bitDiags = client.EnforceMinVersion(ctx, MinVersionTamperProtection)
 	diags.Append(bitDiags...)
 	f.SupportsMonitoringRuntimeExperimental, bitDiags = client.EnforceVersionCheck(ctx, MonitoringRuntimeExperimentalSupported)
+	diags.Append(bitDiags...)
+	f.SupportsAgentInternal, bitDiags = client.EnforceMinVersion(ctx, MinVersionAgentInternal)
+	diags.Append(bitDiags...)
+	f.SupportsFeaturesDisablePolicyChangeAcksEnabled, bitDiags = client.EnforceMinVersion(ctx, MinVersionFeaturesDisablePolicyChangeAcksEnabled)
+	diags.Append(bitDiags...)
+	f.SupportsFeaturesIncludeTagsInEventsEnabled, bitDiags = client.EnforceMinVersion(ctx, MinVersionFeaturesIncludeTagsInEventsEnabled)
 	diags.Append(bitDiags...)
 
 	return f, diags

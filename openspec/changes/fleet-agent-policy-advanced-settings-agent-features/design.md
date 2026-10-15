@@ -196,3 +196,23 @@ resolved by the follow-up comment above:
   Kibana PR milestone labels rather than a second live stack probe (only 9.4.0 was available to the
   follow-up comment's author). Non-blocking for authoring this change; tracked as a pre-merge
   verification task in tasks.md.
+
+## Pre-implementation verification record (tasks 1.1-1.3)
+
+Only one live stack was reachable during implementation: Elasticsearch/Kibana **9.5.5** on
+`localhost:9200`/`localhost:5601` (the worktree's env-var ports were not listening, so the default
+ports were used). No 9.3.0 or 9.6.0 stack was started. Findings against 9.5.5 via direct Fleet API
+probes (`POST /api/fleet/agent_policies`):
+
+- `advanced_settings.agent_internal` (`"a: 1"`) and
+  `agent_features_disable_policy_change_acks_enabled` (`true`) are accepted and echoed back.
+  This is consistent with, but does not prove, the 9.3.0 / 9.4.0 minimums.
+- `agent_features_include_tags_in_events_enabled` is rejected with
+  `Additional properties are not allowed`. This is consistent with the 9.6.0 minimum (the
+  rejection reproduces on 9.4.0 per the issue and now also on 9.5.5, which is below 9.6.0).
+
+Not verified live: the exact 9.3.0 lower boundary for `agent_internal`, acceptance of
+`features_include_tags_in_events_enabled` on 9.6.0, and rejection of `agent_internal` below 9.3.0.
+No deviation from the documented 9.3.0 / 9.4.0 / 9.6.0 minimums was found; implementation
+proceeds with those minimums. Acceptance tests use per-field `SkipFunc`s so CI stacks at other
+versions exercise the remaining boundaries.

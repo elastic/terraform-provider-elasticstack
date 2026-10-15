@@ -41,6 +41,10 @@ type advancedSettingsModel struct {
 	DownloadTimeout               customtypes.Duration `tfsdk:"download_timeout"`
 	DownloadTargetDirectory       types.String         `tfsdk:"download_target_directory"`
 	MonitoringRuntimeExperimental types.String         `tfsdk:"monitoring_runtime_experimental"`
+
+	FeaturesDisablePolicyChangeAcksEnabled types.Bool                      `tfsdk:"features_disable_policy_change_acks_enabled"`
+	FeaturesIncludeTagsInEventsEnabled     types.Bool                      `tfsdk:"features_include_tags_in_events_enabled"`
+	Internal                               customtypes.NormalizedYamlValue `tfsdk:"internal"`
 }
 
 // advancedSettingsAttrTypes returns attribute types for advanced_settings pulled from the schema
@@ -82,6 +86,13 @@ func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Conte
 		DownloadTimeout:               customtypes.NewDurationFromAny(data.AdvancedSettings.AgentDownloadTimeout),
 		DownloadTargetDirectory:       typeutils.StringFromAny(data.AdvancedSettings.AgentDownloadTargetDirectory),
 		MonitoringRuntimeExperimental: typeutils.StringFromAny(data.AdvancedSettings.AgentMonitoringRuntimeExperimental),
+
+		FeaturesDisablePolicyChangeAcksEnabled: typeutils.BoolFromAny(data.AdvancedSettings.AgentFeaturesDisablePolicyChangeAcksEnabled),
+		FeaturesIncludeTagsInEventsEnabled:     typeutils.BoolFromAny(data.AdvancedSettings.AgentFeaturesIncludeTagsInEventsEnabled),
+		Internal:                               customtypes.NewNormalizedYamlNull(),
+	}
+	if internal, ok := data.AdvancedSettings.AgentInternal.(string); ok {
+		settings.Internal = customtypes.NewNormalizedYamlValue(internal)
 	}
 
 	obj, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), settings)
@@ -114,7 +125,10 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 		typeutils.IsKnown(settings.GoMaxProcs) ||
 		typeutils.IsKnown(settings.DownloadTimeout) ||
 		typeutils.IsKnown(settings.DownloadTargetDirectory) ||
-		typeutils.IsKnown(settings.MonitoringRuntimeExperimental)
+		typeutils.IsKnown(settings.MonitoringRuntimeExperimental) ||
+		typeutils.IsKnown(settings.FeaturesDisablePolicyChangeAcksEnabled) ||
+		typeutils.IsKnown(settings.FeaturesIncludeTagsInEventsEnabled) ||
+		typeutils.IsKnown(settings.Internal)
 
 	if !hasValues {
 		return nil, nil
@@ -151,6 +165,15 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 	}
 	if typeutils.IsKnown(settings.MonitoringRuntimeExperimental) && feat.SupportsMonitoringRuntimeExperimental {
 		result.AgentMonitoringRuntimeExperimental = settings.MonitoringRuntimeExperimental.ValueString()
+	}
+	if typeutils.IsKnown(settings.FeaturesDisablePolicyChangeAcksEnabled) && feat.SupportsFeaturesDisablePolicyChangeAcksEnabled {
+		result.AgentFeaturesDisablePolicyChangeAcksEnabled = settings.FeaturesDisablePolicyChangeAcksEnabled.ValueBool()
+	}
+	if typeutils.IsKnown(settings.FeaturesIncludeTagsInEventsEnabled) && feat.SupportsFeaturesIncludeTagsInEventsEnabled {
+		result.AgentFeaturesIncludeTagsInEventsEnabled = settings.FeaturesIncludeTagsInEventsEnabled.ValueBool()
+	}
+	if typeutils.IsKnown(settings.Internal) && feat.SupportsAgentInternal {
+		result.AgentInternal = settings.Internal.ValueString()
 	}
 
 	return result, diags
