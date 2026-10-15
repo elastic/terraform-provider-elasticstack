@@ -217,6 +217,8 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
 			lenscommon.PreserveNullIfStateEquals(planThreshold.Operation, &stateThreshold.Operation, types.StringValue(operationStaticValue))
 			lenscommon.PreserveNullJSONIfStateMatchesDefault(planThreshold.ColorJSON, &stateThreshold.ColorJSON, `{"type":"auto"}`)
 			preserveThresholdValueJSONIfStateIsPlanValue(planThreshold.ValueJSON, &stateThreshold.ValueJSON, planThreshold.Operation)
+			// Kibana 9.4 adds `label: ""` to non-static operations; drop it when the plan did not set a label.
+			dropEmptyLabelIfPlanOmitsIt(planThreshold.ValueJSON, &stateThreshold.ValueJSON)
 			lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planThreshold.ValueJSON, &stateThreshold.ValueJSON, "axis_id", "color", "axis")
 			lenscommon.PreservePlanJSONIfStateOmitsOptionalKeys(planThreshold.ValueJSON, &stateThreshold.ValueJSON, "axis")
 		}
@@ -271,6 +273,27 @@ func preserveThresholdValueJSONIfStateIsPlanValue(plan jsontypes.Normalized, sta
 	if reflect.DeepEqual(planValue, stateVal) {
 		*state = plan
 	}
+}
+
+// dropEmptyLabelIfPlanOmitsIt removes an empty-string "label" from the state JSON object when the
+// plan JSON object has no "label" key. Other label values are left untouched.
+func dropEmptyLabelIfPlanOmitsIt(plan jsontypes.Normalized, state *jsontypes.Normalized) {
+	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) || jsonObjectHasKey(plan, "label") {
+		return
+	}
+	var stateObj map[string]any
+	if err := json.Unmarshal([]byte(state.ValueString()), &stateObj); err != nil {
+		return
+	}
+	if label, ok := stateObj["label"].(string); !ok || label != "" {
+		return
+	}
+	delete(stateObj, "label")
+	b, err := json.Marshal(stateObj)
+	if err != nil {
+		return
+	}
+	*state = jsontypes.NewNormalizedValue(string(b))
 }
 
 func jsonObjectHasKey(j jsontypes.Normalized, key string) bool {

@@ -476,3 +476,34 @@ func TestPreserveThresholdValueJSONIfStateIsPlanValue_nonStaticValueWithValueKey
 
 	assert.JSONEq(t, `42`, state.ValueString())
 }
+
+func TestAlignXYLayerStateFromPlan_nonStaticThresholdIgnoresKibanaAddedAxisAndEmptyLabel(t *testing.T) {
+	t.Parallel()
+
+	planValue := `{"color":{"type":"auto"},"empty_as_null":false,"operation":"count"}`
+	stateValue := `{"operation":"count","empty_as_null":false,"label":"","color":{"type":"auto"},"axis":"y2"}`
+	plan := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			ReferenceLineLayer: &models.ReferenceLineLayerModel{
+				Thresholds: []models.ThresholdModel{{
+					Axis:      types.StringValue("y2"),
+					ValueJSON: jsontypes.NewNormalizedValue(planValue),
+				}},
+			},
+		}},
+	}
+	state := &models.XYChartConfigModel{
+		Layers: []models.XYLayerModel{{
+			ReferenceLineLayer: &models.ReferenceLineLayerModel{
+				Thresholds: []models.ThresholdModel{{
+					Axis:      types.StringValue("y2"),
+					ValueJSON: jsontypes.NewNormalizedValue(stateValue),
+				}},
+			},
+		}},
+	}
+
+	alignXYChartStateFromPlan(plan, state)
+
+	assert.Equal(t, planValue, state.Layers[0].ReferenceLineLayer.Thresholds[0].ValueJSON.ValueString())
+}
