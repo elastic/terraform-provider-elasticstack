@@ -37,11 +37,14 @@ already closed functionally by the shipped `auth` attribute, #5263: sending plai
   Keep only `certificate_authorities`'s `maxItems: 10` validator and its element-level non-empty-string
   validator (an explicitly-provided list still can't contain an empty-string entry).
 - Gate `ssl` with a new attribute-scoped minimum-version requirement (9.1.0), leaving the resource's
-  existing overall `8.13.0` floor and `auth`'s own `9.4.0` attribute-scoped gate untouched.
-- Removal sends an explicit `ssl: {}` on update (never a nil/omitted `ssl`, since omitting leaves the
-  prior value unchanged server-side); per-child removal is encoded as an omitted field within an
-  otherwise-populated `ssl`/`secrets.ssl` object, which Fleet clears in place. No `RequiresReplace`
-  plan modifier is needed for any `ssl` transition.
+  existing overall `8.13.0` floor untouched for configurations that do not set `ssl`.
+- Add a `RequiresReplace` plan-modifier fallback on `ssl` (or on specific children, depending on the
+  pre-implementation PUT-clearing probe outcome — see design.md) so that any transition the Fleet PUT
+  API cannot actually honor in place (clearing a previously-set `ssl` or one of its children) is
+  modeled as resource replacement rather than producing a plan/state inconsistency.
+  (Probe outcome: whole-block removal uses explicit `ssl = {}`; omitting the whole block preserves
+  it. Omitting a child from a supplied SSL object clears that child. No `RequiresReplace` fallback
+  was required; this bullet records the pre-implementation fallback framing.)
 
 ## Capabilities
 
