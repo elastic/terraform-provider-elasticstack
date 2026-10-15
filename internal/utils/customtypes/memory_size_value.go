@@ -172,13 +172,6 @@ func NewMemorySizeNull() MemorySize {
 	}
 }
 
-// NewMemorySizeUnknown creates a MemorySize with an unknown value. Determine whether the value is unknown via IsUnknown method.
-func NewMemorySizeUnknown() MemorySize {
-	return MemorySize{
-		StringValue: basetypes.NewStringUnknown(),
-	}
-}
-
 // NewMemorySizeValue creates a MemorySize with a known value. Access the value via ValueString method.
 func NewMemorySizeValue(value string) MemorySize {
 	return MemorySize{
