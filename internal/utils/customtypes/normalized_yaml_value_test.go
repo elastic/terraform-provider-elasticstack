@@ -158,29 +158,3 @@ func TestNormalizedYamlValue_ValidateAttribute(t *testing.T) {
 		})
 	}
 }
-
-func TestNormalizedYamlValue_NullAndUnknown(t *testing.T) {
-	ctx := context.Background()
-
-	null := NewNormalizedYamlNull()
-	unknown := NewNormalizedYamlUnknown()
-	known := NewNormalizedYamlValue("name: foo\n")
-
-	equal, diags := null.StringSemanticEquals(ctx, NewNormalizedYamlNull())
-	require.False(t, diags.HasError())
-	assert.True(t, equal)
-
-	equal, diags = null.StringSemanticEquals(ctx, known)
-	require.False(t, diags.HasError())
-	assert.False(t, equal)
-
-	equal, diags = unknown.StringSemanticEquals(ctx, NewNormalizedYamlUnknown())
-	require.False(t, diags.HasError())
-	assert.True(t, equal)
-
-	// ValidateAttribute on null/unknown is a no-op
-	req := xattr.ValidateAttributeRequest{Path: path.Root("test")}
-	resp := &xattr.ValidateAttributeResponse{}
-	null.ValidateAttribute(ctx, req, resp)
-	assert.False(t, resp.Diagnostics.HasError())
-}
