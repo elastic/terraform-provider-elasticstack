@@ -19,6 +19,7 @@ package agentpolicy
 
 import (
 	"context"
+	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -91,8 +92,15 @@ func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Conte
 		FeaturesIncludeTagsInEventsEnabled:     typeutils.BoolFromAny(data.AdvancedSettings.AgentFeaturesIncludeTagsInEventsEnabled),
 		Internal:                               customtypes.NewNormalizedYamlNull(),
 	}
-	if internal, ok := data.AdvancedSettings.AgentInternal.(string); ok {
+	switch internal := data.AdvancedSettings.AgentInternal.(type) {
+	case nil:
+	case string:
 		settings.Internal = customtypes.NewNormalizedYamlValue(internal)
+	default:
+		// Kibana may return structured YAML as a JSON object; JSON is valid YAML.
+		if encoded, err := json.Marshal(internal); err == nil {
+			settings.Internal = customtypes.NewNormalizedYamlValue(string(encoded))
+		}
 	}
 
 	obj, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), settings)
@@ -174,6 +182,11 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 	}
 	if typeutils.IsKnown(settings.Internal) && feat.SupportsAgentInternal {
 		result.AgentInternal = settings.Internal.ValueString()
+	}
+
+	if *result == (advancedSettingsAPIValues{}) {
+		// Every configured key was unsupported on this stack; never send an empty object.
+		return nil, diags
 	}
 
 	return result, diags

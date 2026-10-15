@@ -352,7 +352,43 @@ func TestConvertAdvancedSettingsToAPIAgentFeatures(t *testing.T) {
 		assert.Nil(t, got.AgentInternal)
 	})
 
+	t.Run("only unsupported new fields set returns nil", func(t *testing.T) {
+		got := convert(t, advancedSettingsModel{
+			FeaturesDisablePolicyChangeAcksEnabled: types.BoolValue(true),
+			FeaturesIncludeTagsInEventsEnabled:     types.BoolValue(true),
+			Internal:                               customtypes.NewNormalizedYamlValue("a: 1"),
+		}, agentPolicyFeatures{})
+		assert.Nil(t, got)
+	})
+
 	t.Run("only new fields null returns nil", func(t *testing.T) {
 		assert.Nil(t, convert(t, advancedSettingsModel{}, allSupported))
 	})
+}
+
+func TestPopulateAdvancedSettingsInternalNonString(t *testing.T) {
+	ctx := context.Background()
+	model := &agentPolicyModel{}
+	var data kbapi.KibanaHTTPAPIsAgentPolicyResponse
+	require.NoError(t, json.Unmarshal([]byte(`{"advanced_settings":{"agent_internal":{"agent":{"logging":{"level":"debug"}}}}}`), &data))
+
+	require.False(t, model.populateAdvancedSettingsFromAPI(ctx, &data).HasError())
+	var settings advancedSettingsModel
+	require.False(t, model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{}).HasError())
+	assert.JSONEq(t, `{"agent":{"logging":{"level":"debug"}}}`, settings.Internal.ValueString())
+}
+
+func TestInternalYAMLSemanticEqualityOnRead(t *testing.T) {
+	ctx := context.Background()
+	prior := customtypes.NewNormalizedYamlValue("agent:\n  logging:\n    level: info\n  # comment\n  monitoring:\n    http:\n      enabled: true\n")
+	model := &agentPolicyModel{}
+	var data kbapi.KibanaHTTPAPIsAgentPolicyResponse
+	require.NoError(t, json.Unmarshal([]byte(`{"advanced_settings":{"agent_internal":"agent:\n    monitoring:\n        http:\n            enabled: true\n    logging:\n        level: info\n"}}`), &data))
+	require.False(t, model.populateAdvancedSettingsFromAPI(ctx, &data).HasError())
+	var settings advancedSettingsModel
+	require.False(t, model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{}).HasError())
+
+	equal, diags := prior.StringSemanticEquals(ctx, settings.Internal)
+	require.False(t, diags.HasError())
+	assert.True(t, equal)
 }
