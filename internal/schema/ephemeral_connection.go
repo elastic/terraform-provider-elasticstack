@@ -26,9 +26,3 @@ import (
 func GetEsEphemeralConnectionBlock() schema.Block {
 	return esConnectionBlockSpec().ephemeralBlock()
 }
-
-// GetKbEphemeralConnectionBlock returns the kibana_connection block for
-// ephemeral resources, mirroring GetKbFWConnectionBlock for managed resources.
-func GetKbEphemeralConnectionBlock() schema.Block {
-	return kbConnectionBlockSpec().ephemeralBlock()
-}
