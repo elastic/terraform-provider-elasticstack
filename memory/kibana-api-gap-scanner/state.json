@@ -58,11 +58,50 @@
       "reason": "Custom integrations are locally uploaded, EPR-unverified packages; the read step calls GetPackage without ignoreUnverified, so Kibana can reject reads for genuinely unsigned custom packages. Worth exposing so users can opt into tolerating unverified signatures on read.",
       "date": "2026-10-15",
       "issue": "elasticstack_fleet_custom_integration#/paths/~1api~1fleet~1epm~1packages~1{pkgName}~1{pkgVersion}/get/parameters/ignoreUnverified"
+    },
+    "elasticstack_fleet_elastic_defend_integration_policy#/components/schemas/Kibana_HTTP_APIs_create_package_policy_request/properties/additional_datastreams_permissions": {
+      "fingerprint": "addc2e0db49dba42471840ca1539131dd73d9fef48e16cfd05170e3f04f43a49",
+      "verdict": "file",
+      "reason": "Grants the agent policy extra data-stream write permissions beyond the endpoint package's own streams; a real, user-controllable Fleet feature not represented in the resource schema.",
+      "date": "2026-10-15",
+      "issue": "elasticstack_fleet_elastic_defend_integration_policy#/components/schemas/Kibana_HTTP_APIs_create_package_policy_request/properties/additional_datastreams_permissions"
+    },
+    "elasticstack_fleet_elastic_defend_integration_policy#/components/schemas/Kibana_HTTP_APIs_create_package_policy_request/properties/condition": {
+      "fingerprint": "5fceaa86c7a2c76c17b1866566ae24d880aa984aaff0a4dd04c883285bd65339",
+      "verdict": "file",
+      "reason": "Top-level agent condition expression lets a policy be conditionally applied (e.g. by agent OS/version); this is a genuine, user-controllable Fleet feature with no current representation in the resource schema.",
+      "date": "2026-10-15",
+      "issue": "elasticstack_fleet_elastic_defend_integration_policy#/components/schemas/Kibana_HTTP_APIs_create_package_policy_request/properties/condition"
+    },
+    "elasticstack_fleet_elastic_defend_integration_policy#/components/schemas/Kibana_HTTP_APIs_create_package_policy_request/properties/inputs": {
+      "fingerprint": "e9a72461685217e1882186b753abb645014f6902f42c001970c3697efb998329",
+      "verdict": "suppress",
+      "reason": "Defend always builds one hardcoded endpoint input with an always-empty streams list, configuring everything through the opaque config/policy/advanced_settings mechanism instead of vars; the flagged input- and stream-level fields assume a multi-input/stream shape that does not apply here.",
+      "date": "2026-10-15"
+    },
+    "elasticstack_fleet_elastic_defend_integration_policy#/components/schemas/Kibana_HTTP_APIs_create_package_policy_request/properties/package": {
+      "fingerprint": "374adfb59e928f35142b1993079a4d6b10c10e1043009d0c7a324a85738a8c84",
+      "verdict": "suppress",
+      "reason": "experimental_data_stream_features, fips_compatible, and requires_root describe intrinsic properties of the installed package build (determined by name/version), not independent choices a policy author makes, and the package has no data streams of its own.",
+      "date": "2026-10-15"
+    },
+    "elasticstack_fleet_elastic_defend_integration_policy#/components/schemas/Kibana_HTTP_APIs_create_package_policy_request/properties/var_group_selections": {
+      "fingerprint": "b52ed0ec0ca45c2cbbd479247629572d8992fa89c66ebecf9453bbaf26fdcf1b",
+      "verdict": "suppress",
+      "reason": "Defend does not use the generic package vars/var-group mechanism; its full configuration surface is already exposed via the policy, advanced_settings, and preset attributes.",
+      "date": "2026-10-15"
+    },
+    "elasticstack_fleet_elastic_defend_integration_policy#/paths/~1api~1fleet~1package_policies/post/parameters/format": {
+      "fingerprint": "77d8afa78337378ee2327202abca7e94c2d8e4314a53aff8e15db633adcf0860",
+      "verdict": "suppress",
+      "reason": "Query parameter controlling the wire format (legacy vs simplified) of the request/response body; internal API plumbing, not a Terraform-manageable attribute of the policy.",
+      "date": "2026-10-15"
     }
   },
   "resources": {
     "elasticstack_fleet_agent_download_source": "2026-10-14T00:36:14Z",
     "elasticstack_fleet_agent_policy": "2026-10-15T01:31:24Z",
-    "elasticstack_fleet_custom_integration": "2026-10-15T11:28:15Z"
+    "elasticstack_fleet_custom_integration": "2026-10-15T11:28:15Z",
+    "elasticstack_fleet_elastic_defend_integration_policy": "2026-10-15T19:50:34Z"
   }
 }
