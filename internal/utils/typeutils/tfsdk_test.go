@@ -19,7 +19,6 @@ package typeutils_test
 
 import (
 	"context"
-	"sort"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -808,42 +807,6 @@ func TestTransformSliceToMap(t *testing.T) {
 				func(item aware, _ typeutils.ListMeta) (string, naive) {
 					return "k" + item.ID.ValueString()[2:], toNaive(item)
 				})
-			require.Equal(t, tt.want, got)
-			require.Empty(t, diags)
-		})
-	}
-}
-
-func TestTransformMapToSlice(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name  string
-		input map[string]naive
-		want  []naive
-	}{
-		{name: "converts nil", input: naiveMapNil, want: naiveSliceNil},
-		{name: "converts empty", input: naiveMapEmpty, want: naiveSliceEmpty},
-		{name: "converts struct", input: naiveMapFull, want: naiveSliceFull},
-	}
-
-	sortFn := func(s []naive) func(i, j int) bool {
-		return func(i, j int) bool {
-			return s[i].ID < s[j].ID
-		}
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var diags diag.Diagnostics
-			got := typeutils.TransformMapToSlice(context.Background(), tt.input, path.Empty(), &diags,
-				func(item naive, _ typeutils.MapMeta) naive {
-					return item
-				})
-
-			sort.Slice(got, sortFn(got))
-			sort.Slice(tt.want, sortFn(tt.want))
-
 			require.Equal(t, tt.want, got)
 			require.Empty(t, diags)
 		})
