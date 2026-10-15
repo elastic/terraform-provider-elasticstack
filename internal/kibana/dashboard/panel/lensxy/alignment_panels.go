@@ -219,7 +219,9 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
 					}
 				}
 			}
-			lenscommon.PreserveNullIfStateEquals(planThreshold.Axis, &stateThreshold.Axis, types.StringValue("y"))
+			if !axisDrifted {
+				lenscommon.PreserveNullIfStateEquals(planThreshold.Axis, &stateThreshold.Axis, types.StringValue("y"))
+			}
 			// Kibana 9.4/9.5 strip an explicit default "y" from the read-back; restore only an authored typed "y".
 			if planThreshold.Axis.Equal(types.StringValue("y")) && stateThreshold.Axis.IsNull() {
 				stateThreshold.Axis = planThreshold.Axis

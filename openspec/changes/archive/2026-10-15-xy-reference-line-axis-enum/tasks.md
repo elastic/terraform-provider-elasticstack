@@ -64,7 +64,7 @@
       and an empty plan after apply.
 - [x] 4.2 Keep the existing omitted-axis fixture/step to cover the Kibana 9.6+
       injection case.
-- [ ] 4.3 Run the extended `TestAccResourceDashboardXYChart_layers_reference`
+- [x] 4.3 Run the extended `TestAccResourceDashboardXYChart_layers_reference`
       against 9.4, 9.5 and 9.6+ stacks per
       `dev-docs/high-level/testing.md` — the explicit-`"y"` case is the one
       that distinguishes them (stripped on 9.4/9.5, echoed on 9.6+; see
@@ -85,7 +85,7 @@
 - [x] 5.2 Regenerate `docs/resources/kibana_dashboard.md` (`make
       docs-generate`) so both reference-line `axis` occurrences reflect the
       new `MarkdownDescription`.
-- [ ] 5.3 Flag the enum change as breaking in the implementation PR title/body
+- [x] 5.3 Flag the enum change as breaking in the implementation PR title/body
       with the rationale that the removed values never applied successfully
       against any supported Kibana version. Do not add a changelog file:
       `CHANGELOG.md` `[Unreleased]` is generated from merged PR history

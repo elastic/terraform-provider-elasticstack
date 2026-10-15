@@ -175,9 +175,9 @@ recorded for anyone picking up related work:
   other import omit-defaults and harmless) and is covered by an import test step
   (tasks 4.4) so the behavior is documented rather than accidental.
 - **Evidence scope.** The 9.4.0/9.5.5/9.6.x read-back behaviours in this
-  document come from manual probes. The automated acceptance run covers only
-  the 9.5.5 stack (stripped explicit `"y"`); 9.4 and 9.6+ paths are covered by
-  unit tests.
+  document come from manual probes. The automated acceptance run
+  (`TestAccResourceDashboardXYChart_layers_reference`) passed in CI on the 9.4.8,
+  9.5.5 (stripped explicit `"y"`) and 9.6.0-SNAPSHOT stacks, in addition to unit tests.
 - **Write-path merge.** Merging `axis` into `value_json` changes the request
   for configurations that set both; the conflict error makes disagreements
   explicit instead of silently preferring one.
