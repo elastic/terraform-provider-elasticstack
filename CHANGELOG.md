@@ -1,3 +1,18 @@
+## [Unreleased]
+
+### Breaking changes
+
+`comments` on `kibana_security_exception_item` is now computed/read-only. Move texts Terraform should enforce into the new `required_comments` attribute and remove any configured `comments`. Previously stored comments remain in Kibana and are echoed in `comments`.
+
+### Changes
+
+- Add the `elasticstack_kibana_case_template` resource for managing Kibana Cases templates. ([#5268](https://github.com/elastic/terraform-provider-elasticstack/pull/5268))
+- Add optional auth to elasticstack_fleet_agent_download_source for private artifact registries. ([#5263](https://github.com/elastic/terraform-provider-elasticstack/pull/5263))
+- Reject Lens XY duration decimals and compact formatting on Kibana before 9.5.2 ([#5252](https://github.com/elastic/terraform-provider-elasticstack/pull/5252))
+- Add `width` and `grow` support to `pinned_panels` in `elasticstack_kibana_dashboard` ([#5253](https://github.com/elastic/terraform-provider-elasticstack/pull/5253))
+- Add the `elasticstack_kibana_case_field_definition` resource for managing Kibana Cases field definitions (requires Elastic Stack 9.6.0+). ([#5246](https://github.com/elastic/terraform-provider-elasticstack/pull/5246))
+- security_exception_item `comments` is now a read-only view of stored Kibana comments; add `required_comments` to keep enforcing comment texts. ([#5221](https://github.com/elastic/terraform-provider-elasticstack/pull/5221))
+
 ## [0.16.6] - 2026-10-12
 
 ### Breaking changes
