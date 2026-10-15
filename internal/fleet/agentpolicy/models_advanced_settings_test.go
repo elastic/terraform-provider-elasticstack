@@ -392,3 +392,36 @@ func TestInternalYAMLSemanticEqualityOnRead(t *testing.T) {
 	require.False(t, diags.HasError())
 	assert.True(t, equal)
 }
+
+func TestToAPICreateModelEmitsAgentFeatureKeys(t *testing.T) {
+	ctx := context.Background()
+	obj, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), advancedSettingsModel{
+		FeaturesDisablePolicyChangeAcksEnabled: types.BoolValue(false),
+		FeaturesIncludeTagsInEventsEnabled:     types.BoolValue(true),
+		Internal:                               customtypes.NewNormalizedYamlValue("a: 1\n"),
+	})
+	require.False(t, diags.HasError())
+	model := &agentPolicyModel{
+		Name:             types.StringValue("p"),
+		Namespace:        types.StringValue("default"),
+		AdvancedSettings: obj,
+	}
+
+	body, diags := model.toAPICreateModel(ctx, agentPolicyFeatures{
+		SupportsAdvancedSettings:                       true,
+		SupportsAgentInternal:                          true,
+		SupportsFeaturesDisablePolicyChangeAcksEnabled: true,
+		SupportsFeaturesIncludeTagsInEventsEnabled:     true,
+	})
+	require.False(t, diags.HasError())
+
+	raw, err := json.Marshal(body)
+	require.NoError(t, err)
+	var got struct {
+		AdvancedSettings map[string]any `json:"advanced_settings"`
+	}
+	require.NoError(t, json.Unmarshal(raw, &got))
+	assert.Equal(t, false, got.AdvancedSettings["agent_features_disable_policy_change_acks_enabled"])
+	assert.Equal(t, true, got.AdvancedSettings["agent_features_include_tags_in_events_enabled"])
+	assert.Equal(t, "a: 1\n", got.AdvancedSettings["agent_internal"])
+}
