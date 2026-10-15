@@ -1,0 +1,89 @@
+## 1. Schema
+
+- [ ] 1.1 In `internal/kibana/dashboard/panel/lensxy/schema_attrs.go`, replace
+      the `thresholds[].axis` validator with
+      `stringvalidator.OneOf("x", "y", "y2")`.
+- [ ] 1.2 Replace the `referenceLineAxisDescription` constant with wording that
+      documents `x`/`y`/`y2` (axis the reference line is drawn on; `y` is the
+      primary Y axis, `y2` the secondary Y axis, `x` draws a vertical line at
+      an X value; omitted defaults to `y`). Remove the "not settable against
+      Kibana 9.6 / omit this attribute / tracked in #4958" language.
+- [ ] 1.3 Confirm `axis` stays `Optional` (not `Computed`).
+
+## 2. Read-back alignment
+
+- [ ] 2.1 In `internal/kibana/dashboard/panel/lensxy/alignment_panels.go`,
+      extend the threshold loop in `alignXYLayerStateFromPlan` so that when
+      `planThreshold.Axis` is known and equals `"y"` and
+      `stateThreshold.Axis` is null (Kibana 9.4.x stripping an explicit
+      `"y"`), the state value is restored to `"y"` from the plan. Keep the
+      existing `PreserveNullIfStateEquals(planThreshold.Axis,
+      &stateThreshold.Axis, types.StringValue("y"))` call for the null-plan /
+      injected-state direction (9.6+ omitted-axis default) — this is an
+      additive change, not a replacement.
+- [ ] 2.2 Add a small helper (e.g. in `lenscommon`, following the naming
+      pattern of `PreserveNullIfStateEquals`) only if the inline branch would
+      duplicate logic needed elsewhere; otherwise keep it local to
+      `alignment_panels.go` per the existing style of
+      `preserveThresholdValueJSONIfStateIsPlanValue`.
+
+## 3. Fixture and test fixes
+
+- [ ] 3.1 Update `internal/kibana/dashboard/panel/lensxy/converter_test.go:48`:
+      change `"axis":"left"` to `"axis":"y"` in the Y-metric `config_json`
+      fixture (free-form JSON already using Kibana's post-9.4 values; this is
+      a stale literal, not a schema change).
+- [ ] 3.2 In `internal/kibana/dashboard/panel/lensxy/alignment_panels_test.go`,
+      replace
+      `TestAlignXYLayerStateFromPlan_explicitLeftThresholdAxisIsNotTreatedAsOmitDefaultY`
+      (asserts behavior for a value the new validator no longer accepts) with
+      cases covering: explicit `"x"` pass-through, explicit `"y2"`
+      pass-through (already covered by
+      `TestAlignXYLayerStateFromPlan_explicitReferenceLineThresholdAxisIsNotOverridden`
+      — confirm it still passes unchanged), explicit `"y"` with state `"y"`
+      (9.6 echo, no-op), and explicit `"y"` with state null (9.4.x strip,
+      restored to `"y"`).
+- [ ] 3.3 Add a schema validator unit/acceptance test asserting `axis =
+      "left"` (and `"right"`, `"bottom"`) produce a plan-time validation error
+      naming the allowed values `x`, `y`, `y2`.
+
+## 4. Acceptance coverage
+
+- [ ] 4.1 In `internal/kibana/dashboard/panel/lensxy/acc_test.go` and
+      `testdata/TestAccResourceDashboardXYChart_layers_reference/`, add
+      fixtures/steps for explicit `axis = "x"`, `axis = "y"`, and `axis =
+      "y2"` on a reference-line threshold, each asserting the attribute value
+      and an empty plan after apply.
+- [ ] 4.2 Keep the existing omitted-axis fixture/step to cover the Kibana 9.6+
+      injection case.
+- [ ] 4.3 Run the extended `TestAccResourceDashboardXYChart_layers_reference`
+      against both a 9.4.x stack and a 9.6+ stack per
+      `dev-docs/high-level/testing.md` — the explicit-`"y"` case is the one
+      that distinguishes them (see design.md). Record results in the PR.
+
+## 5. Spec and docs sync
+
+- [ ] 5.1 Update `openspec/specs/kibana-dashboard/spec.md` REQ-011: replace
+      the `thresholds[].axis` enum description (`bottom|left|right`,
+      "reconciling the enum is tracked separately
+      (https://github.com/elastic/terraform-provider-elasticstack/issues/4958)")
+      with the `x|y|y2` enum and the bidirectional omit-default rule from
+      design.md Decision 3. Add/update scenarios for explicit `x`, explicit
+      `y2`, explicit `y` preserved on a stack that strips it, and rejection of
+      `left`/`right`/`bottom`.
+- [ ] 5.2 Regenerate `docs/resources/kibana_dashboard.md` (`make
+      docs-generate`) so both reference-line `axis` occurrences reflect the
+      new `MarkdownDescription`.
+- [ ] 5.3 Add a changelog entry (`.changelog/` per
+      `dev-docs/high-level/contributing.md` conventions) flagging the enum
+      change as breaking, with the rationale that the removed values never
+      applied successfully against any Kibana version with the Dashboard API.
+
+## 6. Validation
+
+- [ ] 6.1 Run `OPENSPEC_TELEMETRY=0 ./node_modules/.bin/openspec validate
+      xy-reference-line-axis-enum --type change` and fix any reported issues.
+- [ ] 6.2 During implementation (not part of this proposal run): `make
+      build`; `go test ./internal/kibana/dashboard/panel/lensxy/...`; run the
+      acceptance tests in Task 4 with `TF_ACC=1` against live 9.4.x and 9.6+
+      stacks per `dev-docs/high-level/testing.md`.
