@@ -231,3 +231,14 @@ versions exercise the remaining boundaries.
   persistent diff; semantic equality still applies on refresh/apply (e.g. if Kibana normalised the
   YAML). The delta spec scenario was reworded accordingly, and acceptance step 10 asserts a clean
   apply with an empty post-apply plan rather than an empty pre-apply plan.
+
+## Validation record (group 9)
+
+Acceptance tests (`TestAccResourceAgentPolicy*`) were run against the 9.5.5 stack only. On it, the
+`internal` (9.3.0) and `features_disable_policy_change_acks_enabled` (9.4.0) positive steps and the
+`features_include_tags_in_events_enabled` negative version-gate step executed; the 9.6.0 positive
+steps and the lower-version negative steps for the other two fields were skipped by their `SkipFunc`s
+and remain to be exercised by CI stacks at those versions. `make check-lint`, `make check-openspec`
+and the `internal/fleet/agentpolicy` unit tests pass. Self-review against the delta spec (task 9.5)
+found the implementation consistent with every scenario; the only deviation is the semantic-equality
+wording noted above.

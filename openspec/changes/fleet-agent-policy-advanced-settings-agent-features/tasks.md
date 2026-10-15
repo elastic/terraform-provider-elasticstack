@@ -92,9 +92,9 @@
 
 ## 9. Validation and cleanup
 
-- [ ] 9.1 Run `make build` and `make check-lint` — fix any issues
-- [ ] 9.2 Run `make check-openspec` — confirm the change validates
-- [ ] 9.3 Run targeted acceptance tests against real Kibana/Fleet stacks at 9.3.0, 9.4.0, and 9.6.0
+- [x] 9.1 Run `make build` and `make check-lint` — fix any issues
+- [x] 9.2 Run `make check-openspec` — confirm the change validates
+- [x] 9.3 Run targeted acceptance tests against real Kibana/Fleet stacks at 9.3.0, 9.4.0, and 9.6.0
   (per `dev-docs/high-level/testing.md`)
-- [ ] 9.4 Run the full unit test suite for `internal/fleet/agentpolicy`
-- [ ] 9.5 Self-review with the `requirements-verification` skill against this change's specs
+- [x] 9.4 Run the full unit test suite for `internal/fleet/agentpolicy`
+- [x] 9.5 Self-review with the `requirements-verification` skill against this change's specs
