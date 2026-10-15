@@ -21,9 +21,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
-	"unicode/utf8"
 
-	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexname"
 )
 
@@ -97,11 +95,10 @@ func validateLiteralName(name, label string, chars *regexp.Regexp) error {
 	if strings.Contains(name, ":") {
 		return fmt.Errorf("%s %q is remote-cluster qualified; only a local literal name is accepted", label, name)
 	}
-	if strings.ContainsAny(name, "<>") || esclient.DateMathIndexNameRe.MatchString(name) {
+	if strings.ContainsAny(name, "<>") {
 		return fmt.Errorf("%s %q uses date math; only a literal name is accepted", label, name)
 	}
-	r, _ := utf8.DecodeRuneInString(name)
-	if r == '-' || r == '_' || r == '+' {
+	if !indexname.LeadingCharRegexp.MatchString(name) {
 		return fmt.Errorf("%s %q must not start with '-', '_', or '+'", label, name)
 	}
 	if !chars.MatchString(name) {

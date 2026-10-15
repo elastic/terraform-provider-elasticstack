@@ -31,23 +31,19 @@ func readRolloverIndexSeries(
 	resourceID string,
 	state Model,
 ) (Model, bool, diag.Diagnostics) {
-	aliasName := resourceID
-	if aliasName == "" {
-		aliasName = state.RolloverAlias.ValueString()
-	}
-	series, diags := discoverAlias(ctx, client, aliasName)
+	series, diags := discoverAlias(ctx, client, resourceID)
 	if diags.HasError() {
 		return state, false, diags
 	}
 	if !series.Found {
 		return state, false, nil
 	}
-	if streamDiags := rejectDataStreamTargets(aliasName, series); streamDiags.HasError() {
+	if streamDiags := rejectDataStreamTargets(resourceID, series); streamDiags.HasError() {
 		return state, false, streamDiags
 	}
-	diags.Append(writerHealthWarning(aliasName, series)...)
+	diags.Append(writerHealthWarning(resourceID, series)...)
 
-	id, idDiags := client.ID(ctx, aliasName)
+	id, idDiags := client.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
 		return state, false, diags

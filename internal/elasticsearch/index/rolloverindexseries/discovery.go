@@ -24,7 +24,6 @@ import (
 	"slices"
 	"sort"
 	"strings"
-	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/expandwildcard"
@@ -126,20 +125,9 @@ func discoverUntilTargetsResolve(
 			return seriesView{}, unresolvedAliasTargets(aliasName, disappeared)
 		}
 		previousDisappeared = disappeared
-		if !waitForAliasRediscovery(ctx) {
+		if !waitForDeleteRediscovery(ctx) {
 			return seriesView{}, aliasResolutionTimeout(aliasName)
 		}
-	}
-}
-
-func waitForAliasRediscovery(ctx context.Context) bool {
-	timer := time.NewTimer(deleteRediscoveryDelay)
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		return false
-	case <-timer.C:
-		return true
 	}
 }
 
