@@ -205,22 +205,36 @@ func alignXYLayerStateFromPlan(planLayers, stateLayers []models.XYLayerModel) {
 		for j := range m {
 			planThreshold := planLayer.ReferenceLineLayer.Thresholds[j]
 			stateThreshold := &stateLayer.ReferenceLineLayer.Thresholds[j]
-			// An axis carried inside the plan's value_json is not mirrored into the typed attribute.
-			if planThreshold.Axis.IsNull() && jsonObjectHasKey(planThreshold.ValueJSON, "axis") {
-				stateThreshold.Axis = planThreshold.Axis
+			restoreTypedOperationIfValueJSONOmitted(planThreshold, stateThreshold)
+			// An axis carried inside the plan's value_json is not mirrored into the typed attribute. Clear the
+			// returned typed axis only when it agrees with the authored one (an absent axis means "y" on
+			// Kibana 9.4/9.5); otherwise keep it, and do not restore plan JSON, so remote drift stays visible.
+			axisDrifted := false
+			if planThreshold.Axis.IsNull() {
+				if planJSONAxis, ok := jsonObjectStringKey(planThreshold.ValueJSON, thresholdAxisKey); ok {
+					if effectiveThresholdAxis(stateThreshold.Axis) == planJSONAxis {
+						stateThreshold.Axis = planThreshold.Axis
+					} else {
+						axisDrifted = true
+					}
+				}
 			}
 			lenscommon.PreserveNullIfStateEquals(planThreshold.Axis, &stateThreshold.Axis, types.StringValue("y"))
-			// Kibana 9.4/9.5 strip an explicit default "y" from the read-back; restore the planned value.
+			// Kibana 9.4/9.5 strip an explicit default "y" from the read-back; restore only an authored typed "y".
 			if planThreshold.Axis.Equal(types.StringValue("y")) && stateThreshold.Axis.IsNull() {
 				stateThreshold.Axis = planThreshold.Axis
 			}
 			lenscommon.PreserveNullIfStateEquals(planThreshold.Operation, &stateThreshold.Operation, types.StringValue(operationStaticValue))
 			lenscommon.PreserveNullJSONIfStateMatchesDefault(planThreshold.ColorJSON, &stateThreshold.ColorJSON, `{"type":"auto"}`)
-			preserveThresholdValueJSONIfStateIsPlanValue(planThreshold.ValueJSON, &stateThreshold.ValueJSON, planThreshold.Operation)
+			if !axisDrifted {
+				preserveThresholdValueJSONIfStateIsPlanValue(planThreshold.ValueJSON, &stateThreshold.ValueJSON, planThreshold.Operation)
+			}
 			// Kibana 9.4 adds `label: ""` to non-static operations; drop it when the plan did not set a label.
 			dropEmptyLabelIfPlanOmitsIt(planThreshold.ValueJSON, &stateThreshold.ValueJSON)
-			lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planThreshold.ValueJSON, &stateThreshold.ValueJSON, "axis_id", "color", "axis")
-			lenscommon.PreservePlanJSONIfStateOmitsOptionalKeys(planThreshold.ValueJSON, &stateThreshold.ValueJSON, "axis")
+			lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(planThreshold.ValueJSON, &stateThreshold.ValueJSON, "axis_id", "color", thresholdAxisKey)
+			if !axisDrifted {
+				lenscommon.PreservePlanJSONIfStateOmitsOptionalKeys(planThreshold.ValueJSON, &stateThreshold.ValueJSON, thresholdAxisKey)
+			}
 		}
 	}
 }
@@ -294,6 +308,58 @@ func dropEmptyLabelIfPlanOmitsIt(plan jsontypes.Normalized, state *jsontypes.Nor
 		return
 	}
 	*state = jsontypes.NewNormalizedValue(string(b))
+}
+
+const thresholdAxisKey = "axis"
+
+// effectiveThresholdAxis maps an absent axis (stripped by Kibana 9.4/9.5) to the default "y".
+func effectiveThresholdAxis(axis types.String) string {
+	if !typeutils.IsKnown(axis) {
+		return "y"
+	}
+	return axis.ValueString()
+}
+
+func jsonObjectStringKey(j jsontypes.Normalized, key string) (string, bool) {
+	if !typeutils.IsKnown(j) {
+		return "", false
+	}
+	var obj map[string]any
+	if err := json.Unmarshal([]byte(j.ValueString()), &obj); err != nil {
+		return "", false
+	}
+	v, ok := obj[key].(string)
+	return v, ok
+}
+
+// restoreTypedOperationIfValueJSONOmitted converts a returned whole operation object back to the typed
+// operation attribute when the plan authored the threshold with typed attributes only (no value_json).
+// The object must carry nothing beyond operation, axis and an empty label, so other drift is not hidden.
+func restoreTypedOperationIfValueJSONOmitted(plan models.ThresholdModel, state *models.ThresholdModel) {
+	if !plan.ValueJSON.IsNull() || !typeutils.IsKnown(plan.Operation) || !typeutils.IsKnown(state.ValueJSON) || !state.Operation.IsNull() {
+		return
+	}
+	var obj map[string]any
+	if err := json.Unmarshal([]byte(state.ValueJSON.ValueString()), &obj); err != nil {
+		return
+	}
+	op, ok := obj["operation"].(string)
+	if !ok || op != plan.Operation.ValueString() {
+		return
+	}
+	for k, v := range obj {
+		switch k {
+		case "operation", thresholdAxisKey:
+		case "label":
+			if label, isStr := v.(string); !isStr || label != "" {
+				return
+			}
+		default:
+			return
+		}
+	}
+	state.Operation = types.StringValue(op)
+	state.ValueJSON = jsontypes.NewNormalizedNull()
 }
 
 func jsonObjectHasKey(j jsontypes.Normalized, key string) bool {

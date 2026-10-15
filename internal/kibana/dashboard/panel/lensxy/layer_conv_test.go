@@ -124,6 +124,7 @@ func TestReferenceLineLayerFromAPI_thresholdAxisRoundTrip(t *testing.T) {
 		planValue    string
 		apiThreshold string
 		wantAxis     types.String
+		wantValue    string // defaults to planValue
 	}{
 		{name: "static x echoed", planAxis: types.StringValue("x"), planValue: staticPlan, apiThreshold: `{"operation":"static_value","value":42,"axis":"x"}`, wantAxis: types.StringValue("x")},
 		{name: "static y2 echoed", planAxis: types.StringValue("y2"), planValue: staticPlan, apiThreshold: `{"operation":"static_value","value":42,"axis":"y2"}`, wantAxis: types.StringValue("y2")},
@@ -136,6 +137,38 @@ func TestReferenceLineLayerFromAPI_thresholdAxisRoundTrip(t *testing.T) {
 		{name: "count y stripped", planAxis: types.StringValue("y"), planValue: countPlan, apiThreshold: `{"operation":"count"}`, wantAxis: types.StringValue("y")},
 		{name: "count omitted with injected y", planAxis: types.StringNull(), planValue: countPlan, apiThreshold: `{"operation":"count","axis":"y"}`, wantAxis: types.StringNull()},
 		{name: "count axis inside value_json echoed", planAxis: types.StringNull(), planValue: countAxisY2, apiThreshold: countAxisY2, wantAxis: types.StringNull()},
+		{
+			name:         "static axis inside value_json changed remotely stays observable",
+			planAxis:     types.StringNull(),
+			planValue:    staticAxisX,
+			apiThreshold: `{"operation":"static_value","value":42,"axis":"y2"}`,
+			wantAxis:     types.StringValue("y2"),
+			wantValue:    "42",
+		},
+		{
+			name:         "static axis inside value_json stripped (moved to y) stays observable",
+			planAxis:     types.StringNull(),
+			planValue:    staticAxisX,
+			apiThreshold: `{"operation":"static_value","value":42}`,
+			wantAxis:     types.StringNull(),
+			wantValue:    `{"operation":"static_value","value":42}`,
+		},
+		{
+			name:         "count axis inside value_json stripped (moved to y) stays observable",
+			planAxis:     types.StringNull(),
+			planValue:    countAxisY2,
+			apiThreshold: `{"operation":"count"}`,
+			wantAxis:     types.StringNull(),
+			wantValue:    `{"operation":"count"}`,
+		},
+		{
+			name:         "count axis inside value_json changed remotely stays observable",
+			planAxis:     types.StringNull(),
+			planValue:    countAxisY2,
+			apiThreshold: `{"operation":"count","axis":"x"}`,
+			wantAxis:     types.StringValue("x"),
+			wantValue:    `{"operation":"count","axis":"x"}`,
+		},
 		{name: "count axis y inside value_json stripped", planAxis: types.StringNull(), planValue: `{"operation":"count","axis":"y"}`, apiThreshold: `{"operation":"count"}`, wantAxis: types.StringNull()},
 	}
 	for _, tt := range tests {
@@ -162,7 +195,57 @@ func TestReferenceLineLayerFromAPI_thresholdAxisRoundTrip(t *testing.T) {
 
 			got := state.Thresholds[0]
 			assert.True(t, tt.wantAxis.Equal(got.Axis), "axis: want %s got %s", tt.wantAxis, got.Axis)
-			assert.JSONEq(t, tt.planValue, got.ValueJSON.ValueString())
+			wantValue := tt.wantValue
+			if wantValue == "" {
+				wantValue = tt.planValue
+			}
+			assert.JSONEq(t, wantValue, got.ValueJSON.ValueString())
+		})
+	}
+}
+
+func TestReferenceLineLayerFromAPI_typedOnlyOperationRoundTrip(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name         string
+		planAxis     types.String
+		apiThreshold string
+		wantAxis     types.String
+	}{
+		{name: "count y2", planAxis: types.StringValue("y2"), apiThreshold: `{"operation":"count","axis":"y2"}`, wantAxis: types.StringValue("y2")},
+		{name: "count y2 with 9.4 empty label", planAxis: types.StringValue("y2"), apiThreshold: `{"operation":"count","axis":"y2","label":""}`, wantAxis: types.StringValue("y2")},
+		{name: "count y stripped", planAxis: types.StringValue("y"), apiThreshold: `{"operation":"count"}`, wantAxis: types.StringValue("y")},
+		{name: "count no axis with injected y", planAxis: types.StringNull(), apiThreshold: `{"operation":"count","axis":"y"}`, wantAxis: types.StringNull()},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			planThreshold := models.ThresholdModel{
+				Axis:      tt.planAxis,
+				Operation: types.StringValue("count"),
+				ValueJSON: jsontypes.NewNormalizedNull(),
+			}
+
+			var item kbapi.KibanaHTTPAPIsVisXyReferenceLineLayerNoESQL_Thresholds_Item
+			require.NoError(t, json.Unmarshal([]byte(tt.apiThreshold), &item))
+			state := &models.ReferenceLineLayerModel{}
+			diags := referenceLineLayerFromAPINoESQL(state, kbapi.KibanaHTTPAPIsVisXyReferenceLineLayerNoESQL{
+				Thresholds: []kbapi.KibanaHTTPAPIsVisXyReferenceLineLayerNoESQL_Thresholds_Item{item},
+			})
+			require.False(t, diags.HasError(), "%v", diags)
+			require.Len(t, state.Thresholds, 1)
+
+			alignXYChartStateFromPlan(
+				&models.XYChartConfigModel{Layers: []models.XYLayerModel{{ReferenceLineLayer: &models.ReferenceLineLayerModel{Thresholds: []models.ThresholdModel{planThreshold}}}}},
+				&models.XYChartConfigModel{Layers: []models.XYLayerModel{{ReferenceLineLayer: state}}},
+			)
+
+			got := state.Thresholds[0]
+			assert.True(t, tt.wantAxis.Equal(got.Axis), "axis: want %s got %s", tt.wantAxis, got.Axis)
+			assert.Equal(t, "count", got.Operation.ValueString())
+			assert.True(t, got.ValueJSON.IsNull(), "value_json should stay null, got %s", got.ValueJSON)
 		})
 	}
 }
