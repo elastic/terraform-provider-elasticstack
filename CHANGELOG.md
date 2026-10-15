@@ -1,8 +1,17 @@
-## Unreleased
+## [Unreleased]
+
+### Breaking changes
+
+`comments` on `kibana_security_exception_item` is now computed/read-only. Move texts Terraform should enforce into the new `required_comments` attribute and remove any configured `comments`. Previously stored comments remain in Kibana and are echoed in `comments`.
 
 ### Changes
 
-- Add the `ssl` attribute (with `certificate`, `certificate_authorities`, and a sensitive `key`) to `elasticstack_fleet_agent_download_source` for download source hosts using self-signed or privately-issued certificates. Requires Elastic Stack 9.1.0 or later. ([#5243](https://github.com/elastic/terraform-provider-elasticstack/issues/5243))
+- Add the `elasticstack_kibana_case_template` resource for managing Kibana Cases templates. ([#5268](https://github.com/elastic/terraform-provider-elasticstack/pull/5268))
+- Add optional auth to elasticstack_fleet_agent_download_source for private artifact registries. ([#5263](https://github.com/elastic/terraform-provider-elasticstack/pull/5263))
+- Reject Lens XY duration decimals and compact formatting on Kibana before 9.5.2 ([#5252](https://github.com/elastic/terraform-provider-elasticstack/pull/5252))
+- Add `width` and `grow` support to `pinned_panels` in `elasticstack_kibana_dashboard` ([#5253](https://github.com/elastic/terraform-provider-elasticstack/pull/5253))
+- Add the `elasticstack_kibana_case_field_definition` resource for managing Kibana Cases field definitions (requires Elastic Stack 9.6.0+). ([#5246](https://github.com/elastic/terraform-provider-elasticstack/pull/5246))
+- security_exception_item `comments` is now a read-only view of stored Kibana comments; add `required_comments` to keep enforcing comment texts. ([#5221](https://github.com/elastic/terraform-provider-elasticstack/pull/5221))
 
 ## [0.16.6] - 2026-10-12
 
@@ -397,10 +406,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 ### Changes
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 7346053b2 (docs(changelog): add entity store timing/isolation fix entry (#4062))
 
 - Add parameter validation and default normalization for `elasticstack_kibana_alerting_rule` to prevent inconsistent state errors caused by API-injected defaults. ([#1648](https://github.com/elastic/terraform-provider-elasticstack/pull/1648))
 - Fix JSON marshaling error in `elasticstack_kibana_slo` when `good` or `total` fields in `kql_custom_indicator` are empty or null. ([#1729](https://github.com/elastic/terraform-provider-elasticstack/pull/1729))
@@ -409,10 +414,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 ### Changes
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 7346053b2 (docs(changelog): add entity store timing/isolation fix entry (#4062))
 
 - Fix provider panic in `elasticstack_kibana_slo` when SLO updates error without a HTTP response. ([#1725](https://github.com/elastic/terraform-provider-elasticstack/pull/1725))
 - Fix inconsistent state error in `elasticstack_kibana_alerting_rule` when `alert_delay` is not specified. ([#1726](https://github.com/elastic/terraform-provider-elasticstack/pull/1726))
@@ -455,10 +456,6 @@ resource "elasticstack_fleet_integration" "tcp-o11y" {
 
 The `input` block in the `elasticstack_fleet_integration_policy` resource has been restructured into the `inputs` map attribute.
 This transition:
-<<<<<<< HEAD
-
-=======
->>>>>>> 7346053b2 (docs(changelog): add entity store timing/isolation fix entry (#4062))
 
 - Allows the provider to implement semantic equality checking across all inputs within the integration policy. This change:
   - Prevents several state consistency errors experienced whilst using this resource

@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -257,4 +258,25 @@ func textContentHasAcceptanceTest(content string) bool {
 		}
 	}
 	return false
+}
+
+// TestEnumerationGuard_ExamplesHarnessIsAcceptancePackage fails when
+// examplesHarnessPackage stops being an enumerated acceptance package: the
+// selection filters extra packages through the acceptance set, so a stale
+// constant would silently select nothing for examples/ changes.
+func TestEnumerationGuard_ExamplesHarnessIsAcceptancePackage(t *testing.T) {
+	root := repoRoot(t)
+	modulePath, err := currentModulePath()
+	if err != nil {
+		t.Fatalf("cannot resolve module path: %v", err)
+	}
+	t.Chdir(root)
+
+	got, err := FindAccTestPackages(accTestEnumerationRoots, modulePath)
+	if err != nil {
+		t.Fatalf("FindAccTestPackages: %v", err)
+	}
+	if !slices.Contains(got, modulePath+"/"+examplesHarnessPackage) {
+		t.Errorf("%s is not an enumerated acceptance test package", examplesHarnessPackage)
+	}
 }

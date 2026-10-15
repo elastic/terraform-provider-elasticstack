@@ -162,7 +162,6 @@ func TestClassifier_Classify_ForceAllPrefixes(t *testing.T) {
 		"generated/kibana/client.go",
 		"xpprovider/xpprovider.go",
 		".github/workflows/provider.yml",
-		"examples/resources/elasticstack_index/resource.tf",
 		"scripts/targeted-testacc/main.go",
 		".github/scripts/targeted-testacc-compute.sh",
 		"internal/kibana/dashboard/dashboardacctest/helpers.go",
@@ -314,5 +313,54 @@ func TestClassifier_Classify_KibanaConfigForceAllOnlyAtRoot(t *testing.T) {
 		if c.Classify([]string{file}).ForceAll {
 			t.Errorf("ForceAll = true for %s, want false", file)
 		}
+	}
+}
+
+func TestClassifier_Classify_ExamplesSelectHarness(t *testing.T) {
+	const harness = "github.com/example/mod/" + examplesHarnessPackage
+
+	for _, file := range []string{
+		"examples/resources/elasticstack_index/resource.tf",
+		"examples/cloud/main.tf",
+		"examples/provider/provider.tf",
+		"examples/examples.go",
+	} {
+		t.Run(file, func(t *testing.T) {
+			root := t.TempDir()
+			t.Chdir(root)
+			writeFile(t, root, "examples/examples.go", "package examples")
+
+			c := NewClassifier("github.com/example/mod")
+			res := c.Classify([]string{file})
+			if res.ForceAll {
+				t.Errorf("ForceAll = true for %s, want false", file)
+			}
+			if !reflect.DeepEqual(res.ExtraPackages, []string{harness}) {
+				t.Errorf("ExtraPackages = %v, want [%s]", res.ExtraPackages, harness)
+			}
+		})
+	}
+}
+
+func TestClassifier_Classify_ExamplesWithGoCode(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	writeFile(t, root, "internal/a/resource.go", "package a")
+
+	c := NewClassifier("github.com/example/mod")
+	res := c.Classify([]string{
+		"examples/resources/x/resource.tf",
+		"examples/resources/y/resource.tf",
+		"internal/a/resource.go",
+	})
+
+	if res.ForceAll {
+		t.Error("ForceAll = true, want false")
+	}
+	if want := []string{"github.com/example/mod/internal/a"}; !reflect.DeepEqual(res.Packages, want) {
+		t.Errorf("packages = %v, want %v", res.Packages, want)
+	}
+	if want := []string{"github.com/example/mod/" + examplesHarnessPackage}; !reflect.DeepEqual(res.ExtraPackages, want) {
+		t.Errorf("ExtraPackages = %v, want %v (deduplicated)", res.ExtraPackages, want)
 	}
 }
