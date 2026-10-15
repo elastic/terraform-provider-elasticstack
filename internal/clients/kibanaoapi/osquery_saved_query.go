@@ -30,6 +30,13 @@ import (
 
 const osqueryFindSavedQueriesPageSize = 100
 
+// osquerySavedQueryListItem is the subset of a saved-query list entry needed to
+// resolve a saved_query_id to a Kibana saved object ID.
+type osquerySavedQueryListItem struct {
+	ID            kbapi.SecurityOsqueryAPISavedQueryId
+	SavedObjectID string
+}
+
 // OsquerySavedQueryCreateEntity is the unwrapped `data` object from POST /api/osquery/saved_queries.
 type OsquerySavedQueryCreateEntity struct {
 	CreatedAt           *time.Time
@@ -205,23 +212,22 @@ func FindOsquerySavedObjectID(
 	savedQueryID kbapi.SecurityOsqueryAPISavedQueryId,
 ) (string, bool, diag.Diagnostics) {
 	pageSize := kbapi.SecurityOsqueryAPIPageSizeOrUndefined(osqueryFindSavedQueriesPageSize)
-	page := 1
 
-	for {
+	match, found, diags := FindFirstPage(func(page int) ([]osquerySavedQueryListItem, int, diag.Diagnostics) {
 		pageParam := page
 		resp, err := client.API.OsqueryFindSavedQueriesWithResponse(ctx, &kbapi.OsqueryFindSavedQueriesParams{
 			Page:     &pageParam,
 			PageSize: &pageSize,
 		}, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
-			return "", false, diagutil.FrameworkDiagFromError(err)
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 
 		if resp.StatusCode() != http.StatusOK {
-			return "", false, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+			return nil, 0, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
 		}
 		if resp.JSON200 == nil {
-			return "", false, diag.Diagnostics{
+			return nil, 0, diag.Diagnostics{
 				diag.NewErrorDiagnostic(
 					"Failed to parse response",
 					"Osquery find saved queries returned success status but response body was nil or not JSON",
@@ -229,27 +235,22 @@ func FindOsquerySavedObjectID(
 			}
 		}
 
-		for _, item := range resp.JSON200.Data {
-			if item.Id == savedQueryID {
-				return item.SavedObjectId, true, nil
-			}
+		items := make([]osquerySavedQueryListItem, len(resp.JSON200.Data))
+		for i, d := range resp.JSON200.Data {
+			items[i] = osquerySavedQueryListItem{ID: d.Id, SavedObjectID: d.SavedObjectId}
 		}
-
-		if len(resp.JSON200.Data) == 0 {
-			break
-		}
-
-		perPage := pageSize
-		if resp.JSON200.PerPage > 0 {
-			perPage = resp.JSON200.PerPage
-		}
-		if page*perPage >= resp.JSON200.Total {
-			break
-		}
-		page++
+		return items, resp.JSON200.Total, nil
+	}, func(item osquerySavedQueryListItem) bool {
+		return item.ID == savedQueryID
+	})
+	if diags.HasError() {
+		return "", false, diags
+	}
+	if !found {
+		return "", false, nil
 	}
 
-	return "", false, nil
+	return match.SavedObjectID, true, nil
 }
 
 // GetOsquerySavedQueryBySavedObjectID reads an Osquery saved query using Kibana's saved_object_id.
