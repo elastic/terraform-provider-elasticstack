@@ -13,15 +13,20 @@
 
 ## 2. Alias-membership and effective-writer helper
 
-- [ ] 2.1 Create a small package-local helper (not `internal/elasticsearch/index/aliasutil`, which
-  restores configured membership rather than observing it) that: given a `map[string]types.IndexAliases`
-  from `clients/elasticsearch.GetAlias`, computes (a) the effective writer per the precedence rules in
-  `specs/elasticsearch-rollover-index-series/spec.md` "Effective-writer resolution", and (b) the
-  current concrete member set including hidden/closed members.
+- [ ] 2.1 Create shared alias discovery and a small package-local helper (not
+  `internal/elasticsearch/index/aliasutil`, which restores configured membership rather than observing
+  it) that resolves target types and rejects data-stream targets, then computes from the
+  `map[string]types.IndexAliases` returned by `clients/elasticsearch.GetAlias`: (a) the effective
+  writer per the precedence rules in `specs/elasticsearch-rollover-index-series/spec.md`
+  "Effective-writer resolution", and (b) the current ordinary concrete member set including
+  hidden/closed members. Use this discovery for Create, Read/import hydration, and Delete, rejecting
+  data-stream targets before adoption or deletion.
 - [ ] 2.2 Implement the "healthy" classifier: exactly one effective writer AND that writer's name ends
   in `-<digits>`. Return a structured reason (no writer / multiple writers / non-numeric writer name)
   for use in Create-adoption error messages and Read warning diagnostics.
-- [ ] 2.3 Add unit tests covering all `GetAlias` response shapes in the effective-writer requirement:
+- [ ] 2.3 Add unit tests covering target-type resolution (including a numerically suffixed data stream
+  with an explicit writer), rejection before adoption/deletion and during Read/import hydration, and
+  all `GetAlias` response shapes in the effective-writer requirement:
   explicit writer, sole implicit writer, sole explicit-false, multiple members with no writer,
   non-numeric writer name, hidden/closed members included in membership.
 
@@ -75,7 +80,8 @@
 - [ ] 4.8 Create `resource.go` wiring the resource via `entitycore.NewElasticsearchResource[Model]`.
 - [ ] 4.9 Implement `ImportState` using `entitycore.ParseCompositeID` to split off `<cluster_uuid>`,
   then split the remaining resource-ID portion on the first `/` into `rollover_alias` and `prefix`;
-  reject malformed (not-three-part) import IDs with an actionable error.
+  explicitly initialize `deletion_protection = true` before Read hydration, preserve it on later reads,
+  and reject malformed (not-three-part) import IDs with an actionable error.
 - [ ] 4.10 Write unit tests in `rolloverindexseries_test.go` (or split per concern) covering:
   - Schema validation (naming validators wired correctly)
   - Create: missing-alias bootstrap, healthy-alias adoption (including out-of-prefix members),
@@ -85,7 +91,8 @@
   - Update: state-only persistence of `deletion_protection`/timeouts, no mutating API call
   - Delete: protection block, concrete-name deletion (not alias/wildcard), hidden/closed members
     included, concurrently-deleted member tolerated, alias-absent no-op, out-of-prefix member deleted
-  - Import: three-part ID parsing, malformed-ID rejection
+  - Import: three-part ID parsing, malformed-ID rejection, protection initialized to true and import
+    followed immediately by destroy without an intervening apply
 
 ## 5. Provider registration
 
@@ -124,7 +131,9 @@
   before destroy, the three-part import ID format, and that index templates (not this resource) own
   settings/mappings and must not also define `rollover_alias` in their own `aliases` block.
   Explicitly document that automatic adoption extends this resource's delete scope to every
-  pre-existing alias member, including ones that do not match `prefix`.
+  pre-existing alias member, including ones that do not match `prefix`; require users to ensure
+  destroy-before-create ordering for replacements and warn that `create_before_destroy` can be
+  configured directly or propagated through dependencies and cannot be prevented by the provider.
 - [ ] 7.2 Add an example under `examples/resources/elasticstack_elasticsearch_rollover_index_series/`
   showing the resource alongside an `elasticstack_elasticsearch_index_lifecycle` and
   `elasticstack_elasticsearch_index_template` with a `depends_on` chain.

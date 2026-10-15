@@ -31,9 +31,10 @@ orders-000001 --> orders-000002 --> orders-000003
 Existing building blocks this design relies on:
 
 - `internal/clients/elasticsearch/alias.go`'s `GetAlias` already calls
-  `Indices.GetAlias().Name(aliasName)` and returns `map[string]types.IndexAliases` keyed by concrete
-  index name — exactly the membership-by-alias lookup this resource needs. `DeleteIndexAlias` and
-  `UpdateIndexAlias` exist but are not reused here (see Decisions).
+  `Indices.GetAlias().Name(aliasName)` and returns `map[string]types.IndexAliases` keyed by target
+  name. Because data-stream aliases can have the same response shape, shared discovery must also
+  resolve target types and reject data streams before treating those keys as concrete indices.
+  `DeleteIndexAlias` and `UpdateIndexAlias` exist but are not reused here (see Decisions).
 - `internal/clients/elasticsearch/index.go`'s `DeleteIndex` and `PutIndex` cover concrete-index
   create/delete.
 - `internal/entitycore` provides the Elasticsearch resource envelope
@@ -150,8 +151,10 @@ not a claim about shard health, ILM execution, or template/policy correctness.
 
 ### Create and adoption
 
-1. Look up the exact alias (`GetAlias`), distinguishing genuine absence from authorization,
-   transport, decoding, or other API errors (errors must never be interpreted as absence).
+1. Look up the exact alias (`GetAlias`) and resolve its target types, distinguishing ordinary index
+   aliases from data-stream aliases/targets. Reject any data-stream target before adoption, and
+   distinguish genuine absence from authorization, transport, decoding, or other API errors (errors
+   must never be interpreted as absence).
 2. **Alias missing:** `PUT /<prefix>-000001` with only
    `{"aliases": {"<rollover_alias>": {"is_write_index": true}}}` — no settings/mappings in the body.
    If `<prefix>-000001` already exists (as an index, or as an incompatible object such as an alias),
@@ -166,8 +169,9 @@ not a claim about shard health, ILM execution, or template/policy correctness.
    all current alias members once `deletion_protection` is disabled; this must be documented clearly
    (see capability spec and resource docs).
 4. **Alias exists but is unhealthy** (no effective writer, an incompatible writer-name suffix, or an
-   unsupported alias type such as a data-stream alias): fail Create with an actionable diagnostic and
-   make no mutation. Do not fix the writer or attach unrelated indices to make adoption succeed.
+   unsupported alias type such as a data-stream alias or data-stream target): fail Create with an
+   actionable diagnostic and make no mutation. Do not fix the writer or attach unrelated indices to
+   make adoption succeed.
 5. After any mutation, re-read the live alias to derive final state (membership + writer), consistent
    with other entitycore resources deriving state from a post-mutation read. Treat an interrupted
    create as a signal to re-discover rather than to blindly retry — a subsequent Create (e.g. a
@@ -197,7 +201,8 @@ members.
 There is no in-place Elasticsearch mutation path for this resource's own attributes:
 
 - `deletion_protection` and the operation-timeouts attribute update Terraform state only, followed by
-  a readback of membership/writer.
+  a readback of membership/writer. The required readback GET is allowed; no mutating API call is tied
+  to these attribute changes.
 - `prefix` and `rollover_alias` changes both require replacement (`RequiresReplace`), even on an
   adopted series where `prefix` was never used to create anything.
 - Changes to the computed `indices`/`write_index` outputs reflect external lifecycle progress, not
@@ -205,19 +210,21 @@ There is no in-place Elasticsearch mutation path for this resource's own attribu
 - No placeholder API call (e.g. `_validate/query`) is sent to simulate an update when nothing in
   config changed.
 
-For a `prefix`/`rollover_alias` replacement, destroy-before-create is required;
-`create_before_destroy` is explicitly unsupported because automatic adoption means the new instance
-could adopt the still-existing alias before the old instance's destroy runs, after which deleting the
-"old" instance would delete the new instance's members. The protection guard applies to replacement
-too: a user must apply `deletion_protection = false` as a prior, separate apply — toggling it only in
-the same operation that replaces the resource does not establish an already-applied unprotected prior
-state.
+For a `prefix`/`rollover_alias` replacement, the user must ensure destroy-before-create ordering.
+Terraform Core controls replacement ordering; `RequiresReplace` cannot enforce this, and
+`create_before_destroy` can be configured directly or propagated through dependencies. If a new
+instance adopts the same alias before the old instance is destroyed, the old instance can delete the
+new instance's members. Document this lifecycle precondition and explicitly warn against
+`create_before_destroy` for this resource. The protection guard applies to replacement too: a user
+must apply `deletion_protection = false` as a prior, separate apply — toggling it only in the same
+operation that replaces the resource does not establish an already-applied unprotected prior state.
 
 ### Delete
 
 1. Check `deletion_protection`; if enabled, return an actionable error and make no mutation.
-2. Discover the exact alias's current concrete membership (`GetAlias`), explicitly including hidden
-   and closed indices.
+2. Discover the exact alias's current membership (`GetAlias`) and resolve target types, explicitly
+   including hidden and closed indices. If any target is a data stream, fail before deleting any
+   target; only ordinary concrete indices are in scope.
 3. If the alias is genuinely missing, succeed without deleting anything else — detached indices are
    explicitly out of scope for cleanup, and this must not be described as having "discovered
    survivors" (nothing was probed).
@@ -263,9 +270,11 @@ terraform import \
 Implementation: use `entitycore.ParseCompositeID` to split off `<cluster_uuid>`, then split the
 remaining `<rollover_alias>/<prefix>` resource-ID portion on the first `/` (consistent with the doc
 comment on `ParseCompositeID` recommending direct use when a resource needs to derive more than a
-single passthrough field). The importer sets `rollover_alias` and `prefix` from the parsed parts and
-leaves Read to populate everything else from the live alias. `deletion_protection` defaults to `true`
-for imported resources exactly as for normal Create; disabling it still requires a subsequent apply.
+single passthrough field). The importer sets `rollover_alias`, `prefix`, and
+`deletion_protection = true` before Read hydrates the remaining attributes; alias readback cannot
+initialize this Terraform-only attribute. Read must preserve that imported value as well as any
+subsequently applied value. If the alias resolves to a data-stream target, import hydration fails
+rather than adopting it. Disabling protection still requires a subsequent apply.
 
 ### Why not extend an existing resource
 
