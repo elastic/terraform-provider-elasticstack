@@ -22,7 +22,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/google/go-github/v92/github"
+	"github.com/google/go-github/v93/github"
 )
 
 // NewGitHubClient returns a GitHub API client authenticated with token,

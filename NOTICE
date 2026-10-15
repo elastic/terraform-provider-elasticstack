@@ -497,11 +497,11 @@ OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 --------------------------------------------------------------------------------
 
-Dependency : github.com/google/go-github/v92
-Version: v92.0.0
+Dependency : github.com/google/go-github/v93
+Version: v93.0.0
 Licence type (autodetected): BSD-3-Clause
 
-Contents of probable licence file $GOMODCACHE/github.com/google/go-github/v92@v92.0.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/google/go-github/v93@v93.0.0/LICENSE:
 
 Copyright (c) 2013 The go-github AUTHORS. All rights reserved.
 
