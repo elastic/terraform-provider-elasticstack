@@ -21,8 +21,8 @@
 // pointer-to-tfsdk-value mapping only has to be correct in one place.
 // Resource-specific concerns -- extra sub-attributes such as output's
 // verification_mode, update "clear" semantics, and schema-level validation
-// -- stay in each resource package, which composes these helpers with its
-// own model type.
+// -- stay in each resource package. The tfsdk object models embed Values
+// by value so the shared attributes are declared once.
 package sslcore
 
 import (
@@ -36,11 +36,13 @@ import (
 
 // Values holds the tfsdk-typed representation of the ssl sub-attributes
 // common to every Fleet ssl block: certificate, certificate_authorities, and
-// key.
+// key. Embed it by value. terraform-plugin-framework promotes these fields
+// onto the parent object, so the tags must match the schema attribute names
+// on every embedder, and the embedded field itself must not carry a tfsdk tag.
 type Values struct {
-	Certificate            types.String
-	CertificateAuthorities types.List
-	Key                    types.String
+	Certificate            types.String `tfsdk:"certificate"`
+	CertificateAuthorities types.List   `tfsdk:"certificate_authorities"` // > string
+	Key                    types.String `tfsdk:"key"`
 }
 
 // AllNil reports whether the certificate, certificate_authorities, and key

@@ -29,9 +29,7 @@ import (
 )
 
 type agentDownloadSourceSslModel struct {
-	CertificateAuthorities types.List   `tfsdk:"certificate_authorities"` // > string
-	Certificate            types.String `tfsdk:"certificate"`
-	Key                    types.String `tfsdk:"key"`
+	sslcore.Values
 }
 
 // agentDownloadSourceSSLAPIModel mirrors the anonymous `ssl` object on the
@@ -88,11 +86,7 @@ func objectValueToSSL(ctx context.Context, obj types.Object) (*agentDownloadSour
 		return nil, diags
 	}
 
-	certificate, certificateAuthorities, key := sslcore.Extract(ctx, sslcore.Values{
-		Certificate:            sslModel.Certificate,
-		CertificateAuthorities: sslModel.CertificateAuthorities,
-		Key:                    sslModel.Key,
-	}, path.Root("ssl").AtName("certificate_authorities"), &diags)
+	certificate, certificateAuthorities, key := sslcore.Extract(ctx, sslModel.Values, path.Root("ssl").AtName("certificate_authorities"), &diags)
 
 	return &agentDownloadSourceSSLAPIModel{
 		Certificate:            certificate,
@@ -143,11 +137,7 @@ func sslToObjectValue(
 		return types.ObjectNull(attrTypes), nil
 	}
 
-	sslModel := agentDownloadSourceSslModel{
-		Certificate:            values.Certificate,
-		CertificateAuthorities: values.CertificateAuthorities,
-		Key:                    values.Key,
-	}
+	sslModel := agentDownloadSourceSslModel{Values: values}
 
 	obj, diagTemp := types.ObjectValueFrom(ctx, attrTypes, sslModel)
 	diags.Append(diagTemp...)

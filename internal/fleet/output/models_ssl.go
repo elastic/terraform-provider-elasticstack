@@ -29,10 +29,8 @@ import (
 )
 
 type outputSslModel struct {
-	CertificateAuthorities types.List   `tfsdk:"certificate_authorities"` // > string
-	Certificate            types.String `tfsdk:"certificate"`
-	Key                    types.String `tfsdk:"key"`
-	VerificationMode       types.String `tfsdk:"verification_mode"`
+	sslcore.Values
+	VerificationMode types.String `tfsdk:"verification_mode"`
 }
 
 type outputSSLAPIModel struct {
@@ -63,11 +61,7 @@ func objectValueToSSL(ctx context.Context, obj types.Object) (*outputSSLAPIModel
 		verificationMode = &mode
 	}
 
-	certificate, certificateAuthorities, key := sslcore.Extract(ctx, sslcore.Values{
-		Certificate:            sslModel.Certificate,
-		CertificateAuthorities: sslModel.CertificateAuthorities,
-		Key:                    sslModel.Key,
-	}, path.Root("certificate_authorities"), &diags)
+	certificate, certificateAuthorities, key := sslcore.Extract(ctx, sslModel.Values, path.Root("certificate_authorities"), &diags)
 
 	return &outputSSLAPIModel{
 		Certificate:            certificate,
@@ -120,10 +114,8 @@ func sslToObjectValue(
 	values, allNull := sslcore.Hydrate(ctx, certificate, certificateAuthorities, key, path.Root("ssl").AtName("certificate_authorities"), &diags)
 
 	sslModel := outputSslModel{
-		Certificate:            values.Certificate,
-		CertificateAuthorities: values.CertificateAuthorities,
-		Key:                    values.Key,
-		VerificationMode:       typeutils.StringishPointerValue(verificationMode),
+		Values:           values,
+		VerificationMode: typeutils.StringishPointerValue(verificationMode),
 	}
 
 	if allNull && sslModel.VerificationMode.IsNull() {
