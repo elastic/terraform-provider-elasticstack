@@ -1254,48 +1254,49 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 	})
 }
 
-// TestAccResourceAgentPolicyAgentFeaturesOnCreate sets each new advanced_settings field on the initial
-// POST (not via update) and verifies read-back and import.
-func TestAccResourceAgentPolicyAgentFeaturesOnCreate(t *testing.T) {
-	cases := []struct {
-		dir        string
-		minVersion *version.Version
-		check      resource.TestCheckFunc
-	}{
-		{"internal", agentpolicy.MinVersionAgentInternal, resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", agentInternalYAML)},
-		{"acks", agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled, resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "true")},
-		{"tags", agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled, resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled", "true")},
-	}
+// The OnCreate tests set each new advanced_settings field on the initial POST (not via update)
+// and verify read-back and import.
+func TestAccResourceAgentPolicyAgentInternalOnCreate(t *testing.T) {
+	testAccAgentFeatureOnCreate(t, "internal", agentpolicy.MinVersionAgentInternal, "internal", agentInternalYAML)
+}
 
-	for _, tc := range cases {
-		t.Run(tc.dir, func(t *testing.T) {
-			policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-			vars := config.Variables{"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName))}
-			resource.ParallelTest(t, resource.TestCase{
-				PreCheck:     func() { acctest.PreCheck(t) },
-				CheckDestroy: checkResourceAgentPolicyDestroy,
-				Steps: []resource.TestStep{
-					{
-						ProtoV6ProviderFactories: acctest.Providers,
-						SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(tc.minVersion),
-						ConfigDirectory:          config.TestNameDirectory(),
-						ConfigVariables:          vars,
-						Check:                    tc.check,
-					},
-					{
-						ProtoV6ProviderFactories: acctest.Providers,
-						SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(tc.minVersion),
-						ConfigDirectory:          config.TestNameDirectory(),
-						ConfigVariables:          vars,
-						ResourceName:             "elasticstack_fleet_agent_policy.test_policy",
-						ImportState:              true,
-						ImportStateVerify:        true,
-						ImportStateVerifyIgnore:  []string{"skip_destroy"},
-					},
-				},
-			})
-		})
-	}
+func TestAccResourceAgentPolicyAgentAcksOnCreate(t *testing.T) {
+	testAccAgentFeatureOnCreate(t, "acks", agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled,
+		"features_disable_policy_change_acks_enabled", "true")
+}
+
+func TestAccResourceAgentPolicyAgentTagsOnCreate(t *testing.T) {
+	testAccAgentFeatureOnCreate(t, "tags", agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled,
+		"features_include_tags_in_events_enabled", "true")
+}
+
+func testAccAgentFeatureOnCreate(t *testing.T, dir string, minVersion *version.Version, attr, want string) {
+	t.Helper()
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName))}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(dir),
+				ConfigVariables:          vars,
+				Check:                    resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings."+attr, want),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(dir),
+				ConfigVariables:          vars,
+				ResourceName:             "elasticstack_fleet_agent_policy.test_policy",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"skip_destroy"},
+			},
+		},
+	})
 }
 
 func TestAccResourceAgentPolicyAgentFeaturesVersionGate(t *testing.T) {
