@@ -358,9 +358,9 @@ func TestDelete_continualRolloversStopAtDeleteTimeout(t *testing.T) {
 		mock.putMember("orders-write", successor, aliasTarget{write: new(true)})
 	}
 
-	previousDelay := deleteRediscoveryDelay
-	deleteRediscoveryDelay = 5 * time.Second
-	t.Cleanup(func() { deleteRediscoveryDelay = previousDelay })
+	previousDelay := rediscoveryDelay
+	rediscoveryDelay = 5 * time.Second
+	t.Cleanup(func() { rediscoveryDelay = previousDelay })
 
 	ctx, cancel := context.WithTimeout(context.Background(), 40*time.Millisecond)
 	defer cancel()

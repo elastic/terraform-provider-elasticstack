@@ -22,8 +22,8 @@ import (
 	"fmt"
 	"regexp"
 	"slices"
-	"sort"
 	"strings"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/expandwildcard"
@@ -120,12 +120,12 @@ func discoverUntilTargetsResolve(
 		if len(disappeared) == 0 {
 			return view, nil
 		}
-		sort.Strings(disappeared)
+		slices.Sort(disappeared)
 		if slices.Equal(previousDisappeared, disappeared) {
 			return seriesView{}, unresolvedAliasTargets(aliasName, disappeared)
 		}
 		previousDisappeared = disappeared
-		if !waitForDeleteRediscovery(ctx) {
+		if !waitForRediscovery(ctx) {
 			return seriesView{}, aliasResolutionTimeout(aliasName)
 		}
 	}
@@ -290,7 +290,7 @@ func memberNames(members []aliasMember) []string {
 	for i, member := range members {
 		names[i] = member.Name
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	return names
 }
 
@@ -301,6 +301,22 @@ func dataStreamNames(members []aliasMember) []string {
 			names = append(names, member.Name)
 		}
 	}
-	sort.Strings(names)
+	slices.Sort(names)
 	return names
+}
+
+// rediscoveryDelay pauses between membership passes for delete and alias
+// resolution. The wait stops when the caller's context ends, so it cannot run
+// past that operation's deadline.
+var rediscoveryDelay = 50 * time.Millisecond
+
+func waitForRediscovery(ctx context.Context) bool {
+	timer := time.NewTimer(rediscoveryDelay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return false
+	case <-timer.C:
+		return true
+	}
 }

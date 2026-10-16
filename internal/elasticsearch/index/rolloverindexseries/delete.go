@@ -20,7 +20,6 @@ package rolloverindexseries
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -28,11 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 )
-
-// deleteRediscoveryDelay pauses between membership passes for delete and alias
-// resolution. The wait stops when the caller's context ends, so it cannot run
-// past that operation's deadline.
-var deleteRediscoveryDelay = 50 * time.Millisecond
 
 const deletionProtectionError = "cannot destroy rollover index series without setting deletion_protection=false and running `terraform apply`"
 
@@ -53,15 +47,12 @@ func deleteRolloverIndexSeries(
 	}
 
 	for {
-		if diags := deleteTimeoutIfDone(ctx, resourceID); diags.HasError() {
-			return diags
+		if ctx.Err() != nil {
+			return deleteTimeoutDiagnostics(resourceID)
 		}
 		series, diags := discoverAliasForDelete(ctx, client, resourceID)
 		if diags.HasError() {
-			if timedOut := deleteTimeoutIfDone(ctx, resourceID); timedOut.HasError() {
-				return timedOut
-			}
-			return diags
+			return timeoutOr(ctx, resourceID, diags)
 		}
 		if !series.Found {
 			return nil
@@ -70,39 +61,25 @@ func deleteRolloverIndexSeries(
 			return streamDiags
 		}
 		for _, member := range series.Members {
-			if diags := deleteTimeoutIfDone(ctx, resourceID); diags.HasError() {
-				return diags
+			if ctx.Err() != nil {
+				return deleteTimeoutDiagnostics(resourceID)
 			}
-			diags.Append(elasticsearch.DeleteIndex(ctx, client, member.Name)...)
-			if diags.HasError() {
-				if timedOut := deleteTimeoutIfDone(ctx, resourceID); timedOut.HasError() {
-					return timedOut
-				}
-				return diags
+			if delDiags := elasticsearch.DeleteIndex(ctx, client, member.Name); delDiags.HasError() {
+				return timeoutOr(ctx, resourceID, delDiags)
 			}
 		}
-		if !waitForDeleteRediscovery(ctx) {
+		if !waitForRediscovery(ctx) {
 			return deleteTimeoutDiagnostics(resourceID)
 		}
 	}
 }
 
-func deleteTimeoutIfDone(ctx context.Context, resourceID string) diag.Diagnostics {
-	if ctx.Err() == nil {
-		return nil
+// timeoutOr reports the delete timeout when ctx has ended, otherwise diags.
+func timeoutOr(ctx context.Context, resourceID string, diags diag.Diagnostics) diag.Diagnostics {
+	if ctx.Err() != nil {
+		return deleteTimeoutDiagnostics(resourceID)
 	}
-	return deleteTimeoutDiagnostics(resourceID)
-}
-
-func waitForDeleteRediscovery(ctx context.Context) bool {
-	timer := time.NewTimer(deleteRediscoveryDelay)
-	defer timer.Stop()
-	select {
-	case <-ctx.Done():
-		return false
-	case <-timer.C:
-		return true
-	}
+	return diags
 }
 
 func deleteTimeoutDiagnostics(resourceID string) diag.Diagnostics {
