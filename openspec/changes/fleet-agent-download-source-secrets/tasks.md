@@ -25,10 +25,10 @@
 
 ## 5. Read: GET-before-PUT secret id lookup
 
-- [ ] 5.1 In `internal/fleet/agentdownloadsource/read.go`, add a helper that performs the pre-PUT GET by `source_id` and extracts whatever secret id Fleet currently has for `secrets.ssl.key`/`secrets.auth.password`/`secrets.auth.api_key` (decoding the `...0`-shaped `{Id string}` response arm from `GetFleetAgentDownloadSources200JSONResponseBody_Items_Secrets_*` types), returning `nil`/absent per field when Fleet reports no id (secret storage unavailable)
-- [ ] 5.2 Wire this helper into the Update path in `internal/fleet/agentdownloadsource/write.go` (`updateAgentDownloadSource`, called from `writeAgentDownloadSource` at `write.go:38-41`) so the GET happens immediately before building the PUT body via 4.3's branching helper
-- [ ] 5.3 Update read hydration to distinguish configured plain credentials from write-only credentials: never copy an echoed `key_wo` value from API `ssl.key` into stateful `ssl.key`; preserve a configured plain `ssl.key` when the API redacts it; retain an `ssl` object when `key_wo` is its only configured child
-- [ ] 5.4 Add post-write and refresh tests for the three read safeguards in 5.3, including the storage-unavailable response that echoes a `key_wo` literal as `ssl.key`
+- [x] 5.1 In `internal/fleet/agentdownloadsource/read.go`, add a helper that performs the pre-PUT GET by `source_id` and extracts whatever secret id Fleet currently has for `secrets.ssl.key`/`secrets.auth.password`/`secrets.auth.api_key` (decoding the `...0`-shaped `{Id string}` response arm from `GetFleetAgentDownloadSources200JSONResponseBody_Items_Secrets_*` types), returning `nil`/absent per field when Fleet reports no id (secret storage unavailable)
+- [x] 5.2 Wire this helper into the Update path in `internal/fleet/agentdownloadsource/write.go` (`updateAgentDownloadSource`, called from `writeAgentDownloadSource` at `write.go:38-41`) so the GET happens immediately before building the PUT body via 4.3's branching helper
+- [x] 5.3 Update read hydration to distinguish configured plain credentials from write-only credentials: never copy an echoed `key_wo` value from API `ssl.key` into stateful `ssl.key`; preserve a configured plain `ssl.key` when the API redacts it; retain an `ssl` object when `key_wo` is its only configured child
+- [x] 5.4 Add post-write and refresh tests for the three read safeguards in 5.3, including the storage-unavailable response that echoes a `key_wo` literal as `ssl.key`
 
 ## 6. Write: persist and clear hashes via private state
 

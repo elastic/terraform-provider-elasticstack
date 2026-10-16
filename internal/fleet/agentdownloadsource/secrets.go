@@ -21,8 +21,10 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/writeonlyhash"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
 // Terraform attribute paths of the write-only secrets. They double as the
@@ -148,4 +150,30 @@ func setSecrets[T any](dst **T, payload *secretsPayload) error {
 	}
 	*dst = &out
 	return nil
+}
+
+// writeOnlyValues returns the configured (known, non-null) write-only values
+// of m keyed by attribute path.
+func (m model) writeOnlyValues(ctx context.Context) (map[string]string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	values := map[string]string{}
+
+	if typeutils.IsKnown(m.Ssl) {
+		ssl := typeutils.ObjectTypeAs[sslModel](ctx, m.Ssl, path.Root("ssl"), &diags)
+		if diags.HasError() {
+			return nil, diags
+		}
+		if typeutils.IsKnown(ssl.KeyWO) {
+			values[sslKeyWOPath] = ssl.KeyWO.ValueString()
+		}
+	}
+	if m.Auth != nil {
+		if typeutils.IsKnown(m.Auth.PasswordWO) {
+			values[authPasswordWOPath] = m.Auth.PasswordWO.ValueString()
+		}
+		if typeutils.IsKnown(m.Auth.APIKeyWO) {
+			values[authAPIKeyWOPath] = m.Auth.APIKeyWO.ValueString()
+		}
+	}
+	return values, diags
 }

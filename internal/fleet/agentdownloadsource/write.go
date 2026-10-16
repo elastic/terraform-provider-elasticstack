@@ -38,7 +38,7 @@ func writeAgentDownloadSource(
 	if req.Prior == nil {
 		return createAgentDownloadSource(ctx, fleetClient, req.Plan)
 	}
-	return updateAgentDownloadSource(ctx, fleetClient, req.Plan, *req.Prior)
+	return updateAgentDownloadSource(ctx, fleetClient, req.Plan, *req.Prior, nil)
 }
 
 // finalizeWrite reads back the just-written source by ID and hydrates it into
@@ -47,7 +47,7 @@ func writeAgentDownloadSource(
 func finalizeWrite(ctx context.Context, client *fleet.Client, sourceID, spaceID string, plan model, verb string) (entitycore.KibanaWriteResult[model], diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	readState, found, readDiags := readAndHydrateState(ctx, client, sourceID, spaceID, plan.SpaceIDs, plan.KibanaConnection, plan.Auth)
+	readState, found, readDiags := readAndHydrateState(ctx, client, sourceID, spaceID, plan.SpaceIDs, plan.KibanaConnection, plan.Auth, plan.Ssl)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[model]{}, diags

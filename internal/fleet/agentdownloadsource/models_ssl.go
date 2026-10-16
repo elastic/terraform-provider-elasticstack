@@ -166,3 +166,44 @@ func withSSLWriteOnlyKey(ctx context.Context, obj types.Object, keyWO types.Stri
 	diags.Append(objDiags...)
 	return out, diags
 }
+
+// hydrateSsl builds the ssl state object from the API response, using the
+// prior plan or state object to resolve what the response cannot tell apart:
+//   - Fleet echoes a key_wo literal in the plain key field when secret storage
+//     is unavailable, and redacts a stored plain key. The plain key is
+//     therefore only taken from the API when the prior object configured it,
+//     and a redacted value keeps the configured one. With no prior object
+//     (import) the API value is used.
+//   - An ssl object whose only configured child is key_wo has no readable
+//     child, so a prior object with no readable children is retained.
+func hydrateSsl(ctx context.Context, api agentDownloadSourceSSLAPIModel, prior types.Object) (types.Object, diag.Diagnostics) {
+	key := api.Key
+	var priorModel *sslModel
+	if typeutils.IsKnown(prior) {
+		var diags diag.Diagnostics
+		priorModel = typeutils.ObjectTypeAs[sslModel](ctx, prior, path.Root("ssl"), &diags)
+		if diags.HasError() {
+			return types.ObjectNull(getSslAttrTypes(ctx)), diags
+		}
+		key = nil
+		if typeutils.IsKnown(priorModel.Key) {
+			key = preserveRedactedSecret(api.Key, priorModel.Key).ValueStringPointer()
+		}
+	}
+
+	obj, diags := sslToObjectValue(ctx, api.Certificate, api.CertificateAuthorities, key)
+	if diags.HasError() || !obj.IsNull() || priorModel == nil || !priorModel.Values.AllNil() {
+		return obj, diags
+	}
+
+	retained, retainDiags := types.ObjectValueFrom(ctx, getSslAttrTypes(ctx), sslModel{
+		Values: sslcore.Values{
+			Certificate:            types.StringNull(),
+			CertificateAuthorities: types.ListNull(types.StringType),
+			Key:                    types.StringNull(),
+		},
+		KeyWO: types.StringNull(),
+	})
+	diags.Append(retainDiags...)
+	return retained, diags
+}

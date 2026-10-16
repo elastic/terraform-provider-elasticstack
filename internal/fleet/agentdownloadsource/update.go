@@ -27,7 +27,54 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateAgentDownloadSource(ctx context.Context, client *fleet.Client, plan model, prior model) (entitycore.KibanaWriteResult[model], diag.Diagnostics) {
+// updateSecretResolver returns the resolver for an update. When a configured
+// write-only value has a stored hash it reads the source immediately before the
+// PUT to learn the secret ids Fleet holds, so an unchanged value can be
+// referenced by id instead of resent. Without a stored hash every value is a
+// literal and the lookup is skipped.
+func updateSecretResolver(
+	ctx context.Context,
+	client *fleet.Client,
+	plan model,
+	sourceID, spaceID string,
+	storedHashes map[string][]byte,
+) (secretResolver, diag.Diagnostics) {
+	values, diags := plan.writeOnlyValues(ctx)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	var lookup bool
+	for attrPath := range values {
+		if len(storedHashes[attrPath]) > 0 {
+			lookup = true
+			break
+		}
+	}
+	if !lookup {
+		return literalSecrets, diags
+	}
+
+	ids, idDiags := fetchSecretIDs(ctx, client, sourceID, spaceID)
+	diags.Append(idDiags...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	return func(attrPath, value string) secretValue {
+		return secretWriteBranch(value, storedHashes[attrPath], ids.forPath(attrPath))
+	}, diags
+}
+
+// updateAgentDownloadSource sends the update. storedHashes holds the private
+// state hash of each write-only value from its last successful apply, keyed by
+// attribute path; plan carries the write-only values read from configuration.
+func updateAgentDownloadSource(
+	ctx context.Context,
+	client *fleet.Client,
+	plan model,
+	prior model,
+	storedHashes map[string][]byte,
+) (entitycore.KibanaWriteResult[model], diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	sourceID := plan.SourceID.ValueString()
@@ -38,7 +85,13 @@ func updateAgentDownloadSource(ctx context.Context, client *fleet.Client, plan m
 	// Otherwise the API call fails with 404.
 	spaceID := fleetutils.SpaceIDFromSet(prior.SpaceIDs)
 
-	body, bodyDiags := plan.toAPIUpdateModel(ctx, prior, literalSecrets)
+	resolve, resolveDiags := updateSecretResolver(ctx, client, plan, sourceID, spaceID, storedHashes)
+	diags.Append(resolveDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[model]{}, diags
+	}
+
+	body, bodyDiags := plan.toAPIUpdateModel(ctx, prior, resolve)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[model]{}, diags
