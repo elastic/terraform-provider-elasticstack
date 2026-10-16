@@ -46,16 +46,16 @@
 
 ## 8. Acceptance tests
 
-- [ ] 8.1 Add `ssl.key` and `ssl.key_wo` create/rotate/no-op cases to `internal/fleet/agentdownloadsource/acc_test.go`: verify both attributes write to `secrets.ssl.key` (the plain key as a literal, and `key_wo` as literal or `{id}` per Decision 3); verify unchanged `key_wo` preserves the id, changed `key_wo` sends a new literal, and configuring both attributes is rejected
-- [ ] 8.2 Repeat 8.1 for `auth.password_wo` and `auth.api_key_wo` independently
-- [ ] 8.3 Add a mixed-attribute validator rejection case: `auth.username` with neither `password` nor `password_wo` set — error; `password`+`password_wo` both set — error; `api_key`+`api_key_wo` both set — error; `password_wo`+`api_key` (cross-family) — error
-- [ ] 8.4 Add a secret-storage-unavailable case (against a Fleet Server version below the runtime storage-gating floor, or a test double simulating a GET response with no secret id): assert the resource resends the literal value rather than attempting an `{id}` reference, does not error, and never copies an echoed write-only literal into the plain sibling during post-write read or refresh
-- [ ] 8.5 Add a PEM-sized `ssl.key_wo` value acceptance case exercising the task-1 bcrypt fix end-to-end (create, no-op refresh, then a value-only change triggers an update)
-- [ ] 8.6 Add a delete case asserting the resource's three `secret_hash:*` private-state keys are cleared (directly, if the test harness can inspect private state, or indirectly via re-create-with-same-config-not-erroring)
-- [ ] 8.7 Add an import case: `ssl.key_wo`/`auth.password_wo`/`auth.api_key_wo` are null after import (no API representation to import from), mirroring the existing `AuthBasicImport` pattern
-- [ ] 8.8 Add auth validator coverage for `password` without `username` and `password_wo` without `username`, and for `username` without either password form
-- [ ] 8.9 Add a `key_wo`-only SSL create/refresh case asserting the parent `ssl` object remains present while the write-only value is not persisted in `ssl.key`
-- [ ] 8.10 Add a write-only removal/re-add lifecycle case: removing an unchanged `key_wo` with no ordinary attribute changes forces a PUT that clears the remote secret and clears the private hash only after success; re-adding it sends a literal and stores a new private-state hash
+- [x] 8.1 Add `ssl.key` and `ssl.key_wo` create/rotate/no-op cases to `internal/fleet/agentdownloadsource/acc_test.go`: verify both attributes write to `secrets.ssl.key` (the plain key as a literal, and `key_wo` as literal or `{id}` per Decision 3); verify unchanged `key_wo` preserves the id, changed `key_wo` sends a new literal, and configuring both attributes is rejected
+- [x] 8.2 Repeat 8.1 for `auth.password_wo` and `auth.api_key_wo` independently
+- [x] 8.3 Add a mixed-attribute validator rejection case: `auth.username` with neither `password` nor `password_wo` set — error; `password`+`password_wo` both set — error; `api_key`+`api_key_wo` both set — error; `password_wo`+`api_key` (cross-family) — error
+- [x] 8.4 Add a secret-storage-unavailable case (against a Fleet Server version below the runtime storage-gating floor, or a test double simulating a GET response with no secret id): assert the resource resends the literal value rather than attempting an `{id}` reference, does not error, and never copies an echoed write-only literal into the plain sibling during post-write read or refresh
+- [x] 8.5 Add a PEM-sized `ssl.key_wo` value acceptance case exercising the task-1 bcrypt fix end-to-end (create, no-op refresh, then a value-only change triggers an update)
+- [x] 8.6 Add a delete case asserting the resource's three `secret_hash:*` private-state keys are cleared (directly, if the test harness can inspect private state, or indirectly via re-create-with-same-config-not-erroring)
+- [x] 8.7 Add an import case: `ssl.key_wo`/`auth.password_wo`/`auth.api_key_wo` are null after import (no API representation to import from), mirroring the existing `AuthBasicImport` pattern
+- [x] 8.8 Add auth validator coverage for `password` without `username` and `password_wo` without `username`, and for `username` without either password form
+- [x] 8.9 Add a `key_wo`-only SSL create/refresh case asserting the parent `ssl` object remains present while the write-only value is not persisted in `ssl.key`
+- [x] 8.10 Add a write-only removal/re-add lifecycle case: removing an unchanged `key_wo` with no ordinary attribute changes forces a PUT that clears the remote secret and clears the private hash only after success; re-adding it sends a literal and stores a new private-state hash
 
 ## 9. Spec sync
 
