@@ -46,21 +46,6 @@ some error line without match
 	assert.Equal(t, "(*T).Method", entries[1].symbol)
 }
 
-func TestIntersectCandidates(t *testing.T) {
-	t.Parallel()
-	a := []deadcodeEntry{
-		{file: "a.go", line: 1, column: 1, symbol: "Foo", packagePath: "pkg1"},
-		{file: "b.go", line: 2, column: 1, symbol: "Bar", packagePath: "pkg1"},
-	}
-	b := []deadcodeEntry{
-		{file: "a.go", line: 1, column: 1, symbol: "Foo", packagePath: "pkg1"},
-		{file: "c.go", line: 3, column: 1, symbol: "Baz", packagePath: "pkg2"},
-	}
-	result := intersectCandidates(a, b)
-	require.Len(t, result, 1)
-	assert.Equal(t, "Foo", result[0].symbol)
-}
-
 func TestFilterExcluded(t *testing.T) {
 	t.Parallel()
 	entries := []deadcodeEntry{

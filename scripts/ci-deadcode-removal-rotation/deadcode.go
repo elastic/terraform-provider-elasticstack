@@ -175,20 +175,6 @@ func derivePackagePath(filePath, modulePath string) string {
 	return modulePath + "/" + filepath.ToSlash(dir)
 }
 
-func intersectCandidates(a, b []deadcodeEntry) []deadcodeEntry {
-	set := make(map[string]struct{}, len(b))
-	for _, e := range b {
-		set[e.key()] = struct{}{}
-	}
-	var out []deadcodeEntry
-	for _, e := range a {
-		if _, ok := set[e.key()]; ok {
-			out = append(out, e)
-		}
-	}
-	return out
-}
-
 func selectEligible(candidates []deadcodeEntry, mem *Memory, now time.Time) []deadcodeEntry {
 	eligible := make([]deadcodeEntry, 0, len(candidates))
 	for _, c := range candidates {
