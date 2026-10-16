@@ -103,6 +103,13 @@
       "reason": "Sibling install-behavior toggle (force, prerelease, ignore_constraints) already exposed for this resource's required version attribute; allow_outdated_version is the same class of user-controllable flag and is missing from InstallPackageOptions.",
       "date": "2026-10-16",
       "issue": "elasticstack_fleet_integration#/components/schemas/Kibana_HTTP_APIs_install_package_from_registry_request/properties/allow_outdated_version"
+    },
+    "elasticstack_fleet_integration_policy#/components/schemas/Kibana_HTTP_APIs_create_package_policy_request/properties/package": {
+      "fingerprint": "374adfb59e928f35142b1993079a4d6b10c10e1043009d0c7a324a85738a8c84",
+      "verdict": "file",
+      "reason": "experimental_data_stream_features is a genuine user-configurable, infrastructure-affecting setting not covered by vars_json or any existing attribute; filed alongside the bundled fips_compatible/requires_root descriptors.",
+      "date": "2026-10-16",
+      "issue": "elasticstack_fleet_integration_policy#/components/schemas/Kibana_HTTP_APIs_create_package_policy_request/properties/package"
     }
   },
   "resources": {
@@ -110,6 +117,7 @@
     "elasticstack_fleet_agent_policy": "2026-10-15T01:31:24Z",
     "elasticstack_fleet_custom_integration": "2026-10-15T11:28:15Z",
     "elasticstack_fleet_elastic_defend_integration_policy": "2026-10-15T19:50:34Z",
-    "elasticstack_fleet_integration": "2026-10-16T07:16:57Z"
+    "elasticstack_fleet_integration": "2026-10-16T07:16:57Z",
+    "elasticstack_fleet_integration_policy": "2026-10-16T19:47:08Z"
   }
 }
