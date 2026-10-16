@@ -440,7 +440,9 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 	}
 	req.PolicyId, req.PolicyIds = policyID, policyIDs
 
-	req.AdditionalDatastreamsPermissions, d = additionalDatastreamsPermissionsFromModel(ctx, model)
+	var permsDiags diag.Diagnostics
+	req.AdditionalDatastreamsPermissions, permsDiags = additionalDatastreamsPermissionsFromModel(ctx, model)
+	d.Append(permsDiags...)
 	if d.HasError() {
 		return req, d
 	}
@@ -507,7 +509,9 @@ func buildFinalizeRequest(
 	}
 	req.PolicyId, req.PolicyIds = policyID, policyIDs
 
-	req.AdditionalDatastreamsPermissions, d = additionalDatastreamsPermissionsFromModel(ctx, model)
+	var permsDiags diag.Diagnostics
+	req.AdditionalDatastreamsPermissions, permsDiags = additionalDatastreamsPermissionsFromModel(ctx, model)
+	d.Append(permsDiags...)
 	if d.HasError() {
 		return req, d
 	}

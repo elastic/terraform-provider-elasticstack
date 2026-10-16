@@ -1057,11 +1057,17 @@ func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissio
 	versionutils.SkipIfUnsupported(t, minVersionElasticDefendAdditionalDatastreamsPermissions, versionutils.FlavorAny)
 
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
-	vars := func(perms ...config.Variable) config.Variables {
-		v := config.Variables{"policy_name": config.StringVariable(policyName)}
-		if perms != nil {
-			v["additional_datastreams_permissions"] = config.ListVariable(perms...)
+	varsOmitted := func() config.Variables {
+		return config.Variables{"policy_name": config.StringVariable(policyName)}
+	}
+	varsWithPerms := func(perms ...config.Variable) config.Variables {
+		v := varsOmitted()
+		// ListVariable(nil...) serializes as null, so force a non-nil slice to
+		// get an explicit empty list when no permissions are passed.
+		if perms == nil {
+			perms = []config.Variable{}
 		}
+		v["additional_datastreams_permissions"] = config.ListVariable(perms...)
 		return v
 	}
 
@@ -1072,7 +1078,7 @@ func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissio
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
-				ConfigVariables:          vars(config.StringVariable("logs-nginx-*")),
+				ConfigVariables:          varsWithPerms(config.StringVariable("logs-nginx-*")),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "1"),
 					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-nginx-*"),
@@ -1082,7 +1088,7 @@ func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissio
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
-				ConfigVariables:          vars(config.StringVariable("logs-nginx-*")),
+				ConfigVariables:          varsWithPerms(config.StringVariable("logs-nginx-*")),
 				ResourceName:             resourceName,
 				ImportState:              true,
 				ImportStateVerify:        true,
@@ -1092,7 +1098,7 @@ func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissio
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
-				ConfigVariables:          vars(config.StringVariable("logs-nginx-*"), config.StringVariable("metrics-redis-*")),
+				ConfigVariables:          varsWithPerms(config.StringVariable("logs-nginx-*"), config.StringVariable("metrics-redis-*")),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-nginx-*"),
@@ -1104,7 +1110,7 @@ func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissio
 				// Removing the attribute from configuration retains the prior value.
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
-				ConfigVariables:          vars(),
+				ConfigVariables:          varsOmitted(),
 				ConfigPlanChecks: resource.ConfigPlanChecks{
 					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
 				},
@@ -1118,7 +1124,7 @@ func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissio
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
-				ConfigVariables:          vars([]config.Variable{}...),
+				ConfigVariables:          varsWithPerms(),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "0"),
 					checkDefendAdditionalDatastreamsPermissions(),
