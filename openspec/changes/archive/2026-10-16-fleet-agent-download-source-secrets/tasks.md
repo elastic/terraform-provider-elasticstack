@@ -59,7 +59,7 @@
 
 ## 9. Spec sync
 
-- [ ] 9.1 After implementation, sync the delta spec in `openspec/changes/fleet-agent-download-source-secrets/specs/fleet-agent-download-source/spec.md` into `openspec/specs/fleet-agent-download-source/spec.md` (openspec-sync-specs skill) and archive the change (openspec-archive-change skill)
+- [x] 9.1 After implementation, sync the delta spec in `openspec/changes/fleet-agent-download-source-secrets/specs/fleet-agent-download-source/spec.md` into `openspec/specs/fleet-agent-download-source/spec.md` (openspec-sync-specs skill) and archive the change (openspec-archive-change skill)
 
 ## 10. Docs (follow-up, not required for this proposal)
 
