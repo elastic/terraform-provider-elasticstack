@@ -19,7 +19,7 @@ resource "elasticstack_kibana_security_role" "test" {
     run_as = ["kibana", "elastic"]
   }
   kibana {
-    base   = ["all"]
+    base   = ["read"]
     spaces = ["default"]
   }
 }
