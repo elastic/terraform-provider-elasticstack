@@ -247,18 +247,34 @@ func TestUpdateBodyPlainSslKeyAlwaysLiteral(t *testing.T) {
 	require.Equal(t, map[string]any{"ssl": map[string]any{"key": "plain-key"}}, marshalBody(t, body)["secrets"])
 }
 
-func TestUpdateBodyRemovedWriteOnlyValueOmitsSecret(t *testing.T) {
+func TestUpdateBodyRemovedSecretSendsEmptySecrets(t *testing.T) {
 	ctx := context.Background()
 	m := model{
 		Name: types.StringValue("n"),
 		Host: types.StringValue("https://h"),
 		Ssl:  testSslObject(ctx, types.StringNull(), types.StringNull()),
 	}
-	body, diags := m.toAPIUpdateModel(ctx, model{}, literalSecrets)
+	prior := model{Ssl: testSslObject(ctx, types.StringNull(), types.StringValue("old"))}
+	body, diags := m.toAPIUpdateModel(ctx, prior, literalSecrets)
 	require.False(t, diags.HasError())
 	got := marshalBody(t, body)
-	require.NotContains(t, got, "secrets")
+	// An explicit empty secrets object makes Fleet drop its reference to the
+	// removed secret; without it older Fleet versions delete the secret but keep
+	// the dangling reference, which then fails the resource's delete with a 404.
+	require.Equal(t, map[string]any{}, got["secrets"])
 	require.Contains(t, got, "ssl", "ssl is still sent so Fleet clears the removed secret")
+}
+
+func TestUpdateBodyOmitsSecretsWhenNeverConfigured(t *testing.T) {
+	ctx := context.Background()
+	m := model{
+		Name: types.StringValue("n"),
+		Host: types.StringValue("https://h"),
+		Ssl:  testSslObject(ctx, types.StringNull(), types.StringNull()),
+	}
+	body, diags := m.toAPIUpdateModel(ctx, model{Ssl: types.ObjectNull(getSslAttrTypes(ctx))}, literalSecrets)
+	require.False(t, diags.HasError())
+	require.NotContains(t, marshalBody(t, body), "secrets")
 }
 
 func TestWithWriteOnlyFromConfig(t *testing.T) {

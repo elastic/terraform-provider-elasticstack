@@ -228,6 +228,14 @@ func (m model) toAPIUpdateModel(ctx context.Context, prior model, resolve secret
 
 	secrets, secretDiags := m.secretsPayload(ctx, resolve)
 	diags.Append(secretDiags...)
+	if secrets == nil && typeutils.IsKnown(prior.Ssl) {
+		// The ssl object previously existed and no secret is configured now, so
+		// the stored ssl key secret is being removed. Send an explicit empty
+		// secrets object: older Fleet versions (9.1 to 9.3) delete the secret but
+		// otherwise keep a dangling reference to it, which makes the later delete
+		// of the source fail with a 404 on the missing secret.
+		secrets = &secretsPayload{}
+	}
 	if err := setSecrets(&body.Secrets, secrets); err != nil {
 		diags.AddError("Failed to build secrets request", err.Error())
 	}

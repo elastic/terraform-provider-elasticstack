@@ -271,7 +271,7 @@ func TestWriteUpdateKeepsHashUntilClearSucceeds(t *testing.T) {
 	require.NotContains(t, private.data, secretHashKey(sslKeyWOPath), "hash is removed after the clearing update succeeds")
 	for _, c := range calls() {
 		if c.method == http.MethodPut {
-			require.NotContains(t, c.body, "secrets")
+			require.Equal(t, map[string]any{}, c.body["secrets"], "removal sends an empty secrets object")
 		}
 	}
 

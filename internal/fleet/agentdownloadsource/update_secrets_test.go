@@ -164,7 +164,7 @@ func TestUpdateWithoutStoredHashSkipsSecretLookup(t *testing.T) {
 	require.Equal(t, map[string]any{"ssl": map[string]any{"key": "wo-key"}}, got[0].body["secrets"])
 }
 
-func TestUpdateRemovedWriteOnlyValueSendsSslWithoutSecret(t *testing.T) {
+func TestUpdateRemovedWriteOnlyValueSendsEmptySecrets(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	hash, err := secretHasher.Compute("wo-key")
@@ -185,7 +185,7 @@ func TestUpdateRemovedWriteOnlyValueSendsSslWithoutSecret(t *testing.T) {
 
 	got := calls()
 	require.Equal(t, http.MethodPut, got[0].method, "a removed value is not referenced, so no lookup is needed")
-	require.NotContains(t, got[0].body, "secrets")
+	require.Equal(t, map[string]any{}, got[0].body["secrets"], "removal sends an empty secrets object")
 	require.Contains(t, got[0].body, "ssl")
 }
 
