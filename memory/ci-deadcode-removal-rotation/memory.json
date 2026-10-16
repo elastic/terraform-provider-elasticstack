@@ -1757,6 +1757,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils.FlipMap",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils",
+      "attemptedAt": "2026-10-16T03:22:55.012322339Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
