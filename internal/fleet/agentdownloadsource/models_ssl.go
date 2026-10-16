@@ -35,6 +35,20 @@ type agentDownloadSourceSSLAPIModel struct {
 	Certificate            *string
 	CertificateAuthorities *[]string
 	Key                    *string
+	// KeyWO is the write-only client key, read from configuration. It targets
+	// the same Fleet secret as Key.
+	KeyWO *string
+}
+
+// sslModel is the Terraform ssl object: the shared SSL values plus the
+// write-only key sibling, which is only ever non-null in configuration.
+type sslModel struct {
+	sslcore.Values
+	KeyWO types.String `tfsdk:"key_wo"`
+}
+
+func (m sslModel) allNil() bool {
+	return m.Values.AllNil() && m.KeyWO.IsNull()
 }
 
 // kbapiSsl is the anonymous `ssl` struct type generated on
@@ -68,7 +82,7 @@ func objectValueToSSL(ctx context.Context, obj types.Object) (*agentDownloadSour
 	}
 
 	var diags diag.Diagnostics
-	sslModel := typeutils.ObjectTypeAs[sslcore.Values](ctx, obj, path.Root("ssl"), &diags)
+	model := typeutils.ObjectTypeAs[sslModel](ctx, obj, path.Root("ssl"), &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -77,17 +91,18 @@ func objectValueToSSL(ctx context.Context, obj types.Object) (*agentDownloadSour
 	// unknown at plan time may resolve to all-null at apply, and sending an
 	// empty ssl object would persist a present-but-empty configuration the
 	// read path normalizes back to null.
-	if sslModel.AllNil() {
+	if model.allNil() {
 		diags.AddAttributeError(path.Root("ssl"), sslAtLeastOneSubattrSummary, sslAtLeastOneSubattrMessage)
 		return nil, diags
 	}
 
-	certificate, certificateAuthorities, key := sslcore.Extract(ctx, *sslModel, path.Root("ssl").AtName("certificate_authorities"), &diags)
+	certificate, certificateAuthorities, key := sslcore.Extract(ctx, model.Values, path.Root("ssl").AtName("certificate_authorities"), &diags)
 
 	return &agentDownloadSourceSSLAPIModel{
 		Certificate:            certificate,
 		CertificateAuthorities: certificateAuthorities,
 		Key:                    key,
+		KeyWO:                  model.KeyWO.ValueStringPointer(),
 	}, diags
 }
 
@@ -129,7 +144,7 @@ func sslToObjectValue(
 		return types.ObjectNull(attrTypes), nil
 	}
 
-	obj, diagTemp := types.ObjectValueFrom(ctx, attrTypes, values)
+	obj, diagTemp := types.ObjectValueFrom(ctx, attrTypes, sslModel{Values: values, KeyWO: types.StringNull()})
 	diags.Append(diagTemp...)
 	return obj, diags
 }

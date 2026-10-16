@@ -1231,7 +1231,7 @@ func TestAccResourceFleetAgentDownloadSource_SSLValidation(t *testing.T) {
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("ssl_empty_object"),
-				ExpectError:              regexp.MustCompile(`(?s)Empty ssl configuration.*At least one of certificate_authorities, certificate, or key`),
+				ExpectError:              regexp.MustCompile(`(?s)Empty ssl configuration.*At least one of certificate_authorities, certificate, key, or key_wo`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,

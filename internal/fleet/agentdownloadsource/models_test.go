@@ -421,6 +421,7 @@ func TestModelToAPICreateModelSendsSSL(t *testing.T) {
 			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		}),
 	}
 
@@ -442,6 +443,7 @@ func TestModelToAPICreateModelOmitsNullCertificateAuthorities(t *testing.T) {
 			"certificate_authorities": types.ListNull(types.StringType),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		}),
 	}
 
@@ -479,6 +481,7 @@ func TestModelToAPIUpdateModelSendsSSL(t *testing.T) {
 			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		}),
 	}
 
@@ -501,6 +504,7 @@ func TestModelToAPIUpdateModelOmitsDroppedCertificateAuthorities(t *testing.T) {
 			"certificate_authorities": cas,
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		})
 	}
 	plan := model{
@@ -542,6 +546,7 @@ func TestModelToAPIUpdateModelRemovesSSLWithEmptyObject(t *testing.T) {
 			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		}),
 	}
 
@@ -583,6 +588,7 @@ func TestModelGetVersionRequirementsWithSSL(t *testing.T) {
 			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringNull(),
+			"key_wo":                  types.StringNull(),
 		}),
 	}
 
@@ -710,6 +716,7 @@ func TestModelToAPICreateModelSendsAuthAndSSLTogether(t *testing.T) {
 			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		}),
 	}
 

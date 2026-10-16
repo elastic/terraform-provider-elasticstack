@@ -40,9 +40,6 @@ const (
 )
 
 func getSchema(_ context.Context) schema.Schema {
-	usernamePath := path.MatchRelative().AtParent().AtName("username")
-	passwordPath := path.MatchRelative().AtParent().AtName("password")
-
 	return schema.Schema{
 		Description: "Creates a new Fleet Agent Binary Download Source.",
 		Attributes: map[string]schema.Attribute{
@@ -105,11 +102,22 @@ func getSchema(_ context.Context) schema.Schema {
 						},
 					},
 					keyAttributeName: schema.StringAttribute{
-						Description: "Client SSL certificate key for the download source host.",
+						Description: "Client SSL certificate key for the download source host. Sent to Fleet as a managed secret.",
 						Optional:    true,
 						Sensitive:   true,
 						Validators: []validator.String{
 							stringvalidator.LengthAtLeast(1),
+						},
+					},
+					"key_wo": schema.StringAttribute{
+						Description: "Write-only client SSL certificate key for the download source host. Never stored in Terraform state; " +
+							"changes are detected from a hash kept in private state. Conflicts with `key`.",
+						Optional:  true,
+						Sensitive: true,
+						WriteOnly: true,
+						Validators: []validator.String{
+							stringvalidator.LengthAtLeast(1),
+							stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(keyAttributeName)),
 						},
 					},
 				},
@@ -117,29 +125,37 @@ func getSchema(_ context.Context) schema.Schema {
 			"auth": schema.SingleNestedAttribute{
 				Description: "Authentication used by Elastic Agents when downloading binaries from this source.",
 				Optional:    true,
+				Validators: []validator.Object{
+					authCredentialsValidator{},
+				},
 				Attributes: map[string]schema.Attribute{
 					"username": schema.StringAttribute{
-						Description: "Username for HTTP Basic authentication. Required when password is set.",
+						Description: "Username for HTTP Basic authentication. Required when password or password_wo is set.",
 						Optional:    true,
-						Validators: []validator.String{
-							stringvalidator.AlsoRequires(passwordPath),
-						},
 					},
 					"password": schema.StringAttribute{
-						Description: "Password for HTTP Basic authentication. Required when username is set.",
+						Description: "Password for HTTP Basic authentication. Required when username is set. Conflicts with password_wo and the api_key attributes.",
 						Optional:    true,
 						Sensitive:   true,
-						Validators: []validator.String{
-							stringvalidator.AlsoRequires(usernamePath),
-						},
+					},
+					"password_wo": schema.StringAttribute{
+						Description: "Write-only password for HTTP Basic authentication. Never stored in Terraform state; changes are detected " +
+							"from a hash kept in private state. Required when username is set. Conflicts with password and the api_key attributes.",
+						Optional:  true,
+						Sensitive: true,
+						WriteOnly: true,
 					},
 					"api_key": schema.StringAttribute{
-						Description: "API key used to authenticate download requests. Conflicts with password.",
+						Description: "API key used to authenticate download requests. Conflicts with api_key_wo and the password attributes.",
 						Optional:    true,
 						Sensitive:   true,
-						Validators: []validator.String{
-							stringvalidator.ConflictsWith(passwordPath),
-						},
+					},
+					"api_key_wo": schema.StringAttribute{
+						Description: "Write-only API key used to authenticate download requests. Never stored in Terraform state; changes are " +
+							"detected from a hash kept in private state. Conflicts with api_key and the password attributes.",
+						Optional:  true,
+						Sensitive: true,
+						WriteOnly: true,
 					},
 					"headers": schema.ListNestedAttribute{
 						Description: "Custom HTTP headers sent with every download request.",
