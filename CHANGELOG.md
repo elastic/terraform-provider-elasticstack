@@ -2,11 +2,15 @@
 
 ### Breaking changes
 
+The `thresholds[].axis` values `bottom`, `left` and `right` are no longer accepted; use `x`, `y` or `y2`. The removed values were always rejected by Kibana, so they now fail at plan time.
+
 `comments` on `kibana_security_exception_item` is now computed/read-only. Move texts Terraform should enforce into the new `required_comments` attribute and remove any configured `comments`. Previously stored comments remain in Kibana and are echoed in `comments`.
 
 ### Changes
 
-- Add `features_disable_policy_change_acks_enabled`, `features_include_tags_in_events_enabled` and `internal` to `advanced_settings` on `elasticstack_fleet_agent_policy` (require Elastic Stack 9.4.0, 9.6.0 and 9.3.0 respectively). ([#5279](https://github.com/elastic/terraform-provider-elasticstack/pull/5279))
+- Add `features_disable_policy_change_acks_enabled`, `features_include_tags_in_events_enabled` and `internal` to `advanced_settings` on `elasticstack_fleet_agent_policy`. ([#5279](https://github.com/elastic/terraform-provider-elasticstack/pull/5279))
+- Accept `x`, `y` and `y2` for XY reference-line `thresholds[].axis` in `elasticstack_kibana_dashboard`. ([#5280](https://github.com/elastic/terraform-provider-elasticstack/pull/5280))
+- Add optional SSL configuration (certificate authorities, certificate, and sensitive key) to `elasticstack_fleet_agent_download_source`. ([#5261](https://github.com/elastic/terraform-provider-elasticstack/pull/5261))
 - Add the `elasticstack_kibana_case_template` resource for managing Kibana Cases templates. ([#5268](https://github.com/elastic/terraform-provider-elasticstack/pull/5268))
 - Add optional auth to elasticstack_fleet_agent_download_source for private artifact registries. ([#5263](https://github.com/elastic/terraform-provider-elasticstack/pull/5263))
 - Reject Lens XY duration decimals and compact formatting on Kibana before 9.5.2 ([#5252](https://github.com/elastic/terraform-provider-elasticstack/pull/5252))
