@@ -34,6 +34,9 @@ Add `ssl.key_wo`, `auth.password_wo`, `auth.api_key_wo` as `WriteOnly` + `Sensit
 
 ### Decision 3 — Secret id-reference vs. literal resend
 Before each PUT, GET the current resource by `source_id` and inspect `secrets.ssl`/`secrets.auth` on the response:
+
+_Implementation note: the GET is skipped when no configured write-only value has a stored hash, because the branch then always resolves to a literal. This is behaviour-preserving; treat the GET as required only when at least one stored hash exists._
+
 - If a write-only field's hash is unchanged since the last successful apply (per `writeonlyhash.Matches` against the stored private-state hash) **and** the GET returned a secret id for that field, send `{id: <existing-id>}` for that field in the PUT, preserving the managed secret without resending the literal.
 - If the hash differs (first apply, or the configured value changed), send the literal value from configuration. A resent literal mints a new secret id server-side; Kibana does not validate caller-supplied ids in the `{id}` arm, so there is no risk of referencing the wrong secret as long as the id read in this same request cycle is used.
 - If the GET returns no secret id for a field whose write-only attribute is configured (Fleet Server secret storage unavailable, so Kibana stored the value merged into plaintext), resend the literal from configuration rather than attempting an `{id}` reference, since there is no stored secret to reference.

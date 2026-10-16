@@ -211,6 +211,41 @@ func TestModifyPlanReadsAuthWriteOnlyAttributesFromConfig(t *testing.T) {
 	require.True(t, id.IsUnknown())
 }
 
+func TestModifyPlanNullSslAndAuth(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	build := func() model {
+		m := baseModel(ctx, types.StringNull())
+		m.Ssl = types.ObjectNull(getSslAttrTypes(ctx))
+		m.Auth = nil
+		return m
+	}
+
+	t.Run("no stored hashes", func(t *testing.T) {
+		plan, config := planAndConfig(ctx, t, build(), build())
+		require.Empty(t, modifyPlan(ctx, newFakePrivate(), config, &plan))
+
+		var id types.String
+		require.False(t, plan.GetAttribute(ctx, path.Root("id"), &id).HasError())
+		require.False(t, id.IsUnknown())
+	})
+
+	t.Run("stored hash with removed parent plans update", func(t *testing.T) {
+		private := newFakePrivate()
+		var seed diag.Diagnostics
+		persistSecretHashes(ctx, private, map[string]string{sslKeyWOPath: "applied"}, nil, &seed)
+
+		plan, config := planAndConfig(ctx, t, build(), build())
+		diags := modifyPlan(ctx, private, config, &plan)
+		require.False(t, diags.HasError())
+
+		var id types.String
+		require.False(t, plan.GetAttribute(ctx, path.Root("id"), &id).HasError())
+		require.True(t, id.IsUnknown())
+	})
+}
+
 func TestModifyPlanSkipsCreateAndDestroy(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
