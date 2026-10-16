@@ -82,23 +82,24 @@ func modifyPlan(ctx context.Context, private entitycore.PrivateStateStorage, con
 
 // planDriftPaths returns the write-only attribute paths whose configuration no
 // longer matches the last applied value, in writeOnlyPaths order: a configured
-// value whose hash differs from the stored one, or a stored hash whose
-// attribute is no longer configured (a removal that must clear the remote
-// secret). Without a stored hash there is nothing to compare against, as on
-// first apply or after import. Unknown values defer to apply.
+// value whose hash differs from the stored one or has no stored hash at all
+// (first configured, re-added after a removal, or never confirmed after
+// import), or a stored hash whose attribute is no longer configured (a removal
+// that must clear the remote secret). Write-only values are null in state, so
+// without this the plan would otherwise be empty and the secret never sent.
+// Unknown values defer to apply.
 func planDriftPaths(configured map[string]types.String, stored map[string][]byte) []string {
 	var changed []string
 	for _, attrPath := range writeOnlyPaths {
 		storedHash := stored[attrPath]
-		if len(storedHash) == 0 {
-			continue
-		}
 		value := configured[attrPath]
 		switch {
 		case value.IsUnknown():
 		case value.IsNull():
-			changed = append(changed, attrPath)
-		case !secretHasher.Matches(value.ValueString(), storedHash):
+			if len(storedHash) > 0 {
+				changed = append(changed, attrPath)
+			}
+		case len(storedHash) == 0, !secretHasher.Matches(value.ValueString(), storedHash):
 			changed = append(changed, attrPath)
 		}
 	}

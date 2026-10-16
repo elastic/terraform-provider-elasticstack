@@ -61,7 +61,11 @@ func TestPlanDriftWarnings(t *testing.T) {
 			want:   []string{sslKeyWOPath},
 		},
 		{name: "removed value without stored hash", config: map[string]types.String{sslKeyWOPath: types.StringNull()}},
-		{name: "first apply without stored hash", config: map[string]types.String{sslKeyWOPath: types.StringValue("new")}},
+		{
+			name:   "configured without stored hash (re-added or added to an existing resource)",
+			config: map[string]types.String{sslKeyWOPath: types.StringValue("new")},
+			want:   []string{sslKeyWOPath},
+		},
 		{name: "unknown value defers", config: map[string]types.String{sslKeyWOPath: types.StringUnknown()}, stored: stored},
 		{
 			name:   "absent attribute with stored hash counts as removed",
@@ -158,18 +162,18 @@ func TestModifyPlanForcesUpdateOnDriftWithoutDeletingHash(t *testing.T) {
 	}
 }
 
-func TestModifyPlanWithoutStoredHashesPlansNothing(t *testing.T) {
+func TestModifyPlanConfiguredValueWithoutStoredHashPlansUpdate(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
 	plan, config := planAndConfig(ctx, t, baseModel(ctx, types.StringNull()), baseModel(ctx, types.StringValue("first")))
 	diags := modifyPlan(ctx, newFakePrivate(), config, &plan)
 	require.False(t, diags.HasError())
-	require.Empty(t, diags)
+	require.Len(t, diags, 1, "the change is surfaced as a warning")
 
 	var id types.String
 	require.False(t, plan.GetAttribute(ctx, path.Root("id"), &id).HasError())
-	require.False(t, id.IsUnknown())
+	require.True(t, id.IsUnknown(), "a write-only value that was never applied must force an update")
 }
 
 func TestModifyPlanReadsAuthWriteOnlyAttributesFromConfig(t *testing.T) {
