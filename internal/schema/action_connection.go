@@ -26,10 +26,3 @@ import (
 func GetEsActionConnectionBlock() schema.Block {
 	return esConnectionBlockSpec().actionBlock()
 }
-
-// GetKbActionConnectionBlock returns the kibana_connection block for
-// provider-defined actions, mirroring GetKbEphemeralConnectionBlock for
-// ephemeral resources.
-func GetKbActionConnectionBlock() schema.Block {
-	return kbConnectionBlockSpec().actionBlock()
-}

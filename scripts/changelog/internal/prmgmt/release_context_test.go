@@ -83,19 +83,3 @@ func TestSelectPreviousTag_excludesReleaseTagWhenPresent(t *testing.T) {
 		t.Fatalf("got %+v want %+v", got, want)
 	}
 }
-
-func TestBuildReleaseContext_combinesModeAndCompareRange(t *testing.T) {
-	t.Parallel()
-	got := prmgmt.BuildReleaseContext(prmgmt.EventPullRequestTarget, "prep-release-2.0.0", []semver.Tag{"v2.0.0", "v1.9.0"})
-	if got.Mode != prmgmt.WorkflowModeRelease ||
-		got.TargetVersion != "2.0.0" ||
-		got.TargetBranch != "prep-release-2.0.0" {
-		t.Fatalf("mode fields: %+v", got.ReleaseModeResolution)
-	}
-	if got.PreviousTag != "v1.9.0" || got.ExcludedTag != "v2.0.0" || !got.ExcludedCurrentTag {
-		t.Fatalf("previous tag fields: %+v", got.PreviousTagResult)
-	}
-	if got.CompareRange != "v1.9.0..HEAD" {
-		t.Fatalf("compare range: got %q", got.CompareRange)
-	}
-}

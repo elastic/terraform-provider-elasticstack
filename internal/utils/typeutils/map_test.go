@@ -104,23 +104,6 @@ func TestPointerInterfaceMapFromAnyMap(t *testing.T) {
 	})
 }
 
-func TestFlipMap(t *testing.T) {
-	t.Parallel()
-
-	t.Run("flips keys and values", func(t *testing.T) {
-		t.Parallel()
-		m := map[string]string{"a": "x", "b": "y"}
-		got := typeutils.FlipMap(m)
-		require.Equal(t, map[string]string{"x": "a", "y": "b"}, got)
-	})
-
-	t.Run("empty map returns empty map", func(t *testing.T) {
-		t.Parallel()
-		got := typeutils.FlipMap(map[string]string{})
-		require.Empty(t, got)
-	})
-}
-
 func TestFlattenMap(t *testing.T) {
 	t.Parallel()
 

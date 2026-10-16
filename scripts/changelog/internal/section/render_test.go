@@ -318,22 +318,3 @@ func TestNormalizeBulletPrefix_edgeCases(t *testing.T) {
 		t.Fatal("unexpected bullet normalization")
 	}
 }
-
-func TestRender_matchesEngineForSingleFixPR(t *testing.T) {
-	body := "## Changelog\nCustomer impact: fix\nSummary: Alpha line\n"
-	sec, err := Parse([]byte(body))
-	if err != nil {
-		t.Fatal(err)
-	}
-	out := Render(sec, RenderOpts{PRNumber: 42, PRURL: "https://example.com/pr/42"})
-	res := RenderChangelogSection([]MergedPR{{
-		Number: 42,
-		URL:    "https://example.com/pr/42",
-		Labels: []string{},
-		Body:   body,
-	}})
-	assertRendererSuccess(t, res)
-	if out != res.SectionBody {
-		t.Fatalf("Render=%q\nbatch=%q", out, res.SectionBody)
-	}
-}

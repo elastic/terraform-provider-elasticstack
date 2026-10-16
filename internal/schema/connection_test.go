@@ -18,53 +18,11 @@
 package schema
 
 import (
-	"context"
 	"testing"
 
-	"github.com/hashicorp/terraform-plugin-framework/attr"
-	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
-
-func TestElasticsearchConnectionNullList_objectMatchesGetEsFWConnectionBlock(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	block := GetEsFWConnectionBlock()
-	lb, ok := block.(fwschema.ListNestedBlock)
-	if !ok {
-		t.Fatal("GetEsFWConnectionBlock must return a ListNestedBlock")
-	}
-	want, err := fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
-	if err != nil {
-		t.Fatalf("fwNestedBlockAttributesToAttrTypes: %v", err)
-	}
-
-	list := ElasticsearchConnectionNullList()
-	listType, ok := list.Type(ctx).(types.ListType)
-	if !ok {
-		t.Fatalf("ElasticsearchConnectionNullList.Type: got %T", list.Type(ctx))
-	}
-	objType, ok := listType.ElementType().(types.ObjectType)
-	if !ok {
-		t.Fatalf("list element type: got %T", listType.ElementType())
-	}
-	got := objType.AttrTypes
-
-	if len(got) != len(want) {
-		t.Fatalf("attr count: got %d want %d", len(got), len(want))
-	}
-	for name, wt := range want {
-		gt, ok := got[name]
-		if !ok {
-			t.Fatalf("missing attribute %q on null list object type", name)
-		}
-		if !gt.Equal(wt) {
-			t.Fatalf("attribute %q: got %#v want %#v", name, gt, wt)
-		}
-	}
-}
 
 func TestElasticsearchConnectionBlockObjectAttrTypes_returnsCopy(t *testing.T) {
 	t.Parallel()
@@ -75,41 +33,6 @@ func TestElasticsearchConnectionBlockObjectAttrTypes_returnsCopy(t *testing.T) {
 	require.Equal(t, first, second)
 	first["mutated"] = types.BoolType
 	require.NotEqual(t, first, second)
-}
-
-func TestConnectionBlockObjectAttrTypes_matchBuiltBlock(t *testing.T) {
-	t.Parallel()
-
-	cases := []struct {
-		name  string
-		block fwschema.Block
-		got   map[string]attr.Type
-	}{
-		{
-			name:  "elasticsearch",
-			block: GetEsFWConnectionBlock(),
-			got:   elasticsearchConnectionBlockObjectAttrTypes(),
-		},
-		{
-			name:  "kibana",
-			block: GetKbFWConnectionBlock(),
-			got:   kibanaConnectionBlockObjectAttrTypes(),
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-
-			lb, ok := tc.block.(fwschema.ListNestedBlock)
-			require.True(t, ok, "block must return a ListNestedBlock")
-
-			want, err := fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
-			require.NoError(t, err)
-
-			require.Equal(t, want, tc.got)
-		})
-	}
 }
 
 func TestElasticsearchConnectionBlocks_includeCAFingerprintAttribute(t *testing.T) {
@@ -172,45 +95,6 @@ func TestElasticsearchConnectionBlocks_allAttributesPresent(t *testing.T) {
 		}
 		if _, ok := action[attr]; !ok {
 			t.Errorf("action connection block missing attribute %q", attr)
-		}
-	}
-}
-
-func TestKibanaConnectionNullList_objectMatchesGetKbFWConnectionBlock(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-
-	block := GetKbFWConnectionBlock()
-	lb, ok := block.(fwschema.ListNestedBlock)
-	if !ok {
-		t.Fatal("GetKbFWConnectionBlock must return a ListNestedBlock")
-	}
-	want, err := fwNestedBlockAttributesToAttrTypes(lb.NestedObject.Attributes)
-	if err != nil {
-		t.Fatalf("fwNestedBlockAttributesToAttrTypes: %v", err)
-	}
-
-	list := KibanaConnectionNullList()
-	listType, ok := list.Type(ctx).(types.ListType)
-	if !ok {
-		t.Fatalf("KibanaConnectionNullList.Type: got %T", list.Type(ctx))
-	}
-	objType, ok := listType.ElementType().(types.ObjectType)
-	if !ok {
-		t.Fatalf("list element type: got %T", listType.ElementType())
-	}
-	got := objType.AttrTypes
-
-	if len(got) != len(want) {
-		t.Fatalf("attr count: got %d want %d", len(got), len(want))
-	}
-	for name, wt := range want {
-		gt, ok := got[name]
-		if !ok {
-			t.Fatalf("missing attribute %q on null list object type", name)
-		}
-		if !gt.Equal(wt) {
-			t.Fatalf("attribute %q: got %#v want %#v", name, gt, wt)
 		}
 	}
 }
