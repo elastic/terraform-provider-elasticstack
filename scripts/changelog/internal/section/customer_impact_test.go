@@ -22,15 +22,6 @@ import (
 	"testing"
 )
 
-func TestRequiresSummary(t *testing.T) {
-	if !ImpactFix.RequiresSummary() || !ImpactEnhancement.RequiresSummary() || !ImpactBreaking.RequiresSummary() {
-		t.Fatal()
-	}
-	if ImpactNone.RequiresSummary() {
-		t.Fatal()
-	}
-}
-
 func TestCustomerImpactMarshalJSON_roundTrip(t *testing.T) {
 	for _, want := range []CustomerImpact{ImpactNone, ImpactFix, ImpactEnhancement, ImpactBreaking} {
 		b, err := json.Marshal(want)

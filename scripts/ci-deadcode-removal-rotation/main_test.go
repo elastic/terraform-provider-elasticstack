@@ -46,21 +46,6 @@ some error line without match
 	assert.Equal(t, "(*T).Method", entries[1].symbol)
 }
 
-func TestIntersectCandidates(t *testing.T) {
-	t.Parallel()
-	a := []deadcodeEntry{
-		{file: "a.go", line: 1, column: 1, symbol: "Foo", packagePath: "pkg1"},
-		{file: "b.go", line: 2, column: 1, symbol: "Bar", packagePath: "pkg1"},
-	}
-	b := []deadcodeEntry{
-		{file: "a.go", line: 1, column: 1, symbol: "Foo", packagePath: "pkg1"},
-		{file: "c.go", line: 3, column: 1, symbol: "Baz", packagePath: "pkg2"},
-	}
-	result := intersectCandidates(a, b)
-	require.Len(t, result, 1)
-	assert.Equal(t, "Foo", result[0].symbol)
-}
-
 func TestFilterExcluded(t *testing.T) {
 	t.Parallel()
 	entries := []deadcodeEntry{
@@ -76,40 +61,6 @@ func TestFilterExcluded(t *testing.T) {
 	require.Len(t, filtered, 2)
 	assert.Equal(t, "RealDead", filtered[0].symbol)
 	assert.Equal(t, "Panel", filtered[1].symbol)
-}
-
-func TestSelectOne_CooldownFiltering(t *testing.T) {
-	t.Parallel()
-	mem := &Memory{
-		CooldownDays: 7,
-		Attempts: []AttemptRecord{
-			{Symbol: "pkg.A", AttemptedAt: time.Now().UTC().AddDate(0, 0, -1), Reason: ReasonBuildFailed},
-			{Symbol: "pkg.B", AttemptedAt: time.Now().UTC().AddDate(0, 0, -10), Reason: ReasonPRCreated},
-		},
-	}
-	candidates := []deadcodeEntry{
-		{file: "a.go", line: 1, column: 1, symbol: "A", packagePath: "pkg"},
-		{file: "b.go", line: 1, column: 1, symbol: "B", packagePath: "pkg"},
-		{file: "c.go", line: 1, column: 1, symbol: "C", packagePath: "pkg"},
-	}
-	chosen := selectOne(candidates, mem, time.Now().UTC())
-	require.NotNil(t, chosen)
-	assert.Equal(t, "B", chosen.symbol)
-}
-
-func TestSelectOne_AllInCooldown(t *testing.T) {
-	t.Parallel()
-	mem := &Memory{
-		CooldownDays: 7,
-		Attempts: []AttemptRecord{
-			{Symbol: "pkg.A", AttemptedAt: time.Now().UTC().AddDate(0, 0, -1), Reason: ReasonBuildFailed},
-		},
-	}
-	candidates := []deadcodeEntry{
-		{file: "a.go", line: 1, column: 1, symbol: "A", packagePath: "pkg"},
-	}
-	chosen := selectOne(candidates, mem, time.Now().UTC())
-	assert.Nil(t, chosen)
 }
 
 func TestClassifyReferences_NoTests_NonTestRef(t *testing.T) {

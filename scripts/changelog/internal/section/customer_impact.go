@@ -69,11 +69,6 @@ func ParseCustomerImpact(s string) (CustomerImpact, bool) {
 	}
 }
 
-// RequiresSummary mirrors validateChangelogSection: summary is required unless impact is exactly "none".
-func (i CustomerImpact) RequiresSummary() bool {
-	return i != ImpactNone
-}
-
 func (i CustomerImpact) String() string {
 	if s, ok := customerImpactStrings[i]; ok {
 		return s
