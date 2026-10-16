@@ -78,18 +78,18 @@ func TestPlanDriftWarnings(t *testing.T) {
 	}
 }
 
-func fullSchema(t *testing.T) resource.SchemaResponse {
+func fullSchema(ctx context.Context, t *testing.T) resource.SchemaResponse {
 	t.Helper()
 	var resp resource.SchemaResponse
-	newResource().Schema(context.Background(), resource.SchemaRequest{}, &resp)
+	newResource().Schema(ctx, resource.SchemaRequest{}, &resp)
 	require.False(t, resp.Diagnostics.HasError())
 	return resp
 }
 
 // fullModel returns a model that serializes against the full resource schema.
-func fullModel(t *testing.T, m model) model {
+func fullModel(ctx context.Context, t *testing.T, m model) model {
 	t.Helper()
-	s := fullSchema(t).Schema
+	s := fullSchema(ctx, t).Schema
 	m.Timeouts = timeouts.Value{Object: types.ObjectNull(s.Attributes["timeouts"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes())}
 	m.KibanaConnection = providerschema.KibanaConnectionNullList()
 	return m
@@ -99,11 +99,10 @@ func tfsdkNullRaw(ctx context.Context, s schema.Schema) tftypes.Value {
 	return tftypes.NewValue(s.Type().TerraformType(ctx), nil)
 }
 
-func planAndConfig(t *testing.T, planModel, configModel model) (tfsdk.Plan, tfsdk.Config) {
+func planAndConfig(ctx context.Context, t *testing.T, planModel, configModel model) (tfsdk.Plan, tfsdk.Config) {
 	t.Helper()
-	ctx := context.Background()
-	s := fullSchema(t).Schema
-	planModel, configModel = fullModel(t, planModel), fullModel(t, configModel)
+	s := fullSchema(ctx, t).Schema
+	planModel, configModel = fullModel(ctx, t, planModel), fullModel(ctx, t, configModel)
 
 	empty := tfsdk.State{Schema: s, Raw: tfsdkNullRaw(ctx, s)}
 	require.False(t, empty.Set(ctx, &planModel).HasError())
@@ -146,7 +145,7 @@ func TestModifyPlanForcesUpdateOnDriftWithoutDeletingHash(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plan, config := planAndConfig(t, baseModel(ctx, types.StringNull()), baseModel(ctx, tt.configKey))
+			plan, config := planAndConfig(ctx, t, baseModel(ctx, types.StringNull()), baseModel(ctx, tt.configKey))
 			diags := modifyPlan(ctx, private, config, &plan)
 			require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 
@@ -163,7 +162,7 @@ func TestModifyPlanWithoutStoredHashesPlansNothing(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	plan, config := planAndConfig(t, baseModel(ctx, types.StringNull()), baseModel(ctx, types.StringValue("first")))
+	plan, config := planAndConfig(ctx, t, baseModel(ctx, types.StringNull()), baseModel(ctx, types.StringValue("first")))
 	diags := modifyPlan(ctx, newFakePrivate(), config, &plan)
 	require.False(t, diags.HasError())
 	require.Empty(t, diags)
@@ -191,10 +190,10 @@ func TestModifyPlanReadsAuthWriteOnlyAttributesFromConfig(t *testing.T) {
 		return m
 	}
 
-	plan, config := planAndConfig(t, build(types.StringNull(), types.StringNull()), build(types.StringValue("pw"), types.StringValue("ak")))
+	plan, config := planAndConfig(ctx, t, build(types.StringNull(), types.StringNull()), build(types.StringValue("pw"), types.StringValue("ak")))
 	require.Empty(t, modifyPlan(ctx, private, config, &plan))
 
-	plan, config = planAndConfig(t, build(types.StringNull(), types.StringNull()), build(types.StringValue("pw"), types.StringValue("changed")))
+	plan, config = planAndConfig(ctx, t, build(types.StringNull(), types.StringNull()), build(types.StringValue("pw"), types.StringValue("changed")))
 	diags := modifyPlan(ctx, private, config, &plan)
 	require.False(t, diags.HasError())
 	require.Len(t, diags, 1)
@@ -210,9 +209,9 @@ func TestModifyPlanSkipsCreateAndDestroy(t *testing.T) {
 
 	var _ resource.ResourceWithModifyPlan = r
 
-	s := fullSchema(t).Schema
+	s := fullSchema(ctx, t).Schema
 	nullRaw := tfsdkNullRaw(ctx, s)
-	plan, config := planAndConfig(t, baseModel(ctx, types.StringNull()), baseModel(ctx, types.StringValue("k")))
+	plan, config := planAndConfig(ctx, t, baseModel(ctx, types.StringNull()), baseModel(ctx, types.StringValue("k")))
 
 	// create: state is null
 	resp := &resource.ModifyPlanResponse{Plan: plan}

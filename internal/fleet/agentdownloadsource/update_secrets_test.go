@@ -27,6 +27,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -45,9 +46,9 @@ func updateRecorder(t *testing.T, getSecrets map[string]any) (http.Handler, func
 		rec := recordedRequest{method: r.Method}
 		if r.Method == http.MethodPut {
 			raw, err := io.ReadAll(r.Body)
-			require.NoError(t, err)
+			assert.NoError(t, err)
 			rec.body = map[string]any{}
-			require.NoError(t, json.Unmarshal(raw, &rec.body))
+			assert.NoError(t, json.Unmarshal(raw, &rec.body))
 		}
 		mu.Lock()
 		calls = append(calls, rec)
@@ -58,7 +59,7 @@ func updateRecorder(t *testing.T, getSecrets map[string]any) (http.Handler, func
 			item["secrets"] = getSecrets
 		}
 		w.Header().Set("Content-Type", "application/json")
-		require.NoError(t, json.NewEncoder(w).Encode(map[string]any{"item": item}))
+		assert.NoError(t, json.NewEncoder(w).Encode(map[string]any{"item": item}))
 	})
 	return h, func() []recordedRequest {
 		mu.Lock()

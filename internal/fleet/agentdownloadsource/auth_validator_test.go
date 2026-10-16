@@ -19,6 +19,7 @@ package agentdownloadsource
 
 import (
 	"context"
+	"maps"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -48,9 +49,7 @@ func Test_authCredentialsValidator(t *testing.T) {
 			"api_key_wo":  null,
 			"headers":     types.ListNull(attrTypes["headers"].(types.ListType).ElemType),
 		}
-		for k, v := range overrides {
-			vals[k] = v
-		}
+		maps.Copy(vals, overrides)
 		return types.ObjectValueMust(attrTypes, vals)
 	}
 

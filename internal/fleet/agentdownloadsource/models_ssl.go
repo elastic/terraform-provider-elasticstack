@@ -48,7 +48,7 @@ type sslModel struct {
 }
 
 func (m sslModel) allNil() bool {
-	return m.Values.AllNil() && m.KeyWO.IsNull()
+	return m.AllNil() && m.KeyWO.IsNull()
 }
 
 // kbapiSsl is the anonymous `ssl` struct type generated on
@@ -192,17 +192,15 @@ func hydrateSsl(ctx context.Context, api agentDownloadSourceSSLAPIModel, prior t
 	}
 
 	obj, diags := sslToObjectValue(ctx, api.Certificate, api.CertificateAuthorities, key)
-	if diags.HasError() || !obj.IsNull() || priorModel == nil || !priorModel.Values.AllNil() {
+	if diags.HasError() || !obj.IsNull() || priorModel == nil || !priorModel.AllNil() {
 		return obj, diags
 	}
 
 	retained, retainDiags := types.ObjectValueFrom(ctx, getSslAttrTypes(ctx), sslModel{
-		Values: sslcore.Values{
-			Certificate:            types.StringNull(),
-			CertificateAuthorities: types.ListNull(types.StringType),
-			Key:                    types.StringNull(),
-		},
-		KeyWO: types.StringNull(),
+		Certificate:            types.StringNull(),
+		CertificateAuthorities: types.ListNull(types.StringType),
+		Key:                    types.StringNull(),
+		KeyWO:                  types.StringNull(),
 	})
 	diags.Append(retainDiags...)
 	return retained, diags

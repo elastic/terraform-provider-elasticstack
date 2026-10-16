@@ -19,6 +19,7 @@ package agentdownloadsource
 
 import (
 	"context"
+	"slices"
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -60,12 +61,7 @@ func (authCredentialsValidator) ValidateObject(_ context.Context, req validator.
 		return ok && v.IsUnknown()
 	}
 	anyUnknown := func(names ...string) bool {
-		for _, name := range names {
-			if isUnknown(name) {
-				return true
-			}
-		}
-		return false
+		return slices.ContainsFunc(names, isUnknown)
 	}
 	addError := func(detail string) {
 		resp.Diagnostics.AddAttributeError(req.Path, authCredentialsSummary, detail)
