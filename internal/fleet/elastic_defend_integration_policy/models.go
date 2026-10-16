@@ -31,35 +31,44 @@ import (
 // elasticDefendIntegrationPolicyModel is the Terraform state model for the
 // elasticstack_fleet_elastic_defend_integration_policy resource.
 type elasticDefendIntegrationPolicyModel struct {
-	ID                 types.String `tfsdk:"id"`
-	KibanaConnection   types.List   `tfsdk:"kibana_connection"`
-	PolicyID           types.String `tfsdk:"policy_id"`
-	Name               types.String `tfsdk:"name"`
-	Namespace          types.String `tfsdk:"namespace"`
-	AgentPolicyID      types.String `tfsdk:"agent_policy_id"`
-	AgentPolicyIDs     types.List   `tfsdk:"agent_policy_ids"`
-	Description        types.String `tfsdk:"description"`
-	Enabled            types.Bool   `tfsdk:"enabled"`
-	Force              types.Bool   `tfsdk:"force"`
-	IntegrationVersion types.String `tfsdk:"integration_version"`
-	SpaceIDs           types.Set    `tfsdk:"space_ids"`
-	Preset             types.String `tfsdk:"preset"`
-	Policy             types.Object `tfsdk:"policy"`
-	AdvancedSettings   types.Map    `tfsdk:"advanced_settings"`
+	ID                               types.String `tfsdk:"id"`
+	KibanaConnection                 types.List   `tfsdk:"kibana_connection"`
+	PolicyID                         types.String `tfsdk:"policy_id"`
+	Name                             types.String `tfsdk:"name"`
+	Namespace                        types.String `tfsdk:"namespace"`
+	AgentPolicyID                    types.String `tfsdk:"agent_policy_id"`
+	AgentPolicyIDs                   types.List   `tfsdk:"agent_policy_ids"`
+	Description                      types.String `tfsdk:"description"`
+	Enabled                          types.Bool   `tfsdk:"enabled"`
+	Force                            types.Bool   `tfsdk:"force"`
+	IntegrationVersion               types.String `tfsdk:"integration_version"`
+	SpaceIDs                         types.Set    `tfsdk:"space_ids"`
+	Preset                           types.String `tfsdk:"preset"`
+	Policy                           types.Object `tfsdk:"policy"`
+	AdvancedSettings                 types.Map    `tfsdk:"advanced_settings"`
+	AdditionalDatastreamsPermissions types.List   `tfsdk:"additional_datastreams_permissions"`
 }
 
 func (model elasticDefendIntegrationPolicyModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	if !typeutils.IsKnown(model.AgentPolicyIDs) {
-		return nil, nil
-	}
+	var reqs []entitycore.VersionRequirement
 
-	return []entitycore.VersionRequirement{
-		entitycore.NewAttributeVersionRequirement(
+	if typeutils.IsKnown(model.AgentPolicyIDs) {
+		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
 			path.Root("agent_policy_ids"),
 			*MinVersionPolicyIDs,
 			fmt.Sprintf("agent_policy_ids requires Elastic Stack %s or later", MinVersionPolicyIDs),
-		),
-	}, nil
+		))
+	}
+
+	if typeutils.IsKnown(model.AdditionalDatastreamsPermissions) {
+		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
+			path.Root("additional_datastreams_permissions"),
+			*MinVersionAdditionalDatastreamsPermissions,
+			fmt.Sprintf("additional_datastreams_permissions requires Elastic Stack %s or later", MinVersionAdditionalDatastreamsPermissions),
+		))
+	}
+
+	return reqs, nil
 }
 
 // policyModel holds the top-level policy nested attribute.

@@ -20,6 +20,7 @@ package elasticdefendintegrationpolicy_test
 import (
 	"context"
 	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -812,4 +813,101 @@ func TestPolicyOmitsUnconfiguredOptionalObjects(t *testing.T) {
 	got, diags := edip.BuildPolicyPayload(context.Background(), model, nil)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
 	require.Equal(t, policyData, got)
+}
+
+func additionalPermsModel(perms types.List) *edip.ElasticDefendIntegrationPolicyModel {
+	return &edip.ElasticDefendIntegrationPolicyModel{
+		Name:                             types.StringValue("my-endpoint"),
+		Namespace:                        types.StringValue("default"),
+		AgentPolicyID:                    types.StringValue("agent-123"),
+		IntegrationVersion:               types.StringValue("9.1.0"),
+		AdditionalDatastreamsPermissions: perms,
+	}
+}
+
+func TestAdditionalDatastreamsPermissionsRequestMapping(t *testing.T) {
+	ctx := context.Background()
+	tests := map[string]struct {
+		perms    types.List
+		expected *[]string
+	}{
+		"populated": {
+			perms:    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("logs-nginx-*")}),
+			expected: &[]string{"logs-nginx-*"},
+		},
+		"empty": {
+			perms:    types.ListValueMust(types.StringType, []attr.Value{}),
+			expected: &[]string{},
+		},
+		"null":    {perms: types.ListNull(types.StringType)},
+		"unknown": {perms: types.ListUnknown(types.StringType)},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			bootstrap, diags := edip.BuildBootstrapRequest(ctx, additionalPermsModel(tc.perms))
+			require.False(t, diags.HasError())
+			require.Equal(t, tc.expected, bootstrap.AdditionalDatastreamsPermissions)
+			body, err := json.Marshal(bootstrap)
+			require.NoError(t, err)
+			require.Equal(t, tc.expected != nil, strings.Contains(string(body), "additional_datastreams_permissions"))
+
+			finalize, diags := edip.BuildFinalizeRequest(ctx, additionalPermsModel(tc.perms), nil, edip.DefendPrivateState{})
+			require.False(t, diags.HasError())
+			require.Equal(t, tc.expected, finalize.AdditionalDatastreamsPermissions)
+			body, err = json.Marshal(finalize)
+			require.NoError(t, err)
+			require.Equal(t, tc.expected != nil, strings.Contains(string(body), "additional_datastreams_permissions"))
+		})
+	}
+}
+
+func TestPopulateModelFromAPIAdditionalDatastreamsPermissions(t *testing.T) {
+	ctx := context.Background()
+	inputs := kbapi.PackagePolicyTypedInputs{{Type: "endpoint", Enabled: true, Streams: []kbapi.PackagePolicyTypedInputStream{}}}
+	empty := types.ListValueMust(types.StringType, []attr.Value{})
+	tests := map[string]struct {
+		api      *[]string
+		input    types.List
+		expected types.List
+	}{
+		"non-empty api": {
+			api:      &[]string{"logs-nginx-*", "metrics-foo-*"},
+			input:    types.ListNull(types.StringType),
+			expected: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("logs-nginx-*"), types.StringValue("metrics-foo-*")}),
+		},
+		"absent api with known empty": {api: nil, input: empty, expected: empty},
+		"empty api with known empty":  {api: &[]string{}, input: empty, expected: empty},
+		"drift adopted over different config": {
+			api:      &[]string{"logs-api-*"},
+			input:    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("logs-config-*")}),
+			expected: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("logs-api-*")}),
+		},
+		"non-empty api adopted over known empty": {
+			api:      &[]string{"logs-api-*"},
+			input:    empty,
+			expected: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("logs-api-*")}),
+		},
+		"absent api with populated state": {
+			api:      nil,
+			input:    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("a")}),
+			expected: types.ListNull(types.StringType),
+		},
+		"empty api with populated state": {
+			api:      &[]string{},
+			input:    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("a")}),
+			expected: types.ListNull(types.StringType),
+		},
+		"absent api with null":   {api: nil, input: types.ListNull(types.StringType), expected: types.ListNull(types.StringType)},
+		"empty api with unknown": {api: &[]string{}, input: types.ListUnknown(types.StringType), expected: types.ListNull(types.StringType)},
+	}
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			policy := buildTestPackagePolicy("policy-123", "my-endpoint-policy", "endpoint", "9.1.0", true, inputs)
+			policy.AdditionalDatastreamsPermissions = tc.api
+			model := &edip.ElasticDefendIntegrationPolicyModel{AdditionalDatastreamsPermissions: tc.input}
+			diags := edip.PopulateModelFromAPI(ctx, model, policy)
+			require.False(t, diags.HasError())
+			require.True(t, tc.expected.Equal(model.AdditionalDatastreamsPermissions), "got %s", model.AdditionalDatastreamsPermissions)
+		})
+	}
 }
