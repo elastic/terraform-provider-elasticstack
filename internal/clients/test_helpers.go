@@ -19,6 +19,7 @@ package clients
 
 import (
 	elasticsearch "github.com/elastic/go-elasticsearch/v8"
+	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 )
 
@@ -38,4 +39,10 @@ func NewKibanaScopedClientForTest(kibanaOapi *kibanaoapi.Client) *KibanaScopedCl
 		kibanaOapi:     kibanaOapi,
 		kibanaEndpoint: kibanaOapi.URL,
 	}
+}
+
+// NewKibanaScopedClientWithFleetForTest creates a KibanaScopedClient backed by
+// the given Fleet client. It is intended for unit tests.
+func NewKibanaScopedClientWithFleetForTest(fleet *fleetclient.Client) *KibanaScopedClient {
+	return &KibanaScopedClient{fleet: fleet}
 }
