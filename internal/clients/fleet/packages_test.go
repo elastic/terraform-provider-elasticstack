@@ -18,6 +18,7 @@
 package fleet
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -233,4 +234,44 @@ func TestWaitForPackageInstalled_noFallbackTimesOut(t *testing.T) {
 
 	err := WaitForPackageInstalled(t.Context(), newTestPackagesClient(t, srv), "system", "1.0.0", "", 2500*time.Millisecond, false)
 	require.Error(t, err)
+}
+
+func TestInstallPackage_allowOutdatedVersion(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		value     *bool
+		wantKey   bool
+		wantValue bool
+	}{
+		{name: "unset omits key", value: nil},
+		{name: "explicit false", value: new(false), wantKey: true, wantValue: false},
+		{name: "explicit true", value: new(true), wantKey: true, wantValue: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			var captured map[string]any
+			srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.NoError(t, json.NewDecoder(r.Body).Decode(&captured))
+				w.Header().Set("Content-Type", "application/json")
+				fmt.Fprint(w, `{"items":[]}`)
+			}))
+			defer srv.Close()
+
+			diags := InstallPackage(t.Context(), newTestPackagesClient(t, srv), "system", "1.0.0", InstallPackageOptions{
+				AllowOutdatedVersion: tt.value,
+			})
+			require.False(t, diags.HasError(), "%v", diags)
+
+			got, present := captured["allow_outdated_version"]
+			assert.Equal(t, tt.wantKey, present)
+			if tt.wantKey {
+				assert.Equal(t, tt.wantValue, got)
+			}
+		})
+	}
 }

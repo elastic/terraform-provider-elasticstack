@@ -68,6 +68,10 @@ func writeIntegration(
 		installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
 	}
 
+	if typeutils.IsKnown(planModel.AllowOutdatedVersion) {
+		installOptions.AllowOutdatedVersion = planModel.AllowOutdatedVersion.ValueBoolPointer()
+	}
+
 	installOptions.SpaceID = scope.id
 
 	installDiags := fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)

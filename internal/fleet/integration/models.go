@@ -45,6 +45,7 @@ type integrationModel struct {
 	IgnoreMappingUpdateErrors types.Bool   `tfsdk:"ignore_mapping_update_errors"`
 	SkipDataStreamRollover    types.Bool   `tfsdk:"skip_data_stream_rollover"`
 	IgnoreConstraints         types.Bool   `tfsdk:"ignore_constraints"`
+	AllowOutdatedVersion      types.Bool   `tfsdk:"allow_outdated_version"`
 	SkipDestroy               types.Bool   `tfsdk:"skip_destroy"`
 	SpaceID                   types.String `tfsdk:"space_id"`
 }
