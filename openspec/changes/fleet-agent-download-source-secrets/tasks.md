@@ -1,7 +1,7 @@
 ## 1. `writeonlyhash` helper fix
 
-- [ ] 1.1 Fix `internal/utils/writeonlyhash/hasher.go`'s `passwordBytes` (`hasher.go:97-102`): when `len(salt)+1+len(value)` exceeds 72 bytes, compute SHA-256 over the salted bytes and base64-encode the digest before returning; otherwise return the salted bytes unchanged
-- [ ] 1.2 Add `internal/utils/writeonlyhash/hasher_test.go` covering: a value ≤72 bytes hashes identically before/after the fix (regression guard for `elasticsearch_connector`'s existing stored hashes); a PEM-sized (>72 byte) value round-trips through `Compute`/`Matches` without error; two different >72-byte values that share a common ~72-byte prefix after the salt do NOT falsely match
+- [x] 1.1 Fix `internal/utils/writeonlyhash/hasher.go`'s `passwordBytes` (`hasher.go:97-102`): when `len(salt)+1+len(value)` exceeds 72 bytes, compute SHA-256 over the salted bytes and base64-encode the digest before returning; otherwise return the salted bytes unchanged
+- [x] 1.2 Add `internal/utils/writeonlyhash/hasher_test.go` covering: a value ≤72 bytes hashes identically before/after the fix (regression guard for `elasticsearch_connector`'s existing stored hashes); a PEM-sized (>72 byte) value round-trips through `Compute`/`Matches` without error; two different >72-byte values that share a common ~72-byte prefix after the salt do NOT falsely match
 
 ## 2. Shared envelope: thread private state into Kibana writes
 

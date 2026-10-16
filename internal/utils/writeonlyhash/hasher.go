@@ -20,6 +20,8 @@
 package writeonlyhash
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"errors"
 	"strings"
 
@@ -28,7 +30,9 @@ import (
 
 const (
 	defaultCost = 10
-	keyPrefix   = "secret_hash:"
+	// bcryptMaxInputBytes is bcrypt's maximum password length.
+	bcryptMaxInputBytes = 72
+	keyPrefix           = "secret_hash:"
 )
 
 // Hasher manages bcrypt-based private-state hashes for write-only attributes.
@@ -99,7 +103,13 @@ func (h *Hasher) passwordBytes(value string) []byte {
 	prefix = append(prefix, h.Salt...)
 	prefix = append(prefix, ':')
 	prefix = append(prefix, value...)
-	return prefix
+	if len(prefix) <= bcryptMaxInputBytes {
+		return prefix
+	}
+	// bcrypt rejects inputs over 72 bytes; pre-hash so long values (e.g. PEM
+	// keys) are fully covered. Base64 keeps the result at 44 bytes.
+	digest := sha256.Sum256(prefix)
+	return []byte(base64.StdEncoding.EncodeToString(digest[:]))
 }
 
 func hashError(err error) error {
