@@ -87,7 +87,9 @@ func modifyPlan(ctx context.Context, private entitycore.PrivateStateStorage, con
 // import), or a stored hash whose attribute is no longer configured (a removal
 // that must clear the remote secret). Write-only values are null in state, so
 // without this the plan would otherwise be empty and the secret never sent.
-// Unknown values defer to apply.
+// An unknown value (for example one derived from an upstream resource being
+// replaced) is treated as changed so an update is planned and the resolved
+// secret is sent at apply.
 func planDriftPaths(configured map[string]types.String, stored map[string][]byte) []string {
 	var changed []string
 	for _, attrPath := range writeOnlyPaths {
@@ -95,6 +97,7 @@ func planDriftPaths(configured map[string]types.String, stored map[string][]byte
 		value := configured[attrPath]
 		switch {
 		case value.IsUnknown():
+			changed = append(changed, attrPath)
 		case value.IsNull():
 			if len(storedHash) > 0 {
 				changed = append(changed, attrPath)

@@ -66,7 +66,12 @@ func TestPlanDriftWarnings(t *testing.T) {
 			config: map[string]types.String{sslKeyWOPath: types.StringValue("new")},
 			want:   []string{sslKeyWOPath},
 		},
-		{name: "unknown value defers", config: map[string]types.String{sslKeyWOPath: types.StringUnknown()}, stored: stored},
+		{
+			name:   "unknown value (upstream-generated rotation) schedules an update",
+			config: map[string]types.String{sslKeyWOPath: types.StringUnknown()},
+			stored: stored,
+			want:   []string{sslKeyWOPath},
+		},
 		{
 			name:   "absent attribute with stored hash counts as removed",
 			config: map[string]types.String{},

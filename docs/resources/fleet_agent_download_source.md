@@ -107,18 +107,23 @@ resource "elasticstack_fleet_agent_download_source" "example" {
   }
 }
 
+# The defaults below are non-production placeholders; supply real values via
+# TF_VAR_* environment variables or a tfvars file.
 variable "download_source_password" {
   type      = string
   sensitive = true
+  default   = "example-password-change-me"
 }
 
 variable "client_certificate" {
-  type = string
+  type    = string
+  default = "-----BEGIN CERTIFICATE-----\nREPLACE_ME\n-----END CERTIFICATE-----"
 }
 
 variable "client_key" {
   type      = string
   sensitive = true
+  default   = "-----BEGIN PRIVATE KEY-----\nREPLACE_ME\n-----END PRIVATE KEY-----"
 }
 ```
 
