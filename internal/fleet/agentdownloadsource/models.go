@@ -47,10 +47,12 @@ type model struct {
 }
 
 type authModel struct {
-	Username types.String `tfsdk:"username"`
-	Password types.String `tfsdk:"password"`
-	APIKey   types.String `tfsdk:"api_key"`
-	Headers  types.List   `tfsdk:"headers"`
+	Username   types.String `tfsdk:"username"`
+	Password   types.String `tfsdk:"password"`
+	PasswordWO types.String `tfsdk:"password_wo"`
+	APIKey     types.String `tfsdk:"api_key"`
+	APIKeyWO   types.String `tfsdk:"api_key_wo"`
+	Headers    types.List   `tfsdk:"headers"`
 }
 
 type authHeaderModel struct {
@@ -113,6 +115,8 @@ func (m model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRe
 	return reqs, nil
 }
 
+// toAPICreateModel builds the create body. Create has no existing secrets to
+// reference, so every secret is sent as a literal.
 func (m model) toAPICreateModel(ctx context.Context) (kbapi.PostFleetAgentDownloadSourcesJSONRequestBody, diag.Diagnostics) {
 	auth, diags := m.authRequest(ctx)
 	body := kbapi.PostFleetAgentDownloadSourcesJSONRequestBody{
@@ -140,7 +144,42 @@ func (m model) toAPICreateModel(ctx context.Context) (kbapi.PostFleetAgentDownlo
 	}
 	body.Ssl = sslToKibana(ssl)
 
+	secrets, secretDiags := m.secretsPayload(ctx, literalSecrets)
+	diags.Append(secretDiags...)
+	if err := setSecrets(&body.Secrets, secrets); err != nil {
+		diags.AddError("Failed to build secrets request", err.Error())
+	}
+	if diags.HasError() {
+		return kbapi.PostFleetAgentDownloadSourcesJSONRequestBody{}, diags
+	}
+
 	return body, diags
+}
+
+// withWriteOnlyFrom returns a copy of m whose write-only values are taken from
+// config. The framework represents write-only values as null in the plan, so
+// the write path must read them from configuration.
+func (m model) withWriteOnlyFrom(ctx context.Context, config model) (model, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if typeutils.IsKnown(config.Ssl) {
+		configSSL := typeutils.ObjectTypeAs[sslModel](ctx, config.Ssl, path.Root("ssl"), &diags)
+		if diags.HasError() {
+			return m, diags
+		}
+		ssl, sslDiags := withSSLWriteOnlyKey(ctx, m.Ssl, configSSL.KeyWO)
+		diags.Append(sslDiags...)
+		m.Ssl = ssl
+	}
+
+	if m.Auth != nil && config.Auth != nil {
+		auth := *m.Auth
+		auth.PasswordWO = config.Auth.PasswordWO
+		auth.APIKeyWO = config.Auth.APIKeyWO
+		m.Auth = &auth
+	}
+
+	return m, diags
 }
 
 func (m model) authRequest(ctx context.Context) (*downloadSourceAuth, diag.Diagnostics) {
@@ -167,7 +206,7 @@ func (m authModel) toAPIHeaders(ctx context.Context) (*[]downloadSourceAuthHeade
 	return headers, diags
 }
 
-func (m model) toAPIUpdateModel(ctx context.Context, prior model) (kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody, diag.Diagnostics) {
+func (m model) toAPIUpdateModel(ctx context.Context, prior model, resolve secretResolver) (kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody, diag.Diagnostics) {
 	auth, diags := m.authForUpdate(ctx, prior)
 	if diags.HasError() {
 		return kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{}, diags
@@ -186,6 +225,15 @@ func (m model) toAPIUpdateModel(ctx context.Context, prior model) (kbapi.PutFlee
 		return kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{}, diags
 	}
 	body.Ssl = sslToKibana(ssl)
+
+	secrets, secretDiags := m.secretsPayload(ctx, resolve)
+	diags.Append(secretDiags...)
+	if err := setSecrets(&body.Secrets, secrets); err != nil {
+		diags.AddError("Failed to build secrets request", err.Error())
+	}
+	if diags.HasError() {
+		return kbapi.PutFleetAgentDownloadSourcesSourceidJSONRequestBody{}, diags
+	}
 
 	return body, diags
 }

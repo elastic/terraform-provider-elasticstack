@@ -69,10 +69,11 @@ func sslToKibana(ssl *agentDownloadSourceSSLAPIModel) *kbapiSsl {
 		return nil
 	}
 
+	// The client key is never sent on the plain wire field; it travels as
+	// secrets.ssl.key (see model.secretsPayload).
 	return &kbapiSsl{
 		Certificate:            ssl.Certificate,
 		CertificateAuthorities: ssl.CertificateAuthorities,
-		Key:                    ssl.Key,
 	}
 }
 
@@ -147,4 +148,21 @@ func sslToObjectValue(
 	obj, diagTemp := types.ObjectValueFrom(ctx, attrTypes, sslModel{Values: values, KeyWO: types.StringNull()})
 	diags.Append(diagTemp...)
 	return obj, diags
+}
+
+// withSSLWriteOnlyKey returns obj with its key_wo child replaced by keyWO.
+// A null or unknown obj is returned unchanged.
+func withSSLWriteOnlyKey(ctx context.Context, obj types.Object, keyWO types.String) (types.Object, diag.Diagnostics) {
+	if !typeutils.IsKnown(obj) {
+		return obj, nil
+	}
+	var diags diag.Diagnostics
+	model := typeutils.ObjectTypeAs[sslModel](ctx, obj, path.Root("ssl"), &diags)
+	if diags.HasError() {
+		return obj, diags
+	}
+	model.KeyWO = keyWO
+	out, objDiags := types.ObjectValueFrom(ctx, getSslAttrTypes(ctx), model)
+	diags.Append(objDiags...)
+	return out, diags
 }

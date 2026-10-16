@@ -19,9 +19,9 @@
 
 ## 4. Models: secret-reference request types and hash-aware write branching
 
-- [ ] 4.1 In `internal/fleet/agentdownloadsource/models_ssl.go`, add model plumbing for `key_wo`, and route both the existing plain `key` and new `key_wo` through `secrets.ssl.key` (not plain `ssl.key`); send the plain key as a literal and use the literal or `{Id: string}` arm for `key_wo` per Decision 3's hash/id branching
-- [ ] 4.2 In `internal/fleet/agentdownloadsource/models.go`, add `authModel.PasswordWO`/`APIKeyWO` fields and extend `authRequest`/`authForUpdate` (`models.go:146-157,198-206`) so configured `password_wo`/`api_key_wo` map to `kbapi...SecretsAuthPassword{0,1}`/`...SecretsAuthApiKey{0,1}` using the same literal-vs-`{id}` branching as 4.1, while plain `password`/`api_key` continue to map to the existing plain wire fields unchanged
-- [ ] 4.3 Add a `secretWriteBranch` (or similarly named) helper shared by 4.1/4.2 that, given a write-only value, its `writeonlyhash` hash, the stored prior hash (from private state), and the pre-PUT GET's secret id for that field, returns one of: literal (first apply / hash changed / no GET id available), or `{id: <existing>}` (hash unchanged and GET id available) — implementing Decision 3 once, not duplicated per field
+- [x] 4.1 In `internal/fleet/agentdownloadsource/models_ssl.go`, add model plumbing for `key_wo`, and route both the existing plain `key` and new `key_wo` through `secrets.ssl.key` (not plain `ssl.key`); send the plain key as a literal and use the literal or `{Id: string}` arm for `key_wo` per Decision 3's hash/id branching
+- [x] 4.2 In `internal/fleet/agentdownloadsource/models.go`, add `authModel.PasswordWO`/`APIKeyWO` fields and extend `authRequest`/`authForUpdate` (`models.go:146-157,198-206`) so configured `password_wo`/`api_key_wo` map to `kbapi...SecretsAuthPassword{0,1}`/`...SecretsAuthApiKey{0,1}` using the same literal-vs-`{id}` branching as 4.1, while plain `password`/`api_key` continue to map to the existing plain wire fields unchanged
+- [x] 4.3 Add a `secretWriteBranch` (or similarly named) helper shared by 4.1/4.2 that, given a write-only value, its `writeonlyhash` hash, the stored prior hash (from private state), and the pre-PUT GET's secret id for that field, returns one of: literal (first apply / hash changed / no GET id available), or `{id: <existing>}` (hash unchanged and GET id available) — implementing Decision 3 once, not duplicated per field
 
 ## 5. Read: GET-before-PUT secret id lookup
 

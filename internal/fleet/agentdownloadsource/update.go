@@ -38,7 +38,7 @@ func updateAgentDownloadSource(ctx context.Context, client *fleet.Client, plan m
 	// Otherwise the API call fails with 404.
 	spaceID := fleetutils.SpaceIDFromSet(prior.SpaceIDs)
 
-	body, bodyDiags := plan.toAPIUpdateModel(ctx, prior)
+	body, bodyDiags := plan.toAPIUpdateModel(ctx, prior, literalSecrets)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[model]{}, diags

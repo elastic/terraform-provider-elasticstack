@@ -334,8 +334,9 @@ func Test_sslRoundTrip(t *testing.T) {
 		t.Fatalf("objectValueToSSL() error = %v", diags)
 	}
 
+	// Fleet echoes the client key back on read, so hydrate it from the API model.
 	requestBody := sslToKibana(apiSSL)
-	hydrated, diags := sslToObjectValue(ctx, requestBody.Certificate, requestBody.CertificateAuthorities, requestBody.Key)
+	hydrated, diags := sslToObjectValue(ctx, requestBody.Certificate, requestBody.CertificateAuthorities, apiSSL.Key)
 	if diags.HasError() {
 		t.Fatalf("sslToObjectValue() error = %v", diags)
 	}
