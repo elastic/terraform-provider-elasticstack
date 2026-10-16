@@ -96,12 +96,20 @@
       "verdict": "suppress",
       "reason": "Query parameter controlling the wire format (legacy vs simplified) of the request/response body; internal API plumbing, not a Terraform-manageable attribute of the policy.",
       "date": "2026-10-15"
+    },
+    "elasticstack_fleet_integration#/components/schemas/Kibana_HTTP_APIs_install_package_from_registry_request/properties/allow_outdated_version": {
+      "fingerprint": "45ffbfb180c5bdbe94e3459a98604935f95fe113f351dd078645abba9286a766",
+      "verdict": "file",
+      "reason": "Sibling install-behavior toggle (force, prerelease, ignore_constraints) already exposed for this resource's required version attribute; allow_outdated_version is the same class of user-controllable flag and is missing from InstallPackageOptions.",
+      "date": "2026-10-16",
+      "issue": "elasticstack_fleet_integration#/components/schemas/Kibana_HTTP_APIs_install_package_from_registry_request/properties/allow_outdated_version"
     }
   },
   "resources": {
     "elasticstack_fleet_agent_download_source": "2026-10-14T00:36:14Z",
     "elasticstack_fleet_agent_policy": "2026-10-15T01:31:24Z",
     "elasticstack_fleet_custom_integration": "2026-10-15T11:28:15Z",
-    "elasticstack_fleet_elastic_defend_integration_policy": "2026-10-15T19:50:34Z"
+    "elasticstack_fleet_elastic_defend_integration_policy": "2026-10-15T19:50:34Z",
+    "elasticstack_fleet_integration": "2026-10-16T07:16:57Z"
   }
 }
