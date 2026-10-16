@@ -119,9 +119,6 @@ type QueryRulesetData struct {
 
 func (data QueryRulesetData) GetID() fwtypes.String         { return data.ID }
 func (data QueryRulesetData) GetResourceID() fwtypes.String { return data.RulesetID }
-func (data QueryRulesetData) GetElasticsearchConnection() fwtypes.List {
-	return data.ElasticsearchConnection
-}
 
 var (
 	_ entitycore.ElasticsearchResourceModel = QueryRulesetData{}
