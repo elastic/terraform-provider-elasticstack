@@ -108,6 +108,7 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 		}
 	}
 
+	// An empty or absent server value imports as null; only a known empty list in the model round-trips as [].
 	switch {
 	case policy.AdditionalDatastreamsPermissions != nil && len(*policy.AdditionalDatastreamsPermissions) > 0:
 		perms, d := types.ListValueFrom(ctx, types.StringType, *policy.AdditionalDatastreamsPermissions)
