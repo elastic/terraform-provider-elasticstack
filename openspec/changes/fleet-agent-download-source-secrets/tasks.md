@@ -32,11 +32,11 @@
 
 ## 6. Write: persist and clear hashes via private state
 
-- [ ] 6.1 Update `writeAgentDownloadSource` (`write.go:31-42`) to accept and forward `req.Private` (now available per task 2) into the create/update model-building calls
-- [ ] 6.2 After a successful create or update, for each configured write-only attribute (`ssl.key_wo`, `auth.password_wo`, `auth.api_key_wo`), compute its `writeonlyhash` hash and store it via `req.Private.SetKey` under `secret_hash:ssl.key_wo` / `secret_hash:auth.password_wo` / `secret_hash:auth.api_key_wo` (per `Hasher.PrivateStateKey`), JSON-wrapping the raw hash bytes first (they contain `$`), following `internal/elasticsearch/connector/resource/secret.go`'s `encodeSecretHashForPrivateState` pattern — add the encode/decode helpers in a new `internal/fleet/agentdownloadsource/secret_hash.go`
-- [ ] 6.3 Construct the resource's `writeonlyhash.Hasher` via `writeonlyhash.New("elasticstack_fleet_agent_download_source")` as a package-level var in `secret_hash.go`, mirroring `internal/elasticsearch/connector/resource/secret.go`'s `secretHasher`
-- [ ] 6.4 Read write-only literals from `req.Config` when building create/update writes and computing hashes; do not rely on `req.Plan` for those fields because write-only values are null there. Continue using planned values for ordinary attributes
-- [ ] 6.5 When configuration removes a write-only value with a stored hash, build the explicit clearing update and retain the hash until the remote update succeeds; only then clear the corresponding private-state key. A subsequent re-add must be treated as a first write and send a literal
+- [x] 6.1 Update `writeAgentDownloadSource` (`write.go:31-42`) to accept and forward `req.Private` (now available per task 2) into the create/update model-building calls
+- [x] 6.2 After a successful create or update, for each configured write-only attribute (`ssl.key_wo`, `auth.password_wo`, `auth.api_key_wo`), compute its `writeonlyhash` hash and store it via `req.Private.SetKey` under `secret_hash:ssl.key_wo` / `secret_hash:auth.password_wo` / `secret_hash:auth.api_key_wo` (per `Hasher.PrivateStateKey`), JSON-wrapping the raw hash bytes first (they contain `$`), following `internal/elasticsearch/connector/resource/secret.go`'s `encodeSecretHashForPrivateState` pattern — add the encode/decode helpers in a new `internal/fleet/agentdownloadsource/secret_hash.go`
+- [x] 6.3 Construct the resource's `writeonlyhash.Hasher` via `writeonlyhash.New("elasticstack_fleet_agent_download_source")` as a package-level var in `secret_hash.go`, mirroring `internal/elasticsearch/connector/resource/secret.go`'s `secretHasher`
+- [x] 6.4 Read write-only literals from `req.Config` when building create/update writes and computing hashes; do not rely on `req.Plan` for those fields because write-only values are null there. Continue using planned values for ordinary attributes
+- [x] 6.5 When configuration removes a write-only value with a stored hash, build the explicit clearing update and retain the hash until the remote update succeeds; only then clear the corresponding private-state key. A subsequent re-add must be treated as a first write and send a literal
 
 ## 7. ModifyPlan and Delete
 

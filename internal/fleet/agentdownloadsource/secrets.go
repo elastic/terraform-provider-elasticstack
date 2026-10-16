@@ -37,6 +37,7 @@ const (
 
 var writeOnlyPaths = []string{sslKeyWOPath, authPasswordWOPath, authAPIKeyWOPath}
 
+// secretHasher hashes write-only values for private-state drift detection.
 var secretHasher = writeonlyhash.New("elasticstack_fleet_agent_download_source")
 
 // secretValue is one Fleet secret request value: either a literal (Fleet mints
