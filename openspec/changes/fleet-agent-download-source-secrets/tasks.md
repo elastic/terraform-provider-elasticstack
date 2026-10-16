@@ -40,9 +40,9 @@
 
 ## 7. ModifyPlan and Delete
 
-- [ ] 7.1 Add `internal/fleet/agentdownloadsource/modify_plan.go` with `func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse)`, mirroring `internal/elasticsearch/connector/resource/modify_plan.go`: decode config and state for the three write-only attributes, compare configured values' `writeonlyhash` hashes against stored `secret_hash:*` private-state entries via `req.Private.GetKey` + the decode helper from 6.2, and force an update if a hash differs or a stored hash exists while the configured value is null. The null transition must plan the clearing update without deleting the hash before the write succeeds
-- [ ] 7.2 In `internal/fleet/agentdownloadsource/resource.go`, add `_ resource.ResourceWithModifyPlan = (*Resource)(nil)` to the interface assertions (alongside the existing `resource.Resource`/`resource.ResourceWithConfigure`/`resource.ResourceWithImportState` assertions)
-- [ ] 7.3 Add a `Delete` override on `*Resource` in `resource.go` that calls the embedded `KibanaResource[model].Delete`, then clears the three `secret_hash:*` private-state keys via `resp.Private.SetKey(ctx, key, nil)`, mirroring `internal/elasticsearch/connector/resource/resource.go:54-61`
+- [x] 7.1 Add `internal/fleet/agentdownloadsource/modify_plan.go` with `func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse)`, mirroring `internal/elasticsearch/connector/resource/modify_plan.go`: decode config and state for the three write-only attributes, compare configured values' `writeonlyhash` hashes against stored `secret_hash:*` private-state entries via `req.Private.GetKey` + the decode helper from 6.2, and force an update if a hash differs or a stored hash exists while the configured value is null. The null transition must plan the clearing update without deleting the hash before the write succeeds
+- [x] 7.2 In `internal/fleet/agentdownloadsource/resource.go`, add `_ resource.ResourceWithModifyPlan = (*Resource)(nil)` to the interface assertions (alongside the existing `resource.Resource`/`resource.ResourceWithConfigure`/`resource.ResourceWithImportState` assertions)
+- [x] 7.3 Add a `Delete` override on `*Resource` in `resource.go` that calls the embedded `KibanaResource[model].Delete`, then clears the three `secret_hash:*` private-state keys via `resp.Private.SetKey(ctx, key, nil)`, mirroring `internal/elasticsearch/connector/resource/resource.go:54-61`
 
 ## 8. Acceptance tests
 
