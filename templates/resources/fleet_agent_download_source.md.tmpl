@@ -20,6 +20,14 @@ description: |-
 
 {{ tffile "examples/resources/elasticstack_fleet_agent_download_source/resource-auth.tf" }}
 
+### Download source with write-only secrets
+
+The `ssl.key_wo`, `auth.password_wo` and `auth.api_key_wo` attributes are never stored in Terraform state.
+
+> **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
+
+{{ tffile "examples/resources/elasticstack_fleet_agent_download_source/resource-secrets.tf" }}
+
 {{ .SchemaMarkdown | trimspace }}
 {{- if or .HasImport .HasImportIDConfig .HasImportIdentityConfig }}
 

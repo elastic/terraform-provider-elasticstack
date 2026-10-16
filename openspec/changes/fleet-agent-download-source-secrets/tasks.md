@@ -63,4 +63,4 @@
 
 ## 10. Docs (follow-up, not required for this proposal)
 
-- [ ] 10.1 Add `ssl.key_wo`/`auth.password_wo`/`auth.api_key_wo` examples to `examples/resources/elasticstack_fleet_agent_download_source/`, regenerate `docs/resources/fleet_agent_download_source.md`, and add the Terraform CLI 1.11 minimum-version note reused from the other `_wo` resources
+- [x] 10.1 Add `ssl.key_wo`/`auth.password_wo`/`auth.api_key_wo` examples to `examples/resources/elasticstack_fleet_agent_download_source/`, regenerate `docs/resources/fleet_agent_download_source.md`, and add the Terraform CLI 1.11 minimum-version note reused from the other `_wo` resources
