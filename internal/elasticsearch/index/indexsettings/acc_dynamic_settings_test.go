@@ -18,10 +18,13 @@
 package indexsettings_test
 
 import (
+	"context"
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -38,7 +41,9 @@ import (
 // without tripping an unrelated, pre-existing issue in the create/update
 // read-after-write step. That gap is out of scope for this coverage change.
 func TestAccResourceIndexSettings_blocksLifecycle(t *testing.T) {
-	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	// Distinctive prefix so a stray blocked index is easy to identify.
+	indexName := "test-blocks-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	t.Cleanup(func() { forceRemoveIndexWithBlocks(indexName) })
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -100,6 +105,27 @@ func TestAccResourceIndexSettings_blocksLifecycle(t *testing.T) {
 			},
 		},
 	})
+}
+
+// forceRemoveIndexWithBlocks clears every index.blocks.* setting and deletes the
+// index. A read-only index left behind by a failed run makes cluster-wide
+// operations (e.g. creating synonym sets, which reload analyzers) fail with
+// cluster_block_exception for unrelated tests sharing the cluster. Best effort:
+// errors are ignored since the index is normally already gone.
+func forceRemoveIndexWithBlocks(indexName string) {
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		return
+	}
+	ctx := context.Background()
+	_ = esclient.UpdateIndexSettings(ctx, client, indexName, map[string]any{
+		"index.blocks.read_only":              false,
+		"index.blocks.read_only_allow_delete": false,
+		"index.blocks.read":                   false,
+		"index.blocks.write":                  false,
+		"index.blocks.metadata":               false,
+	})
+	_ = esclient.DeleteIndex(ctx, client, indexName)
 }
 
 // REQ-004: routing_allocation_enable and routing_rebalance_enable, two of the
