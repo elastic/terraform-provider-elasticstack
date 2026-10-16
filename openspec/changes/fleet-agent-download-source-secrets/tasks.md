@@ -5,9 +5,9 @@
 
 ## 2. Shared envelope: thread private state into Kibana writes
 
-- [ ] 2.1 Add `Private PrivateStateStorage` to `entitycore.KibanaWriteRequest[T]` in `internal/entitycore/kibana_resource_envelope.go`, mirroring `entitycore.WriteRequest[T].Private` in `internal/entitycore/resource_envelope.go:87-95`
-- [ ] 2.2 Stop discarding the real `PrivateStateStorage` value via `_` in the write-adapter wiring inside `kibana_resource_envelope.go`; pass the framework response's `Private` through into the constructed `KibanaWriteRequest[T]`
-- [ ] 2.3 Confirm no existing `KibanaWriteFunc[T]` callback breaks: the field is additive, so existing resources that don't reference `req.Private` are unaffected; run the package's existing unit tests for `internal/entitycore`
+- [x] 2.1 Add `Private PrivateStateStorage` to `entitycore.KibanaWriteRequest[T]` in `internal/entitycore/kibana_resource_envelope.go`, mirroring `entitycore.WriteRequest[T].Private` in `internal/entitycore/resource_envelope.go:87-95`
+- [x] 2.2 Stop discarding the real `PrivateStateStorage` value via `_` in the write-adapter wiring inside `kibana_resource_envelope.go`; pass the framework response's `Private` through into the constructed `KibanaWriteRequest[T]`
+- [x] 2.3 Confirm no existing `KibanaWriteFunc[T]` callback breaks: the field is additive, so existing resources that don't reference `req.Private` are unaffected; run the package's existing unit tests for `internal/entitycore`
 
 ## 3. Schema: write-only attributes and consolidated auth validator
 
