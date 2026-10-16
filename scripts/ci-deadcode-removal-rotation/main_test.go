@@ -63,40 +63,6 @@ func TestFilterExcluded(t *testing.T) {
 	assert.Equal(t, "Panel", filtered[1].symbol)
 }
 
-func TestSelectOne_CooldownFiltering(t *testing.T) {
-	t.Parallel()
-	mem := &Memory{
-		CooldownDays: 7,
-		Attempts: []AttemptRecord{
-			{Symbol: "pkg.A", AttemptedAt: time.Now().UTC().AddDate(0, 0, -1), Reason: ReasonBuildFailed},
-			{Symbol: "pkg.B", AttemptedAt: time.Now().UTC().AddDate(0, 0, -10), Reason: ReasonPRCreated},
-		},
-	}
-	candidates := []deadcodeEntry{
-		{file: "a.go", line: 1, column: 1, symbol: "A", packagePath: "pkg"},
-		{file: "b.go", line: 1, column: 1, symbol: "B", packagePath: "pkg"},
-		{file: "c.go", line: 1, column: 1, symbol: "C", packagePath: "pkg"},
-	}
-	chosen := selectOne(candidates, mem, time.Now().UTC())
-	require.NotNil(t, chosen)
-	assert.Equal(t, "B", chosen.symbol)
-}
-
-func TestSelectOne_AllInCooldown(t *testing.T) {
-	t.Parallel()
-	mem := &Memory{
-		CooldownDays: 7,
-		Attempts: []AttemptRecord{
-			{Symbol: "pkg.A", AttemptedAt: time.Now().UTC().AddDate(0, 0, -1), Reason: ReasonBuildFailed},
-		},
-	}
-	candidates := []deadcodeEntry{
-		{file: "a.go", line: 1, column: 1, symbol: "A", packagePath: "pkg"},
-	}
-	chosen := selectOne(candidates, mem, time.Now().UTC())
-	assert.Nil(t, chosen)
-}
-
 func TestClassifyReferences_NoTests_NonTestRef(t *testing.T) {
 	t.Parallel()
 	eligible, testFile := classifyReferences("internal/pkg/source.go", []string{"internal/pkg/foo.go"})

@@ -188,15 +188,6 @@ func selectEligible(candidates []deadcodeEntry, mem *Memory, now time.Time) []de
 	return eligible
 }
 
-// selectOne is kept for backward compatibility.
-func selectOne(candidates []deadcodeEntry, mem *Memory, now time.Time) *deadcodeEntry {
-	eligible := selectEligible(candidates, mem, now)
-	if len(eligible) == 0 {
-		return nil
-	}
-	return &eligible[0]
-}
-
 type FilteredCandidate struct {
 	Symbol  string `json:"symbol"`
 	Package string `json:"package"`
