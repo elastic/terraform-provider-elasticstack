@@ -17,7 +17,7 @@
 
 ## 4. Read-back mapping
 
-- [ ] 4.1 In `populateModelFromAPI` (`internal/fleet/elastic_defend_integration_policy/common.go:45`), map `policy.AdditionalDatastreamsPermissions`: non-empty API list -> `types.ListValueFrom(ctx, types.StringType, *data.AdditionalDatastreamsPermissions)`. When the API value is absent or empty, preserve a known empty list already present in `model.AdditionalDatastreamsPermissions` (i.e. the plan/prior state already held `[]`) as `[]`; otherwise set `types.ListNull(types.StringType)`.
+- [ ] 4.1 In `populateModelFromAPI` (`internal/fleet/elastic_defend_integration_policy/common.go:45`), map `policy.AdditionalDatastreamsPermissions`: non-empty API list -> `types.ListValueFrom(ctx, types.StringType, *data.AdditionalDatastreamsPermissions)`. When the API value is absent or empty, preserve a known empty list already present in `model.AdditionalDatastreamsPermissions` (i.e. the plan/prior state already held `[]`) as `[]`; otherwise set `types.ListNull(types.StringType)`. An import (null model) therefore yields null for an absent or empty API value.
 
 ## 5. Unit tests
 
@@ -31,9 +31,10 @@
   - Create with one permission (e.g. `logs-nginx-*`); assert `additional_datastreams_permissions.#` = `"1"` in Terraform state and a matching server-side value via `fleetclient.GetDefendPackagePolicy`.
   - Import + `ImportStateVerify`.
   - Update to two permissions; re-assert state and server-side value changed.
-  - **Remove the attribute from config** (no change to any other attribute) and assert the server-side value is **retained**, not cleared — this is the behavior that differs from `integration_policy`.
-  - Set `additional_datastreams_permissions = []` and assert it is cleared server-side.
-- [ ] 6.2 Add a version-gate acceptance test parallel to `TestAccResourceElasticDefendIntegrationPolicy_agentPolicyIDsVersionGate` (`acc_test.go:388-415`), asserting `ExpectError` when `additional_datastreams_permissions` is set against a server below 9.1.0, and that omitting the attribute still creates/updates successfully against such a server.
+  - **Remove the attribute from config** (no change to any other attribute) and assert the plan retains the prior value and the server-side value is **retained**, not cleared — this is the behavior that differs from `integration_policy`. Do not assert that the request omits the field (see design.md Decision 1, plan-modifier interaction).
+  - Set `additional_datastreams_permissions = []` and assert it is cleared server-side and is `[]` (not null) in state.
+- [ ] 6.3 Add an out-of-band permissions test: set `additional_datastreams_permissions` on the package policy directly through the Fleet API, then apply a configuration that never sets the attribute. Assert an empty plan, state populated from the API, and the server-side value unchanged.
+- [ ] 6.2 Add a best-effort version-gate acceptance test parallel to `TestAccResourceElasticDefendIntegrationPolicy_agentPolicyIDsVersionGate` (`acc_test.go:388-415`), asserting `ExpectError` when `additional_datastreams_permissions` is set against a server below 9.1.0, and that omitting the attribute still creates/updates successfully against such a server. This only runs on stacks between the Defend minimum (8.14.0) and 9.1.0 and may be skipped in CI; the task 5.3 unit tests are the primary guard.
 
 ## 7. Docs (follow-up, not required for this proposal)
 
@@ -41,4 +42,4 @@
 
 ## 8. Spec sync
 
-- [ ] 8.1 After implementation, sync the delta spec in `openspec/changes/elastic-defend-additional-datastreams-permissions/specs/fleet-elastic-defend-integration-policy/spec.md` into `openspec/specs/fleet-elastic-defend-integration-policy/spec.md` (openspec-sync-specs skill) and archive the change (openspec-archive-change skill).
+- [ ] 8.1 After implementation, update the attribute listing in the schema block of the main spec (and REQ-011's read-mapping text if it enumerates modeled fields), then sync the delta spec in `openspec/changes/elastic-defend-additional-datastreams-permissions/specs/fleet-elastic-defend-integration-policy/spec.md` into `openspec/specs/fleet-elastic-defend-integration-policy/spec.md` (openspec-sync-specs skill) and archive the change (openspec-archive-change skill).

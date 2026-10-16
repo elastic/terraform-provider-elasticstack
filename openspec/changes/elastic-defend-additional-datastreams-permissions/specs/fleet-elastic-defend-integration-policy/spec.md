@@ -21,11 +21,11 @@ The resource SHALL expose a familiar package-policy envelope with `id`, `policy_
 
 The resource SHALL expose an `additional_datastreams_permissions` attribute of type `list(string)`, `Optional` and `Computed`, with a `UseStateForUnknown` plan modifier. Each element SHALL be a data stream name or pattern (for example `logs-nginx-*`) for which the Defend package policy's agent policy is granted write access in addition to the data streams the `endpoint` package itself declares.
 
-Unlike `elasticstack_fleet_integration_policy`'s attribute of the same name, this attribute SHALL NOT be rejected at plan time when configured as an empty list.
+The attribute SHALL accept an empty list. This differs from `elasticstack_fleet_integration_policy`'s attribute of the same name, which rejects an empty list at plan time.
 
 The attribute SHALL be mapped identically on the bootstrap create request and the finalize/update request (the latter is also used by the plain update path): a known value (including an empty list) SHALL always be included in the request body; a null or unknown value SHALL always be omitted.
 
-On read, a non-empty API list SHALL populate the attribute preserving API order. An absent or empty API list SHALL populate the attribute as an empty list when the model already held a known, non-null empty list, and as null otherwise.
+On read, a non-empty API list SHALL populate the attribute preserving API order. An absent or empty API list SHALL populate the attribute as an empty list when the model already held a known, non-null empty list, and as null otherwise. On import the model is null, so an absent or empty API list imports as null.
 
 #### Scenario: Permissions configured on create
 
@@ -48,6 +48,23 @@ On read, a non-empty API list SHALL populate the attribute preserving API order.
 - THEN neither the bootstrap, finalize, nor plain update request body SHALL include `additional_datastreams_permissions`
 - AND a subsequent read SHALL set the attribute to null in state when the API response omits or empties the field
 
+#### Scenario: Retained value is re-sent after removal from config
+
+- GIVEN an existing Defend policy with a non-null `additional_datastreams_permissions` in state
+- AND the attribute is removed from configuration
+- WHEN update runs
+- THEN `UseStateForUnknown` SHALL carry the prior value into the plan, so the update request MAY re-send that same value
+- AND the request SHALL be omitted only on create or when prior state is null
+
+#### Scenario: Out-of-band permissions are surfaced without being revoked
+
+- GIVEN a Defend package policy whose `additional_datastreams_permissions` was set outside Terraform (for example `["logs-nginx-*"]`)
+- AND a configuration that never sets the attribute
+- WHEN the resource refreshes and a later apply runs
+- THEN state SHALL be populated from the API value
+- AND the plan SHALL show no diff for the attribute
+- AND no request SHALL send an empty array, so the server-side permissions SHALL remain unchanged
+
 ### Requirement: additional_datastreams_permissions — no revoke-on-unset; explicit empty list clears (REQ-017)
 
 Unlike `elasticstack_fleet_integration_policy`, this resource SHALL NOT send an empty array in place of an omitted `additional_datastreams_permissions` field when the attribute is unset. Removing the attribute from configuration SHALL leave any previously granted permissions on the server unchanged. An explicit `additional_datastreams_permissions = []` SHALL be the supported way to clear previously granted permissions.
@@ -56,7 +73,8 @@ Unlike `elasticstack_fleet_integration_policy`, this resource SHALL NOT send an 
 
 - GIVEN an existing Defend policy with `additional_datastreams_permissions = ["logs-nginx-*"]` granted through Terraform
 - WHEN the attribute is removed from configuration (not set to `[]`) and update runs, changing no other attribute
-- THEN the update request body SHALL NOT include `additional_datastreams_permissions`
+- THEN the plan SHALL retain the prior value `["logs-nginx-*"]` for the attribute
+- AND the update request SHALL NOT send an empty array
 - AND the server-side permissions SHALL remain `["logs-nginx-*"]` after the update
 - AND a subsequent read SHALL populate the attribute from the still-present API value rather than null
 
