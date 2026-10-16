@@ -87,5 +87,9 @@ func (m integrationModel) GetVersionRequirements(_ context.Context) ([]entitycor
 		typeutils.IsKnown(m.SkipDataStreamRollover) && m.SkipDataStreamRollover.ValueBool(),
 		MinVersionSkipDataStreamRollover, "The 'skip_data_stream_rollover' parameter requires server version %s or higher.", MinVersionSkipDataStreamRollover.String())
 
+	reqs = entitycore.AppendVersionRequirementIf(reqs,
+		typeutils.IsKnown(m.AllowOutdatedVersion),
+		MinVersionAllowOutdatedVersion, "The 'allow_outdated_version' parameter requires server version %s or higher.", MinVersionAllowOutdatedVersion.String())
+
 	return reqs, nil
 }

@@ -31,6 +31,8 @@ var (
 	MinVersionIgnoreMappingUpdateErrors = version.Must(version.NewVersion("8.11.0"))
 	// MinVersionSkipDataStreamRollover is the minimum version that supports the skip_data_stream_rollover parameter
 	MinVersionSkipDataStreamRollover = MinVersionIgnoreMappingUpdateErrors
+	// MinVersionAllowOutdatedVersion is the minimum version that supports the allow_outdated_version parameter
+	MinVersionAllowOutdatedVersion = version.Must(version.NewVersion("9.6.0"))
 	// MinVersionSpaceAwareIntegration is the minimum version that supports space-aware kibana_assets endpoints
 	MinVersionSpaceAwareIntegration = version.Must(version.NewVersion("9.1.0"))
 )

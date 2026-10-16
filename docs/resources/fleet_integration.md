@@ -73,7 +73,7 @@ resource "elasticstack_fleet_integration" "test_integration" {
 
 ### Optional
 
-- `allow_outdated_version` (Boolean) Set to true to allow installing a version older than the latest available. Bypasses only the out-of-date version check.
+- `allow_outdated_version` (Boolean) Set to true to allow installing a version older than the latest available. Bypasses only the out-of-date version check. Requires server version 9.6.0 or higher.
 - `force` (Boolean) Set to true to force the requested action.
 - `ignore_constraints` (Boolean) Set to true to ignore constraint errors during package installation.
 - `ignore_mapping_update_errors` (Boolean) Set to true to ignore mapping update errors during package installation.

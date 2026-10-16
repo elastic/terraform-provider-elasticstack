@@ -22,7 +22,7 @@ resource "elasticstack_fleet_integration" "example" {
   ignore_mapping_update_errors = <optional, bool>  # requires server >= 8.11.0
   skip_data_stream_rollover    = <optional, bool>  # requires server >= 8.11.0
   ignore_constraints           = <optional, bool>
-  allow_outdated_version       = <optional, bool>
+  allow_outdated_version       = <optional, bool>  # requires server >= 9.6.0
   skip_destroy                 = <optional, bool>
   space_id                     = <optional+computed, string>  # force new
 }

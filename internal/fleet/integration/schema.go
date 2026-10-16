@@ -68,7 +68,7 @@ set ` + "`skip_destroy` to `true`.",
 				Optional:    true,
 			},
 			"allow_outdated_version": schema.BoolAttribute{
-				Description: "Set to true to allow installing a version older than the latest available. Bypasses only the out-of-date version check.",
+				Description: "Set to true to allow installing a version older than the latest available. Bypasses only the out-of-date version check. Requires server version 9.6.0 or higher.",
 				Optional:    true,
 			},
 			"skip_destroy": fleetschema.SkipDestroyAttribute(false, nil),

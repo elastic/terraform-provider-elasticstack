@@ -42,3 +42,31 @@ func TestIntegrationModel_GetResourceID_pinsHashedFormat(t *testing.T) {
 	// own implementation is also caught here.
 	require.Equal(t, "697d06a88f7147a4e6a5ea127ffd8f5b2cacbc4c", m.GetResourceID().ValueString())
 }
+
+func TestIntegrationModel_GetVersionRequirements_allowOutdatedVersion(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name  string
+		value types.Bool
+		want  int
+	}{
+		{name: "null is not gated", value: types.BoolNull(), want: 0},
+		{name: "unknown is not gated", value: types.BoolUnknown(), want: 0},
+		{name: "explicit false is gated", value: types.BoolValue(false), want: 1},
+		{name: "explicit true is gated", value: types.BoolValue(true), want: 1},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			reqs, diags := integrationModel{AllowOutdatedVersion: tt.value}.GetVersionRequirements(t.Context())
+			require.False(t, diags.HasError())
+			require.Len(t, reqs, tt.want)
+			if tt.want == 1 {
+				require.True(t, reqs[0].MinVersion.Equal(MinVersionAllowOutdatedVersion))
+			}
+		})
+	}
+}

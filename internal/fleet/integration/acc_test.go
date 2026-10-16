@@ -441,7 +441,7 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 			// set, with force/ignore_constraints left unset to isolate its effect.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(integration.MinVersionAllowOutdatedVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_params_step6"),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
