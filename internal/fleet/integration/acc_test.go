@@ -426,7 +426,28 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "force"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "allow_outdated_version"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration_all_params", "id"),
+				),
+			},
+			// Step 7: refresh/plan with allow_outdated_version left unset must not drift.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_params_step5"),
+				PlanOnly:                 true,
+			},
+			// Step 8: install an older (non-latest) version with allow_outdated_version
+			// set, with force/ignore_constraints left unset to isolate its effect.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_params_step6"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "allow_outdated_version", "true"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "force"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints"),
 				),
 			},
 		},

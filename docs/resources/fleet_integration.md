@@ -33,6 +33,13 @@ resource "elasticstack_fleet_integration" "test_integration" {
   version = "1.16.0"
   force   = true
 }
+
+# Install a version older than the latest available.
+resource "elasticstack_fleet_integration" "outdated_version" {
+  name                   = "tcp"
+  version                = "1.16.0"
+  allow_outdated_version = true
+}
 ```
 
 ### Pinning a package version explicitly
@@ -66,6 +73,7 @@ resource "elasticstack_fleet_integration" "test_integration" {
 
 ### Optional
 
+- `allow_outdated_version` (Boolean) Set to true to allow installing a version older than the latest available. Bypasses only the out-of-date version check.
 - `force` (Boolean) Set to true to force the requested action.
 - `ignore_constraints` (Boolean) Set to true to ignore constraint errors during package installation.
 - `ignore_mapping_update_errors` (Boolean) Set to true to ignore mapping update errors during package installation.
