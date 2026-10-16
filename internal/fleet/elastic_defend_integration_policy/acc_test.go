@@ -1041,7 +1041,6 @@ func setDefendAdditionalDatastreamsPermissionsOutOfBand(resourceAddress string, 
 			Name:                             &name,
 			Namespace:                        policy.Namespace,
 			PolicyId:                         policy.PolicyId,
-			Version:                          policy.Version,
 			AdditionalDatastreamsPermissions: &permissions,
 		}
 		if _, diags := fleetclient.UpdateDefendPackagePolicy(context.Background(), fleetClient, policyID, "", req); diags.HasError() {
