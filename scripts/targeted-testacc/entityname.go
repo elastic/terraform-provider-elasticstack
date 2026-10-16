@@ -218,14 +218,6 @@ func extractFromFile(filename string, data []byte) ([]EntityRef, []unresolvedEnt
 	return extractFromAST(fset, f)
 }
 
-// extractFromSource parses a single Go source string and returns all entity
-// references found, together with any unresolved constructor call sites. The
-// function is exposed independently so unit tests can pass synthetic source
-// snippets.
-func extractFromSource(src string) ([]EntityRef, []unresolvedEntitySite) {
-	return extractFromFile("<source>", []byte(src))
-}
-
 // extractFromAST walks a parsed file and collects entity declarations from
 // calls to covered entitycore constructors.
 func extractFromAST(fset *token.FileSet, f *ast.File) ([]EntityRef, []unresolvedEntitySite) {

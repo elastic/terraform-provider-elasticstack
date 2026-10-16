@@ -19,7 +19,6 @@ package typeutils_test
 
 import (
 	"context"
-	"sort"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -512,33 +511,6 @@ func TestSliceToListTypeString(t *testing.T) {
 	}
 }
 
-func TestListTypeToMap(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name  string
-		input types.List
-		want  map[string]naive
-	}{
-		{name: "converts unknown", input: awareListUnk, want: naiveMapNil},
-		{name: "converts nil", input: awareListNil, want: naiveMapNil},
-		{name: "converts empty", input: awareListEmpty, want: naiveMapEmpty},
-		{name: "converts struct", input: awareListFull, want: naiveMapFull},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var diags diag.Diagnostics
-			got := typeutils.ListTypeToMap(context.Background(), tt.input, path.Empty(), &diags,
-				func(item aware, _ typeutils.ListMeta) (string, naive) {
-					return "k" + item.ID.ValueString()[2:], toNaive(item)
-				})
-			require.Equal(t, tt.want, got)
-			require.Empty(t, diags)
-		})
-	}
-}
-
 func TestListTypeToSlice(t *testing.T) {
 	t.Parallel()
 
@@ -809,68 +781,6 @@ func TestTransformSlice(t *testing.T) {
 				func(item naive, _ typeutils.ListMeta) aware {
 					return toAware(item)
 				})
-			require.Equal(t, tt.want, got)
-			require.Empty(t, diags)
-		})
-	}
-}
-
-func TestTransformSliceToMap(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name  string
-		input []aware
-		want  map[string]naive
-	}{
-		{name: "converts nil", input: awareSliceNil, want: naiveMapNil},
-		{name: "converts empty", input: awareSliceEmpty, want: naiveMapEmpty},
-		{name: "converts struct", input: awareSliceFull, want: naiveMapFull},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var diags diag.Diagnostics
-			got := typeutils.TransformSliceToMap(context.Background(), tt.input, path.Empty(), &diags,
-				func(item aware, _ typeutils.ListMeta) (string, naive) {
-					return "k" + item.ID.ValueString()[2:], toNaive(item)
-				})
-			require.Equal(t, tt.want, got)
-			require.Empty(t, diags)
-		})
-	}
-}
-
-func TestTransformMapToSlice(t *testing.T) {
-	t.Parallel()
-
-	tests := []struct {
-		name  string
-		input map[string]naive
-		want  []naive
-	}{
-		{name: "converts nil", input: naiveMapNil, want: naiveSliceNil},
-		{name: "converts empty", input: naiveMapEmpty, want: naiveSliceEmpty},
-		{name: "converts struct", input: naiveMapFull, want: naiveSliceFull},
-	}
-
-	sortFn := func(s []naive) func(i, j int) bool {
-		return func(i, j int) bool {
-			return s[i].ID < s[j].ID
-		}
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var diags diag.Diagnostics
-			got := typeutils.TransformMapToSlice(context.Background(), tt.input, path.Empty(), &diags,
-				func(item naive, _ typeutils.MapMeta) naive {
-					return item
-				})
-
-			sort.Slice(got, sortFn(got))
-			sort.Slice(tt.want, sortFn(tt.want))
-
 			require.Equal(t, tt.want, got)
 			require.Empty(t, diags)
 		})
