@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -47,35 +48,20 @@ func resolveAgentPolicyFeatures(ctx context.Context, client *clients.KibanaScope
 	var diags diag.Diagnostics
 	var f agentPolicyFeatures
 
-	var bitDiags diag.Diagnostics
-	f.SupportsGlobalDataTags, bitDiags = client.EnforceMinVersion(ctx, MinVersionGlobalDataTags)
-	diags.Append(bitDiags...)
-	f.SupportsSupportsAgentless, bitDiags = client.EnforceMinVersion(ctx, MinSupportsAgentlessVersion)
-	diags.Append(bitDiags...)
-	f.SupportsInactivityTimeout, bitDiags = client.EnforceMinVersion(ctx, MinVersionInactivityTimeout)
-	diags.Append(bitDiags...)
-	f.SupportsUnenrollmentTimeout, bitDiags = client.EnforceMinVersion(ctx, MinVersionUnenrollmentTimeout)
-	diags.Append(bitDiags...)
-	f.SupportsSpaceIDs, bitDiags = client.EnforceMinVersion(ctx, MinVersionSpaceIDs)
-	diags.Append(bitDiags...)
-	f.SupportsRequiredVersions, bitDiags = client.EnforceMinVersion(ctx, MinVersionRequiredVersions)
-	diags.Append(bitDiags...)
-	f.SupportsAgentFeatures, bitDiags = client.EnforceMinVersion(ctx, MinVersionAgentFeatures)
-	diags.Append(bitDiags...)
-	f.SupportsAdvancedMonitoring, bitDiags = client.EnforceMinVersion(ctx, MinVersionAdvancedMonitoring)
-	diags.Append(bitDiags...)
-	f.SupportsAdvancedSettings, bitDiags = client.EnforceMinVersion(ctx, MinVersionAdvancedSettings)
-	diags.Append(bitDiags...)
-	f.SupportsTamperProtection, bitDiags = client.EnforceMinVersion(ctx, MinVersionTamperProtection)
-	diags.Append(bitDiags...)
-	f.SupportsMonitoringRuntimeExperimental, bitDiags = client.EnforceVersionCheck(ctx, MonitoringRuntimeExperimentalSupported)
-	diags.Append(bitDiags...)
-	f.SupportsAgentInternal, bitDiags = client.EnforceMinVersion(ctx, MinVersionAgentInternal)
-	diags.Append(bitDiags...)
-	f.SupportsFeaturesDisablePolicyChangeAcksEnabled, bitDiags = client.EnforceMinVersion(ctx, MinVersionFeaturesDisablePolicyChangeAcksEnabled)
-	diags.Append(bitDiags...)
-	f.SupportsFeaturesIncludeTagsInEventsEnabled, bitDiags = client.EnforceMinVersion(ctx, MinVersionFeaturesIncludeTagsInEventsEnabled)
-	diags.Append(bitDiags...)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsGlobalDataTags, &diags, MinVersionGlobalDataTags)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsSupportsAgentless, &diags, MinSupportsAgentlessVersion)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsInactivityTimeout, &diags, MinVersionInactivityTimeout)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsUnenrollmentTimeout, &diags, MinVersionUnenrollmentTimeout)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsSpaceIDs, &diags, MinVersionSpaceIDs)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsRequiredVersions, &diags, MinVersionRequiredVersions)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsAgentFeatures, &diags, MinVersionAgentFeatures)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsAdvancedMonitoring, &diags, MinVersionAdvancedMonitoring)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsAdvancedSettings, &diags, MinVersionAdvancedSettings)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsTamperProtection, &diags, MinVersionTamperProtection)
+	fleet.EnforceVersionCheckInto(ctx, client, &f.SupportsMonitoringRuntimeExperimental, &diags, MonitoringRuntimeExperimentalSupported)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsAgentInternal, &diags, MinVersionAgentInternal)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsFeaturesDisablePolicyChangeAcksEnabled, &diags, MinVersionFeaturesDisablePolicyChangeAcksEnabled)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsFeaturesIncludeTagsInEventsEnabled, &diags, MinVersionFeaturesIncludeTagsInEventsEnabled)
 
 	return f, diags
 }

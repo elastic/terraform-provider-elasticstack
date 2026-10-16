@@ -18,7 +18,12 @@
 package fleet
 
 import (
+	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -38,4 +43,25 @@ func ProxyIDForUpdate(plan, prior types.String) *string {
 		return &empty
 	}
 	return nil
+}
+
+// EnforceMinVersionInto resolves whether the connected Kibana satisfies
+// minVersion and assigns the result into target, appending any diagnostics
+// produced during resolution to diags. It exists so that resolve*Features
+// functions can collapse their per-flag "assign + diags.Append" boilerplate
+// into a single call per flag, without sharing a single mutable diagnostics
+// variable across call sites.
+func EnforceMinVersionInto(ctx context.Context, client *clients.KibanaScopedClient, target *bool, diags *diag.Diagnostics, minVersion *version.Version) {
+	var bitDiags diag.Diagnostics
+	*target, bitDiags = client.EnforceMinVersion(ctx, minVersion)
+	diags.Append(bitDiags...)
+}
+
+// EnforceVersionCheckInto resolves the given version check against the
+// connected Kibana and assigns the result into target, appending any
+// diagnostics produced during resolution to diags. See EnforceMinVersionInto.
+func EnforceVersionCheckInto(ctx context.Context, client *clients.KibanaScopedClient, target *bool, diags *diag.Diagnostics, check func(*version.Version) bool) {
+	var bitDiags diag.Diagnostics
+	*target, bitDiags = client.EnforceVersionCheck(ctx, check)
+	diags.Append(bitDiags...)
 }

@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -35,15 +36,10 @@ func resolveIntegrationPolicyFeatures(ctx context.Context, client *clients.Kiban
 	var diags diag.Diagnostics
 	var f integrationPolicyFeatures
 
-	var bitDiags diag.Diagnostics
-	f.SupportsPolicyIDs, bitDiags = client.EnforceMinVersion(ctx, MinVersionPolicyIDs)
-	diags.Append(bitDiags...)
-	f.SupportsOutputID, bitDiags = client.EnforceMinVersion(ctx, MinVersionOutputID)
-	diags.Append(bitDiags...)
-	f.SupportsCondition, bitDiags = client.EnforceMinVersion(ctx, MinVersionCondition)
-	diags.Append(bitDiags...)
-	f.SupportsAdditionalDatastreamsPermissions, bitDiags = client.EnforceMinVersion(ctx, MinVersionAdditionalDatastreamsPermissions)
-	diags.Append(bitDiags...)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsPolicyIDs, &diags, MinVersionPolicyIDs)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsOutputID, &diags, MinVersionOutputID)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsCondition, &diags, MinVersionCondition)
+	fleet.EnforceMinVersionInto(ctx, client, &f.SupportsAdditionalDatastreamsPermissions, &diags, MinVersionAdditionalDatastreamsPermissions)
 
 	return f, diags
 }
