@@ -877,8 +877,28 @@ func TestPopulateModelFromAPIAdditionalDatastreamsPermissions(t *testing.T) {
 		},
 		"absent api with known empty": {api: nil, input: empty, expected: empty},
 		"empty api with known empty":  {api: &[]string{}, input: empty, expected: empty},
-		"absent api with null":        {api: nil, input: types.ListNull(types.StringType), expected: types.ListNull(types.StringType)},
-		"empty api with unknown":      {api: &[]string{}, input: types.ListUnknown(types.StringType), expected: types.ListNull(types.StringType)},
+		"drift adopted over different config": {
+			api:      &[]string{"logs-api-*"},
+			input:    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("logs-config-*")}),
+			expected: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("logs-api-*")}),
+		},
+		"non-empty api adopted over known empty": {
+			api:      &[]string{"logs-api-*"},
+			input:    empty,
+			expected: types.ListValueMust(types.StringType, []attr.Value{types.StringValue("logs-api-*")}),
+		},
+		"absent api with populated state": {
+			api:      nil,
+			input:    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("a")}),
+			expected: types.ListNull(types.StringType),
+		},
+		"empty api with populated state": {
+			api:      &[]string{},
+			input:    types.ListValueMust(types.StringType, []attr.Value{types.StringValue("a")}),
+			expected: types.ListNull(types.StringType),
+		},
+		"absent api with null":   {api: nil, input: types.ListNull(types.StringType), expected: types.ListNull(types.StringType)},
+		"empty api with unknown": {api: &[]string{}, input: types.ListUnknown(types.StringType), expected: types.ListNull(types.StringType)},
 	}
 	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {

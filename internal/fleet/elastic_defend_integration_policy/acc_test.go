@@ -1096,6 +1096,8 @@ func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissio
 				ConfigVariables:          vars(config.StringVariable("logs-nginx-*"), config.StringVariable("metrics-redis-*")),
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-nginx-*"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.1", "metrics-redis-*"),
 					checkDefendAdditionalDatastreamsPermissions("logs-nginx-*", "metrics-redis-*"),
 				),
 			},
@@ -1104,6 +1106,9 @@ func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissio
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
 				ConfigVariables:          vars(),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "2"),
 					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-nginx-*"),
@@ -1115,6 +1120,46 @@ func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissio
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
 				ConfigVariables:          vars([]config.Variable{}...),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "0"),
+					checkDefendAdditionalDatastreamsPermissions(),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissionsEmptyList
+// verifies that an explicit empty list on create stays an empty list, and that
+// removing the attribute afterwards keeps it empty without a diff.
+func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissionsEmptyList(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefendAdditionalDatastreamsPermissions, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables: config.Variables{
+					"policy_name":                        config.StringVariable(policyName),
+					"additional_datastreams_permissions": config.ListVariable(),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "0"),
+					checkDefendAdditionalDatastreamsPermissions(),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          config.Variables{"policy_name": config.StringVariable(policyName)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "0"),
 					checkDefendAdditionalDatastreamsPermissions(),
