@@ -108,6 +108,17 @@ func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPo
 		}
 	}
 
+	switch {
+	case policy.AdditionalDatastreamsPermissions != nil && len(*policy.AdditionalDatastreamsPermissions) > 0:
+		perms, d := types.ListValueFrom(ctx, types.StringType, *policy.AdditionalDatastreamsPermissions)
+		diags.Append(d...)
+		model.AdditionalDatastreamsPermissions = perms
+	case typeutils.IsKnown(model.AdditionalDatastreamsPermissions) && len(model.AdditionalDatastreamsPermissions.Elements()) == 0:
+		// Preserve an explicit empty list so `[]` round-trips.
+	default:
+		model.AdditionalDatastreamsPermissions = types.ListNull(types.StringType)
+	}
+
 	// Populate space_ids — only overwrite when the API actually returns them.
 	// If the API omits space_ids, preserve the existing model value so
 	// space-aware operations (e.g. update, delete) continue to work correctly.
@@ -428,6 +439,11 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 	}
 	req.PolicyId, req.PolicyIds = policyID, policyIDs
 
+	req.AdditionalDatastreamsPermissions, d = additionalDatastreamsPermissionsFromModel(ctx, model)
+	if d.HasError() {
+		return req, d
+	}
+
 	if typeutils.IsKnown(model.Description) {
 		req.Description = model.Description.ValueStringPointer()
 	}
@@ -489,6 +505,11 @@ func buildFinalizeRequest(
 		return req, d
 	}
 	req.PolicyId, req.PolicyIds = policyID, policyIDs
+
+	req.AdditionalDatastreamsPermissions, d = additionalDatastreamsPermissionsFromModel(ctx, model)
+	if d.HasError() {
+		return req, d
+	}
 
 	if typeutils.IsKnown(model.Description) {
 		req.Description = model.Description.ValueStringPointer()
@@ -631,4 +652,19 @@ func agentPoliciesFromModel(ctx context.Context, model *elasticDefendIntegration
 		return policyID, &ids, diags
 	}
 	return model.AgentPolicyID.ValueStringPointer(), nil, diags
+}
+
+// additionalDatastreamsPermissionsFromModel returns the request value for
+// additional_datastreams_permissions: a known list (including an empty one) is
+// sent, while null or unknown is omitted so the server value is retained.
+func additionalDatastreamsPermissionsFromModel(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (*[]string, diag.Diagnostics) {
+	if !typeutils.IsKnown(model.AdditionalDatastreamsPermissions) {
+		return nil, nil
+	}
+	perms := []string{}
+	diags := model.AdditionalDatastreamsPermissions.ElementsAs(ctx, &perms, false)
+	if diags.HasError() {
+		return nil, diags
+	}
+	return &perms, diags
 }

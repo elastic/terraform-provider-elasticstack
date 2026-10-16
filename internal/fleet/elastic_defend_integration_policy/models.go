@@ -46,20 +46,30 @@ type elasticDefendIntegrationPolicyModel struct {
 	Preset             types.String `tfsdk:"preset"`
 	Policy             types.Object `tfsdk:"policy"`
 	AdvancedSettings   types.Map    `tfsdk:"advanced_settings"`
+
+	AdditionalDatastreamsPermissions types.List `tfsdk:"additional_datastreams_permissions"`
 }
 
 func (model elasticDefendIntegrationPolicyModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	if !typeutils.IsKnown(model.AgentPolicyIDs) {
-		return nil, nil
-	}
+	var reqs []entitycore.VersionRequirement
 
-	return []entitycore.VersionRequirement{
-		entitycore.NewAttributeVersionRequirement(
+	if typeutils.IsKnown(model.AgentPolicyIDs) {
+		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
 			path.Root("agent_policy_ids"),
 			*MinVersionPolicyIDs,
 			fmt.Sprintf("agent_policy_ids requires Elastic Stack %s or later", MinVersionPolicyIDs),
-		),
-	}, nil
+		))
+	}
+
+	if typeutils.IsKnown(model.AdditionalDatastreamsPermissions) {
+		reqs = append(reqs, entitycore.NewAttributeVersionRequirement(
+			path.Root("additional_datastreams_permissions"),
+			*MinVersionAdditionalDatastreamsPermissions,
+			fmt.Sprintf("additional_datastreams_permissions requires Elastic Stack %s or later", MinVersionAdditionalDatastreamsPermissions),
+		))
+	}
+
+	return reqs, nil
 }
 
 // policyModel holds the top-level policy nested attribute.
