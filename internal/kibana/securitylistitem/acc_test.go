@@ -24,6 +24,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 )
 
 func TestAccResourceSecurityListItem(t *testing.T) {
@@ -45,6 +46,8 @@ func TestAccResourceSecurityListItem(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "list_item_id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "list_id", listID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", value1),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "version_id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "created_at"),
@@ -62,7 +65,10 @@ func TestAccResourceSecurityListItem(t *testing.T) {
 					"value":    config.StringVariable(valueUpdated),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "list_item_id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "list_id", listID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", valueUpdated),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "version_id"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "updated_at"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "updated_by"),
 				),
@@ -104,6 +110,7 @@ func TestAccResourceSecurityListItem_WithMeta(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "list_item_id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", value),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "meta", meta1),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "created_at"),
@@ -122,6 +129,7 @@ func TestAccResourceSecurityListItem_WithMeta(t *testing.T) {
 					"meta":     config.StringVariable(meta2),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "list_item_id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", value),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "meta", meta2),
 				),
@@ -135,6 +143,7 @@ func TestAccResourceSecurityListItem_WithMeta(t *testing.T) {
 					"value":    config.StringVariable(value),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "list_item_id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", value),
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_list_item.test", "meta"),
 				),
@@ -157,12 +166,14 @@ func TestAccResourceSecurityListItem_WithMeta(t *testing.T) {
 
 func TestAccResourceSecurityListItem_Space(t *testing.T) {
 	spaceID := "test-space-" + uuid.New().String()
+	spaceID2 := "test-space-" + uuid.New().String()
 	listID := "test-list-" + uuid.New().String()
 	spaceName := "Test Security Lists Space"
 	listName := "IP Blocklist"
 	listType := "ip"
 	value1 := "192.168.1.1"
 	value2 := "10.0.0.1"
+	value3 := "172.16.0.1"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -187,6 +198,7 @@ func TestAccResourceSecurityListItem_Space(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list.test", "type", listType),
 					// Check list item
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "list_item_id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "space_id", spaceID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "list_id", listID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", value1),
@@ -203,7 +215,10 @@ func TestAccResourceSecurityListItem_Space(t *testing.T) {
 					"value":    config.StringVariable(value2),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "list_item_id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "list_id", listID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", value2),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "version_id"),
 				),
 			},
 			{
@@ -217,6 +232,28 @@ func TestAccResourceSecurityListItem_Space(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_security_list_item.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers, // Move to a second, pre-existing space (forces replacement)
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_update"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID2),
+					"list_id":  config.StringVariable(listID),
+					"value":    config.StringVariable(value3),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							"elasticstack_kibana_security_list_item.test",
+							plancheck.ResourceActionDestroyBeforeCreate,
+						),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "space_id", spaceID2),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "list_id", listID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", value3),
+				),
 			},
 		},
 	})
@@ -244,7 +281,9 @@ func TestAccResourceSecurityListItem_WithListItemID(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "id", spaceID+"/"+listItemID1),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "list_item_id", listItemID1),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "list_id", listID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", value1),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "created_at"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "created_by"),
@@ -262,7 +301,9 @@ func TestAccResourceSecurityListItem_WithListItemID(t *testing.T) {
 					"value":        config.StringVariable(value2),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "id", spaceID+"/"+listItemID2),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "list_item_id", listItemID2),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "list_id", listID),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "value", value2),
 				),
 			},
@@ -297,6 +338,7 @@ func TestAccResourceSecurityListItem_DefaultSpace(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "id"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_list_item.test", "list_item_id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_list_item.test", "space_id", "default"),
 				),
 			},
