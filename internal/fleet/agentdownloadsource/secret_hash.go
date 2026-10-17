@@ -19,38 +19,16 @@ package agentdownloadsource
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/writeonlyhash"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-)
-
-const (
-	privateStateUnavailableSummary = "Failed to persist write-only secret hash"
-	privateStateUnavailableDetail  = "internal: private state writer unavailable; drift detection will not function. This is a bug."
 )
 
 // secretHashKey is the private-state key for the hash of the write-only
 // attribute at attrPath.
 func secretHashKey(attrPath string) string {
 	return secretHasher.PrivateStateKey(attrPath)
-}
-
-// encodeSecretHashForPrivateState JSON-wraps a raw bcrypt hash: private state
-// values must be valid JSON and bcrypt output (containing `$`) is not.
-func encodeSecretHashForPrivateState(hash []byte) ([]byte, error) {
-	return json.Marshal(string(hash))
-}
-
-func decodeSecretHashFromPrivateState(raw []byte) ([]byte, error) {
-	if len(raw) == 0 {
-		return nil, nil
-	}
-	var stored string
-	if err := json.Unmarshal(raw, &stored); err != nil {
-		return nil, err
-	}
-	return []byte(stored), nil
 }
 
 // loadStoredHashes reads the stored hash of every write-only attribute, keyed
@@ -67,7 +45,7 @@ func loadStoredHashes(ctx context.Context, private entitycore.PrivateStateStorag
 		if diags.HasError() {
 			return nil, diags
 		}
-		hash, err := decodeSecretHashFromPrivateState(raw)
+		hash, err := secretHasher.DecodeFromPrivateState(raw)
 		if err != nil {
 			diags.AddError("Failed to decode write-only secret hash", err.Error())
 			return nil, diags
@@ -92,7 +70,7 @@ func persistSecretHashes(
 ) {
 	if private == nil {
 		if len(configured) > 0 {
-			diags.AddError(privateStateUnavailableSummary, privateStateUnavailableDetail)
+			writeonlyhash.AddPrivateStateUnavailableError(diags)
 		}
 		return
 	}
@@ -106,20 +84,13 @@ func persistSecretHashes(
 			continue
 		}
 
-		// bcrypt is intentionally slow. Skip rehashing when the stored hash
-		// already verifies the value, as on updates driven by other attributes.
-		if len(stored[attrPath]) > 0 && secretHasher.Matches(value, stored[attrPath]) {
+		if secretHasher.IsUpToDate(value, stored[attrPath]) {
 			continue
 		}
 
-		hash, err := secretHasher.Compute(value)
-		if err != nil {
-			diags.AddError("Failed to hash write-only attribute", err.Error())
-			return
-		}
-		encoded, err := encodeSecretHashForPrivateState(hash)
-		if err != nil {
-			diags.AddError("Failed to encode write-only secret hash", err.Error())
+		encoded, hashDiags := secretHasher.ComputeForPrivateState(value)
+		diags.Append(hashDiags...)
+		if diags.HasError() {
 			return
 		}
 		diags.Append(private.SetKey(ctx, secretHashKey(attrPath), encoded)...)
