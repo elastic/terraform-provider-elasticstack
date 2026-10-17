@@ -57,7 +57,7 @@ func (r *contentConnectorResource) ModifyPlan(ctx context.Context, req resource.
 		if diags.HasError() {
 			return nil, diags
 		}
-		decoded, err := decodeSecretHashFromPrivateState(raw)
+		decoded, err := secretHasher.DecodeFromPrivateState(raw)
 		if err != nil {
 			diags.AddError("Failed to decode write-only secret hash", err.Error())
 			return nil, diags

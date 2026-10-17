@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/writeonlyhash"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
@@ -58,7 +59,7 @@ func TestStoreSecretHashes_nilPrivateWithSecrets(t *testing.T) {
 	var diags diag.Diagnostics
 	storeSecretHashes(ctx, nil, configMap, &diags)
 	require.True(t, diags.HasError())
-	require.Equal(t, privateStateUnavailableSummary, diags.Errors()[0].Summary())
+	require.Equal(t, writeonlyhash.PrivateStateUnavailableSummary, diags.Errors()[0].Summary())
 }
 
 func TestStoreSecretHashes_nilPrivateNoSecrets(t *testing.T) {
@@ -75,11 +76,11 @@ func TestEncodeSecretHashForPrivateState_validJSON(t *testing.T) {
 	hash, err := secretHasher.Compute("pw")
 	require.NoError(t, err)
 
-	encoded, err := encodeSecretHashForPrivateState(hash)
+	encoded, err := secretHasher.EncodeForPrivateState(hash)
 	require.NoError(t, err)
 	require.True(t, json.Valid(encoded), "private state values must be valid JSON")
 
-	decoded, err := decodeSecretHashFromPrivateState(encoded)
+	decoded, err := secretHasher.DecodeFromPrivateState(encoded)
 	require.NoError(t, err)
 	require.Equal(t, hash, decoded)
 }
@@ -102,7 +103,7 @@ func TestStoreSecretHashes_storesVerifiableHash(t *testing.T) {
 
 	stored := ps[secretHashKey("password")]
 	require.True(t, json.Valid(stored), "stored hash must be valid JSON")
-	decoded, err := decodeSecretHashFromPrivateState(stored)
+	decoded, err := secretHasher.DecodeFromPrivateState(stored)
 	require.NoError(t, err)
 	require.True(t, secretHasher.Matches("pw", decoded))
 }
@@ -114,7 +115,7 @@ func TestStoreSecretHashes_skipsReHashWhenStoredMatches(t *testing.T) {
 
 	hash, err := secretHasher.Compute("pw")
 	require.NoError(t, err)
-	encoded, err := encodeSecretHashForPrivateState(hash)
+	encoded, err := secretHasher.EncodeForPrivateState(hash)
 	require.NoError(t, err)
 	ps[secretHashKey("password")] = encoded
 

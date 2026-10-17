@@ -22,9 +22,11 @@ package writeonlyhash
 import (
 	"crypto/sha256"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"strings"
 
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -33,6 +35,12 @@ const (
 	// bcryptMaxInputBytes is bcrypt's maximum password length.
 	bcryptMaxInputBytes = 72
 	keyPrefix           = "secret_hash:"
+
+	// PrivateStateUnavailableSummary and PrivateStateUnavailableDetail are the
+	// standard diagnostic shown when a write-only secret cannot be persisted
+	// because the resource's private state writer is unavailable.
+	PrivateStateUnavailableSummary = "Failed to persist write-only secret hash"
+	PrivateStateUnavailableDetail  = "internal: private state writer unavailable; drift detection will not function. This is a bug."
 )
 
 // Hasher manages bcrypt-based private-state hashes for write-only attributes.
@@ -89,6 +97,61 @@ func (h *Hasher) Matches(value string, storedHash []byte) bool {
 // attribute, including map key indices in bracket notation.
 func (h *Hasher) PrivateStateKey(attributePath string) string {
 	return keyPrefix + attributePath
+}
+
+// EncodeForPrivateState wraps a bcrypt hash as a JSON string. The Terraform
+// Plugin Framework rejects private-state values that are not valid JSON, so
+// raw bcrypt bytes (which contain '$' and other non-JSON characters) must be
+// JSON-encoded before storage.
+func (h *Hasher) EncodeForPrivateState(hash []byte) ([]byte, error) {
+	return json.Marshal(string(hash))
+}
+
+// DecodeFromPrivateState reverses EncodeForPrivateState. It returns (nil,
+// nil) for an empty or absent value.
+func (h *Hasher) DecodeFromPrivateState(raw []byte) ([]byte, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	var stored string
+	if err := json.Unmarshal(raw, &stored); err != nil {
+		return nil, err
+	}
+	return []byte(stored), nil
+}
+
+// IsUpToDate reports whether storedHash already verifies value, meaning the
+// caller can skip recomputing a hash. bcrypt is intentionally slow, so
+// callers should skip rehashing whenever the previously stored hash still
+// verifies the configured value (for example on updates driven by other
+// attributes, or no-op applies).
+func (h *Hasher) IsUpToDate(value string, storedHash []byte) bool {
+	return len(storedHash) > 0 && h.Matches(value, storedHash)
+}
+
+// ComputeForPrivateState hashes value and encodes it for private-state
+// storage in one step, returning resource-agnostic diagnostics if either
+// step fails.
+func (h *Hasher) ComputeForPrivateState(value string) ([]byte, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	hash, err := h.Compute(value)
+	if err != nil {
+		diags.AddError("Failed to hash write-only attribute", err.Error())
+		return nil, diags
+	}
+	encoded, err := h.EncodeForPrivateState(hash)
+	if err != nil {
+		diags.AddError("Failed to encode write-only secret hash", err.Error())
+		return nil, diags
+	}
+	return encoded, diags
+}
+
+// AddPrivateStateUnavailableError appends the standard diagnostic reported
+// when a write-only secret cannot be persisted because the resource's
+// private state writer is unavailable.
+func AddPrivateStateUnavailableError(diags *diag.Diagnostics) {
+	diags.AddError(PrivateStateUnavailableSummary, PrivateStateUnavailableDetail)
 }
 
 func (h *Hasher) effectiveCost() int {

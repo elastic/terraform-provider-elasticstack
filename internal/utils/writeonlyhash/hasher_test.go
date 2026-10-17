@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/writeonlyhash"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
@@ -227,6 +228,60 @@ func TestHasher_longValueRoundtrip(t *testing.T) {
 	hash, err := h.Compute(pem)
 	require.NoError(t, err)
 	assert.True(t, h.Matches(pem, hash))
+}
+
+func TestHasher_EncodeDecodeForPrivateState_roundtrip(t *testing.T) {
+	t.Parallel()
+
+	h := writeonlyhash.New("elasticsearch_connector")
+	hash, err := h.Compute("value")
+	require.NoError(t, err)
+
+	encoded, err := h.EncodeForPrivateState(hash)
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(string(encoded), `"`), "bcrypt bytes contain $ and must be JSON wrapped")
+
+	decoded, err := h.DecodeFromPrivateState(encoded)
+	require.NoError(t, err)
+	assert.Equal(t, hash, decoded)
+
+	empty, err := h.DecodeFromPrivateState(nil)
+	require.NoError(t, err)
+	assert.Nil(t, empty)
+}
+
+func TestHasher_IsUpToDate(t *testing.T) {
+	t.Parallel()
+
+	h := writeonlyhash.New("elasticsearch_connector")
+	hash, err := h.Compute("value")
+	require.NoError(t, err)
+
+	assert.True(t, h.IsUpToDate("value", hash))
+	assert.False(t, h.IsUpToDate("other", hash))
+	assert.False(t, h.IsUpToDate("value", nil))
+}
+
+func TestHasher_ComputeForPrivateState(t *testing.T) {
+	t.Parallel()
+
+	h := writeonlyhash.New("elasticsearch_connector")
+	encoded, diags := h.ComputeForPrivateState("value")
+	require.False(t, diags.HasError())
+
+	decoded, err := h.DecodeFromPrivateState(encoded)
+	require.NoError(t, err)
+	assert.True(t, h.Matches("value", decoded))
+}
+
+func TestAddPrivateStateUnavailableError(t *testing.T) {
+	t.Parallel()
+
+	var diags diag.Diagnostics
+	writeonlyhash.AddPrivateStateUnavailableError(&diags)
+	require.True(t, diags.HasError())
+	assert.Equal(t, writeonlyhash.PrivateStateUnavailableSummary, diags.Errors()[0].Summary())
+	assert.Equal(t, writeonlyhash.PrivateStateUnavailableDetail, diags.Errors()[0].Detail())
 }
 
 func TestHasher_longValuesSharingPrefixDoNotMatch(t *testing.T) {
