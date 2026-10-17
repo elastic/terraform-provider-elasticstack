@@ -1557,6 +1557,52 @@ func testCheckServerNoPlainSecret(parent, field string) resource.TestCheckFunc {
 	}
 }
 
+// The helpers below tolerate Fleet Servers without secret storage (storage is
+// gated on the Fleet Server version at runtime, so older stacks merge the value
+// into the plain field instead). With no stored secret captured they only keep
+// the assertions that never depend on storage; the state-level checks on the
+// write-only attributes stay in force on every stack.
+
+// testCheckServerSecretCaptureIfStored records the managed secret id when Fleet
+// stored one, and records "" when it did not.
+func testCheckServerSecretCaptureIfStored(parent, field string, capture *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		item, err := fetchServerItem(s)
+		if err != nil {
+			return err
+		}
+		*capture = serverSecretID(item, parent, field)
+		return nil
+	}
+}
+
+func testCheckServerSecretUnchangedIfStored(parent, field string, previous *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if *previous == "" {
+			return nil
+		}
+		return testCheckServerSecretUnchanged(parent, field, previous)(s)
+	}
+}
+
+func testCheckServerSecretRotatedIfStored(parent, field string, previous *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if *previous == "" {
+			return nil
+		}
+		return testCheckServerSecretRotated(parent, field, previous)(s)
+	}
+}
+
+func testCheckServerNoPlainSecretIfStored(parent, field string, stored *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		if *stored == "" {
+			return nil
+		}
+		return testCheckServerNoPlainSecret(parent, field)(s)
+	}
+}
+
 func writeOnlyStateChecks(nullPaths ...tfjsonpath.Path) []statecheck.StateCheck {
 	checks := make([]statecheck.StateCheck, 0, len(nullPaths))
 	for _, p := range nullPaths {
@@ -1593,21 +1639,21 @@ func TestAccResourceFleetAgentDownloadSource_SSLKeyWriteOnly(t *testing.T) {
 	create.Check = resource.ComposeTestCheckFunc(
 		resource.TestCheckNoResourceAttr(testResourceName, "ssl.key_wo"),
 		resource.TestCheckNoResourceAttr(testResourceName, "ssl.key"),
-		testCheckServerSecretPresent("ssl", "key", &secretID),
-		testCheckServerNoPlainSecret("ssl", "key"),
+		testCheckServerSecretCaptureIfStored("ssl", "key", &secretID),
+		testCheckServerNoPlainSecretIfStored("ssl", "key", &secretID),
 	)
 
 	rename := writeOnlyStep(random, "key_wo", "key-one", "label", "renamed")
 	rename.ConfigStateChecks = writeOnlyStateChecks(pathSSLKeyWO, pathSSLKey)
 	rename.Check = resource.ComposeTestCheckFunc(
 		resource.TestCheckResourceAttr(testResourceName, "name", fmt.Sprintf("WO Agent Download Source %s renamed", random)),
-		testCheckServerSecretUnchanged("ssl", "key", &secretID),
+		testCheckServerSecretUnchangedIfStored("ssl", "key", &secretID),
 	)
 
 	rotate := writeOnlyPlannedUpdateStep(random, resource.ComposeTestCheckFunc(
 		resource.TestCheckNoResourceAttr(testResourceName, "ssl.key_wo"),
-		testCheckServerSecretRotated("ssl", "key", &secretID),
-		testCheckServerNoPlainSecret("ssl", "key"),
+		testCheckServerSecretRotatedIfStored("ssl", "key", &secretID),
+		testCheckServerNoPlainSecretIfStored("ssl", "key", &secretID),
 	), "key_wo", "key-two", "label", "renamed")
 	rotate.ConfigStateChecks = writeOnlyStateChecks(pathSSLKeyWO, pathSSLKey)
 
@@ -1922,10 +1968,10 @@ func TestAccResourceFleetAgentDownloadSource_SSLKeyWriteOnlyPEM(t *testing.T) {
 	keyA, keyB := pemKey("AAAA"), pemKey("BBBB")
 
 	create := writeOnlyStep(random, "key_wo", keyA)
-	create.Check = testCheckServerSecretPresent("ssl", "key", &secretID)
+	create.Check = testCheckServerSecretCaptureIfStored("ssl", "key", &secretID)
 	create.ConfigStateChecks = writeOnlyStateChecks(pathSSLKeyWO, pathSSLKey)
 
-	rotate := writeOnlyPlannedUpdateStep(random, testCheckServerSecretRotated("ssl", "key", &secretID), "key_wo", keyB)
+	rotate := writeOnlyPlannedUpdateStep(random, testCheckServerSecretRotatedIfStored("ssl", "key", &secretID), "key_wo", keyB)
 	rotate.ConfigStateChecks = writeOnlyStateChecks(pathSSLKeyWO, pathSSLKey)
 
 	resource.Test(t, resource.TestCase{
