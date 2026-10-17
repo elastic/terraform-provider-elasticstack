@@ -57,7 +57,7 @@ func (m *Model) setCompositeIdentity(spaceID, resourceID string) {
 	m.ID, m.SpaceID = clients.CompositeIdentityValues(spaceID, resourceID)
 }
 
-func (m Model) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequest {
+func (m Model) toParameterRequest(forUpdate bool) kboapi.KibanaHTTPAPIsParameterRequest {
 	// share_across_spaces is not allowed to be set when updating an existing
 	// global parameter.
 	var shareAcrossSpaces *bool
@@ -65,7 +65,7 @@ func (m Model) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequ
 		shareAcrossSpaces = m.ShareAcrossSpaces.ValueBoolPointer()
 	}
 
-	return kboapi.SyntheticsParameterRequest{
+	return kboapi.KibanaHTTPAPIsParameterRequest{
 		Key:         m.Key.ValueString(),
 		Value:       m.Value.ValueString(),
 		Description: new(m.Description.ValueString()),

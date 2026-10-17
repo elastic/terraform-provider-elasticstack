@@ -249,9 +249,9 @@ func primeFailingPush(t *testing.T, oapiClient *kibanaoapi.Client) {
 	ctx := context.Background()
 	for attempt := range 10 {
 		req := kbapi.SyntheticsMonitorRequest{}
-		require.NoError(t, req.FromSyntheticsHttpMonitorFields(kbapi.SyntheticsHttpMonitorFields{
+		require.NoError(t, req.FromKibanaHTTPAPIsHttpMonitorFields(kbapi.KibanaHTTPAPIsHttpMonitorFields{
 			Name:      fmt.Sprintf("issue-4986-probe-%s-%d", sdkacctest.RandString(8), attempt),
-			Type:      kbapi.SyntheticsHttpMonitorFieldsType(kbapi.SyntheticsMonitorTypeHttp),
+			Type:      kbapi.KibanaHTTPAPIsHttpMonitorFieldsType(kbapi.SyntheticsMonitorTypeHttp),
 			Url:       "http://localhost:5601",
 			Locations: &[]string{"us_west"},
 			Labels:    &map[string]string{},

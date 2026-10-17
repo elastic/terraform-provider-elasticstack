@@ -78,7 +78,7 @@ func syncErrorsFromBody(body []byte) []SyncError {
 // push errors; those errors are returned separately.
 func CreateMonitor(ctx context.Context, client *Client, spaceID string, req kbapi.SyntheticsMonitorRequest) (*kbapi.SyntheticsMonitor, []SyncError, diag.Diagnostics) {
 	resp, err := client.API.PostSyntheticMonitorsWithResponse(
-		ctx, req,
+		ctx, nil, req,
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
