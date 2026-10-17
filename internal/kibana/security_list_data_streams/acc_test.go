@@ -28,6 +28,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -86,6 +87,51 @@ func TestAccResourceSecurityListDataStreamsWithSpace(t *testing.T) {
 				ResourceName:      "elasticstack_kibana_security_list_data_streams.test",
 				ImportState:       true,
 				ImportStateVerify: true,
+			},
+		},
+	})
+}
+
+// TestAccResourceSecurityListDataStreams_ReplaceOnSpaceChange asserts that
+// changing `space_id` on an already-created resource forces a
+// destroy-before-create replacement, per the `RequiresReplace` plan modifier
+// declared on the attribute.
+func TestAccResourceSecurityListDataStreams_ReplaceOnSpaceChange(t *testing.T) {
+	resourceName := "elasticstack_kibana_security_list_data_streams.test"
+	spaceIDA := fmt.Sprintf("test-space-a-%s", uuid.New().String()[:8])
+	spaceIDB := fmt.Sprintf("test-space-b-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceListDataStreamsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_space"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceIDA),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceIDA),
+					resource.TestCheckResourceAttr(resourceName, "id", spaceIDA),
+				),
+			},
+			{
+				// Changing space_id must force a destroy-before-create replacement.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_space"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceIDB),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceIDB),
+					resource.TestCheckResourceAttr(resourceName, "id", spaceIDB),
+				),
 			},
 		},
 	})

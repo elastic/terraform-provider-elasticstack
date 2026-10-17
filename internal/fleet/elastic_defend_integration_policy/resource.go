@@ -33,7 +33,8 @@ var (
 )
 
 var (
-	MinVersionPolicyIDs = version.Must(version.NewVersion("8.15.0"))
+	MinVersionPolicyIDs                        = version.Must(version.NewVersion("8.15.0"))
+	MinVersionAdditionalDatastreamsPermissions = version.Must(version.NewVersion("9.1.0"))
 )
 
 type elasticDefendIntegrationPolicyResource struct {

@@ -69,6 +69,14 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
+				ResourceName:             "elasticstack_kibana_security_role.test",
+				ImportState:              true,
+				ImportStateVerify:        true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
 				Check: resource.ComposeTestCheckFunc(
@@ -108,7 +116,7 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "description"),
 					resource.TestCheckTypeSetElemAttr("elasticstack_kibana_security_role.test", "elasticsearch.cluster.*", "create_snapshot"),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.run_as", []string{"elastic", "kibana"}),
-					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.base", []string{"all"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.base", []string{"read"}),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
 				),
 			},
@@ -123,6 +131,7 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.run_as.#"),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.indices.0.names", []string{"sample"}),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.indices.0.field_security.grant", []string{"sample"}),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.indices.0.field_security.except.#", "0"),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.feature.2.privileges", []string{"minimal_read", "store_search_session", "url_create"}),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.clusters", []string{"test-cluster"}),
@@ -151,10 +160,49 @@ func TestAccResourceKibanaSecurityRole(t *testing.T) {
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "kibana.0.spaces", []string{"default"}),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.clusters", []string{"test-cluster2"}),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.field_security.grant", []string{"sample2"}),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.field_security.except.#", "0"),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.names", []string{"sample2"}),
 					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.privileges", []string{"create", "read", "write"}),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.allow_restricted_indices", "false"),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedRemoteIndicesVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remote_indices_unset_allow_restricted"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleNameRemoteIndices)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_role.test", "name", roleNameRemoteIndices),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.clusters", []string{"test-cluster2"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.names", []string{"sample2"}),
+					checks.TestCheckResourceListAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.privileges", []string{"create", "read", "write"}),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_role.test", "elasticsearch.remote_indices.0.allow_restricted_indices"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceKibanaSecurityRoleInvalidConfig exercises the resource-level
+// config validator error paths. Each step fails validation before any apply,
+// so no resource is ever created and there is nothing to destroy afterwards.
+func TestAccResourceKibanaSecurityRoleInvalidConfig(t *testing.T) {
+	roleName := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("missing_elasticsearch"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
+				ExpectError:              regexp.MustCompile("The `elasticsearch` block is required"),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("kibana_base_and_feature"),
+				ConfigVariables:          config.Variables{"role_name": config.StringVariable(roleName)},
+				ExpectError:              regexp.MustCompile("Only one of the `feature` or `base` privileges allowed"),
 			},
 		},
 	})

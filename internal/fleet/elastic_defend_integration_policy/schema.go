@@ -26,6 +26,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -82,6 +83,17 @@ func resourceSchema() schema.Schema {
 				Validators: []validator.List{
 					listvalidator.ConflictsWith(path.Root("agent_policy_id").Expression()),
 					listvalidator.SizeAtLeast(1),
+				},
+			},
+			"additional_datastreams_permissions": schema.ListAttribute{
+				Description: "Additional data stream permissions granted to the integration policy, for example `logs-nginx-*`. " +
+					"Requires Elastic Stack >= 9.1.0. Removing this attribute from configuration does not revoke previously " +
+					"granted permissions on the server; set it to `[]` to clear them.",
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"description": schema.StringAttribute{

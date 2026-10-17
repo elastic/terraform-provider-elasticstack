@@ -21,9 +21,11 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
@@ -38,6 +40,7 @@ import (
 
 var minVersionElasticDefend = version.Must(version.NewVersion("8.14.0"))
 var minVersionElasticDefendPolicyIDs = version.Must(version.NewVersion("8.15.0"))
+var minVersionElasticDefendAdditionalDatastreamsPermissions = version.Must(version.NewVersion("9.1.0"))
 var minVersionElasticDefendSpaceIDs = version.Must(version.NewVersion("9.1.0"))
 
 const (
@@ -977,4 +980,273 @@ func checkResourceElasticDefendPolicyDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+// checkDefendAdditionalDatastreamsPermissions asserts what Fleet actually
+// stored for the Defend policy rather than relying on Terraform state alone.
+func checkDefendAdditionalDatastreamsPermissions(want ...string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		policy, diags := fleetclient.GetDefendPackagePolicy(context.Background(), apiClient.GetFleetClient(), rs.Primary.Attributes["policy_id"], "")
+		if diags.HasError() {
+			return fmt.Errorf("error reading policy: %v", diags)
+		}
+		if policy == nil {
+			return fmt.Errorf("Elastic Defend policy %q not found", rs.Primary.Attributes["policy_id"])
+		}
+
+		var got []string
+		if policy.AdditionalDatastreamsPermissions != nil {
+			got = *policy.AdditionalDatastreamsPermissions
+		}
+		if !slices.Equal(got, want) {
+			return fmt.Errorf("additional_datastreams_permissions on the server = %v, want %v", got, want)
+		}
+		return nil
+	}
+}
+
+// setDefendAdditionalDatastreamsPermissionsOutOfBand grants permissions on the
+// Defend policy directly through the Fleet API.
+func setDefendAdditionalDatastreamsPermissionsOutOfBand(resourceAddress string, permissions ...string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceAddress]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceAddress)
+		}
+
+		apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+		fleetClient := apiClient.GetFleetClient()
+		policyID := rs.Primary.Attributes["policy_id"]
+
+		policy, diags := fleetclient.GetDefendPackagePolicy(context.Background(), fleetClient, policyID, "")
+		if diags.HasError() || policy == nil {
+			return fmt.Errorf("error reading policy %q: %v", policyID, diags)
+		}
+
+		name := policy.Name
+		req := kbapi.PackagePolicyUpdateRequestTypedInputs{
+			Name:                             &name,
+			Namespace:                        policy.Namespace,
+			PolicyId:                         policy.PolicyId,
+			AdditionalDatastreamsPermissions: &permissions,
+		}
+		if _, diags := fleetclient.UpdateDefendPackagePolicy(context.Background(), fleetClient, policyID, "", req); diags.HasError() {
+			return fmt.Errorf("error updating policy %q out of band: %v", policyID, diags)
+		}
+		return nil
+	}
+}
+
+// TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissions
+// covers setting, widening, retaining on removal from configuration, and
+// clearing with an explicit empty list.
+func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissions(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefendAdditionalDatastreamsPermissions, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	varsOmitted := func() config.Variables {
+		return config.Variables{"policy_name": config.StringVariable(policyName)}
+	}
+	varsWithPerms := func(perms ...config.Variable) config.Variables {
+		v := varsOmitted()
+		// ListVariable(nil...) serializes as null, so force a non-nil slice to
+		// get an explicit empty list when no permissions are passed.
+		if perms == nil {
+			perms = []config.Variable{}
+		}
+		v["additional_datastreams_permissions"] = config.ListVariable(perms...)
+		return v
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          varsWithPerms(config.StringVariable("logs-nginx-*")),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-nginx-*"),
+					checkDefendAdditionalDatastreamsPermissions("logs-nginx-*"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          varsWithPerms(config.StringVariable("logs-nginx-*")),
+				ResourceName:             resourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateIdFunc:        testImportStateIDFunc(resourceName),
+				ImportStateVerifyIgnore:  []string{"force", "kibana_connection", "space_ids"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          varsWithPerms(config.StringVariable("logs-nginx-*"), config.StringVariable("metrics-redis-*")),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-nginx-*"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.1", "metrics-redis-*"),
+					checkDefendAdditionalDatastreamsPermissions("logs-nginx-*", "metrics-redis-*"),
+				),
+			},
+			{
+				// Removing the attribute from configuration retains the prior value.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          varsOmitted(),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-nginx-*"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.1", "metrics-redis-*"),
+					checkDefendAdditionalDatastreamsPermissions("logs-nginx-*", "metrics-redis-*"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          varsWithPerms(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "0"),
+					checkDefendAdditionalDatastreamsPermissions(),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissionsEmptyList
+// verifies that an explicit empty list on create stays an empty list, and that
+// removing the attribute afterwards keeps it empty without a diff.
+func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissionsEmptyList(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefendAdditionalDatastreamsPermissions, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables: config.Variables{
+					"policy_name":                        config.StringVariable(policyName),
+					"additional_datastreams_permissions": config.ListVariable(),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "0"),
+					checkDefendAdditionalDatastreamsPermissions(),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          config.Variables{"policy_name": config.StringVariable(policyName)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "0"),
+					checkDefendAdditionalDatastreamsPermissions(),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissionsOutOfBand
+// verifies that permissions granted outside Terraform are adopted into state
+// and are not revoked when the attribute is never configured.
+func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissionsOutOfBand(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefendAdditionalDatastreamsPermissions, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"policy_name": config.StringVariable(policyName)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "additional_datastreams_permissions.#"),
+					setDefendAdditionalDatastreamsPermissionsOutOfBand(resourceName, "logs-oob-*"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          vars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-oob-*"),
+					checkDefendAdditionalDatastreamsPermissions("logs-oob-*"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicy_additionalDatastreamsPermissionsVersionGate
+// is best effort: it only runs on stacks older than 9.1.0.
+func TestAccResourceElasticDefendIntegrationPolicy_additionalDatastreamsPermissionsVersionGate(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
+
+	unsupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefendAdditionalDatastreamsPermissions)()
+	if err != nil {
+		t.Fatalf("failed to check stack version: %v", err)
+	}
+	if !unsupported {
+		t.Skip("stack supports additional_datastreams_permissions; skipping version gate test")
+	}
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables: config.Variables{
+					"policy_name":                        config.StringVariable(policyName),
+					"additional_datastreams_permissions": config.ListVariable(config.StringVariable("logs-nginx-*")),
+				},
+				ExpectError: regexp.MustCompile(`(?s)(Unsupported server version|9\.1\.0)`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          config.Variables{"policy_name": config.StringVariable(policyName)},
+				Check:                    resource.TestCheckNoResourceAttr(resourceName, "additional_datastreams_permissions.#"),
+			},
+		},
+	})
 }
