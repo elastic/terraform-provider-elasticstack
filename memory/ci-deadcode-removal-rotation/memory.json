@@ -1767,6 +1767,128 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewKibanaScopedClientForTest",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-10-17T03:07:58.739177948Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index.settingElementType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index",
+      "attemptedAt": "2026-10-17T03:07:58.739178118Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index.settingsElementType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index",
+      "attemptedAt": "2026-10-17T03:07:58.739178218Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event.parseCalendarEventFullCompositeID",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml/calendar_event",
+      "attemptedAt": "2026-10-17T03:07:58.739178288Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils.JSONBytesEqual",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils",
+      "attemptedAt": "2026-10-17T03:07:58.739178358Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils.ObjectValueFrom",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils",
+      "attemptedAt": "2026-10-17T03:07:58.739178429Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils.CheckIfNotServerless",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils",
+      "attemptedAt": "2026-10-17T03:07:58.739178499Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils.CheckIfVersionIsSupported",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils",
+      "attemptedAt": "2026-10-17T03:07:58.739178569Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils.CheckIfVersionIsUnsupported",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils",
+      "attemptedAt": "2026-10-17T03:07:58.739178639Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils.CheckIfVersionMeetsConstraints",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils",
+      "attemptedAt": "2026-10-17T03:07:58.739178709Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils.Flavor.String",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils",
+      "attemptedAt": "2026-10-17T03:07:58.739178779Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils.SkipIfUnsupported",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils",
+      "attemptedAt": "2026-10-17T03:07:58.739178839Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils.SkipIfUnsupportedAnyConstraints",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils",
+      "attemptedAt": "2026-10-17T03:07:58.73917891Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils.SkipIfUnsupportedConstraints",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils",
+      "attemptedAt": "2026-10-17T03:07:58.739178979Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils.checkSkip",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils",
+      "attemptedAt": "2026-10-17T03:07:58.73917905Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils.fetchAcceptanceServerInfo",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils",
+      "attemptedAt": "2026-10-17T03:07:58.73917912Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils.skipContext",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils",
+      "attemptedAt": "2026-10-17T03:07:58.73917919Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils.skipWhenVersionSupported",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/versionutils",
+      "attemptedAt": "2026-10-17T03:07:58.73917926Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/prmgmt.ResolveReleaseMode",
+      "package": "github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/prmgmt",
+      "attemptedAt": "2026-10-17T03:28:59.951846227Z",
+      "reason": "build_failed",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true,
+        "impactedPackages": [
+          "./scripts/changelog/internal/prmgmt"
+        ],
+        "buildExitCode": 2
+      }
     }
   ]
 }
