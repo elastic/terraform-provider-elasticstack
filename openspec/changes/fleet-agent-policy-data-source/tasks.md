@@ -1,11 +1,11 @@
 ## 1. Client layer
 
-- [ ] 1.1 Add `GetAgentPolicyByName(ctx, client, name, spaceID string) (*kbapi.KibanaHTTPAPIsAgentPolicyResponse, diag.Diagnostics)` to `internal/clients/fleet/agent_policy.go`, alongside the existing `GetAgentPolicy`.
-- [ ] 1.2 Implement the escaped, quoted Kuery term: `fmt.Sprintf("ingest-agent-policies.name:%q", escape(name))` where `escape` replaces `\` with `\\` and `"` with `\"` before the `%q`-driven quoting (or build the quoted literal manually — confirm whether Go's `%q` escaping matches KQL's expected escaping for the characters that appear in practice; if not, write the escape explicitly).
+- [ ] 1.1 Add `GetAgentPolicyByName(ctx, client, name, spaceID string) ([]*kbapi.KibanaHTTPAPIsAgentPolicyResponse, diag.Diagnostics)` to `internal/clients/fleet/agent_policy.go`, alongside the existing `GetAgentPolicy`.
+- [ ] 1.2 Implement the escaped, quoted Kuery term by escaping the raw `name` once (backslashes first, then double quotes) and interpolating it into a quoted literal: `fmt.Sprintf("ingest-agent-policies.name:\"%s\"", escapedName)`.
 - [ ] 1.3 Implement pagination of the *filtered* result set using `GetFleetAgentPoliciesWithResponse` with `Kuery` set and an explicit `SortField: "name"` (never `"id"` — confirmed rejected by the API).
 - [ ] 1.4 Implement the anomaly-detecting pagination loop: track seen `Id`s (error on duplicate), error if a page is shorter than expected before reaching `Total`, error if `Total` changes between page requests.
 - [ ] 1.5 Implement the client-side exact-match filter: from the filtered (and fully paginated) result set, keep only items where `item.Name == name`.
-- [ ] 1.6 Return a sentinel/empty result (not an error) when zero exact matches are found, and all matches (not just the first) when more than one is found, so the caller can build the "no match" vs. "ambiguous match" diagnostics with the conflicting `policy_id`s.
+- [ ] 1.6 Return a slice containing all exact matches; an empty slice represents zero matches, allowing the caller to distinguish no match from ambiguity and enumerate every conflicting `policy_id`.
 - [ ] 1.7 Add unit tests in `internal/clients/fleet/agent_policy_test.go` against a mocked/httptest Kibana server:
   - [ ] 1.7.1 A single exact match on the first page.
   - [ ] 1.7.2 Two exact matches, one of which only appears on a later page (proves pagination is exhaustive before the ambiguity check runs).
@@ -24,11 +24,12 @@
 - [ ] 2.4 Implement `GetSpaceID() types.String`.
 - [ ] 2.5 `schema.go`: declare `policy_id` and `name` as `String`, `Optional: true`, `Computed: true`, each with `stringvalidator.ExactlyOneOf(path.MatchRelative().AtParent().AtName(<other>))`. Declare `space_id` via the shared `kbschema.DataSourceSpaceIDAttribute()` helper (as `enrollmenttokens`/`outputds` already do). Declare every other attribute as `Computed: true`, using the same Terraform types as the resource's schema (`internal/fleet/agentpolicy/schema.go`) for `global_data_tags`, `advanced_settings`, `advanced_monitoring_options`, and the `customtypes.DurationType` fields, so the data source's output shape matches the resource's for users who reference both.
 - [ ] 2.6 `read.go`: implement the selector branch — `config.PolicyID` set → call `fleet.GetAgentPolicy`; `config.Name` set → call `fleet.GetAgentPolicyByName`. Read the filter value from `config`, not the envelope-resolved resource ID (mirroring `enrollmenttokens/read.go:31-33`'s reasoning, since `"_"` is itself a valid `policy_id`).
-- [ ] 2.7 `read.go`: on a by-name zero-match result, return `found=false` so the envelope's standard "not found" diagnostic fires (consistent with the by-ID 404 path), but with a message naming the `name` and `space_id` that were searched (`no agent policy found matching name %q in space %q`) rather than the generic `<component>_<name> "<resourceID>" not found` the envelope would otherwise produce with the `"_"` placeholder.
+- [ ] 2.7 `read.go`: on a by-name zero-match result, return a read-callback error diagnostic naming the searched `name` and resolved `space_id` (`no agent policy found matching name %q in space %q`); the envelope stops on callback errors, so no shared-envelope change is needed.
 - [ ] 2.8 `read.go`: on a by-name multi-match result, return an error diagnostic (not `found=false`) listing every conflicting `policy_id`, e.g. `multiple agent policies match name %q in space %q: policy_id "a", policy_id "b"`.
 - [ ] 2.9 `read.go`/`models.go`: implement the data-source-specific `populateFromAPI` mapping (new function, not a call into the resource's `agentPolicyModel.populateFromAPI`) — explicitly set `ID` and the unused selector (`PolicyID` or `Name`) from the API response, and map every other attribute directly from the raw API value with no null-preservation (see design.md Decision 5). Compute `monitor_logs`/`monitor_metrics` unconditionally from `MonitoringEnabled` containment.
 - [ ] 2.10 `data_source.go`: wire the schema, model, and read function into `entitycore.NewKibanaDataSource[Model]`, following `internal/fleet/enrollmenttokens/data_source.go:26-35`.
 - [ ] 2.11 Implement `GetVersionRequirements` returning no entries for the core lookup (per design.md Decision 6); confirm no version gate is needed for any `Computed`-only attribute exported here.
+- [ ] 2.12 Test the by-name multi-match diagnostic with a mocked Fleet list response containing two exact matches with distinct `policy_id`s; assert that both IDs appear in the error.
 
 ## 3. Registration and docs
 
@@ -44,7 +45,7 @@
 - [ ] 4.4 Neither `policy_id` nor `name` set → plan-time validation error from `ExactlyOneOf`.
 - [ ] 4.5 Both `policy_id` and `name` set → plan-time validation error from `ExactlyOneOf`.
 - [ ] 4.6 `name` matching zero policies → apply-time "not found" error.
-- [ ] 4.7 `name` matching two fixtures sharing a name in the same space → apply-time error naming both conflicting `policy_id`s.
+- [ ] 4.7 Do not create duplicate same-name live policies for the ambiguity case: Fleet rejects the second policy with HTTP 409. Cover this defensive branch with the mocked list-response test in task 2.12.
 - [ ] 4.8 `space_id` omitted vs. explicit default vs. a non-default space, gated at 9.1.0 (mirroring `TestAccDataSourceEnrollmentTokensSpaceID`, `internal/fleet/enrollmenttokens/data_source_test.go:40,102`) — assert the lookup only matches within the given space, and that two fixtures with the same `name` in *different* spaces do not trigger the ambiguous-match error for a space-scoped `name` lookup.
 - [ ] 4.9 Multi-step update: start with `monitor_logs`/`monitor_metrics` both `true` on the fixture resource, update the resource to `false` in a second step, re-read the data source, assert it now reports `false` (regression guard against a stale `true`).
 - [ ] 4.10 Multi-step selector switch: look up the same fixture by `policy_id` in step one and by `name` in step two, confirming the now-populated computed `name`/`policy_id` values from step one don't trip `ExactlyOneOf` or cause a planning error in step two.

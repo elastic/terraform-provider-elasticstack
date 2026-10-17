@@ -97,7 +97,7 @@ it.
   `kibanaoapi.HandleGetTypedResponse`.
 - `name` set → a new client helper, `fleet.GetAgentPolicyByName`, in
   `internal/clients/fleet/agent_policy.go`, calling `GetFleetAgentPoliciesWithResponse` with
-  `Kuery: fmt.Sprintf("ingest-agent-policies.name:%q", escapedName)` for the target space (mirroring
+  `Kuery: fmt.Sprintf("ingest-agent-policies.name:\"%s\"", escapedName)` for the target space (mirroring
   the existing `Kuery` usage precedent in `internal/clients/fleet/enrollment_tokens.go:48`, which
   passes an unquoted `policy_id:` term; this lookup additionally quotes and escapes the value because
   policy names, unlike policy IDs, may contain KQL-significant characters). See **Deviation from the
@@ -118,8 +118,9 @@ it.
     decision; see below), e.g.: `multiple agent policies match name %q in space %q: policy_id "a",
     policy_id "b"`.
 - Escaping: construct the quoted Kuery value by escaping backslashes and double quotes in the raw
-  `name` (`\` → `\\`, `"` → `\"`) before interpolating it into the quoted literal, per the documented
-  KQL escaping rules (https://www.elastic.co/docs/reference/query-languages/kql). The client-side
+  `name` (`\` → `\\`, `"` → `\"`) exactly once, then interpolate it into the quoted literal with
+  `fmt.Sprintf("ingest-agent-policies.name:\"%s\"", escapedName)`, per the documented KQL escaping
+  rules (https://www.elastic.co/docs/reference/query-languages/kql). The client-side
   exact compare is the correctness backstop regardless of whether this escaping is complete for every
   edge case.
 
