@@ -31,14 +31,13 @@ import (
 
 type outputModel struct {
 	entitycore.KibanaConnectionField
-	ID      types.String `tfsdk:"id"`
-	SpaceID types.String `tfsdk:"space_id"`
-	Outputs types.List   `tfsdk:"outputs"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
+	Outputs types.List `tfsdk:"outputs"`
 }
 
 func (m outputModel) GetID() types.String         { return m.ID }
 func (m outputModel) GetResourceID() types.String { return types.StringValue("outputs") }
-func (m outputModel) GetSpaceID() types.String    { return m.SpaceID }
 
 func (m *outputModel) populateFromAPI(ctx context.Context, unions []kbapi.OutputUnion) (diags diag.Diagnostics) {
 	m.ID = types.StringValue("outputs")

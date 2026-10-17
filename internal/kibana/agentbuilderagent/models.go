@@ -35,7 +35,6 @@ import (
 
 func (model agentBaseModel) GetID() types.String         { return model.ID }
 func (model agentBaseModel) GetResourceID() types.String { return model.AgentID }
-func (model agentBaseModel) GetSpaceID() types.String    { return model.SpaceID }
 
 var _ entitycore.KibanaResourceModel = agentModel{}
 var _ entitycore.WithVersionRequirements = agentModel{}
@@ -66,9 +65,9 @@ func (agentVersionGate) GetVersionRequirements(_ context.Context) ([]entitycore.
 type agentBaseModel struct {
 	entitycore.KibanaConnectionField
 	agentVersionGate
-	ID           types.String `tfsdk:"id"`
-	AgentID      types.String `tfsdk:"agent_id"`
-	SpaceID      types.String `tfsdk:"space_id"`
+	ID      types.String `tfsdk:"id"`
+	AgentID types.String `tfsdk:"agent_id"`
+	entitycore.SpaceIDField
 	Name         types.String `tfsdk:"name"`
 	Description  types.String `tfsdk:"description"`
 	AvatarColor  types.String `tfsdk:"avatar_color"`
@@ -95,8 +94,8 @@ type agentDataSourceModel struct {
 func (agentDataSourceModel) UsesCompositeResourceID() bool { return true }
 
 type toolModel struct {
+	entitycore.SpaceIDField
 	ID                        types.String                    `tfsdk:"id"`
-	SpaceID                   types.String                    `tfsdk:"space_id"`
 	ToolID                    types.String                    `tfsdk:"tool_id"`
 	Type                      types.String                    `tfsdk:"type"`
 	Description               types.String                    `tfsdk:"description"`

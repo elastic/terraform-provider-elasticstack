@@ -40,24 +40,24 @@ import (
 // alertingRuleModel is the Terraform model for an alerting rule.
 type alertingRuleModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String                       `tfsdk:"id"`
-	KibanaConnection types.List                         `tfsdk:"kibana_connection"`
-	RuleID           types.String                       `tfsdk:"rule_id"`
-	SpaceID          types.String                       `tfsdk:"space_id"`
-	Name             types.String                       `tfsdk:"name"`
-	Consumer         types.String                       `tfsdk:"consumer"`
-	NotifyWhen       types.String                       `tfsdk:"notify_when"`
-	Params           jsontypes.Normalized               `tfsdk:"params"`
-	RuleTypeID       types.String                       `tfsdk:"rule_type_id"`
-	Interval         kibanacustomtypes.AlertingDuration `tfsdk:"interval"`
-	Enabled          types.Bool                         `tfsdk:"enabled"`
-	Tags             types.Set                          `tfsdk:"tags"`
-	Throttle         kibanacustomtypes.AlertingDuration `tfsdk:"throttle"`
-	ScheduledTaskID  types.String                       `tfsdk:"scheduled_task_id"`
-	AlertDelay       types.Int64                        `tfsdk:"alert_delay"`
-	Flapping         types.Object                       `tfsdk:"flapping"`
-	Artifacts        types.Object                       `tfsdk:"artifacts"`
-	Actions          types.List                         `tfsdk:"actions"`
+	ID               types.String `tfsdk:"id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	RuleID           types.String `tfsdk:"rule_id"`
+	entitycore.SpaceIDField
+	Name            types.String                       `tfsdk:"name"`
+	Consumer        types.String                       `tfsdk:"consumer"`
+	NotifyWhen      types.String                       `tfsdk:"notify_when"`
+	Params          jsontypes.Normalized               `tfsdk:"params"`
+	RuleTypeID      types.String                       `tfsdk:"rule_type_id"`
+	Interval        kibanacustomtypes.AlertingDuration `tfsdk:"interval"`
+	Enabled         types.Bool                         `tfsdk:"enabled"`
+	Tags            types.Set                          `tfsdk:"tags"`
+	Throttle        kibanacustomtypes.AlertingDuration `tfsdk:"throttle"`
+	ScheduledTaskID types.String                       `tfsdk:"scheduled_task_id"`
+	AlertDelay      types.Int64                        `tfsdk:"alert_delay"`
+	Flapping        types.Object                       `tfsdk:"flapping"`
+	Artifacts       types.Object                       `tfsdk:"artifacts"`
+	Actions         types.List                         `tfsdk:"actions"`
 }
 
 // artifactsModel is the Terraform model for the rule's linked artifacts.
@@ -513,7 +513,6 @@ var (
 
 func (m alertingRuleModel) GetID() types.String             { return m.ID }
 func (m alertingRuleModel) GetResourceID() types.String     { return m.RuleID }
-func (m alertingRuleModel) GetSpaceID() types.String        { return m.SpaceID }
 func (m alertingRuleModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 var _ entitycore.KibanaResourceModel = alertingRuleModel{}

@@ -36,8 +36,8 @@ var minVersion = version.Must(version.NewVersion("9.5.2"))
 type templateModel struct {
 	entitycore.KibanaConnectionField
 	entitycore.ResourceTimeoutsField
-	ID              types.String                    `tfsdk:"id"`
-	SpaceID         types.String                    `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	TemplateID      types.String                    `tfsdk:"template_id"`
 	Owner           types.String                    `tfsdk:"owner"`
 	Name            types.String                    `tfsdk:"name"`
@@ -53,7 +53,6 @@ type templateModel struct {
 
 func (m templateModel) GetID() types.String         { return m.ID }
 func (m templateModel) GetResourceID() types.String { return m.TemplateID }
-func (m templateModel) GetSpaceID() types.String    { return m.SpaceID }
 
 // GetVersionRequirements enforces the 9.5.2 minimum on every lifecycle operation.
 func (m templateModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {

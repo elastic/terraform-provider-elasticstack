@@ -28,7 +28,7 @@ import (
 
 type dsModel struct {
 	entitycore.KibanaConnectionField
-	SpaceID           types.String    `tfsdk:"space_id"`
+	entitycore.SpaceIDField
 	IncludeComponents types.Bool      `tfsdk:"include_components"`
 	Installed         types.Bool      `tfsdk:"installed"`
 	OverallStatus     types.String    `tfsdk:"overall_status"`
@@ -65,7 +65,6 @@ const entityStoreStatusResourceID = "entity_store_status"
 
 func (dsModel) GetID() types.String         { return types.StringNull() }
 func (dsModel) GetResourceID() types.String { return types.StringValue(entityStoreStatusResourceID) }
-func (m dsModel) GetSpaceID() types.String  { return m.SpaceID }
 
 var _ entitycore.WithVersionRequirements = (*dsModel)(nil)
 

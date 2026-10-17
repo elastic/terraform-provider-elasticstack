@@ -35,9 +35,9 @@ import (
 
 type osqueryPackBaseModel struct {
 	entitycore.KibanaConnectionField
-	ID          types.String `tfsdk:"id"`
-	PackID      types.String `tfsdk:"pack_id"`
-	SpaceID     types.String `tfsdk:"space_id"`
+	ID     types.String `tfsdk:"id"`
+	PackID types.String `tfsdk:"pack_id"`
+	entitycore.SpaceIDField
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
 	Enabled     types.Bool   `tfsdk:"enabled"`
@@ -72,7 +72,6 @@ var (
 
 func (m osqueryPackBaseModel) GetID() types.String         { return m.ID }
 func (m osqueryPackBaseModel) GetResourceID() types.String { return m.PackID }
-func (m osqueryPackBaseModel) GetSpaceID() types.String    { return m.SpaceID }
 
 func (m *osqueryPackBaseModel) setCompositeIdentity(spaceID, packID string) {
 	m.ID, m.SpaceID = clients.CompositeIdentityValues(spaceID, packID)

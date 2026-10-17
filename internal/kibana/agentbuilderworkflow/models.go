@@ -40,8 +40,8 @@ import (
 // declared exactly once rather than duplicated across both models.
 type workflowDataSourceModel struct {
 	entitycore.KibanaConnectionField
-	ID                types.String                    `tfsdk:"id"`
-	SpaceID           types.String                    `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	WorkflowID        types.String                    `tfsdk:"workflow_id"`
 	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
 }
@@ -60,7 +60,6 @@ var _ entitycore.WithVersionRequirements = workflowDataSourceModel{}
 // `<space>/<workflow>`); `workflow_id` is computed on the data source.
 func (m workflowDataSourceModel) GetID() types.String         { return m.ID }
 func (m workflowDataSourceModel) GetResourceID() types.String { return m.ID }
-func (m workflowDataSourceModel) GetSpaceID() types.String    { return m.SpaceID }
 
 type workflowModel struct {
 	entitycore.ResourceTimeoutsField
@@ -73,7 +72,6 @@ type workflowModel struct {
 
 func (model workflowModel) GetID() types.String         { return model.ID }
 func (model workflowModel) GetResourceID() types.String { return model.WorkflowID }
-func (model workflowModel) GetSpaceID() types.String    { return model.SpaceID }
 
 var _ entitycore.KibanaResourceModel = workflowModel{}
 var _ entitycore.WithVersionRequirements = workflowModel{}

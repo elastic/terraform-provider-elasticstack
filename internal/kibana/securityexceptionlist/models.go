@@ -35,30 +35,29 @@ func (m ExceptionListModel) GetID() types.String { return m.ID }
 func (m ExceptionListModel) GetResourceID() types.String {
 	return clients.ResourceIDFromComposite(m.ID, types.StringValue(""))
 }
-func (m ExceptionListModel) GetSpaceID() types.String        { return m.SpaceID }
 func (m ExceptionListModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 var _ entitycore.KibanaResourceModel = ExceptionListModel{}
 
 type ExceptionListModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String         `tfsdk:"id"`
-	KibanaConnection types.List           `tfsdk:"kibana_connection"`
-	SpaceID          types.String         `tfsdk:"space_id"`
-	ListID           types.String         `tfsdk:"list_id"`
-	Name             types.String         `tfsdk:"name"`
-	Description      types.String         `tfsdk:"description"`
-	Type             types.String         `tfsdk:"type"`
-	NamespaceType    types.String         `tfsdk:"namespace_type"`
-	OsTypes          types.Set            `tfsdk:"os_types"`
-	Tags             types.Set            `tfsdk:"tags"`
-	Meta             jsontypes.Normalized `tfsdk:"meta"`
-	CreatedAt        types.String         `tfsdk:"created_at"`
-	CreatedBy        types.String         `tfsdk:"created_by"`
-	UpdatedAt        types.String         `tfsdk:"updated_at"`
-	UpdatedBy        types.String         `tfsdk:"updated_by"`
-	Immutable        types.Bool           `tfsdk:"immutable"`
-	TieBreakerID     types.String         `tfsdk:"tie_breaker_id"`
+	ID               types.String `tfsdk:"id"`
+	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	entitycore.SpaceIDField
+	ListID        types.String         `tfsdk:"list_id"`
+	Name          types.String         `tfsdk:"name"`
+	Description   types.String         `tfsdk:"description"`
+	Type          types.String         `tfsdk:"type"`
+	NamespaceType types.String         `tfsdk:"namespace_type"`
+	OsTypes       types.Set            `tfsdk:"os_types"`
+	Tags          types.Set            `tfsdk:"tags"`
+	Meta          jsontypes.Normalized `tfsdk:"meta"`
+	CreatedAt     types.String         `tfsdk:"created_at"`
+	CreatedBy     types.String         `tfsdk:"created_by"`
+	UpdatedAt     types.String         `tfsdk:"updated_at"`
+	UpdatedBy     types.String         `tfsdk:"updated_by"`
+	Immutable     types.Bool           `tfsdk:"immutable"`
+	TieBreakerID  types.String         `tfsdk:"tie_breaker_id"`
 }
 
 type exceptionListOptionalFields struct {

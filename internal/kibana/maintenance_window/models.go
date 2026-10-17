@@ -33,8 +33,8 @@ import (
 type Model struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
-	ID             types.String `tfsdk:"id"`
-	SpaceID        types.String `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	Title          types.String `tfsdk:"title"`
 	Enabled        types.Bool   `tfsdk:"enabled"`
 	CustomSchedule *Schedule    `tfsdk:"custom_schedule"`
@@ -69,7 +69,6 @@ type ScheduleRecurring struct {
 
 func (m Model) GetID() types.String         { return m.ID }
 func (m Model) GetResourceID() types.String { return m.ID }
-func (m Model) GetSpaceID() types.String    { return m.SpaceID }
 
 var maintenanceWindowMinVersion = version.Must(version.NewVersion("9.1.0"))
 

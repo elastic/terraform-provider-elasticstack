@@ -30,9 +30,9 @@ import (
 
 type tagsDataSourceModel struct {
 	entitycore.KibanaConnectionField
-	Query   types.String `tfsdk:"query"`
-	SpaceID types.String `tfsdk:"space_id"`
-	Tags    types.List   `tfsdk:"tags"`
+	Query types.String `tfsdk:"query"`
+	entitycore.SpaceIDField
+	Tags types.List `tfsdk:"tags"`
 }
 
 type tagItemModel struct {
@@ -53,7 +53,6 @@ func (tagsDataSourceModel) GetID() types.String { return types.StringNull() }
 func (tagsDataSourceModel) GetResourceID() types.String {
 	return types.StringValue(tagsDataSourceResourceID)
 }
-func (m tagsDataSourceModel) GetSpaceID() types.String { return m.SpaceID }
 
 var _ entitycore.WithVersionRequirements = (*tagsDataSourceModel)(nil)
 
