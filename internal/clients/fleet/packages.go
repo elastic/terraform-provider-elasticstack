@@ -62,6 +62,7 @@ type InstallPackageOptions struct {
 	Prerelease                bool
 	IgnoreMappingUpdateErrors *bool
 	SkipDataStreamRollover    *bool
+	AllowOutdatedVersion      *bool
 	IgnoreConstraints         bool
 }
 
@@ -73,8 +74,9 @@ func InstallPackage(ctx context.Context, client *Client, name, version string, o
 		SkipDataStreamRollover:    opts.SkipDataStreamRollover,
 	}
 	body := kbapi.PostFleetEpmPackagesPkgnamePkgversionJSONRequestBody{
-		Force:             &opts.Force,
-		IgnoreConstraints: &opts.IgnoreConstraints,
+		Force:                &opts.Force,
+		IgnoreConstraints:    &opts.IgnoreConstraints,
+		AllowOutdatedVersion: opts.AllowOutdatedVersion,
 	}
 
 	resp, err := client.API.PostFleetEpmPackagesPkgnamePkgversionWithResponse(ctx, name, version, &params, body, kibanautil.SpaceAwarePathRequestEditor(opts.SpaceID))

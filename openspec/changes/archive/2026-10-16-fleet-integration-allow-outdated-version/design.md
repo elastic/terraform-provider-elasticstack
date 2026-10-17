@@ -14,13 +14,12 @@
 **Goals**
 
 - Add `allow_outdated_version` to the resource schema, model, `InstallPackageOptions`, and the `InstallPackage` request body, covering both install operations' shared body type.
-- Wire the attribute so an unset configuration never sends the JSON key, regardless of server version — no compatibility risk for users who don't touch the new attribute.
+- Wire the attribute so an unset configuration never sends the JSON key, on any server version — no compatibility risk for users who don't touch the new attribute.
 - Cover both create and update, since `writeIntegration` already backs both.
 
 **Non-Goals**
 
 - Regenerating `generated/kbapi` — the field already exists in the generated client.
-- Adding a `MinVersion*` compatibility gate for `allow_outdated_version` in this change. The minimum supported server version is an open question (see below); because the chosen wiring never sends the field unless explicitly configured, this is non-blocking for v1.
 - Changing the always-send wiring of `force`/`ignore_constraints`, or the pointer-if-known wiring of `ignore_mapping_update_errors`/`skip_data_stream_rollover` — both existing conventions are left as-is.
 - Any change to the bulk-install package endpoint/schema (`KibanaHTTPAPIsBulkInstallPackagesFromRegistryRequest`), which also already carries an unused `AllowOutdatedVersion` field — out of scope for this resource-scoped issue.
 - Implementation itself — this change produces only the OpenSpec proposal/design/tasks/delta-spec artifacts.
@@ -37,11 +36,13 @@ Wire it through `InstallPackageOptions`/`InstallPackage` using the pointer-if-kn
 - In `writeIntegration`, set it only when `typeutils.IsKnown(planModel.AllowOutdatedVersion)` is true: `installOptions.AllowOutdatedVersion = planModel.AllowOutdatedVersion.ValueBoolPointer()`.
 - In `InstallPackage`, set `body.AllowOutdatedVersion = opts.AllowOutdatedVersion` directly (already a `*bool`; no address-of needed, unlike `Force`/`IgnoreConstraints`).
 
-This combines two existing conventions rather than copying one sibling exactly (declared like `force`, wired like `ignore_mapping_update_errors`) — a small, deliberate deviation. The alternative, mirroring `force`/`ignore_constraints`'s always-send wiring, would send `allow_outdated_version: false` on every install even when the user never mentioned the attribute, which is unnecessary exposure to unknown-field handling on servers that predate this field. Pointer-if-known wiring makes unset configurations behave identically to today on every server version, so there is no first-apply compatibility risk to reason about.
+This combines two existing conventions rather than copying one sibling exactly (declared like `force`, wired like `ignore_mapping_update_errors`) — a small, deliberate deviation. The alternative, mirroring `force`/`ignore_constraints`'s always-send wiring, would send `allow_outdated_version: false` on every install even when the user never mentioned the attribute, which is unnecessary exposure to unknown-field handling on servers that predate this field. Pointer-if-known wiring makes unset configurations behave identically to today on every server version.
 
-### Decision 2 — No version gate in this change
+### Decision 2 — Version gate: Kibana >= 9.6.0
 
-The minimum Kibana/Fleet version that supports `allow_outdated_version` is not documented in the OpenAPI spec (no `x-state`/"Added in ..." annotation, unlike some other fields in the same spec) and is absent from the public Elastic docs corpus. Because the wiring never sends the field unless explicitly configured, unset configurations are unaffected regardless of server version — this makes the open question non-blocking for this change. Implementation SHOULD still verify against a real Kibana instance at the provider's minimum-supported Stack version whether an explicit `true`/`false` is accepted before documenting the attribute as unconditionally available; if rejected, a `MinVersion` entry should be added to `integrationModel.GetVersionRequirements` (`internal/fleet/integration/models.go`) following the existing `MinVersionIgnoreMappingUpdateErrors`/`MinVersionSkipDataStreamRollover` pattern in `resource.go`. Any such future gate must trigger on "was the attribute explicitly configured at all" (an `IsKnown`-only check), not on `IsKnown && ValueBool()`, because the pointer-if-known wiring sends the JSON key for an explicit `false` just as much as for `true` — a copy-pasted `IsKnown && ValueBool()` gate would silently let an explicit `false` through ungated on an old server while gating `true`.
+The field is not annotated with a minimum version in the OpenAPI spec, but a live Kibana 9.5.5 returned HTTP 400 (`Additional properties are not allowed ('allow_outdated_version' was unexpected)`) when it was sent. The upstream change (elastic/kibana PR #280316, `backport:skip`) targets 9.6.0. The resource therefore adds `MinVersionAllowOutdatedVersion = 9.6.0` (`resource.go`) and a `GetVersionRequirements` entry (`models.go`), following the existing `MinVersionIgnoreMappingUpdateErrors`/`MinVersionSkipDataStreamRollover` pattern.
+
+The gate triggers on "was the attribute explicitly configured at all" (`typeutils.IsKnown` only), not on `IsKnown && ValueBool()`, because the pointer-if-known wiring sends the JSON key for an explicit `false` just as much as for `true`; an `IsKnown && ValueBool()` gate would let an explicit `false` through ungated on an old server and get a 400. Unset configurations are never gated.
 
 ### Decision 3 — No read-path change
 
@@ -49,19 +50,18 @@ The minimum Kibana/Fleet version that supports `allow_outdated_version` is not d
 
 ## Open questions
 
-- **(Non-blocking — implementation-time verification, does not change the recommended approach)** What is the minimum Kibana/Fleet server version that supports `allow_outdated_version` in this request body? The OpenAPI spec carries no "Added in ..." annotation for this field, and it is undocumented in the public Elastic docs corpus. With pointer-if-known wiring, this is lower urgency than it would be with always-send wiring — unset configs are unaffected regardless of server version. Before documenting `allow_outdated_version` as unconditionally available, confirm against a real Kibana instance at the provider's minimum-supported Stack version whether an explicit `true`/`false` is accepted; if rejected, add a `MinVersion` entry per Decision 2 above.
+- **(Resolved)** Minimum server version: 9.6.0, inferred from the live 9.5.5 rejection and the upstream PR targeting 9.6.0. See Decision 2.
 - Does `allow_outdated_version` apply to any uninstall/reinstall code path, or only to the install-from-registry request `writeIntegration` builds? Not separately investigated beyond confirming `writeIntegration` is shared by create and update; no uninstall-time use of `InstallPackageOptions` was found.
 - Does `allow_outdated_version` interact with the resource's existing `prerelease` query parameter (e.g., does setting one implicitly affect version resolution for the other)? Not documented anywhere consulted (elastic-docs, OpenAPI spec); flagged as unresolved rather than asserted.
 
 ## Risks / Trade-offs
 
 - **Mixed wiring conventions within `InstallPackageOptions`.** `allow_outdated_version` joins `IgnoreMappingUpdateErrors`/`SkipDataStreamRollover` on the pointer-if-known side while `Force`/`IgnoreConstraints` remain always-send. This is intentional (see Decision 1) and matches existing precedent in the same struct; it does mean a future reader of `InstallPackageOptions` must check each field's convention individually rather than assuming one struct-wide rule.
-- **Version floor left unresolved.** Shipping without a `MinVersion*` gate means an explicit `allow_outdated_version` configured against a server that predates the field will surface whatever error Kibana itself returns for an unrecognized field, rather than a provider-level "Unsupported parameter for server version" diagnostic. Acceptable because the field is opt-in and the risk is isolated to users who explicitly set it.
+- **Floor inferred from 9.5.5 rejection.** The 9.6.0 floor comes from Kibana 9.5.5 rejecting the field and the upstream PR targeting 9.6.0; releases between 9.5.5 and 9.6.0 (e.g. 9.6 pre-releases) are unverified. Acceptable: the gate errs on the side of a clear provider diagnostic, and the field is opt-in.
 
 ## Test plan
 
-- **Unit**: a request-capture test around `InstallPackage` (`internal/clients/fleet/packages.go`) with `InstallPackageOptions.AllowOutdatedVersion` unset (nil), explicitly `false`, and explicitly `true` — asserting the JSON key is absent in the nil case and present with the correct value otherwise. This directly tests the compatibility-critical omission behavior without depending on a live Kibana server's handling of unknown fields.
+- **Unit**: a request-capture test around `InstallPackage` (`internal/clients/fleet/packages.go`) with `InstallPackageOptions.AllowOutdatedVersion` unset (nil), explicitly `false`, and explicitly `true` — asserting the JSON key is absent in the nil case and present with the correct value otherwise. This directly tests the compatibility-critical omission behavior without depending on a live Kibana server's handling of unknown fields. A model test asserts the version requirement is produced for null/unknown (none) and for explicit `true`/`false` (9.6.0).
 - **Acceptance**, extending `TestAccResourceIntegrationWithAllParameters` (`internal/fleet/integration/acc_test.go`):
   - A step with `allow_outdated_version` omitted — assert `resource.TestCheckNoResourceAttr`, mirroring the existing omitted-attribute assertions for `force`/`ignore_constraints`, and that install succeeds on the latest version as today.
-  - A step installing an older, non-latest package version with `allow_outdated_version = true` (and `force`/`ignore_constraints` held `false`/omitted) — assert `resource.TestCheckResourceAttr(..., "true")` and that the install succeeds, isolating this attribute's effect from its siblings.
-  - A plan-only/refresh step confirming no drift when the attribute is left unset across refresh.
+  - Steps gated by `SkipFunc` on `MinVersionAllowOutdatedVersion`: `allow_outdated_version = true` on a pinned older version, then explicit `false`, then the attribute removed — asserting `true`, `false`, and `TestCheckNoResourceAttr` respectively. These verify the key is accepted by Kibana >= 9.6.0 and round-trips; they do not by themselves prove the flag changes install behavior.

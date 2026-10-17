@@ -45,6 +45,7 @@ type integrationModel struct {
 	IgnoreMappingUpdateErrors types.Bool   `tfsdk:"ignore_mapping_update_errors"`
 	SkipDataStreamRollover    types.Bool   `tfsdk:"skip_data_stream_rollover"`
 	IgnoreConstraints         types.Bool   `tfsdk:"ignore_constraints"`
+	AllowOutdatedVersion      types.Bool   `tfsdk:"allow_outdated_version"`
 	SkipDestroy               types.Bool   `tfsdk:"skip_destroy"`
 	SpaceID                   types.String `tfsdk:"space_id"`
 }
@@ -85,6 +86,10 @@ func (m integrationModel) GetVersionRequirements(_ context.Context) ([]entitycor
 	reqs = entitycore.AppendVersionRequirementIf(reqs,
 		typeutils.IsKnown(m.SkipDataStreamRollover) && m.SkipDataStreamRollover.ValueBool(),
 		MinVersionSkipDataStreamRollover, "The 'skip_data_stream_rollover' parameter requires server version %s or higher.", MinVersionSkipDataStreamRollover.String())
+
+	reqs = entitycore.AppendVersionRequirementIf(reqs,
+		typeutils.IsKnown(m.AllowOutdatedVersion),
+		MinVersionAllowOutdatedVersion, "The 'allow_outdated_version' parameter requires server version %s or higher.", MinVersionAllowOutdatedVersion.String())
 
 	return reqs, nil
 }

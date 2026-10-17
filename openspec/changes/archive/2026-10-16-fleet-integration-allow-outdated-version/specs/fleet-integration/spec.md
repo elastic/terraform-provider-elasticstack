@@ -6,7 +6,7 @@ Extends the main spec at `openspec/specs/fleet-integration/spec.md`.
 
 ### Requirement: Create/Update — install options (REQ-011)
 
-On create and update, the resource SHALL pass `force`, `prerelease`, and `ignore_constraints` as install options to the Fleet install package API when configured. When `ignore_mapping_update_errors`, `skip_data_stream_rollover`, and `allow_outdated_version` pass any applicable server version check, they SHALL also be included in the install options when configured, and SHALL be omitted from the request body entirely when left unset. When `space_id` is a known value, the resource SHALL pass it as the space context for installation. After the regular install API succeeds, the resource SHALL wait for the package to reach a globally installed state by polling the Fleet get-package API using the **same space context** (the configured `space_id`, or the default space when `space_id` is not configured) as the install call, before evaluating target-space asset state. That first post-install poll SHALL use global install detection only and SHALL NOT apply strict target-space install detection during the wait. The poll SHALL NOT query the default-space endpoint when `space_id` is configured to a non-default space.
+On create and update, the resource SHALL pass `force`, `prerelease`, and `ignore_constraints` as install options to the Fleet install package API when configured. When `ignore_mapping_update_errors`, `skip_data_stream_rollover`, and `allow_outdated_version` pass any applicable server version check, they SHALL also be included in the install options when configured, and `allow_outdated_version` SHALL be omitted from the request body entirely when left unset. When `space_id` is a known value, the resource SHALL pass it as the space context for installation. After the regular install API succeeds, the resource SHALL wait for the package to reach a globally installed state by polling the Fleet get-package API using the **same space context** (the configured `space_id`, or the default space when `space_id` is not configured) as the install call, before evaluating target-space asset state. That first post-install poll SHALL use global install detection only and SHALL NOT apply strict target-space install detection during the wait. The poll SHALL NOT query the default-space endpoint when `space_id` is configured to a non-default space.
 
 When `space_id` is configured, the Kibana server version is at least 9.1.0, and the package is installed globally but not in the target space after the regular install completes, the resource SHALL call the Fleet `POST /api/fleet/epm/packages/{pkg}/{version}/kibana_assets` API scoped to the target space and wait until a strict space-aware read reports the package installed in the target space.
 
@@ -50,6 +50,7 @@ When `space_id` is configured, the Kibana server version is below 9.1.0, and the
 #### Scenario: allow_outdated_version passed when configured
 
 - GIVEN `allow_outdated_version` is set to a known boolean value (`true` or `false`)
+- AND the Kibana server version is at least 9.6.0
 - WHEN create or update runs
 - THEN the install API request body SHALL include `allow_outdated_version` set to that value
 
@@ -69,6 +70,7 @@ The resource SHALL expose an `allow_outdated_version` attribute of type `bool`, 
 
 - GIVEN a configuration with `version` set to a package version older than the latest available
 - AND `allow_outdated_version = true`
+- AND the Kibana server version is at least 9.6.0
 - WHEN create or update runs
 - THEN the install API request body SHALL include `allow_outdated_version: true`
 - AND the install SHALL succeed despite the requested version being out of date
@@ -81,7 +83,7 @@ The resource SHALL expose an `allow_outdated_version` attribute of type `bool`, 
 
 ### Requirement: allow_outdated_version pointer-if-known wiring (REQ-021)
 
-The resource SHALL wire `allow_outdated_version` pointer-if-known: a known value (`true` or `false`) SHALL be sent in the install request body; a null or unknown value SHALL be omitted from the request body entirely, regardless of server version. This differs from `force` and `ignore_constraints`, which are always sent (as `true` or `false`) regardless of whether they were explicitly configured.
+The resource SHALL wire `allow_outdated_version` pointer-if-known: a known value (`true` or `false`) SHALL be sent in the install request body; a null or unknown value SHALL be omitted from the request body entirely. Configurations that leave the attribute unset SHALL be unchanged on any server version. This differs from `force` and `ignore_constraints`, which are always sent (as `true` or `false`) regardless of whether they were explicitly configured.
 
 #### Scenario: Unset attribute never sends the field
 
@@ -89,3 +91,22 @@ The resource SHALL wire `allow_outdated_version` pointer-if-known: a known value
 - WHEN create or update runs
 - THEN the install API request body SHALL NOT include an `allow_outdated_version` key
 - AND behavior SHALL be unchanged from before this attribute existed, on any server version
+
+### Requirement: allow_outdated_version version gate (REQ-022)
+
+The resource SHALL require Kibana server version 9.6.0 or higher whenever `allow_outdated_version` is explicitly configured with a known value, including an explicit `false`. When the server version is lower, the resource SHALL return an "Unsupported server version" error diagnostic before calling the install API. A null or unknown `allow_outdated_version` SHALL NOT trigger any version check or diagnostic.
+
+#### Scenario: Explicit value on unsupported server
+
+- GIVEN `allow_outdated_version` is set to `true` or `false`
+- AND the Kibana server version is below 9.6.0
+- WHEN create or update runs
+- THEN the resource SHALL return an error diagnostic with summary "Unsupported server version" stating that the `allow_outdated_version` parameter requires server version 9.6.0 or higher
+- AND the install API SHALL NOT be called
+
+#### Scenario: Unset on unsupported server
+
+- GIVEN `allow_outdated_version` is not configured
+- AND the Kibana server version is below 9.6.0
+- WHEN create or update runs
+- THEN no version diagnostic SHALL be returned for `allow_outdated_version`
