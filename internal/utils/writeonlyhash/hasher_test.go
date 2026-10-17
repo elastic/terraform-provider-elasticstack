@@ -18,6 +18,7 @@
 package writeonlyhash_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/writeonlyhash"
@@ -198,4 +199,45 @@ func TestHasher_Compute_errorDoesNotLeakInput(t *testing.T) {
 	require.Error(t, err)
 	assert.NotContains(t, err.Error(), secret)
 	assert.Contains(t, err.Error(), "bcrypt cost out of range")
+}
+
+func TestHasher_shortValueUnchangedByPreHash(t *testing.T) {
+	t.Parallel()
+
+	// Salted input of exactly 72 bytes must be passed to bcrypt unchanged so
+	// previously stored hashes remain valid.
+	const salt = "elasticsearch_connector"
+	value := strings.Repeat("a", 72-len(salt)-1)
+	require.Len(t, salt+":"+value, 72)
+
+	h := writeonlyhash.New(salt)
+	legacy, err := bcrypt.GenerateFromPassword([]byte(salt+":"+value), 4)
+	require.NoError(t, err)
+
+	assert.True(t, h.Matches(value, legacy))
+}
+
+func TestHasher_longValueRoundtrip(t *testing.T) {
+	t.Parallel()
+
+	pem := "-----BEGIN PRIVATE KEY-----\n" + strings.Repeat("MIIEvQIBADANBgkqhkiG9w0BAQEFAASC", 20) + "\n-----END PRIVATE KEY-----\n"
+	require.Greater(t, len(pem), 72)
+
+	h := writeonlyhash.New("fleet_agent_download_source")
+	hash, err := h.Compute(pem)
+	require.NoError(t, err)
+	assert.True(t, h.Matches(pem, hash))
+}
+
+func TestHasher_longValuesSharingPrefixDoNotMatch(t *testing.T) {
+	t.Parallel()
+
+	prefix := strings.Repeat("p", 100)
+	h := writeonlyhash.New("fleet_agent_download_source")
+
+	hash, err := h.Compute(prefix + "one")
+	require.NoError(t, err)
+
+	assert.True(t, h.Matches(prefix+"one", hash))
+	assert.False(t, h.Matches(prefix+"two", hash))
 }

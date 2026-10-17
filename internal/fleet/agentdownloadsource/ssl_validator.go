@@ -25,14 +25,14 @@ import (
 
 const sslAtLeastOneSubattrSummary = "Empty ssl configuration"
 
-const sslAtLeastOneSubattrMessage = "At least one of certificate_authorities, certificate, or key must be set."
+const sslAtLeastOneSubattrMessage = "At least one of certificate_authorities, certificate, key, or key_wo must be set."
 
 // keyAttributeName is the shared name of the ssl private-key attribute and
 // the headers header-name attribute; golangci requires a constant at three
 // occurrences.
 const keyAttributeName = "key"
 
-var sslSubattrNames = []string{"certificate_authorities", "certificate", keyAttributeName}
+var sslSubattrNames = []string{"certificate_authorities", "certificate", keyAttributeName, "key_wo"}
 
 // sslAtLeastOneSubattrValidator rejects an ssl object whose sub-attributes
 // are all null, so a practitioner cannot send an ssl object the Fleet API
@@ -42,7 +42,7 @@ var sslSubattrNames = []string{"certificate_authorities", "certificate", keyAttr
 type sslAtLeastOneSubattrValidator struct{}
 
 func (sslAtLeastOneSubattrValidator) Description(_ context.Context) string {
-	return "At least one of certificate_authorities, certificate, or key must be set"
+	return "At least one of certificate_authorities, certificate, key, or key_wo must be set"
 }
 
 func (v sslAtLeastOneSubattrValidator) MarkdownDescription(ctx context.Context) string {

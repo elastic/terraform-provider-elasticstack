@@ -345,7 +345,7 @@ func TestModelToAPIUpdateModel(t *testing.T) {
 		ProxyID: types.StringValue("proxy-456"),
 	}
 
-	body, diags := state.toAPIUpdateModel(ctx, model{})
+	body, diags := state.toAPIUpdateModel(ctx, model{}, literalSecrets)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.Equal(t, "updated-name", body.Name)
 	require.Equal(t, "https://artifacts.example.com/elastic-agent-updated", body.Host)
@@ -367,7 +367,7 @@ func TestModelToAPIUpdateModelIncludesBasicAuth(t *testing.T) {
 		},
 	}
 
-	body, diags := plan.toAPIUpdateModel(ctx, model{})
+	body, diags := plan.toAPIUpdateModel(ctx, model{}, literalSecrets)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.NotNil(t, body.Auth)
 	require.NotNil(t, body.Auth.Username)
@@ -387,7 +387,7 @@ func TestModelToAPIUpdateModelClearsUnsetProxyID(t *testing.T) {
 	}
 	prior := model{ProxyID: types.StringValue("proxy-456")}
 
-	body, diags := plan.toAPIUpdateModel(ctx, prior)
+	body, diags := plan.toAPIUpdateModel(ctx, prior, literalSecrets)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.NotNil(t, body.ProxyId, "clearing proxy_id must send empty string so omitempty does not drop the field")
 	require.Empty(t, *body.ProxyId)
@@ -406,7 +406,7 @@ func TestModelToAPIUpdateModelOmitsAlreadyUnsetProxyID(t *testing.T) {
 		ProxyID: types.StringNull(),
 	}
 
-	body, diags := plan.toAPIUpdateModel(ctx, model{ProxyID: types.StringNull()})
+	body, diags := plan.toAPIUpdateModel(ctx, model{ProxyID: types.StringNull()}, literalSecrets)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.Nil(t, body.ProxyId)
 }
@@ -421,6 +421,7 @@ func TestModelToAPICreateModelSendsSSL(t *testing.T) {
 			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		}),
 	}
 
@@ -429,7 +430,9 @@ func TestModelToAPICreateModelSendsSSL(t *testing.T) {
 	require.NotNil(t, body.Ssl)
 	require.Equal(t, "cert", *body.Ssl.Certificate)
 	require.Equal(t, []string{"ca"}, *body.Ssl.CertificateAuthorities)
-	require.Equal(t, "key", *body.Ssl.Key)
+	require.Nil(t, body.Ssl.Key, "ssl.key is sent under secrets.ssl.key")
+	require.NotNil(t, body.Secrets)
+	require.NotNil(t, body.Secrets.Ssl)
 }
 
 func TestModelToAPICreateModelOmitsNullCertificateAuthorities(t *testing.T) {
@@ -442,6 +445,7 @@ func TestModelToAPICreateModelOmitsNullCertificateAuthorities(t *testing.T) {
 			"certificate_authorities": types.ListNull(types.StringType),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		}),
 	}
 
@@ -453,7 +457,8 @@ func TestModelToAPICreateModelOmitsNullCertificateAuthorities(t *testing.T) {
 	encoded, err := json.Marshal(body)
 	require.NoError(t, err)
 	require.NotContains(t, string(encoded), "certificate_authorities")
-	require.Contains(t, string(encoded), `"ssl":{"certificate":"cert","key":"key"}`)
+	require.Contains(t, string(encoded), `"ssl":{"certificate":"cert"}`)
+	require.Contains(t, string(encoded), `"secrets":{"ssl":{"key":"key"}}`)
 }
 
 func TestModelToAPICreateModelOmitsNullSSL(t *testing.T) {
@@ -479,19 +484,23 @@ func TestModelToAPIUpdateModelSendsSSL(t *testing.T) {
 			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		}),
 	}
 
-	body, bodyDiags := plan.toAPIUpdateModel(ctx, model{})
+	body, bodyDiags := plan.toAPIUpdateModel(ctx, model{}, literalSecrets)
 	require.False(t, bodyDiags.HasError())
 	require.NotNil(t, body.Ssl)
 	require.Equal(t, "cert", *body.Ssl.Certificate)
 	require.Equal(t, []string{"ca"}, *body.Ssl.CertificateAuthorities)
-	require.Equal(t, "key", *body.Ssl.Key)
+	require.Nil(t, body.Ssl.Key, "ssl.key is sent under secrets.ssl.key")
+	require.NotNil(t, body.Secrets)
+	require.NotNil(t, body.Secrets.Ssl)
 
 	encoded, err := json.Marshal(body)
 	require.NoError(t, err)
-	require.Contains(t, string(encoded), `"ssl":{"certificate":"cert","certificate_authorities":["ca"],"key":"key"}`)
+	require.Contains(t, string(encoded), `"ssl":{"certificate":"cert","certificate_authorities":["ca"]}`)
+	require.Contains(t, string(encoded), `"secrets":{"ssl":{"key":"key"}}`)
 }
 
 func TestModelToAPIUpdateModelOmitsDroppedCertificateAuthorities(t *testing.T) {
@@ -501,6 +510,7 @@ func TestModelToAPIUpdateModelOmitsDroppedCertificateAuthorities(t *testing.T) {
 			"certificate_authorities": cas,
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		})
 	}
 	plan := model{
@@ -516,7 +526,7 @@ func TestModelToAPIUpdateModelOmitsDroppedCertificateAuthorities(t *testing.T) {
 		Ssl:     sslObject(types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")})),
 	}
 
-	body, bodyDiags := plan.toAPIUpdateModel(ctx, prior)
+	body, bodyDiags := plan.toAPIUpdateModel(ctx, prior, literalSecrets)
 	require.False(t, bodyDiags.HasError())
 	require.NotNil(t, body.Ssl)
 	require.Nil(t, body.Ssl.CertificateAuthorities)
@@ -524,7 +534,8 @@ func TestModelToAPIUpdateModelOmitsDroppedCertificateAuthorities(t *testing.T) {
 	encoded, err := json.Marshal(body)
 	require.NoError(t, err)
 	require.NotContains(t, string(encoded), "certificate_authorities")
-	require.Contains(t, string(encoded), `"ssl":{"certificate":"cert","key":"key"}`)
+	require.Contains(t, string(encoded), `"ssl":{"certificate":"cert"}`)
+	require.Contains(t, string(encoded), `"secrets":{"ssl":{"key":"key"}}`)
 }
 
 func TestModelToAPIUpdateModelRemovesSSLWithEmptyObject(t *testing.T) {
@@ -542,10 +553,11 @@ func TestModelToAPIUpdateModelRemovesSSLWithEmptyObject(t *testing.T) {
 			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		}),
 	}
 
-	body, bodyDiags := plan.toAPIUpdateModel(ctx, prior)
+	body, bodyDiags := plan.toAPIUpdateModel(ctx, prior, literalSecrets)
 	require.False(t, bodyDiags.HasError())
 	require.NotNil(t, body.Ssl)
 	require.Nil(t, body.Ssl.Certificate)
@@ -565,7 +577,7 @@ func TestModelToAPIUpdateModelOmitsSSLOnUnchangedAbsence(t *testing.T) {
 		Default: types.BoolValue(true),
 	}
 
-	body, bodyDiags := plan.toAPIUpdateModel(ctx, model{})
+	body, bodyDiags := plan.toAPIUpdateModel(ctx, model{}, literalSecrets)
 	require.False(t, bodyDiags.HasError())
 	require.Nil(t, body.Ssl)
 
@@ -583,6 +595,7 @@ func TestModelGetVersionRequirementsWithSSL(t *testing.T) {
 			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringNull(),
+			"key_wo":                  types.StringNull(),
 		}),
 	}
 
@@ -627,7 +640,7 @@ func TestModelToAPIUpdateModelSendsEmptyAuthWhenRemoved(t *testing.T) {
 		},
 	}
 
-	body, diags := plan.toAPIUpdateModel(ctx, prior)
+	body, diags := plan.toAPIUpdateModel(ctx, prior, literalSecrets)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.NotNil(t, body.Auth)
 	require.Nil(t, body.Auth.Username)
@@ -648,7 +661,7 @@ func TestModelToAPIUpdateModelOmitsAuthWhenNeverConfigured(t *testing.T) {
 		Default: types.BoolValue(false),
 	}
 
-	body, diags := plan.toAPIUpdateModel(ctx, model{})
+	body, diags := plan.toAPIUpdateModel(ctx, model{}, literalSecrets)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.Nil(t, body.Auth)
 
@@ -674,7 +687,7 @@ func TestModelToAPIUpdateModelReplacesAuthWithAPIKeyOnly(t *testing.T) {
 		},
 	}
 
-	body, diags := plan.toAPIUpdateModel(ctx, prior)
+	body, diags := plan.toAPIUpdateModel(ctx, prior, literalSecrets)
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.NotNil(t, body.Auth)
 	require.Nil(t, body.Auth.Username)
@@ -710,6 +723,7 @@ func TestModelToAPICreateModelSendsAuthAndSSLTogether(t *testing.T) {
 			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		}),
 	}
 
@@ -721,10 +735,13 @@ func TestModelToAPICreateModelSendsAuthAndSSLTogether(t *testing.T) {
 	require.NotNil(t, body.Ssl)
 	require.Equal(t, "cert", *body.Ssl.Certificate)
 	require.Equal(t, []string{"ca"}, *body.Ssl.CertificateAuthorities)
-	require.Equal(t, "key", *body.Ssl.Key)
+	require.Nil(t, body.Ssl.Key, "ssl.key is sent under secrets.ssl.key")
+	require.NotNil(t, body.Secrets)
+	require.NotNil(t, body.Secrets.Ssl)
 
 	encoded, err := json.Marshal(body)
 	require.NoError(t, err)
-	require.Contains(t, string(encoded), `"ssl":{"certificate":"cert","certificate_authorities":["ca"],"key":"key"}`)
+	require.Contains(t, string(encoded), `"ssl":{"certificate":"cert","certificate_authorities":["ca"]}`)
+	require.Contains(t, string(encoded), `"secrets":{"ssl":{"key":"key"}}`)
 	require.Contains(t, string(encoded), `"username":"svc-account"`)
 }

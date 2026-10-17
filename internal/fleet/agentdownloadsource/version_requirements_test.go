@@ -45,6 +45,7 @@ func sslPopulatedModel(ctx context.Context) model {
 		Ssl: types.ObjectValueMust(getSslAttrTypes(ctx), map[string]attr.Value{
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 			"certificate_authorities": types.ListNull(types.StringType),
 		}),
 	}

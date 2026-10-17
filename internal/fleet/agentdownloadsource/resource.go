@@ -18,6 +18,8 @@
 package agentdownloadsource
 
 import (
+	"context"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -27,6 +29,7 @@ var (
 	_ resource.Resource                = newResource()
 	_ resource.ResourceWithConfigure   = newResource()
 	_ resource.ResourceWithImportState = newResource()
+	_ resource.ResourceWithModifyPlan  = newResource()
 )
 
 // Resource implements the Fleet Agent Download Source resource.
@@ -50,6 +53,17 @@ func newResource() *Resource {
 		),
 		SpaceImporter: entitycore.NewSpaceImporter(path.Root("source_id"), path.Root("id")),
 	}
+}
+
+// Delete removes the download source, then clears the stored write-only secret
+// hashes so a re-created resource starts without drift state.
+func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	r.KibanaResource.Delete(ctx, req, resp)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	clearAllSecretHashes(ctx, resp.Private, &resp.Diagnostics)
 }
 
 // NewResource is a helper function to simplify the provider implementation.

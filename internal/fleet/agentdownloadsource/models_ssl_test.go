@@ -53,6 +53,7 @@ func Test_objectValueToSSL(t *testing.T) {
 					"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 					"certificate":             types.StringValue("cert"),
 					"key":                     types.StringValue("key"),
+					"key_wo":                  types.StringNull(),
 				},
 			),
 			want: &agentDownloadSourceSSLAPIModel{
@@ -62,6 +63,19 @@ func Test_objectValueToSSL(t *testing.T) {
 			},
 		},
 		{
+			name: "returns key_wo when it is the only ssl child",
+			obj: types.ObjectValueMust(
+				getSslAttrTypes(ctx),
+				map[string]attr.Value{
+					"certificate_authorities": types.ListNull(types.StringType),
+					"certificate":             types.StringNull(),
+					"key":                     types.StringNull(),
+					"key_wo":                  types.StringValue("wo-secret"),
+				},
+			),
+			want: &agentDownloadSourceSSLAPIModel{KeyWO: new("wo-secret")},
+		},
+		{
 			name: "returns only a CA list when only certificate_authorities is set",
 			obj: types.ObjectValueMust(
 				getSslAttrTypes(ctx),
@@ -69,6 +83,7 @@ func Test_objectValueToSSL(t *testing.T) {
 					"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 					"certificate":             types.StringNull(),
 					"key":                     types.StringNull(),
+					"key_wo":                  types.StringNull(),
 				},
 			),
 			want: &agentDownloadSourceSSLAPIModel{
@@ -83,6 +98,7 @@ func Test_objectValueToSSL(t *testing.T) {
 					"certificate_authorities": types.ListNull(types.StringType),
 					"certificate":             types.StringValue("cert"),
 					"key":                     types.StringValue("key"),
+					"key_wo":                  types.StringNull(),
 				},
 			),
 			want: &agentDownloadSourceSSLAPIModel{
@@ -98,6 +114,7 @@ func Test_objectValueToSSL(t *testing.T) {
 					"certificate_authorities": types.ListNull(types.StringType),
 					"certificate":             types.StringNull(),
 					"key":                     types.StringNull(),
+					"key_wo":                  types.StringNull(),
 				},
 			),
 			wantErr: true,
@@ -110,6 +127,7 @@ func Test_objectValueToSSL(t *testing.T) {
 					"certificate_authorities": types.ListUnknown(types.StringType),
 					"certificate":             types.StringNull(),
 					"key":                     types.StringUnknown(),
+					"key_wo":                  types.StringNull(),
 				},
 			),
 			// Unknown children defer the all-null rejection; existing
@@ -142,6 +160,7 @@ func Test_objectValueToSSLUpdate(t *testing.T) {
 			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		},
 	)
 
@@ -184,6 +203,7 @@ func Test_objectValueToSSLUpdate(t *testing.T) {
 				"certificate_authorities": types.ListNull(types.StringType),
 				"certificate":             types.StringNull(),
 				"key":                     types.StringNull(),
+				"key_wo":                  types.StringNull(),
 			}),
 			priorObj: types.ObjectNull(attrTypes),
 			wantErr:  true,
@@ -238,6 +258,7 @@ func Test_sslToObjectValue(t *testing.T) {
 					"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 					"certificate":             types.StringValue("cert"),
 					"key":                     types.StringValue("key"),
+					"key_wo":                  types.StringNull(),
 				},
 			),
 		},
@@ -250,6 +271,7 @@ func Test_sslToObjectValue(t *testing.T) {
 					"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 					"certificate":             types.StringNull(),
 					"key":                     types.StringNull(),
+					"key_wo":                  types.StringNull(),
 				},
 			),
 		},
@@ -263,6 +285,7 @@ func Test_sslToObjectValue(t *testing.T) {
 					"certificate_authorities": types.ListNull(types.StringType),
 					"certificate":             types.StringValue("cert"),
 					"key":                     types.StringValue("key"),
+					"key_wo":                  types.StringNull(),
 				},
 			),
 		},
@@ -276,6 +299,7 @@ func Test_sslToObjectValue(t *testing.T) {
 					"certificate_authorities": types.ListNull(types.StringType),
 					"certificate":             types.StringValue("cert"),
 					"key":                     types.StringNull(),
+					"key_wo":                  types.StringNull(),
 				},
 			),
 		},
@@ -301,6 +325,7 @@ func Test_sslRoundTrip(t *testing.T) {
 			"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca-1"), types.StringValue("ca-2")}),
 			"certificate":             types.StringValue("cert"),
 			"key":                     types.StringValue("key"),
+			"key_wo":                  types.StringNull(),
 		},
 	)
 
@@ -309,8 +334,9 @@ func Test_sslRoundTrip(t *testing.T) {
 		t.Fatalf("objectValueToSSL() error = %v", diags)
 	}
 
+	// Fleet echoes the client key back on read, so hydrate it from the API model.
 	requestBody := sslToKibana(apiSSL)
-	hydrated, diags := sslToObjectValue(ctx, requestBody.Certificate, requestBody.CertificateAuthorities, requestBody.Key)
+	hydrated, diags := sslToObjectValue(ctx, requestBody.Certificate, requestBody.CertificateAuthorities, apiSSL.Key)
 	if diags.HasError() {
 		t.Fatalf("sslToObjectValue() error = %v", diags)
 	}

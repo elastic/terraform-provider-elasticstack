@@ -33,12 +33,48 @@ func writeAgentDownloadSource(
 	client *clients.KibanaScopedClient,
 	req entitycore.KibanaWriteRequest[model],
 ) (entitycore.KibanaWriteResult[model], diag.Diagnostics) {
-	fleetClient := client.GetFleetClient()
+	return writeWithClient(ctx, client.GetFleetClient(), req)
+}
 
-	if req.Prior == nil {
-		return createAgentDownloadSource(ctx, fleetClient, req.Plan)
+// writeWithClient performs the write against fleetClient. Write-only values are
+// read from req.Config because the plan carries them as null. Their hashes are
+// persisted to private state only after the remote write succeeded.
+func writeWithClient(
+	ctx context.Context,
+	fleetClient *fleet.Client,
+	req entitycore.KibanaWriteRequest[model],
+) (entitycore.KibanaWriteResult[model], diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	plan, overlayDiags := req.Plan.withWriteOnlyFrom(ctx, req.Config)
+	diags.Append(overlayDiags...)
+	stored, loadDiags := loadStoredHashes(ctx, req.Private)
+	diags.Append(loadDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[model]{}, diags
 	}
-	return updateAgentDownloadSource(ctx, fleetClient, req.Plan, *req.Prior)
+
+	var (
+		result    entitycore.KibanaWriteResult[model]
+		writeDiag diag.Diagnostics
+	)
+	if req.Prior == nil {
+		result, writeDiag = createAgentDownloadSource(ctx, fleetClient, plan)
+	} else {
+		result, writeDiag = updateAgentDownloadSource(ctx, fleetClient, plan, *req.Prior, stored)
+	}
+	diags.Append(writeDiag...)
+	if diags.HasError() {
+		return result, diags
+	}
+
+	configured, valuesDiags := plan.writeOnlyValues(ctx)
+	diags.Append(valuesDiags...)
+	if diags.HasError() {
+		return result, diags
+	}
+	persistSecretHashes(ctx, req.Private, configured, stored, &diags)
+	return result, diags
 }
 
 // finalizeWrite reads back the just-written source by ID and hydrates it into
@@ -47,7 +83,7 @@ func writeAgentDownloadSource(
 func finalizeWrite(ctx context.Context, client *fleet.Client, sourceID, spaceID string, plan model, verb string) (entitycore.KibanaWriteResult[model], diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	readState, found, readDiags := readAndHydrateState(ctx, client, sourceID, spaceID, plan.SpaceIDs, plan.KibanaConnection, plan.Auth)
+	readState, found, readDiags := readAndHydrateState(ctx, client, sourceID, spaceID, plan.SpaceIDs, plan.KibanaConnection, plan.Auth, plan.Ssl)
 	diags.Append(readDiags...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[model]{}, diags

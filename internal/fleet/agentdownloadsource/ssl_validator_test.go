@@ -48,6 +48,7 @@ func Test_sslAtLeastOneSubattrValidator(t *testing.T) {
 				"certificate":             types.StringNull(),
 				"certificate_authorities": types.ListNull(types.StringType),
 				"key":                     types.StringNull(),
+				"key_wo":                  types.StringNull(),
 			}),
 			wantErr: true,
 		},
@@ -57,6 +58,7 @@ func Test_sslAtLeastOneSubattrValidator(t *testing.T) {
 				"certificate":             types.StringValue("cert"),
 				"certificate_authorities": types.ListNull(types.StringType),
 				"key":                     types.StringNull(),
+				"key_wo":                  types.StringNull(),
 			}),
 		},
 		{
@@ -65,6 +67,7 @@ func Test_sslAtLeastOneSubattrValidator(t *testing.T) {
 				"certificate":             types.StringNull(),
 				"certificate_authorities": types.ListValueMust(types.StringType, []attr.Value{types.StringValue("ca")}),
 				"key":                     types.StringNull(),
+				"key_wo":                  types.StringNull(),
 			}),
 		},
 		{
@@ -73,6 +76,25 @@ func Test_sslAtLeastOneSubattrValidator(t *testing.T) {
 				"certificate":             types.StringNull(),
 				"certificate_authorities": types.ListNull(types.StringType),
 				"key":                     types.StringValue("key"),
+				"key_wo":                  types.StringNull(),
+			}),
+		},
+		{
+			name: "key_wo only is allowed",
+			obj: types.ObjectValueMust(attrTypes, map[string]attr.Value{
+				"certificate":             types.StringNull(),
+				"certificate_authorities": types.ListNull(types.StringType),
+				"key":                     types.StringNull(),
+				"key_wo":                  types.StringValue("secret"),
+			}),
+		},
+		{
+			name: "unknown key_wo defers validation",
+			obj: types.ObjectValueMust(attrTypes, map[string]attr.Value{
+				"certificate":             types.StringNull(),
+				"certificate_authorities": types.ListNull(types.StringType),
+				"key":                     types.StringNull(),
+				"key_wo":                  types.StringUnknown(),
 			}),
 		},
 		{
@@ -85,6 +107,7 @@ func Test_sslAtLeastOneSubattrValidator(t *testing.T) {
 				"certificate":             types.StringUnknown(),
 				"certificate_authorities": types.ListNull(types.StringType),
 				"key":                     types.StringNull(),
+				"key_wo":                  types.StringNull(),
 			}),
 		},
 	}

@@ -31,7 +31,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/sslcore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -73,7 +72,7 @@ func TestReadAndHydrateStateUsesReadPayload(t *testing.T) {
 		}
 	}))
 
-	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil)
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil, nullSslObject())
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
@@ -120,7 +119,7 @@ func TestReadAndHydrateStatePreservesRedactedPassword(t *testing.T) {
 		}
 	}))
 
-	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback)
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback, nullSslObject())
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
@@ -163,7 +162,7 @@ func TestReadAndHydrateStateUsesAPISecretWhenPresent(t *testing.T) {
 		}
 	}))
 
-	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback)
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback, nullSslObject())
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
@@ -201,7 +200,7 @@ func TestReadAndHydrateStatePreservesRedactedAPIKeyIndependently(t *testing.T) {
 		}
 	}))
 
-	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback)
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback, nullSslObject())
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
@@ -242,7 +241,7 @@ func TestReadAndHydrateStateDecodesAbsentHeadersAsNull(t *testing.T) {
 		}
 	}))
 
-	state, found, diags := readAndHydrateState(ctx, client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback)
+	state, found, diags := readAndHydrateState(ctx, client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback, nullSslObject())
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
@@ -286,7 +285,7 @@ func TestReadAndHydrateStateUsesAPIHeadersNotFallback(t *testing.T) {
 		}
 	}))
 
-	state, found, diags := readAndHydrateState(ctx, client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback)
+	state, found, diags := readAndHydrateState(ctx, client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback, nullSslObject())
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
@@ -325,7 +324,7 @@ func TestReadAndHydrateStateLeavesSecretsNullWithoutFallback(t *testing.T) {
 		}
 	}))
 
-	state, found, diags := readAndHydrateState(ctx, client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil)
+	state, found, diags := readAndHydrateState(ctx, client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil, nullSslObject())
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
@@ -363,7 +362,7 @@ func TestReadAndHydrateStateDecodesEmptyHeadersList(t *testing.T) {
 		}
 	}))
 
-	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil)
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil, nullSslObject())
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
@@ -397,7 +396,7 @@ func TestReadAndHydrateStateTreatsEmptyProxyIDAsNull(t *testing.T) {
 		}
 	}))
 
-	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil)
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil, nullSslObject())
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
@@ -434,14 +433,14 @@ func TestReadAndHydrateStateHydratesSslFromReadPayload(t *testing.T) {
 		}
 	}))
 
-	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil)
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil, nullSslObject())
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
 	require.False(t, state.Ssl.IsNull(), "expected a populated ssl object in state")
 
 	var readDiags diag.Diagnostics
-	sslModel := typeutils.ObjectTypeAs[sslcore.Values](context.Background(), state.Ssl, fwpath.Root("ssl"), &readDiags)
+	sslModel := typeutils.ObjectTypeAs[sslModel](context.Background(), state.Ssl, fwpath.Root("ssl"), &readDiags)
 	require.False(t, readDiags.HasError(), "unexpected diagnostics: %#v", readDiags)
 	require.Equal(t, "cert-from-read", sslModel.Certificate.ValueString())
 	var caDiags diag.Diagnostics
@@ -486,7 +485,7 @@ func TestReadAndHydrateStateNullsAbsentAndEmptySsl(t *testing.T) {
 				}
 			}))
 
-			state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil)
+			state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, nil, nullSslObject())
 
 			require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 			require.True(t, found)
@@ -541,7 +540,7 @@ func TestUpdateAgentDownloadSourceReadBackKeepsRotatedPassword(t *testing.T) {
 		},
 	}
 
-	result, diags := updateAgentDownloadSource(context.Background(), client, plan, prior)
+	result, diags := updateAgentDownloadSource(context.Background(), client, plan, prior, nil)
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.NotNil(t, result.Model.Auth)
@@ -784,7 +783,7 @@ func TestReadAndHydrateStateHydratesAuthAndSSLTogether(t *testing.T) {
 		}
 	}))
 
-	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback)
+	state, found, diags := readAndHydrateState(context.Background(), client, sourceID, spaceID, preservedSpaceIDs, preservedKibanaConnection, fallback, nullSslObject())
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %#v", diags)
 	require.True(t, found)
@@ -794,7 +793,7 @@ func TestReadAndHydrateStateHydratesAuthAndSSLTogether(t *testing.T) {
 	require.False(t, state.Ssl.IsNull(), "expected a populated ssl object in state")
 
 	var readDiags diag.Diagnostics
-	sslModel := typeutils.ObjectTypeAs[sslcore.Values](context.Background(), state.Ssl, fwpath.Root("ssl"), &readDiags)
+	sslModel := typeutils.ObjectTypeAs[sslModel](context.Background(), state.Ssl, fwpath.Root("ssl"), &readDiags)
 	require.False(t, readDiags.HasError(), "unexpected diagnostics: %#v", readDiags)
 	require.Equal(t, "cert-from-read", sslModel.Certificate.ValueString())
 }

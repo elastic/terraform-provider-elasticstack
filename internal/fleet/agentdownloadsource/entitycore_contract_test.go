@@ -84,6 +84,40 @@ func TestResource_schemaOmitsSecretsReferences(t *testing.T) {
 	require.False(t, hasSslNestedSecrets)
 }
 
+func TestResource_schemaWriteOnlyAttributesAreWriteOnlyAndSensitive(t *testing.T) {
+	t.Parallel()
+
+	attrs := getSchema(context.Background()).Attributes
+	sslAttr, ok := attrs["ssl"].(schema.SingleNestedAttribute)
+	require.True(t, ok)
+	authAttr, ok := attrs["auth"].(schema.SingleNestedAttribute)
+	require.True(t, ok)
+
+	for name, nested := range map[string]map[string]schema.Attribute{
+		"ssl.key_wo":       {"key_wo": sslAttr.Attributes["key_wo"]},
+		"auth.password_wo": {"password_wo": authAttr.Attributes["password_wo"]},
+		"auth.api_key_wo":  {"api_key_wo": authAttr.Attributes["api_key_wo"]},
+	} {
+		for _, a := range nested {
+			wo, ok := a.(schema.StringAttribute)
+			require.True(t, ok, name)
+			require.True(t, wo.Optional, name)
+			require.True(t, wo.WriteOnly, name)
+			require.True(t, wo.Sensitive, name)
+			require.False(t, wo.Computed, name)
+		}
+	}
+
+	for _, legacy := range []string{"key_version", "key_wo_version"} {
+		_, has := sslAttr.Attributes[legacy]
+		require.False(t, has, legacy)
+	}
+	for _, legacy := range []string{"password_wo_version", "api_key_wo_version"} {
+		_, has := authAttr.Attributes[legacy]
+		require.False(t, has, legacy)
+	}
+}
+
 func TestResource_embedsKibanaResource(t *testing.T) {
 	t.Parallel()
 	rt := reflect.TypeFor[Resource]()

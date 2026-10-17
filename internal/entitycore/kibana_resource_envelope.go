@@ -70,6 +70,9 @@ type KibanaWriteRequest[T KibanaResourceModel] struct {
 	Config  T
 	WriteID string
 	SpaceID string
+	// Private is the framework response Private field (typically
+	// *internal/privatestate.Data). Nil when the callback does not need it.
+	Private PrivateStateStorage
 }
 
 // KibanaWriteResult is returned by write callbacks; the envelope read-after-write
@@ -350,7 +353,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		hasReadFunc: func() bool { return r.readFunc != nil },
 		invokeWrite: func(
 			ctx context.Context, client *clients.KibanaScopedClient, plan, config T, prior *T, writeID, spaceID string,
-			_ PrivateStateStorage, isUpdate bool,
+			private PrivateStateStorage, isUpdate bool,
 		) (T, bool, diag.Diagnostics) {
 			writeFn := r.createFunc
 			if isUpdate {
@@ -362,6 +365,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 				Config:  config,
 				WriteID: writeID,
 				SpaceID: spaceID,
+				Private: private,
 			})
 			return written.Model, written.SkipReadAfterWrite, diags
 		},

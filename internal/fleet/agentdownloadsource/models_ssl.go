@@ -35,6 +35,20 @@ type agentDownloadSourceSSLAPIModel struct {
 	Certificate            *string
 	CertificateAuthorities *[]string
 	Key                    *string
+	// KeyWO is the write-only client key, read from configuration. It targets
+	// the same Fleet secret as Key.
+	KeyWO *string
+}
+
+// sslModel is the Terraform ssl object: the shared SSL values plus the
+// write-only key sibling, which is only ever non-null in configuration.
+type sslModel struct {
+	sslcore.Values
+	KeyWO types.String `tfsdk:"key_wo"`
+}
+
+func (m sslModel) allNil() bool {
+	return m.AllNil() && m.KeyWO.IsNull()
 }
 
 // kbapiSsl is the anonymous `ssl` struct type generated on
@@ -55,10 +69,11 @@ func sslToKibana(ssl *agentDownloadSourceSSLAPIModel) *kbapiSsl {
 		return nil
 	}
 
+	// The client key is never sent on the plain wire field; it travels as
+	// secrets.ssl.key (see model.secretsPayload).
 	return &kbapiSsl{
 		Certificate:            ssl.Certificate,
 		CertificateAuthorities: ssl.CertificateAuthorities,
-		Key:                    ssl.Key,
 	}
 }
 
@@ -68,7 +83,7 @@ func objectValueToSSL(ctx context.Context, obj types.Object) (*agentDownloadSour
 	}
 
 	var diags diag.Diagnostics
-	sslModel := typeutils.ObjectTypeAs[sslcore.Values](ctx, obj, path.Root("ssl"), &diags)
+	model := typeutils.ObjectTypeAs[sslModel](ctx, obj, path.Root("ssl"), &diags)
 	if diags.HasError() {
 		return nil, diags
 	}
@@ -77,17 +92,18 @@ func objectValueToSSL(ctx context.Context, obj types.Object) (*agentDownloadSour
 	// unknown at plan time may resolve to all-null at apply, and sending an
 	// empty ssl object would persist a present-but-empty configuration the
 	// read path normalizes back to null.
-	if sslModel.AllNil() {
+	if model.allNil() {
 		diags.AddAttributeError(path.Root("ssl"), sslAtLeastOneSubattrSummary, sslAtLeastOneSubattrMessage)
 		return nil, diags
 	}
 
-	certificate, certificateAuthorities, key := sslcore.Extract(ctx, *sslModel, path.Root("ssl").AtName("certificate_authorities"), &diags)
+	certificate, certificateAuthorities, key := sslcore.Extract(ctx, model.Values, path.Root("ssl").AtName("certificate_authorities"), &diags)
 
 	return &agentDownloadSourceSSLAPIModel{
 		Certificate:            certificate,
 		CertificateAuthorities: certificateAuthorities,
 		Key:                    key,
+		KeyWO:                  model.KeyWO.ValueStringPointer(),
 	}, diags
 }
 
@@ -129,7 +145,63 @@ func sslToObjectValue(
 		return types.ObjectNull(attrTypes), nil
 	}
 
-	obj, diagTemp := types.ObjectValueFrom(ctx, attrTypes, values)
+	obj, diagTemp := types.ObjectValueFrom(ctx, attrTypes, sslModel{Values: values, KeyWO: types.StringNull()})
 	diags.Append(diagTemp...)
 	return obj, diags
+}
+
+// withSSLWriteOnlyKey returns obj with its key_wo child replaced by keyWO.
+// A null or unknown obj is returned unchanged.
+func withSSLWriteOnlyKey(ctx context.Context, obj types.Object, keyWO types.String) (types.Object, diag.Diagnostics) {
+	if !typeutils.IsKnown(obj) {
+		return obj, nil
+	}
+	var diags diag.Diagnostics
+	model := typeutils.ObjectTypeAs[sslModel](ctx, obj, path.Root("ssl"), &diags)
+	if diags.HasError() {
+		return obj, diags
+	}
+	model.KeyWO = keyWO
+	out, objDiags := types.ObjectValueFrom(ctx, getSslAttrTypes(ctx), model)
+	diags.Append(objDiags...)
+	return out, diags
+}
+
+// hydrateSsl builds the ssl state object from the API response, using the
+// prior plan or state object to resolve what the response cannot tell apart:
+//   - Fleet echoes a key_wo literal in the plain key field when secret storage
+//     is unavailable, and redacts a stored plain key. The plain key is
+//     therefore only taken from the API when the prior object configured it,
+//     and a redacted value keeps the configured one. With no prior object
+//     (import) the API value is used.
+//   - An ssl object whose only configured child is key_wo has no readable
+//     child, so a prior object with no readable children is retained.
+func hydrateSsl(ctx context.Context, api agentDownloadSourceSSLAPIModel, prior types.Object) (types.Object, diag.Diagnostics) {
+	key := api.Key
+	var priorModel *sslModel
+	if typeutils.IsKnown(prior) {
+		var diags diag.Diagnostics
+		priorModel = typeutils.ObjectTypeAs[sslModel](ctx, prior, path.Root("ssl"), &diags)
+		if diags.HasError() {
+			return types.ObjectNull(getSslAttrTypes(ctx)), diags
+		}
+		key = nil
+		if typeutils.IsKnown(priorModel.Key) {
+			key = preserveRedactedSecret(api.Key, priorModel.Key).ValueStringPointer()
+		}
+	}
+
+	obj, diags := sslToObjectValue(ctx, api.Certificate, api.CertificateAuthorities, key)
+	if diags.HasError() || !obj.IsNull() || priorModel == nil || !priorModel.AllNil() {
+		return obj, diags
+	}
+
+	retained, retainDiags := types.ObjectValueFrom(ctx, getSslAttrTypes(ctx), sslModel{
+		Certificate:            types.StringNull(),
+		CertificateAuthorities: types.ListNull(types.StringType),
+		Key:                    types.StringNull(),
+		KeyWO:                  types.StringNull(),
+	})
+	diags.Append(retainDiags...)
+	return retained, diags
 }
