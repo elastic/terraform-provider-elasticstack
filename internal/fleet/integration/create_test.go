@@ -87,13 +87,12 @@ func TestWriteIntegration_allowOutdatedVersionRequestBody(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		value     types.Bool
-		wantKey   bool
-		wantValue bool
+		name  string
+		value types.Bool
+		want  *bool // nil means the key must be omitted
 	}{
-		{name: "true is sent", value: types.BoolValue(true), wantKey: true, wantValue: true},
-		{name: "false is sent", value: types.BoolValue(false), wantKey: true, wantValue: false},
+		{name: "true is sent", value: types.BoolValue(true), want: new(true)},
+		{name: "false is sent", value: types.BoolValue(false), want: new(false)},
 		{name: "null omits key", value: types.BoolNull()},
 		{name: "unknown omits key", value: types.BoolUnknown()},
 	}
@@ -126,11 +125,11 @@ func TestWriteIntegration_allowOutdatedVersionRequestBody(t *testing.T) {
 			require.False(t, diags.HasError(), "%v", diags)
 			require.NotNil(t, captured, "install request was not captured")
 
-			got, present := captured["allow_outdated_version"]
-			assert.Equal(t, tt.wantKey, present)
-			if tt.wantKey {
-				assert.Equal(t, tt.wantValue, got)
+			if tt.want == nil {
+				assert.NotContains(t, captured, "allow_outdated_version")
+				return
 			}
+			assert.Equal(t, *tt.want, captured["allow_outdated_version"])
 		})
 	}
 }

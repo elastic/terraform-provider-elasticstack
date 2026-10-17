@@ -240,14 +240,12 @@ func TestInstallPackage_allowOutdatedVersion(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name      string
-		value     *bool
-		wantKey   bool
-		wantValue bool
+		name  string
+		value *bool // nil means the key must be omitted
 	}{
 		{name: "unset omits key", value: nil},
-		{name: "explicit false", value: new(false), wantKey: true, wantValue: false},
-		{name: "explicit true", value: new(true), wantKey: true, wantValue: true},
+		{name: "explicit false", value: new(false)},
+		{name: "explicit true", value: new(true)},
 	}
 
 	for _, tt := range tests {
@@ -267,11 +265,11 @@ func TestInstallPackage_allowOutdatedVersion(t *testing.T) {
 			})
 			require.False(t, diags.HasError(), "%v", diags)
 
-			got, present := captured["allow_outdated_version"]
-			assert.Equal(t, tt.wantKey, present)
-			if tt.wantKey {
-				assert.Equal(t, tt.wantValue, got)
+			if tt.value == nil {
+				assert.NotContains(t, captured, "allow_outdated_version")
+				return
 			}
+			assert.Equal(t, *tt.value, captured["allow_outdated_version"])
 		})
 	}
 }

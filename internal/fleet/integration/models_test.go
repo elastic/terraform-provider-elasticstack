@@ -47,14 +47,14 @@ func TestIntegrationModel_GetVersionRequirements_allowOutdatedVersion(t *testing
 	t.Parallel()
 
 	tests := []struct {
-		name  string
-		value types.Bool
-		want  int
+		name      string
+		value     types.Bool
+		wantGated bool
 	}{
-		{name: "null is not gated", value: types.BoolNull(), want: 0},
-		{name: "unknown is not gated", value: types.BoolUnknown(), want: 0},
-		{name: "explicit false is gated", value: types.BoolValue(false), want: 1},
-		{name: "explicit true is gated", value: types.BoolValue(true), want: 1},
+		{name: "null is not gated", value: types.BoolNull()},
+		{name: "unknown is not gated", value: types.BoolUnknown()},
+		{name: "explicit false is gated", value: types.BoolValue(false), wantGated: true},
+		{name: "explicit true is gated", value: types.BoolValue(true), wantGated: true},
 	}
 
 	for _, tt := range tests {
@@ -63,10 +63,12 @@ func TestIntegrationModel_GetVersionRequirements_allowOutdatedVersion(t *testing
 
 			reqs, diags := integrationModel{AllowOutdatedVersion: tt.value}.GetVersionRequirements(t.Context())
 			require.False(t, diags.HasError())
-			require.Len(t, reqs, tt.want)
-			if tt.want == 1 {
-				require.True(t, reqs[0].MinVersion.Equal(MinVersionAllowOutdatedVersion))
+			if !tt.wantGated {
+				require.Empty(t, reqs)
+				return
 			}
+			require.Len(t, reqs, 1)
+			require.True(t, reqs[0].MinVersion.Equal(MinVersionAllowOutdatedVersion))
 		})
 	}
 }
