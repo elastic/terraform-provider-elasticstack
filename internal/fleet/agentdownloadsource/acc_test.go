@@ -1324,53 +1324,6 @@ func TestAccResourceFleetAgentDownloadSource_ProxyID(t *testing.T) {
 	})
 }
 
-// TestAccResourceFleetAgentDownloadSource_DefaultTrue exercises the IsDefault boolean
-// round-trip in read.go for the true branch, and toggling the value via update.
-// The final step returns default to false because the Fleet API rejects deleting
-// the current default download source.
-func TestAccResourceFleetAgentDownloadSource_DefaultTrue(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minVersionFleetAgentDownloadSource, versionutils.FlavorAny)
-
-	random := sdkacctest.RandString(8)
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
-		CheckDestroy: checkResourceFleetAgentDownloadSourceDestroy,
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_false"),
-				ConfigVariables: config.Variables{
-					"suffix": config.StringVariable(random),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "false"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_true"),
-				ConfigVariables: config.Variables{
-					"suffix": config.StringVariable(random),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "true"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_false"),
-				ConfigVariables: config.Variables{
-					"suffix": config.StringVariable(random),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_fleet_agent_download_source.test", "default", "false"),
-				),
-			},
-		},
-	})
-}
-
 // TestAccResourceFleetAgentDownloadSource_SpaceIDsUpdate exercises an in-place update that
 // changes space_ids from a single-element set to a different, larger (2+ element) set
 // that does not include the prior operational space. This covers update.go's prior-space

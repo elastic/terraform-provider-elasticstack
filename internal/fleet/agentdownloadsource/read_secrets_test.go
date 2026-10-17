@@ -60,7 +60,9 @@ func hydrateWithPrior(t *testing.T, item map[string]any, fallbackAuth *authModel
 	item["id"] = "src"
 	item["name"] = "n"
 	item["host"] = "https://h"
-	item["is_default"] = false
+	if _, ok := item["is_default"]; !ok {
+		item["is_default"] = false
+	}
 	client := newTestFleetClient(t, itemServer(t, item))
 	state, found, diags := readAndHydrateState(context.Background(), client, "src", "default",
 		types.SetNull(types.StringType), providerschema.KibanaConnectionNullList(), fallbackAuth, fallbackSsl)
@@ -264,4 +266,26 @@ func TestHydrationRetainsAuthObjectForAPIKeyWOOnly(t *testing.T) {
 	state := hydrateWithPrior(t, map[string]any{}, fallback, nullSslObject())
 	require.NotNil(t, state.Auth)
 	require.True(t, state.Auth.APIKey.IsNull())
+}
+
+// Covers read-side hydration of `default` without an acceptance test: toggling
+// the default flag on a real stack replaces the shared default download source,
+// which breaks unrelated acceptance tests that rely on it.
+func TestHydrationDefaultFlag(t *testing.T) {
+	t.Parallel()
+
+	for name, tc := range map[string]struct {
+		apiValue bool
+		want     types.Bool
+	}{
+		"true":  {apiValue: true, want: types.BoolValue(true)},
+		"false": {apiValue: false, want: types.BoolValue(false)},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			item := map[string]any{"is_default": tc.apiValue}
+			got := hydrateWithPrior(t, item, nil, nullSslObject())
+			assert.Equal(t, tc.want, got.Default)
+		})
+	}
 }
