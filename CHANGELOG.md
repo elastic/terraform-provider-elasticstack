@@ -8,6 +8,8 @@ The `thresholds[].axis` values `bottom`, `left` and `right` are no longer accept
 
 ### Changes
 
+- Add `additional_datastreams_permissions` to `elasticstack_fleet_elastic_defend_integration_policy` ([#5322](https://github.com/elastic/terraform-provider-elasticstack/pull/5322))
+- Add elasticstack_elasticsearch_rollover_index_series to bootstrap or adopt an ILM rollover series and delete its current alias members. ([#5297](https://github.com/elastic/terraform-provider-elasticstack/pull/5297))
 - Add `features_disable_policy_change_acks_enabled`, `features_include_tags_in_events_enabled` and `internal` to `advanced_settings` on `elasticstack_fleet_agent_policy`. ([#5279](https://github.com/elastic/terraform-provider-elasticstack/pull/5279))
 - Accept `x`, `y` and `y2` for XY reference-line `thresholds[].axis` in `elasticstack_kibana_dashboard`. ([#5280](https://github.com/elastic/terraform-provider-elasticstack/pull/5280))
 - Add optional SSL configuration (certificate authorities, certificate, and sensitive key) to `elasticstack_fleet_agent_download_source`. ([#5261](https://github.com/elastic/terraform-provider-elasticstack/pull/5261))
