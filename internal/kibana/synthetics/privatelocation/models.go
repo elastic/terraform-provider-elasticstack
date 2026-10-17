@@ -125,7 +125,7 @@ func modelFromAPI(loc kbapi.SyntheticsGetPrivateLocation, spaceID string) Model 
 		agentPolicyID = *loc.AgentPolicyId
 	}
 
-	tags := tagsFromAdditionalProperties(loc)
+	tags := tagsFromAPIResponse(loc)
 
 	return Model{
 		ID:            types.StringValue(id),

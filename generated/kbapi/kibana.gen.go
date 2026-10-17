@@ -740,29 +740,32 @@ func (e CasesUpdateUserCommentRequestPropertiesType) Valid() bool {
 
 // Defines values for CasesUserActionsFindResponsePropertiesType.
 const (
-	CasesUserActionsFindResponsePropertiesTypeAssignees      CasesUserActionsFindResponsePropertiesType = "assignees"
-	CasesUserActionsFindResponsePropertiesTypeCategory       CasesUserActionsFindResponsePropertiesType = "category"
-	CasesUserActionsFindResponsePropertiesTypeComment        CasesUserActionsFindResponsePropertiesType = "comment"
-	CasesUserActionsFindResponsePropertiesTypeConnector      CasesUserActionsFindResponsePropertiesType = "connector"
-	CasesUserActionsFindResponsePropertiesTypeCreateCase     CasesUserActionsFindResponsePropertiesType = "create_case"
-	CasesUserActionsFindResponsePropertiesTypeCustomFields   CasesUserActionsFindResponsePropertiesType = "customFields"
-	CasesUserActionsFindResponsePropertiesTypeDeleteCase     CasesUserActionsFindResponsePropertiesType = "delete_case"
-	CasesUserActionsFindResponsePropertiesTypeDescription    CasesUserActionsFindResponsePropertiesType = "description"
-	CasesUserActionsFindResponsePropertiesTypeExtendedFields CasesUserActionsFindResponsePropertiesType = "extended_fields"
-	CasesUserActionsFindResponsePropertiesTypeObservables    CasesUserActionsFindResponsePropertiesType = "observables"
-	CasesUserActionsFindResponsePropertiesTypePushed         CasesUserActionsFindResponsePropertiesType = "pushed"
-	CasesUserActionsFindResponsePropertiesTypeSettings       CasesUserActionsFindResponsePropertiesType = "settings"
-	CasesUserActionsFindResponsePropertiesTypeSeverity       CasesUserActionsFindResponsePropertiesType = "severity"
-	CasesUserActionsFindResponsePropertiesTypeStatus         CasesUserActionsFindResponsePropertiesType = "status"
-	CasesUserActionsFindResponsePropertiesTypeTags           CasesUserActionsFindResponsePropertiesType = "tags"
-	CasesUserActionsFindResponsePropertiesTypeTitle          CasesUserActionsFindResponsePropertiesType = "title"
-	CasesUserActionsFindResponsePropertiesTypeWorkflow       CasesUserActionsFindResponsePropertiesType = "workflow"
+	CasesUserActionsFindResponsePropertiesTypeAssignees       CasesUserActionsFindResponsePropertiesType = "assignees"
+	CasesUserActionsFindResponsePropertiesTypeBulkAttachments CasesUserActionsFindResponsePropertiesType = "bulkAttachments"
+	CasesUserActionsFindResponsePropertiesTypeCategory        CasesUserActionsFindResponsePropertiesType = "category"
+	CasesUserActionsFindResponsePropertiesTypeComment         CasesUserActionsFindResponsePropertiesType = "comment"
+	CasesUserActionsFindResponsePropertiesTypeConnector       CasesUserActionsFindResponsePropertiesType = "connector"
+	CasesUserActionsFindResponsePropertiesTypeCreateCase      CasesUserActionsFindResponsePropertiesType = "create_case"
+	CasesUserActionsFindResponsePropertiesTypeCustomFields    CasesUserActionsFindResponsePropertiesType = "customFields"
+	CasesUserActionsFindResponsePropertiesTypeDeleteCase      CasesUserActionsFindResponsePropertiesType = "delete_case"
+	CasesUserActionsFindResponsePropertiesTypeDescription     CasesUserActionsFindResponsePropertiesType = "description"
+	CasesUserActionsFindResponsePropertiesTypeExtendedFields  CasesUserActionsFindResponsePropertiesType = "extended_fields"
+	CasesUserActionsFindResponsePropertiesTypeObservables     CasesUserActionsFindResponsePropertiesType = "observables"
+	CasesUserActionsFindResponsePropertiesTypePushed          CasesUserActionsFindResponsePropertiesType = "pushed"
+	CasesUserActionsFindResponsePropertiesTypeSettings        CasesUserActionsFindResponsePropertiesType = "settings"
+	CasesUserActionsFindResponsePropertiesTypeSeverity        CasesUserActionsFindResponsePropertiesType = "severity"
+	CasesUserActionsFindResponsePropertiesTypeStatus          CasesUserActionsFindResponsePropertiesType = "status"
+	CasesUserActionsFindResponsePropertiesTypeTags            CasesUserActionsFindResponsePropertiesType = "tags"
+	CasesUserActionsFindResponsePropertiesTypeTitle           CasesUserActionsFindResponsePropertiesType = "title"
+	CasesUserActionsFindResponsePropertiesTypeWorkflow        CasesUserActionsFindResponsePropertiesType = "workflow"
 )
 
 // Valid indicates whether the value is a known member of the CasesUserActionsFindResponsePropertiesType enum.
 func (e CasesUserActionsFindResponsePropertiesType) Valid() bool {
 	switch e {
 	case CasesUserActionsFindResponsePropertiesTypeAssignees:
+		return true
+	case CasesUserActionsFindResponsePropertiesTypeBulkAttachments:
 		return true
 	case CasesUserActionsFindResponsePropertiesTypeCategory:
 		return true
@@ -2283,6 +2286,39 @@ func (e KibanaHTTPAPIsAlertsFilterQueryFiltersStateStore) Valid() bool {
 	}
 }
 
+// Defines values for KibanaHTTPAPIsApiMonitorFieldsSchedule1Unit.
+const (
+	KibanaHTTPAPIsApiMonitorFieldsSchedule1UnitM KibanaHTTPAPIsApiMonitorFieldsSchedule1Unit = "m"
+	KibanaHTTPAPIsApiMonitorFieldsSchedule1UnitS KibanaHTTPAPIsApiMonitorFieldsSchedule1Unit = "s"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsApiMonitorFieldsSchedule1Unit enum.
+func (e KibanaHTTPAPIsApiMonitorFieldsSchedule1Unit) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsApiMonitorFieldsSchedule1UnitM:
+		return true
+	case KibanaHTTPAPIsApiMonitorFieldsSchedule1UnitS:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsApiMonitorFieldsType.
+const (
+	KibanaHTTPAPIsApiMonitorFieldsTypeApi KibanaHTTPAPIsApiMonitorFieldsType = "api"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsApiMonitorFieldsType enum.
+func (e KibanaHTTPAPIsApiMonitorFieldsType) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsApiMonitorFieldsTypeApi:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KibanaHTTPAPIsApmAnomalyCreateRuleBodyAlertingNotifyWhen.
 const (
 	KibanaHTTPAPIsApmAnomalyCreateRuleBodyAlertingNotifyWhenLessThannil         KibanaHTTPAPIsApmAnomalyCreateRuleBodyAlertingNotifyWhen = "<nil>"
@@ -2688,6 +2724,42 @@ func (e KibanaHTTPAPIsBackfillResponseStatus) Valid() bool {
 	case KibanaHTTPAPIsBackfillResponseStatusRunning:
 		return true
 	case KibanaHTTPAPIsBackfillResponseStatusTimeout:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsBrowserMonitorFieldsScreenshots.
+const (
+	KibanaHTTPAPIsBrowserMonitorFieldsScreenshotsOff           KibanaHTTPAPIsBrowserMonitorFieldsScreenshots = "off"
+	KibanaHTTPAPIsBrowserMonitorFieldsScreenshotsOn            KibanaHTTPAPIsBrowserMonitorFieldsScreenshots = "on"
+	KibanaHTTPAPIsBrowserMonitorFieldsScreenshotsOnlyOnFailure KibanaHTTPAPIsBrowserMonitorFieldsScreenshots = "only-on-failure"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsBrowserMonitorFieldsScreenshots enum.
+func (e KibanaHTTPAPIsBrowserMonitorFieldsScreenshots) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsBrowserMonitorFieldsScreenshotsOff:
+		return true
+	case KibanaHTTPAPIsBrowserMonitorFieldsScreenshotsOn:
+		return true
+	case KibanaHTTPAPIsBrowserMonitorFieldsScreenshotsOnlyOnFailure:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsBrowserMonitorFieldsType.
+const (
+	KibanaHTTPAPIsBrowserMonitorFieldsTypeBrowser KibanaHTTPAPIsBrowserMonitorFieldsType = "browser"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsBrowserMonitorFieldsType enum.
+func (e KibanaHTTPAPIsBrowserMonitorFieldsType) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsBrowserMonitorFieldsTypeBrowser:
 		return true
 	default:
 		return false
@@ -3489,6 +3561,72 @@ func (e KibanaHTTPAPIsGetPackageInfoVarGroupsOptionsHideInDeploymentModes) Valid
 	case KibanaHTTPAPIsGetPackageInfoVarGroupsOptionsHideInDeploymentModesAgentless:
 		return true
 	case KibanaHTTPAPIsGetPackageInfoVarGroupsOptionsHideInDeploymentModesDefault:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsHttpMonitorFieldsMode.
+const (
+	KibanaHTTPAPIsHttpMonitorFieldsModeAll KibanaHTTPAPIsHttpMonitorFieldsMode = "all"
+	KibanaHTTPAPIsHttpMonitorFieldsModeAny KibanaHTTPAPIsHttpMonitorFieldsMode = "any"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsHttpMonitorFieldsMode enum.
+func (e KibanaHTTPAPIsHttpMonitorFieldsMode) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsHttpMonitorFieldsModeAll:
+		return true
+	case KibanaHTTPAPIsHttpMonitorFieldsModeAny:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsHttpMonitorFieldsType.
+const (
+	Http KibanaHTTPAPIsHttpMonitorFieldsType = "http"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsHttpMonitorFieldsType enum.
+func (e KibanaHTTPAPIsHttpMonitorFieldsType) Valid() bool {
+	switch e {
+	case Http:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsIcmpMonitorFieldsMode.
+const (
+	KibanaHTTPAPIsIcmpMonitorFieldsModeAll KibanaHTTPAPIsIcmpMonitorFieldsMode = "all"
+	KibanaHTTPAPIsIcmpMonitorFieldsModeAny KibanaHTTPAPIsIcmpMonitorFieldsMode = "any"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsIcmpMonitorFieldsMode enum.
+func (e KibanaHTTPAPIsIcmpMonitorFieldsMode) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsIcmpMonitorFieldsModeAll:
+		return true
+	case KibanaHTTPAPIsIcmpMonitorFieldsModeAny:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsIcmpMonitorFieldsType.
+const (
+	Icmp KibanaHTTPAPIsIcmpMonitorFieldsType = "icmp"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsIcmpMonitorFieldsType enum.
+func (e KibanaHTTPAPIsIcmpMonitorFieldsType) Valid() bool {
+	switch e {
+	case Icmp:
 		return true
 	default:
 		return false
@@ -7365,6 +7503,24 @@ func (e KibanaHTTPAPIsNewOutputKafkaConnectionType) Valid() bool {
 	}
 }
 
+// Defines values for KibanaHTTPAPIsNewOutputKafkaKerberosAuthType.
+const (
+	KibanaHTTPAPIsNewOutputKafkaKerberosAuthTypeKeytab   KibanaHTTPAPIsNewOutputKafkaKerberosAuthType = "keytab"
+	KibanaHTTPAPIsNewOutputKafkaKerberosAuthTypePassword KibanaHTTPAPIsNewOutputKafkaKerberosAuthType = "password"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsNewOutputKafkaKerberosAuthType enum.
+func (e KibanaHTTPAPIsNewOutputKafkaKerberosAuthType) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsNewOutputKafkaKerberosAuthTypeKeytab:
+		return true
+	case KibanaHTTPAPIsNewOutputKafkaKerberosAuthTypePassword:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KibanaHTTPAPIsNewOutputKafkaOauth2GrantType.
 const (
 	KibanaHTTPAPIsNewOutputKafkaOauth2GrantTypeClientCredentials                    KibanaHTTPAPIsNewOutputKafkaOauth2GrantType = "client_credentials"
@@ -8427,6 +8583,24 @@ func (e KibanaHTTPAPIsOutputResponseKafkaConnectionType) Valid() bool {
 	}
 }
 
+// Defines values for KibanaHTTPAPIsOutputResponseKafkaKerberosAuthType.
+const (
+	KibanaHTTPAPIsOutputResponseKafkaKerberosAuthTypeKeytab   KibanaHTTPAPIsOutputResponseKafkaKerberosAuthType = "keytab"
+	KibanaHTTPAPIsOutputResponseKafkaKerberosAuthTypePassword KibanaHTTPAPIsOutputResponseKafkaKerberosAuthType = "password"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsOutputResponseKafkaKerberosAuthType enum.
+func (e KibanaHTTPAPIsOutputResponseKafkaKerberosAuthType) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsOutputResponseKafkaKerberosAuthTypeKeytab:
+		return true
+	case KibanaHTTPAPIsOutputResponseKafkaKerberosAuthTypePassword:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KibanaHTTPAPIsOutputResponseKafkaOauth2GrantType.
 const (
 	KibanaHTTPAPIsOutputResponseKafkaOauth2GrantTypeClientCredentials                    KibanaHTTPAPIsOutputResponseKafkaOauth2GrantType = "client_credentials"
@@ -9474,6 +9648,39 @@ func (e KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewMode) Valid() bool {
 	}
 }
 
+// Defines values for KibanaHTTPAPIsTcpMonitorFieldsMode.
+const (
+	KibanaHTTPAPIsTcpMonitorFieldsModeAll KibanaHTTPAPIsTcpMonitorFieldsMode = "all"
+	KibanaHTTPAPIsTcpMonitorFieldsModeAny KibanaHTTPAPIsTcpMonitorFieldsMode = "any"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsTcpMonitorFieldsMode enum.
+func (e KibanaHTTPAPIsTcpMonitorFieldsMode) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsTcpMonitorFieldsModeAll:
+		return true
+	case KibanaHTTPAPIsTcpMonitorFieldsModeAny:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsTcpMonitorFieldsType.
+const (
+	Tcp KibanaHTTPAPIsTcpMonitorFieldsType = "tcp"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsTcpMonitorFieldsType enum.
+func (e KibanaHTTPAPIsTcpMonitorFieldsType) Valid() bool {
+	switch e {
+	case Tcp:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KibanaHTTPAPIsTransformHealthCreateRuleBodyAlertingNotifyWhen.
 const (
 	KibanaHTTPAPIsTransformHealthCreateRuleBodyAlertingNotifyWhenLessThannil         KibanaHTTPAPIsTransformHealthCreateRuleBodyAlertingNotifyWhen = "<nil>"
@@ -9660,6 +9867,24 @@ func (e KibanaHTTPAPIsUpdateOutputKafkaConnectionType) Valid() bool {
 	case Encryption:
 		return true
 	case Plaintext:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsUpdateOutputKafkaKerberosAuthType.
+const (
+	Keytab   KibanaHTTPAPIsUpdateOutputKafkaKerberosAuthType = "keytab"
+	Password KibanaHTTPAPIsUpdateOutputKafkaKerberosAuthType = "password"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsUpdateOutputKafkaKerberosAuthType enum.
+func (e KibanaHTTPAPIsUpdateOutputKafkaKerberosAuthType) Valid() bool {
+	switch e {
+	case Keytab:
+		return true
+	case Password:
 		return true
 	default:
 		return false
@@ -15863,19 +16088,19 @@ func (e KibanaHTTPAPIsVisXyStylingAreasFill) Valid() bool {
 
 // Defines values for KibanaHTTPAPIsVisXyStylingPointsVisibility.
 const (
-	Auto    KibanaHTTPAPIsVisXyStylingPointsVisibility = "auto"
-	Hidden  KibanaHTTPAPIsVisXyStylingPointsVisibility = "hidden"
-	Visible KibanaHTTPAPIsVisXyStylingPointsVisibility = "visible"
+	KibanaHTTPAPIsVisXyStylingPointsVisibilityAuto    KibanaHTTPAPIsVisXyStylingPointsVisibility = "auto"
+	KibanaHTTPAPIsVisXyStylingPointsVisibilityHidden  KibanaHTTPAPIsVisXyStylingPointsVisibility = "hidden"
+	KibanaHTTPAPIsVisXyStylingPointsVisibilityVisible KibanaHTTPAPIsVisXyStylingPointsVisibility = "visible"
 )
 
 // Valid indicates whether the value is a known member of the KibanaHTTPAPIsVisXyStylingPointsVisibility enum.
 func (e KibanaHTTPAPIsVisXyStylingPointsVisibility) Valid() bool {
 	switch e {
-	case Auto:
+	case KibanaHTTPAPIsVisXyStylingPointsVisibilityAuto:
 		return true
-	case Hidden:
+	case KibanaHTTPAPIsVisXyStylingPointsVisibilityHidden:
 		return true
-	case Visible:
+	case KibanaHTTPAPIsVisXyStylingPointsVisibilityVisible:
 		return true
 	default:
 		return false
@@ -23631,144 +23856,6 @@ func (e SecurityTimelineAPITimelineType) Valid() bool {
 	}
 }
 
-// Defines values for SyntheticsApiMonitorFieldsType.
-const (
-	Api SyntheticsApiMonitorFieldsType = "api"
-)
-
-// Valid indicates whether the value is a known member of the SyntheticsApiMonitorFieldsType enum.
-func (e SyntheticsApiMonitorFieldsType) Valid() bool {
-	switch e {
-	case Api:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for SyntheticsBrowserMonitorFieldsScreenshots.
-const (
-	SyntheticsBrowserMonitorFieldsScreenshotsOff           SyntheticsBrowserMonitorFieldsScreenshots = "off"
-	SyntheticsBrowserMonitorFieldsScreenshotsOn            SyntheticsBrowserMonitorFieldsScreenshots = "on"
-	SyntheticsBrowserMonitorFieldsScreenshotsOnlyOnFailure SyntheticsBrowserMonitorFieldsScreenshots = "only-on-failure"
-)
-
-// Valid indicates whether the value is a known member of the SyntheticsBrowserMonitorFieldsScreenshots enum.
-func (e SyntheticsBrowserMonitorFieldsScreenshots) Valid() bool {
-	switch e {
-	case SyntheticsBrowserMonitorFieldsScreenshotsOff:
-		return true
-	case SyntheticsBrowserMonitorFieldsScreenshotsOn:
-		return true
-	case SyntheticsBrowserMonitorFieldsScreenshotsOnlyOnFailure:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for SyntheticsBrowserMonitorFieldsType.
-const (
-	SyntheticsBrowserMonitorFieldsTypeBrowser SyntheticsBrowserMonitorFieldsType = "browser"
-)
-
-// Valid indicates whether the value is a known member of the SyntheticsBrowserMonitorFieldsType enum.
-func (e SyntheticsBrowserMonitorFieldsType) Valid() bool {
-	switch e {
-	case SyntheticsBrowserMonitorFieldsTypeBrowser:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for SyntheticsHttpMonitorFieldsCheckRequestMethod.
-const (
-	GET     SyntheticsHttpMonitorFieldsCheckRequestMethod = "GET"
-	HEAD    SyntheticsHttpMonitorFieldsCheckRequestMethod = "HEAD"
-	OPTIONS SyntheticsHttpMonitorFieldsCheckRequestMethod = "OPTIONS"
-	POST    SyntheticsHttpMonitorFieldsCheckRequestMethod = "POST"
-)
-
-// Valid indicates whether the value is a known member of the SyntheticsHttpMonitorFieldsCheckRequestMethod enum.
-func (e SyntheticsHttpMonitorFieldsCheckRequestMethod) Valid() bool {
-	switch e {
-	case GET:
-		return true
-	case HEAD:
-		return true
-	case OPTIONS:
-		return true
-	case POST:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for SyntheticsHttpMonitorFieldsMode.
-const (
-	SyntheticsHttpMonitorFieldsModeAll SyntheticsHttpMonitorFieldsMode = "all"
-	SyntheticsHttpMonitorFieldsModeAny SyntheticsHttpMonitorFieldsMode = "any"
-)
-
-// Valid indicates whether the value is a known member of the SyntheticsHttpMonitorFieldsMode enum.
-func (e SyntheticsHttpMonitorFieldsMode) Valid() bool {
-	switch e {
-	case SyntheticsHttpMonitorFieldsModeAll:
-		return true
-	case SyntheticsHttpMonitorFieldsModeAny:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for SyntheticsHttpMonitorFieldsType.
-const (
-	SyntheticsHttpMonitorFieldsTypeHttp SyntheticsHttpMonitorFieldsType = "http"
-)
-
-// Valid indicates whether the value is a known member of the SyntheticsHttpMonitorFieldsType enum.
-func (e SyntheticsHttpMonitorFieldsType) Valid() bool {
-	switch e {
-	case SyntheticsHttpMonitorFieldsTypeHttp:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for SyntheticsIcmpMonitorFieldsType.
-const (
-	Icmp SyntheticsIcmpMonitorFieldsType = "icmp"
-)
-
-// Valid indicates whether the value is a known member of the SyntheticsIcmpMonitorFieldsType enum.
-func (e SyntheticsIcmpMonitorFieldsType) Valid() bool {
-	switch e {
-	case Icmp:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for SyntheticsTcpMonitorFieldsType.
-const (
-	Tcp SyntheticsTcpMonitorFieldsType = "tcp"
-)
-
-// Valid indicates whether the value is a known member of the SyntheticsTcpMonitorFieldsType enum.
-func (e SyntheticsTcpMonitorFieldsType) Valid() bool {
-	switch e {
-	case Tcp:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for AuthType.
 const (
 	WebhookAuthenticationBasic     AuthType = "webhook-authentication-basic"
@@ -26369,22 +26456,23 @@ func (e FindCaseActivityDefaultSpaceParamsSortOrder) Valid() bool {
 
 // Defines values for FindCaseActivityDefaultSpaceParamsTypes.
 const (
-	FindCaseActivityDefaultSpaceParamsTypesAction      FindCaseActivityDefaultSpaceParamsTypes = "action"
-	FindCaseActivityDefaultSpaceParamsTypesAlert       FindCaseActivityDefaultSpaceParamsTypes = "alert"
-	FindCaseActivityDefaultSpaceParamsTypesAssignees   FindCaseActivityDefaultSpaceParamsTypes = "assignees"
-	FindCaseActivityDefaultSpaceParamsTypesAttachment  FindCaseActivityDefaultSpaceParamsTypes = "attachment"
-	FindCaseActivityDefaultSpaceParamsTypesComment     FindCaseActivityDefaultSpaceParamsTypes = "comment"
-	FindCaseActivityDefaultSpaceParamsTypesConnector   FindCaseActivityDefaultSpaceParamsTypes = "connector"
-	FindCaseActivityDefaultSpaceParamsTypesCreateCase  FindCaseActivityDefaultSpaceParamsTypes = "create_case"
-	FindCaseActivityDefaultSpaceParamsTypesDescription FindCaseActivityDefaultSpaceParamsTypes = "description"
-	FindCaseActivityDefaultSpaceParamsTypesPushed      FindCaseActivityDefaultSpaceParamsTypes = "pushed"
-	FindCaseActivityDefaultSpaceParamsTypesSettings    FindCaseActivityDefaultSpaceParamsTypes = "settings"
-	FindCaseActivityDefaultSpaceParamsTypesSeverity    FindCaseActivityDefaultSpaceParamsTypes = "severity"
-	FindCaseActivityDefaultSpaceParamsTypesStatus      FindCaseActivityDefaultSpaceParamsTypes = "status"
-	FindCaseActivityDefaultSpaceParamsTypesTags        FindCaseActivityDefaultSpaceParamsTypes = "tags"
-	FindCaseActivityDefaultSpaceParamsTypesTitle       FindCaseActivityDefaultSpaceParamsTypes = "title"
-	FindCaseActivityDefaultSpaceParamsTypesUser        FindCaseActivityDefaultSpaceParamsTypes = "user"
-	FindCaseActivityDefaultSpaceParamsTypesWorkflow    FindCaseActivityDefaultSpaceParamsTypes = "workflow"
+	FindCaseActivityDefaultSpaceParamsTypesAction          FindCaseActivityDefaultSpaceParamsTypes = "action"
+	FindCaseActivityDefaultSpaceParamsTypesAlert           FindCaseActivityDefaultSpaceParamsTypes = "alert"
+	FindCaseActivityDefaultSpaceParamsTypesAssignees       FindCaseActivityDefaultSpaceParamsTypes = "assignees"
+	FindCaseActivityDefaultSpaceParamsTypesAttachment      FindCaseActivityDefaultSpaceParamsTypes = "attachment"
+	FindCaseActivityDefaultSpaceParamsTypesBulkAttachments FindCaseActivityDefaultSpaceParamsTypes = "bulkAttachments"
+	FindCaseActivityDefaultSpaceParamsTypesComment         FindCaseActivityDefaultSpaceParamsTypes = "comment"
+	FindCaseActivityDefaultSpaceParamsTypesConnector       FindCaseActivityDefaultSpaceParamsTypes = "connector"
+	FindCaseActivityDefaultSpaceParamsTypesCreateCase      FindCaseActivityDefaultSpaceParamsTypes = "create_case"
+	FindCaseActivityDefaultSpaceParamsTypesDescription     FindCaseActivityDefaultSpaceParamsTypes = "description"
+	FindCaseActivityDefaultSpaceParamsTypesPushed          FindCaseActivityDefaultSpaceParamsTypes = "pushed"
+	FindCaseActivityDefaultSpaceParamsTypesSettings        FindCaseActivityDefaultSpaceParamsTypes = "settings"
+	FindCaseActivityDefaultSpaceParamsTypesSeverity        FindCaseActivityDefaultSpaceParamsTypes = "severity"
+	FindCaseActivityDefaultSpaceParamsTypesStatus          FindCaseActivityDefaultSpaceParamsTypes = "status"
+	FindCaseActivityDefaultSpaceParamsTypesTags            FindCaseActivityDefaultSpaceParamsTypes = "tags"
+	FindCaseActivityDefaultSpaceParamsTypesTitle           FindCaseActivityDefaultSpaceParamsTypes = "title"
+	FindCaseActivityDefaultSpaceParamsTypesUser            FindCaseActivityDefaultSpaceParamsTypes = "user"
+	FindCaseActivityDefaultSpaceParamsTypesWorkflow        FindCaseActivityDefaultSpaceParamsTypes = "workflow"
 )
 
 // Valid indicates whether the value is a known member of the FindCaseActivityDefaultSpaceParamsTypes enum.
@@ -26397,6 +26485,8 @@ func (e FindCaseActivityDefaultSpaceParamsTypes) Valid() bool {
 	case FindCaseActivityDefaultSpaceParamsTypesAssignees:
 		return true
 	case FindCaseActivityDefaultSpaceParamsTypesAttachment:
+		return true
+	case FindCaseActivityDefaultSpaceParamsTypesBulkAttachments:
 		return true
 	case FindCaseActivityDefaultSpaceParamsTypesComment:
 		return true
@@ -29762,19 +29852,19 @@ func (e GetFleetEpmPackagesInstalledParamsSortOrder) Valid() bool {
 
 // Defines values for GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormat.
 const (
-	Json GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormat = "json"
-	Yaml GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormat = "yaml"
-	Yml  GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormat = "yml"
+	GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormatJson GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormat = "json"
+	GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormatYaml GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormat = "yaml"
+	GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormatYml  GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormat = "yml"
 )
 
 // Valid indicates whether the value is a known member of the GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormat enum.
 func (e GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormat) Valid() bool {
 	switch e {
-	case Json:
+	case GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormatJson:
 		return true
-	case Yaml:
+	case GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormatYaml:
 		return true
-	case Yml:
+	case GetFleetEpmTemplatesPkgnamePkgversionInputsParamsFormatYml:
 		return true
 	default:
 		return false
@@ -32244,24 +32334,36 @@ func (e PutStreamsStreamnameAttachmentsAttachmenttypeAttachmentidParamsAttachmen
 	}
 }
 
-// Defines values for GetSyntheticMonitorsParamsMonitorTypes.
+// Defines values for GetSyntheticMonitorsParamsShowFromAllSpaces0.
 const (
-	GetSyntheticMonitorsParamsMonitorTypesBrowser GetSyntheticMonitorsParamsMonitorTypes = "browser"
-	GetSyntheticMonitorsParamsMonitorTypesHttp    GetSyntheticMonitorsParamsMonitorTypes = "http"
-	GetSyntheticMonitorsParamsMonitorTypesIcmp    GetSyntheticMonitorsParamsMonitorTypes = "icmp"
-	GetSyntheticMonitorsParamsMonitorTypesTcp     GetSyntheticMonitorsParamsMonitorTypes = "tcp"
+	GetSyntheticMonitorsParamsShowFromAllSpaces0False GetSyntheticMonitorsParamsShowFromAllSpaces0 = "false"
+	GetSyntheticMonitorsParamsShowFromAllSpaces0True  GetSyntheticMonitorsParamsShowFromAllSpaces0 = "true"
 )
 
-// Valid indicates whether the value is a known member of the GetSyntheticMonitorsParamsMonitorTypes enum.
-func (e GetSyntheticMonitorsParamsMonitorTypes) Valid() bool {
+// Valid indicates whether the value is a known member of the GetSyntheticMonitorsParamsShowFromAllSpaces0 enum.
+func (e GetSyntheticMonitorsParamsShowFromAllSpaces0) Valid() bool {
 	switch e {
-	case GetSyntheticMonitorsParamsMonitorTypesBrowser:
+	case GetSyntheticMonitorsParamsShowFromAllSpaces0False:
 		return true
-	case GetSyntheticMonitorsParamsMonitorTypesHttp:
+	case GetSyntheticMonitorsParamsShowFromAllSpaces0True:
 		return true
-	case GetSyntheticMonitorsParamsMonitorTypesIcmp:
+	default:
+		return false
+	}
+}
+
+// Defines values for GetSyntheticMonitorsParamsUseLogicalAndFor.
+const (
+	Locations GetSyntheticMonitorsParamsUseLogicalAndFor = "locations"
+	Tags      GetSyntheticMonitorsParamsUseLogicalAndFor = "tags"
+)
+
+// Valid indicates whether the value is a known member of the GetSyntheticMonitorsParamsUseLogicalAndFor enum.
+func (e GetSyntheticMonitorsParamsUseLogicalAndFor) Valid() bool {
+	switch e {
+	case Locations:
 		return true
-	case GetSyntheticMonitorsParamsMonitorTypesTcp:
+	case Tags:
 		return true
 	default:
 		return false
@@ -32270,10 +32372,17 @@ func (e GetSyntheticMonitorsParamsMonitorTypes) Valid() bool {
 
 // Defines values for GetSyntheticMonitorsParamsSortField.
 const (
-	GetSyntheticMonitorsParamsSortFieldCreatedAt GetSyntheticMonitorsParamsSortField = "createdAt"
+	GetSyntheticMonitorsParamsSortFieldCreatedAt GetSyntheticMonitorsParamsSortField = "created_at"
+	GetSyntheticMonitorsParamsSortFieldEnabled   GetSyntheticMonitorsParamsSortField = "enabled"
+	GetSyntheticMonitorsParamsSortFieldJourneyId GetSyntheticMonitorsParamsSortField = "journey_id"
 	GetSyntheticMonitorsParamsSortFieldName      GetSyntheticMonitorsParamsSortField = "name"
+	GetSyntheticMonitorsParamsSortFieldProjectId GetSyntheticMonitorsParamsSortField = "project_id"
+	GetSyntheticMonitorsParamsSortFieldSchedule  GetSyntheticMonitorsParamsSortField = "schedule"
 	GetSyntheticMonitorsParamsSortFieldStatus    GetSyntheticMonitorsParamsSortField = "status"
-	GetSyntheticMonitorsParamsSortFieldUpdatedAt GetSyntheticMonitorsParamsSortField = "updatedAt"
+	GetSyntheticMonitorsParamsSortFieldTags      GetSyntheticMonitorsParamsSortField = "tags"
+	GetSyntheticMonitorsParamsSortFieldType      GetSyntheticMonitorsParamsSortField = "type"
+	GetSyntheticMonitorsParamsSortFieldUpdatedAt GetSyntheticMonitorsParamsSortField = "updated_at"
+	GetSyntheticMonitorsParamsSortFieldUrls      GetSyntheticMonitorsParamsSortField = "urls"
 )
 
 // Valid indicates whether the value is a known member of the GetSyntheticMonitorsParamsSortField enum.
@@ -32281,11 +32390,25 @@ func (e GetSyntheticMonitorsParamsSortField) Valid() bool {
 	switch e {
 	case GetSyntheticMonitorsParamsSortFieldCreatedAt:
 		return true
+	case GetSyntheticMonitorsParamsSortFieldEnabled:
+		return true
+	case GetSyntheticMonitorsParamsSortFieldJourneyId:
+		return true
 	case GetSyntheticMonitorsParamsSortFieldName:
+		return true
+	case GetSyntheticMonitorsParamsSortFieldProjectId:
+		return true
+	case GetSyntheticMonitorsParamsSortFieldSchedule:
 		return true
 	case GetSyntheticMonitorsParamsSortFieldStatus:
 		return true
+	case GetSyntheticMonitorsParamsSortFieldTags:
+		return true
+	case GetSyntheticMonitorsParamsSortFieldType:
+		return true
 	case GetSyntheticMonitorsParamsSortFieldUpdatedAt:
+		return true
+	case GetSyntheticMonitorsParamsSortFieldUrls:
 		return true
 	default:
 		return false
@@ -32310,18 +32433,18 @@ func (e GetSyntheticMonitorsParamsSortOrder) Valid() bool {
 	}
 }
 
-// Defines values for GetSyntheticMonitorsParamsUseLogicalAndFor.
+// Defines values for PostSyntheticMonitorsParamsPreserveNamespace0.
 const (
-	Locations GetSyntheticMonitorsParamsUseLogicalAndFor = "locations"
-	Tags      GetSyntheticMonitorsParamsUseLogicalAndFor = "tags"
+	PostSyntheticMonitorsParamsPreserveNamespace0False PostSyntheticMonitorsParamsPreserveNamespace0 = "false"
+	PostSyntheticMonitorsParamsPreserveNamespace0True  PostSyntheticMonitorsParamsPreserveNamespace0 = "true"
 )
 
-// Valid indicates whether the value is a known member of the GetSyntheticMonitorsParamsUseLogicalAndFor enum.
-func (e GetSyntheticMonitorsParamsUseLogicalAndFor) Valid() bool {
+// Valid indicates whether the value is a known member of the PostSyntheticMonitorsParamsPreserveNamespace0 enum.
+func (e PostSyntheticMonitorsParamsPreserveNamespace0) Valid() bool {
 	switch e {
-	case Locations:
+	case PostSyntheticMonitorsParamsPreserveNamespace0False:
 		return true
-	case Tags:
+	case PostSyntheticMonitorsParamsPreserveNamespace0True:
 		return true
 	default:
 		return false
@@ -34367,6 +34490,17 @@ type CasesPayloadAlertCommentCommentType string
 type CasesPayloadAssignees struct {
 	// Assignees An array containing users that are assigned to the case.
 	Assignees *CasesAssignees `json:"assignees,omitempty"`
+}
+
+// CasesPayloadBulkAttachments The payload for a bulk attachments user action, recorded when a user removes one or more attachments of the same type from a case in a single action.
+type CasesPayloadBulkAttachments struct {
+	BulkAttachments struct {
+		// AttachmentType The attachment type, such as `security.alert` or `file`.
+		AttachmentType string `json:"attachmentType"`
+
+		// Count The number of attachments of this type.
+		Count int `json:"count"`
+	} `json:"bulkAttachments"`
 }
 
 // CasesPayloadConnector defines model for Cases_payload_connector.
@@ -38389,6 +38523,244 @@ type KibanaHTTPAPIsAlertsFilterQuery struct {
 // KibanaHTTPAPIsAlertsFilterQueryFiltersStateStore A filter that can be applied to a specific application context or applied globally.
 type KibanaHTTPAPIsAlertsFilterQueryFiltersStateStore string
 
+// KibanaHTTPAPIsApiMonitorFields defines model for Kibana_HTTP_APIs_apiMonitorFields.
+type KibanaHTTPAPIsApiMonitorFields struct {
+	// Alert The alert configuration. The default is `{ status: { enabled: true }, tls: { enabled: true } }`.
+	Alert *KibanaHTTPAPIsApiMonitorFields_Alert `json:"alert,omitempty"`
+
+	// CertificateErrorSpkiAllowlist Any JSON value.
+	CertificateErrorSpkiAllowlist *KibanaHTTPAPIsSyntheticsJsonValue `json:"certificate_error_spki_allowlist,omitempty"`
+
+	// Enabled Specify whether the monitor is enabled. Defaults to `true`.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// FilterJourneys Any JSON value.
+	FilterJourneys *KibanaHTTPAPIsSyntheticsJsonValue `json:"filter_journeys,omitempty"`
+
+	// FilterJourneysMatch Any JSON value.
+	FilterJourneysMatch *KibanaHTTPAPIsSyntheticsJsonValue `json:"filter_journeys.match,omitempty"`
+
+	// FilterJourneysTags Any JSON value.
+	FilterJourneysTags *KibanaHTTPAPIsSyntheticsJsonValue `json:"filter_journeys.tags,omitempty"`
+
+	// Id Any JSON value.
+	Id *KibanaHTTPAPIsSyntheticsJsonValue `json:"id,omitempty"`
+
+	// IgnoreHttpsErrors Any JSON value.
+	IgnoreHttpsErrors *KibanaHTTPAPIsSyntheticsJsonValue `json:"ignore_https_errors,omitempty"`
+
+	// InlineScript The inline script.
+	InlineScript *string `json:"inline_script,omitempty"`
+
+	// Labels Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
+	Labels *map[string]string `json:"labels,omitempty"`
+
+	// Locations The Elastic-managed locations to deploy the monitor to.
+	// Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
+	// To list available locations, run the `elastic-synthetics locations` command with the deployment's Kibana URL, or go to *Synthetics > Management* and click *Create monitor*.
+	//
+	// You can provide `locations` or `private_locations` or both. At least one is required.
+	Locations *[]KibanaHTTPAPIsApiMonitorFields_Locations_Item `json:"locations,omitempty"`
+
+	// MaintenanceWindows The IDs of the maintenance windows to apply to the monitor.
+	MaintenanceWindows *[]string `json:"maintenance_windows,omitempty"`
+
+	// Name The monitor name.
+	Name *string `json:"name,omitempty"`
+
+	// Namespace The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: `*`, `\`, `/`, `?`, `"`, `<`, `>`, `|`, whitespace, `,`, `#`, `:`, or `-`. Defaults to `default`.
+	Namespace *string `json:"namespace,omitempty"`
+
+	// Params The monitor parameters, as a JSON string or an object.
+	Params *KibanaHTTPAPIsApiMonitorFields_Params `json:"params,omitempty"`
+
+	// PlaywrightOptions Any JSON value.
+	PlaywrightOptions *KibanaHTTPAPIsSyntheticsJsonValue `json:"playwright_options,omitempty"`
+
+	// PlaywrightTextAssertion Any JSON value.
+	PlaywrightTextAssertion *KibanaHTTPAPIsSyntheticsJsonValue `json:"playwright_text_assertion,omitempty"`
+
+	// PrivateLocations The private locations to deploy the monitor to.
+	// These locations are hosted and managed by you, whereas `locations` are hosted by Elastic.
+	// You can specify a private location using the location's name.
+	// To list available private locations, run the `elastic-synthetics locations` command with the deployment's Kibana URL, or go to *Synthetics > Settings* and click *Private locations*.
+	PrivateLocations *[]KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item `json:"private_locations,omitempty"`
+
+	// RetestOnFailure Turn retesting for when a monitor fails on or off. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error is created and, if configured, an alert is sent. Using `retest_on_failure` can reduce noise related to transient problems.
+	RetestOnFailure *bool `json:"retest_on_failure,omitempty"`
+
+	// Schedule The monitor's schedule in minutes. Supported values are `1`, `3`, `5`, `10`, `15`, `30`, `60`, `120`, and `240`. The default value is `3` minutes for HTTP, TCP, and ICMP monitors, and `10` minutes for browser monitors.
+	Schedule *KibanaHTTPAPIsApiMonitorFields_Schedule `json:"schedule,omitempty"`
+
+	// ServiceName Any JSON value.
+	ServiceName *KibanaHTTPAPIsSyntheticsJsonValue `json:"service.name,omitempty"`
+
+	// Source Any JSON value.
+	Source *KibanaHTTPAPIsSyntheticsJsonValue `json:"source,omitempty"`
+
+	// SourceInline Any JSON value.
+	SourceInline *KibanaHTTPAPIsSyntheticsJsonValue `json:"source.inline,omitempty"`
+
+	// SourceInlineScript Any JSON value.
+	SourceInlineScript *KibanaHTTPAPIsSyntheticsJsonValue `json:"source.inline.script,omitempty"`
+
+	// SourceProjectContent Any JSON value.
+	SourceProjectContent *KibanaHTTPAPIsSyntheticsJsonValue `json:"source.project.content,omitempty"`
+
+	// Spaces The IDs of additional spaces to make the monitor available in, besides the current space.
+	Spaces *[]string `json:"spaces,omitempty"`
+
+	// Ssl Any JSON value.
+	Ssl *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl,omitempty"`
+
+	// SslCertificate Any JSON value.
+	SslCertificate *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.certificate,omitempty"`
+
+	// SslCertificateAuthorities Any JSON value.
+	SslCertificateAuthorities *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.certificate_authorities,omitempty"`
+
+	// SslKey Any JSON value.
+	SslKey *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.key,omitempty"`
+
+	// SslKeyPassphrase Any JSON value.
+	SslKeyPassphrase *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.key_passphrase,omitempty"`
+
+	// SslSupportedProtocols Any JSON value.
+	SslSupportedProtocols *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.supported_protocols,omitempty"`
+
+	// SslVerificationMode Any JSON value.
+	SslVerificationMode *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.verification_mode,omitempty"`
+
+	// SyntheticsArgs Any JSON value.
+	SyntheticsArgs *KibanaHTTPAPIsSyntheticsJsonValue `json:"synthetics_args,omitempty"`
+
+	// Tags An array of tags.
+	Tags *KibanaHTTPAPIsApiMonitorFields_Tags `json:"tags,omitempty"`
+
+	// Timeout The monitor timeout in seconds. The monitor fails if it doesn't complete within this time. Defaults to `16`.
+	//
+	// For browser monitors, the minimum timeout is 30 seconds. Browser monitor timeouts only apply on private locations; on public locations the timeout has no effect and the response includes a warning.
+	Timeout *KibanaHTTPAPIsApiMonitorFields_Timeout `json:"timeout,omitempty"`
+
+	// Type The monitor type.
+	Type KibanaHTTPAPIsApiMonitorFieldsType `json:"type"`
+}
+
+// KibanaHTTPAPIsApiMonitorFields_Alert_Status defines model for KibanaHTTPAPIsApiMonitorFields.Alert.Status.
+type KibanaHTTPAPIsApiMonitorFields_Alert_Status struct {
+	Enabled              bool                   `json:"enabled"`
+	GroupBy              *string                `json:"groupBy,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// KibanaHTTPAPIsApiMonitorFields_Alert_Tls defines model for KibanaHTTPAPIsApiMonitorFields.Alert.Tls.
+type KibanaHTTPAPIsApiMonitorFields_Alert_Tls struct {
+	Enabled              bool                   `json:"enabled"`
+	GroupBy              *string                `json:"groupBy,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// KibanaHTTPAPIsApiMonitorFields_Alert The alert configuration. The default is `{ status: { enabled: true }, tls: { enabled: true } }`.
+type KibanaHTTPAPIsApiMonitorFields_Alert struct {
+	Status               *KibanaHTTPAPIsApiMonitorFields_Alert_Status `json:"status,omitempty"`
+	Tls                  *KibanaHTTPAPIsApiMonitorFields_Alert_Tls    `json:"tls,omitempty"`
+	AdditionalProperties map[string]interface{}                       `json:"-"`
+}
+
+// KibanaHTTPAPIsApiMonitorFieldsLocations0 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsLocations0 = string
+
+// KibanaHTTPAPIsApiMonitorFieldsLocations1 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsLocations1 struct {
+	Id                   string                 `json:"id"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// KibanaHTTPAPIsApiMonitorFields_Locations_Item defines model for Kibana_HTTP_APIs_apiMonitorFields.locations.Item.
+type KibanaHTTPAPIsApiMonitorFields_Locations_Item struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsApiMonitorFieldsParams0 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsParams0 = string
+
+// KibanaHTTPAPIsApiMonitorFieldsParams1 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsParams1 map[string]string
+
+// KibanaHTTPAPIsApiMonitorFields_Params The monitor parameters, as a JSON string or an object.
+type KibanaHTTPAPIsApiMonitorFields_Params struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsApiMonitorFieldsPrivateLocations0 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsPrivateLocations0 = string
+
+// KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1 struct {
+	Id                   string                 `json:"id"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item defines model for Kibana_HTTP_APIs_apiMonitorFields.private_locations.Item.
+type KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsApiMonitorFieldsSchedule0 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsSchedule0 = float32
+
+// KibanaHTTPAPIsApiMonitorFieldsSchedule1 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsSchedule1 struct {
+	Number KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number `json:"number"`
+	Unit   KibanaHTTPAPIsApiMonitorFieldsSchedule1Unit      `json:"unit"`
+}
+
+// KibanaHTTPAPIsApiMonitorFieldsSchedule1Number0 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsSchedule1Number0 = string
+
+// KibanaHTTPAPIsApiMonitorFieldsSchedule1Number1 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsSchedule1Number1 = float32
+
+// KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number defines model for KibanaHTTPAPIsApiMonitorFields.Schedule.1.Number.
+type KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsApiMonitorFieldsSchedule1Unit defines model for KibanaHTTPAPIsApiMonitorFields.Schedule.1.Unit.
+type KibanaHTTPAPIsApiMonitorFieldsSchedule1Unit string
+
+// KibanaHTTPAPIsApiMonitorFields_Schedule The monitor's schedule in minutes. Supported values are `1`, `3`, `5`, `10`, `15`, `30`, `60`, `120`, and `240`. The default value is `3` minutes for HTTP, TCP, and ICMP monitors, and `10` minutes for browser monitors.
+type KibanaHTTPAPIsApiMonitorFields_Schedule struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsApiMonitorFieldsTags0 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsTags0 = string
+
+// KibanaHTTPAPIsApiMonitorFieldsTags1 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsTags1 = []string
+
+// KibanaHTTPAPIsApiMonitorFields_Tags An array of tags.
+type KibanaHTTPAPIsApiMonitorFields_Tags struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsApiMonitorFieldsTimeout0 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsTimeout0 = string
+
+// KibanaHTTPAPIsApiMonitorFieldsTimeout1 defines model for .
+type KibanaHTTPAPIsApiMonitorFieldsTimeout1 = float32
+
+// KibanaHTTPAPIsApiMonitorFields_Timeout The monitor timeout in seconds. The monitor fails if it doesn't complete within this time. Defaults to `16`.
+//
+// For browser monitors, the minimum timeout is 30 seconds. Browser monitor timeouts only apply on private locations; on public locations the timeout has no effect and the response includes a warning.
+type KibanaHTTPAPIsApiMonitorFields_Timeout struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsApiMonitorFieldsType The monitor type.
+type KibanaHTTPAPIsApiMonitorFieldsType string
+
 // KibanaHTTPAPIsApmAnomalyCreateRuleBodyAlerting defines model for Kibana_HTTP_APIs_apm-anomaly-create-rule-body-alerting.
 type KibanaHTTPAPIsApmAnomalyCreateRuleBodyAlerting struct {
 	Actions *[]KibanaHTTPAPIsNewRuleAction `json:"actions,omitempty"`
@@ -38863,6 +39235,107 @@ type KibanaHTTPAPIsBackfillResponseScheduleStatus string
 
 // KibanaHTTPAPIsBackfillResponseStatus defines model for KibanaHTTPAPIsBackfillResponse.Status.
 type KibanaHTTPAPIsBackfillResponseStatus string
+
+// KibanaHTTPAPIsBrowserMonitorFields defines model for Kibana_HTTP_APIs_browserMonitorFields.
+type KibanaHTTPAPIsBrowserMonitorFields struct {
+	Alert *SyntheticsMonitorAlert `json:"alert,omitempty"`
+
+	// CertificateErrorSpkiAllowlist Any JSON value.
+	CertificateErrorSpkiAllowlist *KibanaHTTPAPIsSyntheticsJsonValue `json:"certificate_error_spki_allowlist,omitempty"`
+
+	// Enabled Specify whether the monitor is enabled. Defaults to `true`.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// FilterJourneys Any JSON value.
+	FilterJourneys *KibanaHTTPAPIsSyntheticsJsonValue `json:"filter_journeys,omitempty"`
+
+	// FilterJourneysMatch Any JSON value.
+	FilterJourneysMatch *KibanaHTTPAPIsSyntheticsJsonValue `json:"filter_journeys.match,omitempty"`
+
+	// FilterJourneysTags Any JSON value.
+	FilterJourneysTags *KibanaHTTPAPIsSyntheticsJsonValue `json:"filter_journeys.tags,omitempty"`
+
+	// Id Any JSON value.
+	Id                *KibanaHTTPAPIsSyntheticsJsonValue `json:"id,omitempty"`
+	IgnoreHttpsErrors *bool                              `json:"ignore_https_errors,omitempty"`
+
+	// InlineScript The inline script.
+	InlineScript string `json:"inline_script"`
+
+	// Labels Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
+	Labels    *map[string]string `json:"labels,omitempty"`
+	Locations *[]string          `json:"locations,omitempty"`
+
+	// MaintenanceWindows The IDs of the maintenance windows to apply to the monitor.
+	MaintenanceWindows *[]string `json:"maintenance_windows,omitempty"`
+
+	// Name The monitor name.
+	Name string `json:"name"`
+
+	// Namespace The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: `*`, `\`, `/`, `?`, `"`, `<`, `>`, `|`, whitespace, `,`, `#`, `:`, or `-`. Defaults to `default`.
+	Namespace         *string                 `json:"namespace,omitempty"`
+	Params            *map[string]interface{} `json:"params,omitempty"`
+	PlaywrightOptions *map[string]interface{} `json:"playwright_options,omitempty"`
+
+	// PlaywrightTextAssertion Any JSON value.
+	PlaywrightTextAssertion *KibanaHTTPAPIsSyntheticsJsonValue `json:"playwright_text_assertion,omitempty"`
+	PrivateLocations        *[]string                          `json:"private_locations,omitempty"`
+
+	// RetestOnFailure Turn retesting for when a monitor fails on or off. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error is created and, if configured, an alert is sent. Using `retest_on_failure` can reduce noise related to transient problems.
+	RetestOnFailure *bool                                          `json:"retest_on_failure,omitempty"`
+	Schedule        *float32                                       `json:"schedule,omitempty"`
+	Screenshots     *KibanaHTTPAPIsBrowserMonitorFieldsScreenshots `json:"screenshots,omitempty"`
+	ServiceName     *string                                        `json:"service.name,omitempty"`
+
+	// Source Any JSON value.
+	Source *KibanaHTTPAPIsSyntheticsJsonValue `json:"source,omitempty"`
+
+	// SourceInline Any JSON value.
+	SourceInline *KibanaHTTPAPIsSyntheticsJsonValue `json:"source.inline,omitempty"`
+
+	// SourceInlineScript Any JSON value.
+	SourceInlineScript *KibanaHTTPAPIsSyntheticsJsonValue `json:"source.inline.script,omitempty"`
+
+	// SourceProjectContent Any JSON value.
+	SourceProjectContent *KibanaHTTPAPIsSyntheticsJsonValue `json:"source.project.content,omitempty"`
+
+	// Spaces The IDs of additional spaces to make the monitor available in, besides the current space.
+	Spaces *[]string            `json:"spaces,omitempty"`
+	Ssl    *SyntheticsSslConfig `json:"ssl,omitempty"`
+
+	// SslCertificate Any JSON value.
+	SslCertificate *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.certificate,omitempty"`
+
+	// SslCertificateAuthorities Any JSON value.
+	SslCertificateAuthorities *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.certificate_authorities,omitempty"`
+
+	// SslKey Any JSON value.
+	SslKey *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.key,omitempty"`
+
+	// SslKeyPassphrase Any JSON value.
+	SslKeyPassphrase *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.key_passphrase,omitempty"`
+
+	// SslSupportedProtocols Any JSON value.
+	SslSupportedProtocols *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.supported_protocols,omitempty"`
+
+	// SslVerificationMode Any JSON value.
+	SslVerificationMode *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.verification_mode,omitempty"`
+	SyntheticsArgs      *[]string                          `json:"synthetics_args,omitempty"`
+	Tags                *[]string                          `json:"tags,omitempty"`
+
+	// Throttling Any JSON value.
+	Throttling *KibanaHTTPAPIsSyntheticsJsonValue `json:"throttling,omitempty"`
+	Timeout    *float32                           `json:"timeout,omitempty"`
+
+	// Type The monitor type.
+	Type KibanaHTTPAPIsBrowserMonitorFieldsType `json:"type"`
+}
+
+// KibanaHTTPAPIsBrowserMonitorFieldsScreenshots defines model for KibanaHTTPAPIsBrowserMonitorFields.Screenshots.
+type KibanaHTTPAPIsBrowserMonitorFieldsScreenshots string
+
+// KibanaHTTPAPIsBrowserMonitorFieldsType The monitor type.
+type KibanaHTTPAPIsBrowserMonitorFieldsType string
 
 // KibanaHTTPAPIsBulkDeleteEnrollmentApiKeysRequest defines model for Kibana_HTTP_APIs_bulk_delete_enrollment_api_keys_request.
 type KibanaHTTPAPIsBulkDeleteEnrollmentApiKeysRequest struct {
@@ -39391,6 +39864,11 @@ type KibanaHTTPAPIsCoreStatusResponseStatusPluginsLevel string
 
 // KibanaHTTPAPIsCoreStatusResponseVersionBuildFlavor The build flavour determines configuration and behavior of Kibana. On premise users will almost always run the "traditional" flavour, while other flavours are reserved for Elastic-specific use cases.
 type KibanaHTTPAPIsCoreStatusResponseVersionBuildFlavor string
+
+// KibanaHTTPAPIsCreateMonitorRequest Create a synthetics monitor. Required and default fields vary by type (HTTP, TCP, ICMP, browser, or API).
+type KibanaHTTPAPIsCreateMonitorRequest struct {
+	union json.RawMessage
+}
 
 // KibanaHTTPAPIsCreateCustomIntegrationRequest defines model for Kibana_HTTP_APIs_create_custom_integration_request.
 type KibanaHTTPAPIsCreateCustomIntegrationRequest struct {
@@ -41380,6 +41858,208 @@ type KibanaHTTPAPIsGetStatsResponse struct {
 // KibanaHTTPAPIsGetVerificationKeyIdResponse defines model for Kibana_HTTP_APIs_get_verification_key_id_response.
 type KibanaHTTPAPIsGetVerificationKeyIdResponse struct {
 	Id *string `json:"id,omitempty"`
+}
+
+// KibanaHTTPAPIsHttpMonitorFields defines model for Kibana_HTTP_APIs_httpMonitorFields.
+type KibanaHTTPAPIsHttpMonitorFields struct {
+	Alert *SyntheticsMonitorAlert `json:"alert,omitempty"`
+	Check *map[string]interface{} `json:"check,omitempty"`
+
+	// CheckRequestBody Any JSON value.
+	CheckRequestBody *KibanaHTTPAPIsSyntheticsJsonValue `json:"check.request.body,omitempty"`
+
+	// CheckRequestHeaders Any JSON value.
+	CheckRequestHeaders *KibanaHTTPAPIsSyntheticsJsonValue `json:"check.request.headers,omitempty"`
+
+	// CheckRequestMethod Any JSON value.
+	CheckRequestMethod *KibanaHTTPAPIsSyntheticsJsonValue `json:"check.request.method,omitempty"`
+
+	// CheckResponseBodyNegative Any JSON value.
+	CheckResponseBodyNegative *KibanaHTTPAPIsSyntheticsJsonValue `json:"check.response.body.negative,omitempty"`
+
+	// CheckResponseBodyPositive Any JSON value.
+	CheckResponseBodyPositive *KibanaHTTPAPIsSyntheticsJsonValue `json:"check.response.body.positive,omitempty"`
+
+	// CheckResponseHeaders Any JSON value.
+	CheckResponseHeaders *KibanaHTTPAPIsSyntheticsJsonValue `json:"check.response.headers,omitempty"`
+
+	// CheckResponseJson Any JSON value.
+	CheckResponseJson *KibanaHTTPAPIsSyntheticsJsonValue `json:"check.response.json,omitempty"`
+
+	// CheckResponseStatus Any JSON value.
+	CheckResponseStatus *KibanaHTTPAPIsSyntheticsJsonValue `json:"check.response.status,omitempty"`
+
+	// Enabled Specify whether the monitor is enabled. Defaults to `true`.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Id Any JSON value.
+	Id *KibanaHTTPAPIsSyntheticsJsonValue `json:"id,omitempty"`
+
+	// Ipv4 If `true`, ping using the ipv4 protocol. Defaults to `true`.
+	Ipv4 *bool `json:"ipv4,omitempty"`
+
+	// Ipv6 If `true`, ping using the ipv6 protocol. Defaults to `true`.
+	Ipv6 *bool `json:"ipv6,omitempty"`
+
+	// Kerberos Any JSON value.
+	Kerberos *KibanaHTTPAPIsSyntheticsJsonValue `json:"kerberos,omitempty"`
+
+	// Labels Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
+	Labels    *map[string]string `json:"labels,omitempty"`
+	Locations *[]string          `json:"locations,omitempty"`
+
+	// MaintenanceWindows The IDs of the maintenance windows to apply to the monitor.
+	MaintenanceWindows *[]string                                     `json:"maintenance_windows,omitempty"`
+	MaxRedirects       *KibanaHTTPAPIsHttpMonitorFields_MaxRedirects `json:"max_redirects,omitempty"`
+
+	// Mode The mode of the monitor. If it is `all`, the monitor pings all resolvable IPs for a hostname. If it is `any`, the monitor pings only one IP address for a hostname. If you're using a DNS-load balancer and want to ping every IP address for the specified hostname, use `all`. Defaults to `any`.
+	Mode *KibanaHTTPAPIsHttpMonitorFieldsMode `json:"mode,omitempty"`
+
+	// Name The monitor name.
+	Name string `json:"name"`
+
+	// Namespace The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: `*`, `\`, `/`, `?`, `"`, `<`, `>`, `|`, whitespace, `,`, `#`, `:`, or `-`. Defaults to `default`.
+	Namespace *string `json:"namespace,omitempty"`
+
+	// Ntlm Any JSON value.
+	Ntlm             *KibanaHTTPAPIsSyntheticsJsonValue `json:"ntlm,omitempty"`
+	Params           *map[string]interface{}            `json:"params,omitempty"`
+	Password         *string                            `json:"password,omitempty"`
+	PrivateLocations *[]string                          `json:"private_locations,omitempty"`
+	ProxyHeaders     *map[string]interface{}            `json:"proxy_headers,omitempty"`
+	ProxyUrl         *string                            `json:"proxy_url,omitempty"`
+	Response         *map[string]interface{}            `json:"response,omitempty"`
+
+	// ResponseIncludeBody Any JSON value.
+	ResponseIncludeBody *KibanaHTTPAPIsSyntheticsJsonValue `json:"response.include_body,omitempty"`
+
+	// ResponseIncludeBodyMaxBytes Any JSON value.
+	ResponseIncludeBodyMaxBytes *KibanaHTTPAPIsSyntheticsJsonValue `json:"response.include_body_max_bytes,omitempty"`
+
+	// ResponseIncludeHeaders Any JSON value.
+	ResponseIncludeHeaders *KibanaHTTPAPIsSyntheticsJsonValue `json:"response.include_headers,omitempty"`
+
+	// RetestOnFailure Turn retesting for when a monitor fails on or off. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error is created and, if configured, an alert is sent. Using `retest_on_failure` can reduce noise related to transient problems.
+	RetestOnFailure *bool    `json:"retest_on_failure,omitempty"`
+	Schedule        *float32 `json:"schedule,omitempty"`
+	ServiceName     *string  `json:"service.name,omitempty"`
+
+	// Spaces The IDs of additional spaces to make the monitor available in, besides the current space.
+	Spaces *[]string            `json:"spaces,omitempty"`
+	Ssl    *SyntheticsSslConfig `json:"ssl,omitempty"`
+
+	// SslCertificate Any JSON value.
+	SslCertificate *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.certificate,omitempty"`
+
+	// SslCertificateAuthorities Any JSON value.
+	SslCertificateAuthorities *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.certificate_authorities,omitempty"`
+
+	// SslKey Any JSON value.
+	SslKey *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.key,omitempty"`
+
+	// SslKeyPassphrase Any JSON value.
+	SslKeyPassphrase *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.key_passphrase,omitempty"`
+
+	// SslSupportedProtocols Any JSON value.
+	SslSupportedProtocols *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.supported_protocols,omitempty"`
+
+	// SslVerificationMode Any JSON value.
+	SslVerificationMode *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.verification_mode,omitempty"`
+	Tags                *[]string                          `json:"tags,omitempty"`
+	Timeout             *float32                           `json:"timeout,omitempty"`
+
+	// Type The monitor type.
+	Type KibanaHTTPAPIsHttpMonitorFieldsType `json:"type"`
+
+	// Url The URL to monitor.
+	Url      string  `json:"url"`
+	Username *string `json:"username,omitempty"`
+}
+
+// KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0 defines model for .
+type KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0 = string
+
+// KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1 defines model for .
+type KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1 = float32
+
+// KibanaHTTPAPIsHttpMonitorFields_MaxRedirects defines model for KibanaHTTPAPIsHttpMonitorFields.MaxRedirects.
+type KibanaHTTPAPIsHttpMonitorFields_MaxRedirects struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsHttpMonitorFieldsMode The mode of the monitor. If it is `all`, the monitor pings all resolvable IPs for a hostname. If it is `any`, the monitor pings only one IP address for a hostname. If you're using a DNS-load balancer and want to ping every IP address for the specified hostname, use `all`. Defaults to `any`.
+type KibanaHTTPAPIsHttpMonitorFieldsMode string
+
+// KibanaHTTPAPIsHttpMonitorFieldsType The monitor type.
+type KibanaHTTPAPIsHttpMonitorFieldsType string
+
+// KibanaHTTPAPIsIcmpMonitorFields defines model for Kibana_HTTP_APIs_icmpMonitorFields.
+type KibanaHTTPAPIsIcmpMonitorFields struct {
+	Alert *SyntheticsMonitorAlert `json:"alert,omitempty"`
+
+	// Enabled Specify whether the monitor is enabled. Defaults to `true`.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Host The host to ping.
+	Host string `json:"host"`
+
+	// Id Any JSON value.
+	Id *KibanaHTTPAPIsSyntheticsJsonValue `json:"id,omitempty"`
+
+	// Ipv4 If `true`, ping using the ipv4 protocol. Defaults to `true`.
+	Ipv4 *bool `json:"ipv4,omitempty"`
+
+	// Ipv6 If `true`, ping using the ipv6 protocol. Defaults to `true`.
+	Ipv6 *bool `json:"ipv6,omitempty"`
+
+	// Labels Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
+	Labels    *map[string]string `json:"labels,omitempty"`
+	Locations *[]string          `json:"locations,omitempty"`
+
+	// MaintenanceWindows The IDs of the maintenance windows to apply to the monitor.
+	MaintenanceWindows *[]string `json:"maintenance_windows,omitempty"`
+
+	// Mode The mode of the monitor. If it is `all`, the monitor pings all resolvable IPs for a hostname. If it is `any`, the monitor pings only one IP address for a hostname. If you're using a DNS-load balancer and want to ping every IP address for the specified hostname, use `all`. Defaults to `any`.
+	Mode *KibanaHTTPAPIsIcmpMonitorFieldsMode `json:"mode,omitempty"`
+
+	// Name The monitor name.
+	Name string `json:"name"`
+
+	// Namespace The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: `*`, `\`, `/`, `?`, `"`, `<`, `>`, `|`, whitespace, `,`, `#`, `:`, or `-`. Defaults to `default`.
+	Namespace        *string                 `json:"namespace,omitempty"`
+	Params           *map[string]interface{} `json:"params,omitempty"`
+	PrivateLocations *[]string               `json:"private_locations,omitempty"`
+
+	// RetestOnFailure Turn retesting for when a monitor fails on or off. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error is created and, if configured, an alert is sent. Using `retest_on_failure` can reduce noise related to transient problems.
+	RetestOnFailure *bool    `json:"retest_on_failure,omitempty"`
+	Schedule        *float32 `json:"schedule,omitempty"`
+	ServiceName     *string  `json:"service.name,omitempty"`
+
+	// Spaces The IDs of additional spaces to make the monitor available in, besides the current space.
+	Spaces  *[]string `json:"spaces,omitempty"`
+	Tags    *[]string `json:"tags,omitempty"`
+	Timeout *float32  `json:"timeout,omitempty"`
+
+	// Type The monitor type.
+	Type KibanaHTTPAPIsIcmpMonitorFieldsType   `json:"type"`
+	Wait *KibanaHTTPAPIsIcmpMonitorFields_Wait `json:"wait,omitempty"`
+}
+
+// KibanaHTTPAPIsIcmpMonitorFieldsMode The mode of the monitor. If it is `all`, the monitor pings all resolvable IPs for a hostname. If it is `any`, the monitor pings only one IP address for a hostname. If you're using a DNS-load balancer and want to ping every IP address for the specified hostname, use `all`. Defaults to `any`.
+type KibanaHTTPAPIsIcmpMonitorFieldsMode string
+
+// KibanaHTTPAPIsIcmpMonitorFieldsType The monitor type.
+type KibanaHTTPAPIsIcmpMonitorFieldsType string
+
+// KibanaHTTPAPIsIcmpMonitorFieldsWait0 defines model for .
+type KibanaHTTPAPIsIcmpMonitorFieldsWait0 = string
+
+// KibanaHTTPAPIsIcmpMonitorFieldsWait1 defines model for .
+type KibanaHTTPAPIsIcmpMonitorFieldsWait1 = float32
+
+// KibanaHTTPAPIsIcmpMonitorFields_Wait defines model for KibanaHTTPAPIsIcmpMonitorFields.Wait.
+type KibanaHTTPAPIsIcmpMonitorFields_Wait struct {
+	union json.RawMessage
 }
 
 // KibanaHTTPAPIsIndexThresholdCreateRuleBodyAlerting defines model for Kibana_HTTP_APIs_index-threshold-create-rule-body-alerting.
@@ -43917,6 +44597,9 @@ type KibanaHTTPAPIsKbnFieldFormatColorParams1 struct {
 		Text string `json:"text"`
 	} `json:"colors"`
 	FieldType KibanaHTTPAPIsKbnFieldFormatColorParams1FieldType `json:"field_type"`
+
+	// Pattern Numeral.js format pattern. See https://www.elastic.co/docs/explore-analyze/numeral-formatting to learn more.
+	Pattern *string `json:"pattern,omitempty"`
 }
 
 // KibanaHTTPAPIsKbnFieldFormatColorParams1FieldType defines model for KibanaHTTPAPIsKbnFieldFormatColor.Params.1.FieldType.
@@ -46481,9 +47164,31 @@ type KibanaHTTPAPIsNewOutputKafka struct {
 	IsDefaultMonitoring *bool    `json:"is_default_monitoring,omitempty"`
 	IsInternal          *bool    `json:"is_internal,omitempty"`
 	IsPreconfigured     *bool    `json:"is_preconfigured,omitempty"`
-	Key                 *string  `json:"key,omitempty"`
-	Name                string   `json:"name"`
-	Oauth2              *struct {
+	Kerberos            *struct {
+		// AuthType How the agent authenticates with Kerberos: a keytab file, or a username and password.
+		AuthType KibanaHTTPAPIsNewOutputKafkaKerberosAuthType `json:"auth_type"`
+
+		// ConfigPath Path to the Kerberos configuration file (`krb5.conf`) on the agent host.
+		ConfigPath string `json:"config_path"`
+
+		// EnableKrb5Fast Whether to use Kerberos FAST authentication. This can conflict with some Active Directory installations. It defaults to `false` when not set.
+		EnableKrb5Fast *bool `json:"enable_krb5_fast,omitempty"`
+
+		// Keytab Path to the keytab file on the agent host. Required when `auth_type` is `keytab`.
+		Keytab *string `json:"keytab,omitempty"`
+
+		// Realm Kerberos realm. This is usually the domain name in uppercase.
+		Realm string `json:"realm"`
+
+		// ServiceName Kerberos service name of the Kafka brokers.
+		ServiceName *string `json:"service_name,omitempty"`
+
+		// Username Kerberos username. Required when `auth_type` is `password`; the password is set in `secrets.kerberos.password`.
+		Username *string `json:"username,omitempty"`
+	} `json:"kerberos,omitempty"`
+	Key    *string `json:"key,omitempty"`
+	Name   string  `json:"name"`
+	Oauth2 *struct {
 		Audience                 *string                  `json:"audience,omitempty"`
 		Claims                   *map[string]*interface{} `json:"claims,omitempty"`
 		ClientCertificateKeyFile *string                  `json:"client_certificate_key_file,omitempty"`
@@ -46532,6 +47237,9 @@ type KibanaHTTPAPIsNewOutputKafka struct {
 		Mechanism *KibanaHTTPAPIsNewOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
 	} `json:"sasl,omitempty"`
 	Secrets *struct {
+		Kerberos *struct {
+			Password *KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password `json:"password,omitempty"`
+		} `json:"kerberos,omitempty"`
 		Oauth2 *struct {
 			ClientCertificateKey *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey `json:"client_certificate_key,omitempty"`
 			ClientSecret         *KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientSecret         `json:"client_secret,omitempty"`
@@ -46559,6 +47267,9 @@ type KibanaHTTPAPIsNewOutputKafkaCompression string
 // KibanaHTTPAPIsNewOutputKafkaConnectionType defines model for KibanaHTTPAPIsNewOutputKafka.ConnectionType.
 type KibanaHTTPAPIsNewOutputKafkaConnectionType string
 
+// KibanaHTTPAPIsNewOutputKafkaKerberosAuthType How the agent authenticates with Kerberos: a keytab file, or a username and password.
+type KibanaHTTPAPIsNewOutputKafkaKerberosAuthType string
+
 // KibanaHTTPAPIsNewOutputKafkaOauth2GrantType defines model for KibanaHTTPAPIsNewOutputKafka.Oauth2.GrantType.
 type KibanaHTTPAPIsNewOutputKafkaOauth2GrantType string
 
@@ -46573,6 +47284,20 @@ type KibanaHTTPAPIsNewOutputKafkaRequiredAcks int
 
 // KibanaHTTPAPIsNewOutputKafkaSaslMechanism defines model for KibanaHTTPAPIsNewOutputKafka.Sasl.Mechanism.
 type KibanaHTTPAPIsNewOutputKafkaSaslMechanism string
+
+// KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0 defines model for .
+type KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0 struct {
+	Hash *string `json:"hash,omitempty"`
+	Id   string  `json:"id"`
+}
+
+// KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1 defines model for .
+type KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1 = string
+
+// KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password defines model for KibanaHTTPAPIsNewOutputKafka.Secrets.Kerberos.Password.
+type KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password struct {
+	union json.RawMessage
+}
 
 // KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0 defines model for .
 type KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0 struct {
@@ -47727,6 +48452,7 @@ type KibanaHTTPAPIsOutputResponseKafka struct {
 	IsDefaultMonitoring    *bool                                             `json:"is_default_monitoring,omitempty"`
 	IsInternal             *bool                                             `json:"is_internal,omitempty"`
 	IsPreconfigured        *bool                                             `json:"is_preconfigured,omitempty"`
+	Kerberos               *KibanaHTTPAPIsOutputResponseKafka_Kerberos       `json:"kerberos,omitempty"`
 	Key                    *string                                           `json:"key,omitempty"`
 	Name                   string                                            `json:"name"`
 	Oauth2                 *KibanaHTTPAPIsOutputResponseKafka_Oauth2         `json:"oauth2,omitempty"`
@@ -47773,6 +48499,34 @@ type KibanaHTTPAPIsOutputResponseKafka_Hash struct {
 type KibanaHTTPAPIsOutputResponseKafka_Headers_Item struct {
 	Key                  string                 `json:"key"`
 	Value                string                 `json:"value"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// KibanaHTTPAPIsOutputResponseKafkaKerberosAuthType How the agent authenticates with Kerberos: a keytab file, or a username and password.
+type KibanaHTTPAPIsOutputResponseKafkaKerberosAuthType string
+
+// KibanaHTTPAPIsOutputResponseKafka_Kerberos defines model for KibanaHTTPAPIsOutputResponseKafka.Kerberos.
+type KibanaHTTPAPIsOutputResponseKafka_Kerberos struct {
+	// AuthType How the agent authenticates with Kerberos: a keytab file, or a username and password.
+	AuthType KibanaHTTPAPIsOutputResponseKafkaKerberosAuthType `json:"auth_type"`
+
+	// ConfigPath Path to the Kerberos configuration file (`krb5.conf`) on the agent host.
+	ConfigPath string `json:"config_path"`
+
+	// EnableKrb5Fast Whether to use Kerberos FAST authentication. This can conflict with some Active Directory installations. It defaults to `false` when not set.
+	EnableKrb5Fast *bool `json:"enable_krb5_fast,omitempty"`
+
+	// Keytab Path to the keytab file on the agent host. Required when `auth_type` is `keytab`.
+	Keytab *string `json:"keytab,omitempty"`
+
+	// Realm Kerberos realm. This is usually the domain name in uppercase.
+	Realm string `json:"realm"`
+
+	// ServiceName Kerberos service name of the Kafka brokers.
+	ServiceName *string `json:"service_name,omitempty"`
+
+	// Username Kerberos username. Required when `auth_type` is `password`; the password is set in `secrets.kerberos.password`.
+	Username             *string                `json:"username,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
@@ -47844,6 +48598,27 @@ type KibanaHTTPAPIsOutputResponseKafkaSaslMechanism string
 type KibanaHTTPAPIsOutputResponseKafka_Sasl struct {
 	Mechanism            *KibanaHTTPAPIsOutputResponseKafkaSaslMechanism `json:"mechanism,omitempty"`
 	AdditionalProperties map[string]interface{}                          `json:"-"`
+}
+
+// KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0 defines model for .
+type KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0 struct {
+	Hash                 *string                `json:"hash,omitempty"`
+	Id                   string                 `json:"id"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1 defines model for .
+type KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1 = string
+
+// KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password defines model for KibanaHTTPAPIsOutputResponseKafka.Secrets.Kerberos.Password.
+type KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos defines model for KibanaHTTPAPIsOutputResponseKafka.Secrets.Kerberos.
+type KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos struct {
+	Password             *KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password `json:"password,omitempty"`
+	AdditionalProperties map[string]interface{}                                       `json:"-"`
 }
 
 // KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0 defines model for .
@@ -47921,6 +48696,7 @@ type KibanaHTTPAPIsOutputResponseKafka_Secrets_Ssl struct {
 
 // KibanaHTTPAPIsOutputResponseKafka_Secrets defines model for KibanaHTTPAPIsOutputResponseKafka.Secrets.
 type KibanaHTTPAPIsOutputResponseKafka_Secrets struct {
+	Kerberos             *KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos `json:"kerberos,omitempty"`
 	Oauth2               *KibanaHTTPAPIsOutputResponseKafka_Secrets_Oauth2   `json:"oauth2,omitempty"`
 	Password             *KibanaHTTPAPIsOutputResponseKafka_Secrets_Password `json:"password,omitempty"`
 	Ssl                  *KibanaHTTPAPIsOutputResponseKafka_Secrets_Ssl      `json:"ssl,omitempty"`
@@ -48691,6 +49467,24 @@ type KibanaHTTPAPIsPackagePolicyStreamDeprecationInfo struct {
 	Description string             `json:"description"`
 	ReplacedBy  *map[string]string `json:"replaced_by,omitempty"`
 	Since       *string            `json:"since,omitempty"`
+}
+
+// KibanaHTTPAPIsParameterRequest defines model for Kibana_HTTP_APIs_parameterRequest.
+type KibanaHTTPAPIsParameterRequest struct {
+	// Description A description of the parameter.
+	Description *string `json:"description,omitempty"`
+
+	// Key The key of the parameter.
+	Key string `json:"key"`
+
+	// ShareAcrossSpaces Specify whether the parameter should be shared across spaces.
+	ShareAcrossSpaces *bool `json:"share_across_spaces,omitempty"`
+
+	// Tags An array of tags to categorize the parameter.
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Value The value associated with the parameter.
+	Value string `json:"value"`
 }
 
 // KibanaHTTPAPIsProfilingSetupStatusResponse defines model for Kibana_HTTP_APIs_profiling_setup_status_response.
@@ -49564,6 +50358,90 @@ type KibanaHTTPAPIsSloSingleOverviewEmbeddableDrilldownsType string
 // KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewMode defines model for KibanaHTTPAPIsSloSingleOverviewEmbeddable.OverviewMode.
 type KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewMode string
 
+// KibanaHTTPAPIsSyntheticsJsonValue Any JSON value.
+type KibanaHTTPAPIsSyntheticsJsonValue = interface{}
+
+// KibanaHTTPAPIsTcpMonitorFields defines model for Kibana_HTTP_APIs_tcpMonitorFields.
+type KibanaHTTPAPIsTcpMonitorFields struct {
+	Alert        *SyntheticsMonitorAlert `json:"alert,omitempty"`
+	Check        *map[string]interface{} `json:"check,omitempty"`
+	CheckReceive *string                 `json:"check.receive,omitempty"`
+	CheckSend    *string                 `json:"check.send,omitempty"`
+
+	// Enabled Specify whether the monitor is enabled. Defaults to `true`.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Host The host to monitor; it can be an IP address or a hostname. The host can include the port using a colon, for example "example.com:9200".
+	Host string `json:"host"`
+
+	// Id Any JSON value.
+	Id *KibanaHTTPAPIsSyntheticsJsonValue `json:"id,omitempty"`
+
+	// Ipv4 If `true`, ping using the ipv4 protocol. Defaults to `true`.
+	Ipv4 *bool `json:"ipv4,omitempty"`
+
+	// Ipv6 If `true`, ping using the ipv6 protocol. Defaults to `true`.
+	Ipv6 *bool `json:"ipv6,omitempty"`
+
+	// Labels Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
+	Labels    *map[string]string `json:"labels,omitempty"`
+	Locations *[]string          `json:"locations,omitempty"`
+
+	// MaintenanceWindows The IDs of the maintenance windows to apply to the monitor.
+	MaintenanceWindows *[]string `json:"maintenance_windows,omitempty"`
+
+	// Mode The mode of the monitor. If it is `all`, the monitor pings all resolvable IPs for a hostname. If it is `any`, the monitor pings only one IP address for a hostname. If you're using a DNS-load balancer and want to ping every IP address for the specified hostname, use `all`. Defaults to `any`.
+	Mode *KibanaHTTPAPIsTcpMonitorFieldsMode `json:"mode,omitempty"`
+
+	// Name The monitor name.
+	Name string `json:"name"`
+
+	// Namespace The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: `*`, `\`, `/`, `?`, `"`, `<`, `>`, `|`, whitespace, `,`, `#`, `:`, or `-`. Defaults to `default`.
+	Namespace             *string                 `json:"namespace,omitempty"`
+	Params                *map[string]interface{} `json:"params,omitempty"`
+	PrivateLocations      *[]string               `json:"private_locations,omitempty"`
+	ProxyUrl              *string                 `json:"proxy_url,omitempty"`
+	ProxyUseLocalResolver *bool                   `json:"proxy_use_local_resolver,omitempty"`
+
+	// RetestOnFailure Turn retesting for when a monitor fails on or off. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error is created and, if configured, an alert is sent. Using `retest_on_failure` can reduce noise related to transient problems.
+	RetestOnFailure *bool    `json:"retest_on_failure,omitempty"`
+	Schedule        *float32 `json:"schedule,omitempty"`
+	ServiceName     *string  `json:"service.name,omitempty"`
+
+	// Spaces The IDs of additional spaces to make the monitor available in, besides the current space.
+	Spaces *[]string            `json:"spaces,omitempty"`
+	Ssl    *SyntheticsSslConfig `json:"ssl,omitempty"`
+
+	// SslCertificate Any JSON value.
+	SslCertificate *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.certificate,omitempty"`
+
+	// SslCertificateAuthorities Any JSON value.
+	SslCertificateAuthorities *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.certificate_authorities,omitempty"`
+
+	// SslKey Any JSON value.
+	SslKey *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.key,omitempty"`
+
+	// SslKeyPassphrase Any JSON value.
+	SslKeyPassphrase *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.key_passphrase,omitempty"`
+
+	// SslSupportedProtocols Any JSON value.
+	SslSupportedProtocols *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.supported_protocols,omitempty"`
+
+	// SslVerificationMode Any JSON value.
+	SslVerificationMode *KibanaHTTPAPIsSyntheticsJsonValue `json:"ssl.verification_mode,omitempty"`
+	Tags                *[]string                          `json:"tags,omitempty"`
+	Timeout             *float32                           `json:"timeout,omitempty"`
+
+	// Type The monitor type.
+	Type KibanaHTTPAPIsTcpMonitorFieldsType `json:"type"`
+}
+
+// KibanaHTTPAPIsTcpMonitorFieldsMode The mode of the monitor. If it is `all`, the monitor pings all resolvable IPs for a hostname. If it is `any`, the monitor pings only one IP address for a hostname. If you're using a DNS-load balancer and want to ping every IP address for the specified hostname, use `all`. Defaults to `any`.
+type KibanaHTTPAPIsTcpMonitorFieldsMode string
+
+// KibanaHTTPAPIsTcpMonitorFieldsType The monitor type.
+type KibanaHTTPAPIsTcpMonitorFieldsType string
+
 // KibanaHTTPAPIsTransformHealthCreateRuleBodyAlerting defines model for Kibana_HTTP_APIs_transform-health-create-rule-body-alerting.
 type KibanaHTTPAPIsTransformHealthCreateRuleBodyAlerting struct {
 	Actions *[]KibanaHTTPAPIsNewRuleAction `json:"actions,omitempty"`
@@ -49871,9 +50749,31 @@ type KibanaHTTPAPIsUpdateOutputKafka struct {
 	IsDefaultMonitoring *bool     `json:"is_default_monitoring,omitempty"`
 	IsInternal          *bool     `json:"is_internal,omitempty"`
 	IsPreconfigured     *bool     `json:"is_preconfigured,omitempty"`
-	Key                 *string   `json:"key,omitempty"`
-	Name                string    `json:"name"`
-	Oauth2              *struct {
+	Kerberos            *struct {
+		// AuthType How the agent authenticates with Kerberos: a keytab file, or a username and password.
+		AuthType KibanaHTTPAPIsUpdateOutputKafkaKerberosAuthType `json:"auth_type"`
+
+		// ConfigPath Path to the Kerberos configuration file (`krb5.conf`) on the agent host.
+		ConfigPath string `json:"config_path"`
+
+		// EnableKrb5Fast Whether to use Kerberos FAST authentication. This can conflict with some Active Directory installations. It defaults to `false` when not set.
+		EnableKrb5Fast *bool `json:"enable_krb5_fast,omitempty"`
+
+		// Keytab Path to the keytab file on the agent host. Required when `auth_type` is `keytab`.
+		Keytab *string `json:"keytab,omitempty"`
+
+		// Realm Kerberos realm. This is usually the domain name in uppercase.
+		Realm string `json:"realm"`
+
+		// ServiceName Kerberos service name of the Kafka brokers.
+		ServiceName *string `json:"service_name,omitempty"`
+
+		// Username Kerberos username. Required when `auth_type` is `password`; the password is set in `secrets.kerberos.password`.
+		Username *string `json:"username,omitempty"`
+	} `json:"kerberos,omitempty"`
+	Key    *string `json:"key,omitempty"`
+	Name   string  `json:"name"`
+	Oauth2 *struct {
 		Audience                 *string                  `json:"audience,omitempty"`
 		Claims                   *map[string]*interface{} `json:"claims,omitempty"`
 		ClientCertificateKeyFile *string                  `json:"client_certificate_key_file,omitempty"`
@@ -49922,6 +50822,9 @@ type KibanaHTTPAPIsUpdateOutputKafka struct {
 		Mechanism *KibanaHTTPAPIsUpdateOutputKafkaSaslMechanism `json:"mechanism,omitempty"`
 	} `json:"sasl,omitempty"`
 	Secrets *struct {
+		Kerberos *struct {
+			Password *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password `json:"password,omitempty"`
+		} `json:"kerberos,omitempty"`
 		Oauth2 *struct {
 			ClientCertificateKey *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientCertificateKey `json:"client_certificate_key,omitempty"`
 			ClientSecret         *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Oauth2_ClientSecret         `json:"client_secret,omitempty"`
@@ -49949,6 +50852,9 @@ type KibanaHTTPAPIsUpdateOutputKafkaCompression string
 // KibanaHTTPAPIsUpdateOutputKafkaConnectionType defines model for KibanaHTTPAPIsUpdateOutputKafka.ConnectionType.
 type KibanaHTTPAPIsUpdateOutputKafkaConnectionType string
 
+// KibanaHTTPAPIsUpdateOutputKafkaKerberosAuthType How the agent authenticates with Kerberos: a keytab file, or a username and password.
+type KibanaHTTPAPIsUpdateOutputKafkaKerberosAuthType string
+
 // KibanaHTTPAPIsUpdateOutputKafkaOauth2GrantType defines model for KibanaHTTPAPIsUpdateOutputKafka.Oauth2.GrantType.
 type KibanaHTTPAPIsUpdateOutputKafkaOauth2GrantType string
 
@@ -49963,6 +50869,20 @@ type KibanaHTTPAPIsUpdateOutputKafkaRequiredAcks int
 
 // KibanaHTTPAPIsUpdateOutputKafkaSaslMechanism defines model for KibanaHTTPAPIsUpdateOutputKafka.Sasl.Mechanism.
 type KibanaHTTPAPIsUpdateOutputKafkaSaslMechanism string
+
+// KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0 defines model for .
+type KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0 struct {
+	Hash *string `json:"hash,omitempty"`
+	Id   string  `json:"id"`
+}
+
+// KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1 defines model for .
+type KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1 = string
+
+// KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password defines model for KibanaHTTPAPIsUpdateOutputKafka.Secrets.Kerberos.Password.
+type KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password struct {
+	union json.RawMessage
+}
 
 // KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0 defines model for .
 type KibanaHTTPAPIsUpdateOutputKafkaSecretsOauth2ClientCertificateKey0 struct {
@@ -76685,221 +77605,6 @@ type SyntheticsDeleteParameterResult = []struct {
 	Id      *string `json:"id,omitempty"`
 }
 
-// SyntheticsApiMonitorFields defines model for Synthetics_apiMonitorFields.
-type SyntheticsApiMonitorFields struct {
-	Alert *SyntheticsMonitorAlert `json:"alert,omitempty"`
-
-	// CertificateErrorSpkiAllowlist PEM certificates whose public keys (SPKI) are allowlisted so the API request context bypasses certificate errors for matching presented certificates. This does not add a CA to the trust store.
-	CertificateErrorSpkiAllowlist *[]string `json:"certificate_error_spki_allowlist,omitempty"`
-
-	// Enabled Specify whether the monitor is enabled.
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// IgnoreHttpsErrors Ignore HTTPS errors.
-	IgnoreHttpsErrors *bool `json:"ignore_https_errors,omitempty"`
-
-	// InlineScript The inline API Journey script.
-	InlineScript string `json:"inline_script"`
-
-	// Labels Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
-	Labels *map[string]string `json:"labels,omitempty"`
-
-	// Locations The location to deploy the monitor.
-	// Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
-	// To list available locations you can:
-	//
-	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
-	// - Go to *Synthetics > Management* and click *Create monitor*. Locations will be listed in *Locations*.
-	Locations *[]string `json:"locations,omitempty"`
-
-	// Name The monitor name.
-	Name string `json:"name"`
-
-	// Namespace The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: `*`, `\`, `/`, `?`, `"`, `<`, `>`, `|`, whitespace, `,`, `#`, `:`, or `-`.
-	Namespace *string                 `json:"namespace,omitempty"`
-	Params    *map[string]interface{} `json:"params,omitempty"`
-
-	// PlaywrightOptions Playwright API request context options.
-	PlaywrightOptions *map[string]interface{} `json:"playwright_options,omitempty"`
-
-	// PrivateLocations The private locations to which the monitors will be deployed.
-	// These private locations refer to locations hosted and managed by you, whereas `locations` are hosted by Elastic.
-	// You can specify a private location using the location's name.
-	// To list available private locations you can:
-	//
-	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
-	// - Go to *Synthetics > Settings* and click *Private locationsr*. Private locations will be listed in the table.
-	//
-	// > info
-	// > You can provide `locations` or `private_locations` or both. At least one is required.
-	PrivateLocations *[]string `json:"private_locations,omitempty"`
-
-	// RetestOnFailure Turn retesting for when a monitor fails on or off. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error will be created and if configured, an alert sent. The monitor will then resume running according to the defined schedule. Using `retest_on_failure` can reduce noise related to transient problems.
-	RetestOnFailure *bool `json:"retest_on_failure,omitempty"`
-
-	// Schedule The monitor's schedule in minutes. Supported values are `1`, `3`, `5`, `10`, `15`, `30`, `60`, `120`, and `240`. The default value is `3` minutes for HTTP, TCP, and ICMP monitors. The default value is `10` minutes for Browser monitors.
-	Schedule *float32 `json:"schedule,omitempty"`
-
-	// ServiceName The APM service name.
-	ServiceName *string `json:"service.name,omitempty"`
-
-	// SyntheticsArgs Synthetics agent CLI arguments.
-	SyntheticsArgs *[]string `json:"synthetics_args,omitempty"`
-
-	// Tags An array of tags.
-	Tags *[]string `json:"tags,omitempty"`
-
-	// Timeout The monitor timeout in seconds. The monitor will fail if it doesn't complete within this time.
-	//
-	// For browser monitors, the minimum timeout is 30 seconds. Browser monitor timeouts are only applied when the monitor runs on private locations. If a browser monitor specifies a timeout but has no private locations configured, the timeout will have no effect and a warning will be returned in the response.
-	Timeout *float32 `json:"timeout,omitempty"`
-
-	// Type The monitor type.
-	Type                 SyntheticsApiMonitorFieldsType `json:"type"`
-	AdditionalProperties map[string]interface{}         `json:"-"`
-}
-
-// SyntheticsApiMonitorFieldsType The monitor type.
-type SyntheticsApiMonitorFieldsType string
-
-// SyntheticsBrowserMonitorFields defines model for Synthetics_browserMonitorFields.
-type SyntheticsBrowserMonitorFields struct {
-	Alert *SyntheticsMonitorAlert `json:"alert,omitempty"`
-
-	// CertificateErrorSpkiAllowlist PEM certificates whose public keys (SPKI) are allowlisted so Chromium bypasses certificate errors for matching presented certificates. This does not add a CA to Chromium's trust store.
-	CertificateErrorSpkiAllowlist *[]string `json:"certificate_error_spki_allowlist,omitempty"`
-
-	// Enabled Specify whether the monitor is enabled.
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// IgnoreHttpsErrors Ignore HTTPS errors.
-	IgnoreHttpsErrors *bool `json:"ignore_https_errors,omitempty"`
-
-	// InlineScript The inline script.
-	InlineScript string `json:"inline_script"`
-
-	// Labels Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
-	Labels *map[string]string `json:"labels,omitempty"`
-
-	// Locations The location to deploy the monitor.
-	// Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
-	// To list available locations you can:
-	//
-	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
-	// - Go to *Synthetics > Management* and click *Create monitor*. Locations will be listed in *Locations*.
-	Locations *[]string `json:"locations,omitempty"`
-
-	// Name The monitor name.
-	Name string `json:"name"`
-
-	// Namespace The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: `*`, `\`, `/`, `?`, `"`, `<`, `>`, `|`, whitespace, `,`, `#`, `:`, or `-`.
-	Namespace *string                 `json:"namespace,omitempty"`
-	Params    *map[string]interface{} `json:"params,omitempty"`
-
-	// PlaywrightOptions Playwright options.
-	PlaywrightOptions *map[string]interface{} `json:"playwright_options,omitempty"`
-
-	// PrivateLocations The private locations to which the monitors will be deployed.
-	// These private locations refer to locations hosted and managed by you, whereas `locations` are hosted by Elastic.
-	// You can specify a private location using the location's name.
-	// To list available private locations you can:
-	//
-	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
-	// - Go to *Synthetics > Settings* and click *Private locationsr*. Private locations will be listed in the table.
-	//
-	// > info
-	// > You can provide `locations` or `private_locations` or both. At least one is required.
-	PrivateLocations *[]string `json:"private_locations,omitempty"`
-
-	// RetestOnFailure Turn retesting for when a monitor fails on or off. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error will be created and if configured, an alert sent. The monitor will then resume running according to the defined schedule. Using `retest_on_failure` can reduce noise related to transient problems.
-	RetestOnFailure *bool `json:"retest_on_failure,omitempty"`
-
-	// Schedule The monitor's schedule in minutes. Supported values are `1`, `3`, `5`, `10`, `15`, `30`, `60`, `120`, and `240`. The default value is `3` minutes for HTTP, TCP, and ICMP monitors. The default value is `10` minutes for Browser monitors.
-	Schedule *float32 `json:"schedule,omitempty"`
-
-	// Screenshots The screenshot option.
-	Screenshots *SyntheticsBrowserMonitorFieldsScreenshots `json:"screenshots,omitempty"`
-
-	// ServiceName The APM service name.
-	ServiceName *string `json:"service.name,omitempty"`
-
-	// SyntheticsArgs Synthetics agent CLI arguments.
-	SyntheticsArgs *[]string `json:"synthetics_args,omitempty"`
-
-	// Tags An array of tags.
-	Tags *[]string `json:"tags,omitempty"`
-
-	// Timeout The monitor timeout in seconds. The monitor will fail if it doesn't complete within this time.
-	//
-	// For browser monitors, the minimum timeout is 30 seconds. Browser monitor timeouts are only applied when the monitor runs on private locations. If a browser monitor specifies a timeout but has no private locations configured, the timeout will have no effect and a warning will be returned in the response.
-	Timeout *float32 `json:"timeout,omitempty"`
-
-	// Type The monitor type.
-	Type                 SyntheticsBrowserMonitorFieldsType `json:"type"`
-	AdditionalProperties map[string]interface{}             `json:"-"`
-}
-
-// SyntheticsBrowserMonitorFieldsScreenshots The screenshot option.
-type SyntheticsBrowserMonitorFieldsScreenshots string
-
-// SyntheticsBrowserMonitorFieldsType The monitor type.
-type SyntheticsBrowserMonitorFieldsType string
-
-// SyntheticsCommonMonitorFields defines model for Synthetics_commonMonitorFields.
-type SyntheticsCommonMonitorFields struct {
-	Alert *SyntheticsMonitorAlert `json:"alert,omitempty"`
-
-	// Enabled Specify whether the monitor is enabled.
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// Labels Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
-	Labels *map[string]string `json:"labels,omitempty"`
-
-	// Locations The location to deploy the monitor.
-	// Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
-	// To list available locations you can:
-	//
-	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
-	// - Go to *Synthetics > Management* and click *Create monitor*. Locations will be listed in *Locations*.
-	Locations *[]string `json:"locations,omitempty"`
-
-	// Name The monitor name.
-	Name string `json:"name"`
-
-	// Namespace The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: `*`, `\`, `/`, `?`, `"`, `<`, `>`, `|`, whitespace, `,`, `#`, `:`, or `-`.
-	Namespace *string                 `json:"namespace,omitempty"`
-	Params    *map[string]interface{} `json:"params,omitempty"`
-
-	// PrivateLocations The private locations to which the monitors will be deployed.
-	// These private locations refer to locations hosted and managed by you, whereas `locations` are hosted by Elastic.
-	// You can specify a private location using the location's name.
-	// To list available private locations you can:
-	//
-	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
-	// - Go to *Synthetics > Settings* and click *Private locationsr*. Private locations will be listed in the table.
-	//
-	// > info
-	// > You can provide `locations` or `private_locations` or both. At least one is required.
-	PrivateLocations *[]string `json:"private_locations,omitempty"`
-
-	// RetestOnFailure Turn retesting for when a monitor fails on or off. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error will be created and if configured, an alert sent. The monitor will then resume running according to the defined schedule. Using `retest_on_failure` can reduce noise related to transient problems.
-	RetestOnFailure *bool `json:"retest_on_failure,omitempty"`
-
-	// Schedule The monitor's schedule in minutes. Supported values are `1`, `3`, `5`, `10`, `15`, `30`, `60`, `120`, and `240`. The default value is `3` minutes for HTTP, TCP, and ICMP monitors. The default value is `10` minutes for Browser monitors.
-	Schedule *float32 `json:"schedule,omitempty"`
-
-	// ServiceName The APM service name.
-	ServiceName *string `json:"service.name,omitempty"`
-
-	// Tags An array of tags.
-	Tags *[]string `json:"tags,omitempty"`
-
-	// Timeout The monitor timeout in seconds. The monitor will fail if it doesn't complete within this time.
-	//
-	// For browser monitors, the minimum timeout is 30 seconds. Browser monitor timeouts are only applied when the monitor runs on private locations. If a browser monitor specifies a timeout but has no private locations configured, the timeout will have no effect and a warning will be returned in the response.
-	Timeout *float32 `json:"timeout,omitempty"`
-}
-
 // SyntheticsGetParameterResponse defines model for Synthetics_getParameterResponse.
 type SyntheticsGetParameterResponse struct {
 	// Description The description of the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
@@ -76945,250 +77650,14 @@ type SyntheticsGetPrivateLocation struct {
 	Label *string `json:"label,omitempty"`
 
 	// Namespace The namespace of the location, which is the same as the namespace of the agent policy associated with the location.
-	Namespace            *string                `json:"namespace,omitempty"`
+	Namespace *string `json:"namespace,omitempty"`
+
+	// Spaces The space IDs where the private location is available.
+	Spaces *[]string `json:"spaces,omitempty"`
+
+	// Tags An array of tags to categorize the private location.
+	Tags                 *[]string              `json:"tags,omitempty"`
 	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
-// SyntheticsHttpMonitorFields defines model for Synthetics_httpMonitorFields.
-type SyntheticsHttpMonitorFields struct {
-	Alert *SyntheticsMonitorAlert `json:"alert,omitempty"`
-
-	// Check The check request settings.
-	Check *struct {
-		// Request An optional request to send to the remote host.
-		Request *struct {
-			// Body Optional request body content.
-			Body *string `json:"body,omitempty"`
-
-			// Headers A dictionary of additional HTTP headers to send. By default, Synthetics will set the User-Agent header to identify itself.
-			Headers *map[string]interface{} `json:"headers,omitempty"`
-
-			// Method The HTTP method to use.
-			Method *SyntheticsHttpMonitorFieldsCheckRequestMethod `json:"method,omitempty"`
-		} `json:"request,omitempty"`
-
-		// Response The expected response.
-		Response *SyntheticsHttpMonitorFields_Check_Response `json:"response,omitempty"`
-	} `json:"check,omitempty"`
-
-	// Enabled Specify whether the monitor is enabled.
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// Ipv4 If `true`, ping using the ipv4 protocol.
-	Ipv4 *bool `json:"ipv4,omitempty"`
-
-	// Ipv6 If `true`, ping using the ipv6 protocol.
-	Ipv6 *bool `json:"ipv6,omitempty"`
-
-	// Labels Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
-	Labels *map[string]string `json:"labels,omitempty"`
-
-	// Locations The location to deploy the monitor.
-	// Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
-	// To list available locations you can:
-	//
-	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
-	// - Go to *Synthetics > Management* and click *Create monitor*. Locations will be listed in *Locations*.
-	Locations    *[]string                                 `json:"locations,omitempty"`
-	MaxRedirects *SyntheticsHttpMonitorFields_MaxRedirects `json:"max_redirects,omitempty"`
-
-	// Mode The mode of the monitor. If it is `all`, the monitor pings all resolvable IPs for a hostname. If it is `any`, the monitor pings only one IP address for a hostname. If you're using a DNS-load balancer and want to ping every IP address for the specified hostname, you should use `all`.
-	Mode *SyntheticsHttpMonitorFieldsMode `json:"mode,omitempty"`
-
-	// Name The monitor name.
-	Name string `json:"name"`
-
-	// Namespace The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: `*`, `\`, `/`, `?`, `"`, `<`, `>`, `|`, whitespace, `,`, `#`, `:`, or `-`.
-	Namespace *string                 `json:"namespace,omitempty"`
-	Params    *map[string]interface{} `json:"params,omitempty"`
-
-	// Password The password for authenticating with the server. The credentials are passed with the request.
-	Password *string `json:"password,omitempty"`
-
-	// PrivateLocations The private locations to which the monitors will be deployed.
-	// These private locations refer to locations hosted and managed by you, whereas `locations` are hosted by Elastic.
-	// You can specify a private location using the location's name.
-	// To list available private locations you can:
-	//
-	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
-	// - Go to *Synthetics > Settings* and click *Private locationsr*. Private locations will be listed in the table.
-	//
-	// > info
-	// > You can provide `locations` or `private_locations` or both. At least one is required.
-	PrivateLocations *[]string `json:"private_locations,omitempty"`
-
-	// ProxyHeaders Additional headers to send to proxies during CONNECT requests.
-	ProxyHeaders *map[string]interface{} `json:"proxy_headers,omitempty"`
-
-	// ProxyUrl The URL of the proxy to use for this monitor.
-	ProxyUrl *string `json:"proxy_url,omitempty"`
-
-	// Response Controls the indexing of the HTTP response body contents to the `http.response.body.contents field`.
-	Response *map[string]interface{} `json:"response,omitempty"`
-
-	// RetestOnFailure Turn retesting for when a monitor fails on or off. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error will be created and if configured, an alert sent. The monitor will then resume running according to the defined schedule. Using `retest_on_failure` can reduce noise related to transient problems.
-	RetestOnFailure *bool `json:"retest_on_failure,omitempty"`
-
-	// Schedule The monitor's schedule in minutes. Supported values are `1`, `3`, `5`, `10`, `15`, `30`, `60`, `120`, and `240`. The default value is `3` minutes for HTTP, TCP, and ICMP monitors. The default value is `10` minutes for Browser monitors.
-	Schedule *float32 `json:"schedule,omitempty"`
-
-	// ServiceName The APM service name.
-	ServiceName *string              `json:"service.name,omitempty"`
-	Ssl         *SyntheticsSslConfig `json:"ssl,omitempty"`
-
-	// Tags An array of tags.
-	Tags *[]string `json:"tags,omitempty"`
-
-	// Timeout The monitor timeout in seconds. The monitor will fail if it doesn't complete within this time.
-	//
-	// For browser monitors, the minimum timeout is 30 seconds. Browser monitor timeouts are only applied when the monitor runs on private locations. If a browser monitor specifies a timeout but has no private locations configured, the timeout will have no effect and a warning will be returned in the response.
-	Timeout *float32 `json:"timeout,omitempty"`
-
-	// Type The monitor type.
-	Type SyntheticsHttpMonitorFieldsType `json:"type"`
-
-	// Url The URL to monitor.
-	Url string `json:"url"`
-
-	// Username The username for authenticating with the server. The credentials are passed with the request.
-	Username             *string                `json:"username,omitempty"`
-	AdditionalProperties map[string]interface{} `json:"-"`
-}
-
-// SyntheticsHttpMonitorFieldsCheckRequestMethod The HTTP method to use.
-type SyntheticsHttpMonitorFieldsCheckRequestMethod string
-
-// SyntheticsHttpMonitorFields_Check_Response The expected response.
-type SyntheticsHttpMonitorFields_Check_Response struct {
-	Body *map[string]interface{} `json:"body,omitempty"`
-
-	// Headers A dictionary of expected HTTP headers. If the header is not found, the check fails.
-	Headers              *map[string]interface{} `json:"headers,omitempty"`
-	AdditionalProperties map[string]interface{}  `json:"-"`
-}
-
-// SyntheticsHttpMonitorFieldsMaxRedirects0 defines model for .
-type SyntheticsHttpMonitorFieldsMaxRedirects0 = string
-
-// SyntheticsHttpMonitorFieldsMaxRedirects1 defines model for .
-type SyntheticsHttpMonitorFieldsMaxRedirects1 = float32
-
-// SyntheticsHttpMonitorFields_MaxRedirects defines model for SyntheticsHttpMonitorFields.MaxRedirects.
-type SyntheticsHttpMonitorFields_MaxRedirects struct {
-	union json.RawMessage
-}
-
-// SyntheticsHttpMonitorFieldsMode The mode of the monitor. If it is `all`, the monitor pings all resolvable IPs for a hostname. If it is `any`, the monitor pings only one IP address for a hostname. If you're using a DNS-load balancer and want to ping every IP address for the specified hostname, you should use `all`.
-type SyntheticsHttpMonitorFieldsMode string
-
-// SyntheticsHttpMonitorFieldsType The monitor type.
-type SyntheticsHttpMonitorFieldsType string
-
-// SyntheticsIcmpMonitorFields defines model for Synthetics_icmpMonitorFields.
-type SyntheticsIcmpMonitorFields struct {
-	Alert *SyntheticsMonitorAlert `json:"alert,omitempty"`
-
-	// Enabled Specify whether the monitor is enabled.
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// Host The host to ping.
-	Host string `json:"host"`
-
-	// Labels Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
-	Labels *map[string]string `json:"labels,omitempty"`
-
-	// Locations The location to deploy the monitor.
-	// Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
-	// To list available locations you can:
-	//
-	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
-	// - Go to *Synthetics > Management* and click *Create monitor*. Locations will be listed in *Locations*.
-	Locations *[]string `json:"locations,omitempty"`
-
-	// Name The monitor name.
-	Name string `json:"name"`
-
-	// Namespace The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: `*`, `\`, `/`, `?`, `"`, `<`, `>`, `|`, whitespace, `,`, `#`, `:`, or `-`.
-	Namespace *string                 `json:"namespace,omitempty"`
-	Params    *map[string]interface{} `json:"params,omitempty"`
-
-	// PrivateLocations The private locations to which the monitors will be deployed.
-	// These private locations refer to locations hosted and managed by you, whereas `locations` are hosted by Elastic.
-	// You can specify a private location using the location's name.
-	// To list available private locations you can:
-	//
-	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
-	// - Go to *Synthetics > Settings* and click *Private locationsr*. Private locations will be listed in the table.
-	//
-	// > info
-	// > You can provide `locations` or `private_locations` or both. At least one is required.
-	PrivateLocations *[]string `json:"private_locations,omitempty"`
-
-	// RetestOnFailure Turn retesting for when a monitor fails on or off. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error will be created and if configured, an alert sent. The monitor will then resume running according to the defined schedule. Using `retest_on_failure` can reduce noise related to transient problems.
-	RetestOnFailure *bool `json:"retest_on_failure,omitempty"`
-
-	// Schedule The monitor's schedule in minutes. Supported values are `1`, `3`, `5`, `10`, `15`, `30`, `60`, `120`, and `240`. The default value is `3` minutes for HTTP, TCP, and ICMP monitors. The default value is `10` minutes for Browser monitors.
-	Schedule *float32 `json:"schedule,omitempty"`
-
-	// ServiceName The APM service name.
-	ServiceName *string `json:"service.name,omitempty"`
-
-	// Tags An array of tags.
-	Tags *[]string `json:"tags,omitempty"`
-
-	// Timeout The monitor timeout in seconds. The monitor will fail if it doesn't complete within this time.
-	//
-	// For browser monitors, the minimum timeout is 30 seconds. Browser monitor timeouts are only applied when the monitor runs on private locations. If a browser monitor specifies a timeout but has no private locations configured, the timeout will have no effect and a warning will be returned in the response.
-	Timeout *float32 `json:"timeout,omitempty"`
-
-	// Type The monitor type.
-	Type                 SyntheticsIcmpMonitorFieldsType   `json:"type"`
-	Wait                 *SyntheticsIcmpMonitorFields_Wait `json:"wait,omitempty"`
-	AdditionalProperties map[string]interface{}            `json:"-"`
-}
-
-// SyntheticsIcmpMonitorFieldsType The monitor type.
-type SyntheticsIcmpMonitorFieldsType string
-
-// SyntheticsIcmpMonitorFieldsWait0 defines model for .
-type SyntheticsIcmpMonitorFieldsWait0 = string
-
-// SyntheticsIcmpMonitorFieldsWait1 defines model for .
-type SyntheticsIcmpMonitorFieldsWait1 = float32
-
-// SyntheticsIcmpMonitorFields_Wait defines model for SyntheticsIcmpMonitorFields.Wait.
-type SyntheticsIcmpMonitorFields_Wait struct {
-	union json.RawMessage
-}
-
-// SyntheticsMonitorWarning defines model for Synthetics_monitorWarning.
-type SyntheticsMonitorWarning struct {
-	// Message A human-readable warning message.
-	Message *string `json:"message,omitempty"`
-
-	// MonitorId The monitor ID associated with the warning.
-	MonitorId *string `json:"monitorId,omitempty"`
-
-	// PublicLocationIds The public location IDs associated with the warning.
-	PublicLocationIds *[]string `json:"publicLocationIds,omitempty"`
-}
-
-// SyntheticsParameterRequest defines model for Synthetics_parameterRequest.
-type SyntheticsParameterRequest struct {
-	// Description A description of the parameter.
-	Description *string `json:"description,omitempty"`
-
-	// Key The key of the parameter.
-	Key string `json:"key"`
-
-	// ShareAcrossSpaces Specify whether the parameter should be shared across spaces.
-	ShareAcrossSpaces *bool `json:"share_across_spaces,omitempty"`
-
-	// Tags An array of tags to categorize the parameter.
-	Tags *[]string `json:"tags,omitempty"`
-
-	// Value The value associated with the parameter.
-	Value string `json:"value"`
 }
 
 // SyntheticsPostParameterResponse defines model for Synthetics_postParameterResponse.
@@ -77211,78 +77680,6 @@ type SyntheticsPostParameterResponse struct {
 	// Value The value associated with the parameter.
 	Value *string `json:"value,omitempty"`
 }
-
-// SyntheticsTcpMonitorFields defines model for Synthetics_tcpMonitorFields.
-type SyntheticsTcpMonitorFields struct {
-	Alert *SyntheticsMonitorAlert `json:"alert,omitempty"`
-
-	// Enabled Specify whether the monitor is enabled.
-	Enabled *bool `json:"enabled,omitempty"`
-
-	// Host The host to monitor; it can be an IP address or a hostname. The host can include the port using a colon, for example "example.com:9200".
-	Host string `json:"host"`
-
-	// Labels Key-value pairs of labels to associate with the monitor. Labels can be used for filtering and grouping monitors.
-	Labels *map[string]string `json:"labels,omitempty"`
-
-	// Locations The location to deploy the monitor.
-	// Monitors can be deployed in multiple locations so that you can detect differences in availability and response times across those locations.
-	// To list available locations you can:
-	//
-	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
-	// - Go to *Synthetics > Management* and click *Create monitor*. Locations will be listed in *Locations*.
-	Locations *[]string `json:"locations,omitempty"`
-
-	// Name The monitor name.
-	Name string `json:"name"`
-
-	// Namespace The namespace field should be lowercase and not contain spaces. The namespace must not include any of the following characters: `*`, `\`, `/`, `?`, `"`, `<`, `>`, `|`, whitespace, `,`, `#`, `:`, or `-`.
-	Namespace *string                 `json:"namespace,omitempty"`
-	Params    *map[string]interface{} `json:"params,omitempty"`
-
-	// PrivateLocations The private locations to which the monitors will be deployed.
-	// These private locations refer to locations hosted and managed by you, whereas `locations` are hosted by Elastic.
-	// You can specify a private location using the location's name.
-	// To list available private locations you can:
-	//
-	// - Run the `elastic-synthetics locations` command with the deployment's Kibana URL.
-	// - Go to *Synthetics > Settings* and click *Private locationsr*. Private locations will be listed in the table.
-	//
-	// > info
-	// > You can provide `locations` or `private_locations` or both. At least one is required.
-	PrivateLocations *[]string `json:"private_locations,omitempty"`
-
-	// ProxyUrl The URL of the SOCKS5 proxy to use when connecting to the server. The value must be a URL with a scheme of `socks5://`. If the SOCKS5 proxy server requires client authentication, then a username and password can be embedded in the URL. When using a proxy, hostnames are resolved on the proxy server instead of on the client. You can change this behavior by setting the `proxy_use_local_resolver` option.
-	ProxyUrl *string `json:"proxy_url,omitempty"`
-
-	// ProxyUseLocalResolver Specify that hostnames are resolved locally instead of being resolved on the proxy server. If `false`, name resolution occurs on the proxy server.
-	ProxyUseLocalResolver *bool `json:"proxy_use_local_resolver,omitempty"`
-
-	// RetestOnFailure Turn retesting for when a monitor fails on or off. By default, monitors are automatically retested if the monitor goes from "up" to "down". If the result of the retest is also "down", an error will be created and if configured, an alert sent. The monitor will then resume running according to the defined schedule. Using `retest_on_failure` can reduce noise related to transient problems.
-	RetestOnFailure *bool `json:"retest_on_failure,omitempty"`
-
-	// Schedule The monitor's schedule in minutes. Supported values are `1`, `3`, `5`, `10`, `15`, `30`, `60`, `120`, and `240`. The default value is `3` minutes for HTTP, TCP, and ICMP monitors. The default value is `10` minutes for Browser monitors.
-	Schedule *float32 `json:"schedule,omitempty"`
-
-	// ServiceName The APM service name.
-	ServiceName *string              `json:"service.name,omitempty"`
-	Ssl         *SyntheticsSslConfig `json:"ssl,omitempty"`
-
-	// Tags An array of tags.
-	Tags *[]string `json:"tags,omitempty"`
-
-	// Timeout The monitor timeout in seconds. The monitor will fail if it doesn't complete within this time.
-	//
-	// For browser monitors, the minimum timeout is 30 seconds. Browser monitor timeouts are only applied when the monitor runs on private locations. If a browser monitor specifies a timeout but has no private locations configured, the timeout will have no effect and a warning will be returned in the response.
-	Timeout *float32 `json:"timeout,omitempty"`
-
-	// Type The monitor type.
-	Type                 SyntheticsTcpMonitorFieldsType `json:"type"`
-	AdditionalProperties map[string]interface{}         `json:"-"`
-}
-
-// SyntheticsTcpMonitorFieldsType The monitor type.
-type SyntheticsTcpMonitorFieldsType string
 
 // TaskManagerHealthAPIsConfiguration This object summarizes the current configuration of Task Manager. This includes dynamic configurations that change over time, such as `poll_interval` and `max_workers`, which can adjust in reaction to changing load on the system.
 type TaskManagerHealthAPIsConfiguration = map[string]interface{}
@@ -77451,7 +77848,25 @@ type CreateParamResponse struct {
 }
 
 // CreateParamResponse0 defines model for .
-type CreateParamResponse0 = []SyntheticsPostParameterResponse
+type CreateParamResponse0 = []struct {
+	// Description A description of the parameter.
+	Description *string `json:"description,omitempty"`
+
+	// Id The unique identifier for the parameter.
+	Id *string `json:"id,omitempty"`
+
+	// Key The parameter key.
+	Key *string `json:"key,omitempty"`
+
+	// ShareAcrossSpaces Indicates whether the parameter is shared across spaces.
+	ShareAcrossSpaces *bool `json:"share_across_spaces,omitempty"`
+
+	// Tags An array of tags associated with the parameter.
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Value The value associated with the parameter.
+	Value *string `json:"value,omitempty"`
+}
 
 // CrowdstrikeConfig Defines config properties for connectors when type is `.crowdstrike`.
 type CrowdstrikeConfig struct {
@@ -79145,10 +79560,8 @@ type SyntheticsMonitorAlertStatus struct {
 	Enabled *bool `json:"enabled,omitempty"`
 }
 
-// SyntheticsMonitorRequest The request body should contain monitor attributes. The required and default fields differ depending on the monitor type.
-type SyntheticsMonitorRequest struct {
-	union json.RawMessage
-}
+// SyntheticsMonitorRequest Create a synthetics monitor. Required and default fields vary by type (HTTP, TCP, ICMP, browser, or API).
+type SyntheticsMonitorRequest = KibanaHTTPAPIsCreateMonitorRequest
 
 // SyntheticsMonitorSchedule defines model for synthetics_monitor_schedule.
 type SyntheticsMonitorSchedule struct {
@@ -92155,35 +92568,58 @@ type PutStreamsStreamnameAttachmentsAttachmenttypeAttachmentidJSONBody1 = interf
 
 // GetSyntheticMonitorsParams defines parameters for GetSyntheticMonitors.
 type GetSyntheticMonitorsParams struct {
-	// Filter Additional filtering criteria.
-	Filter *string `form:"filter,omitempty" json:"filter,omitempty"`
-
-	// Locations The locations to filter by.
-	Locations *struct {
-		union json.RawMessage
-	} `form:"locations,omitempty" json:"locations,omitempty"`
-
-	// MonitorTypes The monitor types to filter.
-	MonitorTypes *GetSyntheticMonitorsParamsMonitorTypes `form:"monitorTypes,omitempty" json:"monitorTypes,omitempty"`
-
-	// Page The page number for paginated results.
-	Page *int `form:"page,omitempty" json:"page,omitempty"`
-
-	// PerPage The number of items to return per page.
-	PerPage *int `form:"per_page,omitempty" json:"per_page,omitempty"`
-
-	// Projects The projects to filter by.
-	Projects *struct {
-		union json.RawMessage
-	} `form:"projects,omitempty" json:"projects,omitempty"`
-
 	// Query A free-text query string.
 	Query *string `form:"query,omitempty" json:"query,omitempty"`
 
-	// Schedules The schedules to filter by.
-	Schedules *struct {
+	// Filter Additional KQL filtering criteria.
+	Filter *string `form:"filter,omitempty" json:"filter,omitempty"`
+
+	// Tags Tags to filter monitors. Accepts a string or an array of strings.
+	Tags *[]string `form:"tags,omitempty" json:"tags,omitempty"`
+
+	// MonitorTypes The monitor types to filter by, such as `http`. Accepts a string or an array of strings.
+	MonitorTypes *[]string `form:"monitorTypes,omitempty" json:"monitorTypes,omitempty"`
+
+	// Locations The location IDs to filter by. Accepts a string or an array of strings.
+	Locations *[]string `form:"locations,omitempty" json:"locations,omitempty"`
+
+	// Projects The projects to filter by. Accepts a string or an array of strings.
+	Projects *[]string `form:"projects,omitempty" json:"projects,omitempty"`
+
+	// Schedules The schedules to filter by. Accepts a string or an array of strings.
+	Schedules *[]string `form:"schedules,omitempty" json:"schedules,omitempty"`
+
+	// RemoteNames A string or an array of strings.
+	RemoteNames *[]string `form:"remoteNames,omitempty" json:"remoteNames,omitempty"`
+
+	// Status The monitor statuses to filter by. Accepts a string or an array of strings.
+	Status *[]string `form:"status,omitempty" json:"status,omitempty"`
+
+	// MonitorQueryIds The monitor query IDs to filter by. Accepts a string or an array of strings.
+	MonitorQueryIds *[]string `form:"monitorQueryIds,omitempty" json:"monitorQueryIds,omitempty"`
+
+	// ConfigIds The monitor config IDs to filter by. Accepts a string or an array of strings.
+	ConfigIds *[]string `form:"configIds,omitempty" json:"configIds,omitempty"`
+
+	// ShowFromAllSpaces If `true`, return monitors from all spaces the user can access.
+	ShowFromAllSpaces *struct {
 		union json.RawMessage
-	} `form:"schedules,omitempty" json:"schedules,omitempty"`
+	} `form:"showFromAllSpaces,omitempty" json:"showFromAllSpaces,omitempty"`
+
+	// UseLogicalAndFor Apply logical AND for `tags` and/or `locations`. Accepts a string or an array.
+	UseLogicalAndFor *[]GetSyntheticMonitorsParamsUseLogicalAndFor `form:"useLogicalAndFor,omitempty" json:"useLogicalAndFor,omitempty"`
+
+	// DateRangeStart The start of the status window, as datemath (`now-15m`) or an ISO-8601 timestamp.
+	DateRangeStart *string `form:"dateRangeStart,omitempty" json:"dateRangeStart,omitempty"`
+
+	// DateRangeEnd The end of the status window, as datemath (`now`) or an ISO-8601 timestamp.
+	DateRangeEnd *string `form:"dateRangeEnd,omitempty" json:"dateRangeEnd,omitempty"`
+
+	// Page The page number for paginated results.
+	Page *float32 `form:"page,omitempty" json:"page,omitempty"`
+
+	// PerPage The number of items to return per page.
+	PerPage *float32 `form:"perPage,omitempty" json:"perPage,omitempty"`
 
 	// SortField The field to sort the results by.
 	SortField *GetSyntheticMonitorsParamsSortField `form:"sortField,omitempty" json:"sortField,omitempty"`
@@ -92191,40 +92627,18 @@ type GetSyntheticMonitorsParams struct {
 	// SortOrder The sort order.
 	SortOrder *GetSyntheticMonitorsParamsSortOrder `form:"sortOrder,omitempty" json:"sortOrder,omitempty"`
 
-	// Status The status to filter by.
-	Status *struct {
-		union json.RawMessage
-	} `form:"status,omitempty" json:"status,omitempty"`
-
-	// Tags Tags to filter monitors.
-	Tags *struct {
-		union json.RawMessage
-	} `form:"tags,omitempty" json:"tags,omitempty"`
-
-	// UseLogicalAndFor Specifies whether to apply logical AND filtering for specific fields. Accepts either a string with values "tags" or "locations" or an array containing both.
-	UseLogicalAndFor *GetSyntheticMonitorsParamsUseLogicalAndFor `form:"useLogicalAndFor,omitempty" json:"useLogicalAndFor,omitempty"`
+	// SearchAfter A JSON array of sort values from the previous page, for cursor-based paging.
+	SearchAfter *[]string `form:"searchAfter,omitempty" json:"searchAfter,omitempty"`
 }
 
-// GetSyntheticMonitorsParamsLocations0 defines parameters for GetSyntheticMonitors.
-type GetSyntheticMonitorsParamsLocations0 = string
+// GetSyntheticMonitorsParamsShowFromAllSpaces0 defines parameters for GetSyntheticMonitors.
+type GetSyntheticMonitorsParamsShowFromAllSpaces0 string
 
-// GetSyntheticMonitorsParamsLocations1 defines parameters for GetSyntheticMonitors.
-type GetSyntheticMonitorsParamsLocations1 = []string
+// GetSyntheticMonitorsParamsShowFromAllSpaces1 defines parameters for GetSyntheticMonitors.
+type GetSyntheticMonitorsParamsShowFromAllSpaces1 = bool
 
-// GetSyntheticMonitorsParamsMonitorTypes defines parameters for GetSyntheticMonitors.
-type GetSyntheticMonitorsParamsMonitorTypes string
-
-// GetSyntheticMonitorsParamsProjects0 defines parameters for GetSyntheticMonitors.
-type GetSyntheticMonitorsParamsProjects0 = string
-
-// GetSyntheticMonitorsParamsProjects1 defines parameters for GetSyntheticMonitors.
-type GetSyntheticMonitorsParamsProjects1 = []string
-
-// GetSyntheticMonitorsParamsSchedules0 defines parameters for GetSyntheticMonitors.
-type GetSyntheticMonitorsParamsSchedules0 = []string
-
-// GetSyntheticMonitorsParamsSchedules1 defines parameters for GetSyntheticMonitors.
-type GetSyntheticMonitorsParamsSchedules1 = string
+// GetSyntheticMonitorsParamsUseLogicalAndFor defines parameters for GetSyntheticMonitors.
+type GetSyntheticMonitorsParamsUseLogicalAndFor string
 
 // GetSyntheticMonitorsParamsSortField defines parameters for GetSyntheticMonitors.
 type GetSyntheticMonitorsParamsSortField string
@@ -92232,30 +92646,26 @@ type GetSyntheticMonitorsParamsSortField string
 // GetSyntheticMonitorsParamsSortOrder defines parameters for GetSyntheticMonitors.
 type GetSyntheticMonitorsParamsSortOrder string
 
-// GetSyntheticMonitorsParamsStatus0 defines parameters for GetSyntheticMonitors.
-type GetSyntheticMonitorsParamsStatus0 = []string
+// PostSyntheticMonitorsParams defines parameters for PostSyntheticMonitors.
+type PostSyntheticMonitorsParams struct {
+	// Id A custom ID for the new monitor. Generated if omitted.
+	Id *string `form:"id,omitempty" json:"id,omitempty"`
 
-// GetSyntheticMonitorsParamsStatus1 defines parameters for GetSyntheticMonitors.
-type GetSyntheticMonitorsParamsStatus1 = string
+	// PreserveNamespace If `true`, store the `namespace` as sent. Otherwise, a `default` namespace is replaced with one derived from the space ID.
+	PreserveNamespace *struct {
+		union json.RawMessage
+	} `form:"preserve_namespace,omitempty" json:"preserve_namespace,omitempty"`
+}
 
-// GetSyntheticMonitorsParamsTags0 defines parameters for GetSyntheticMonitors.
-type GetSyntheticMonitorsParamsTags0 = string
+// PostSyntheticMonitorsParamsPreserveNamespace0 defines parameters for PostSyntheticMonitors.
+type PostSyntheticMonitorsParamsPreserveNamespace0 string
 
-// GetSyntheticMonitorsParamsTags1 defines parameters for GetSyntheticMonitors.
-type GetSyntheticMonitorsParamsTags1 = []string
-
-// GetSyntheticMonitorsParamsUseLogicalAndFor defines parameters for GetSyntheticMonitors.
-type GetSyntheticMonitorsParamsUseLogicalAndFor string
+// PostSyntheticMonitorsParamsPreserveNamespace1 defines parameters for PostSyntheticMonitors.
+type PostSyntheticMonitorsParamsPreserveNamespace1 = bool
 
 // PostSyntheticMonitorsBulkCreateJSONBody defines parameters for PostSyntheticMonitorsBulkCreate.
 type PostSyntheticMonitorsBulkCreateJSONBody struct {
-	// Monitors A non-empty list of monitor configurations, up to 1000 monitors.
-	Monitors []PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item `json:"monitors"`
-}
-
-// PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item defines parameters for PostSyntheticMonitorsBulkCreate.
-type PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item struct {
-	union json.RawMessage
+	Monitors []KibanaHTTPAPIsCreateMonitorRequest `json:"monitors"`
 }
 
 // DeleteSyntheticMonitorsJSONBody defines parameters for DeleteSyntheticMonitors.
@@ -92266,14 +92676,30 @@ type DeleteSyntheticMonitorsJSONBody struct {
 
 // PutSyntheticMonitorsBulkUpdateJSONBody defines parameters for PutSyntheticMonitorsBulkUpdate.
 type PutSyntheticMonitorsBulkUpdateJSONBody struct {
-	// Updates Monitors to update. Minimum 1 entry, maximum 1000. Each `id` may appear at most once. `attributes` must contain at least one field.
+	// Updates Monitors to update. Each `id` may appear at most once. `attributes` must contain at least one field.
 	Updates []struct {
 		// Attributes Attributes to update for the monitor. You can specify the same fields as in `PUT /api/synthetics/monitors/{id}`. An empty object is rejected.
-		Attributes map[string]interface{} `json:"attributes"`
+		Attributes *map[string]interface{} `json:"attributes,omitempty"`
 
 		// Id The monitor config ID to update.
 		Id string `json:"id"`
 	} `json:"updates"`
+}
+
+// PutSyntheticMonitor200JSONResponseBody defines parameters for PutSyntheticMonitor.
+type PutSyntheticMonitor200JSONResponseBody struct {
+	// Warnings An optional array of warnings about the monitor configuration.
+	Warnings *[]struct {
+		// Message A human-readable warning message.
+		Message *string `json:"message,omitempty"`
+
+		// MonitorId The monitor ID associated with the warning.
+		MonitorId *string `json:"monitorId,omitempty"`
+
+		// PublicLocationIds The public location IDs associated with the warning.
+		PublicLocationIds *[]string `json:"publicLocationIds,omitempty"`
+	} `json:"warnings,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // DeleteSyntheticsParamsJSONBody defines parameters for DeleteSyntheticsParams.
@@ -92287,13 +92713,13 @@ type PostParametersJSONBody struct {
 	union json.RawMessage
 }
 
-// PostParametersJSONBody0 defines parameters for PostParameters.
-type PostParametersJSONBody0 = []SyntheticsParameterRequest
+// PostParametersJSONBody1 defines parameters for PostParameters.
+type PostParametersJSONBody1 = []KibanaHTTPAPIsParameterRequest
 
 // DeleteParametersJSONBody defines parameters for DeleteParameters.
 type DeleteParametersJSONBody struct {
 	// Ids An array of parameter IDs to delete.
-	Ids *[]string `json:"ids,omitempty"`
+	Ids []string `json:"ids"`
 }
 
 // PutParameterJSONBody defines parameters for PutParameter.
@@ -92311,9 +92737,43 @@ type PutParameterJSONBody struct {
 	Value *string `json:"value,omitempty"`
 }
 
+// GetPrivateLocations200JSONResponseBody_Item defines parameters for GetPrivateLocations.
+type GetPrivateLocations200JSONResponseBody_Item struct {
+	// AgentPolicyId The ID of the agent policy associated with the private location.
+	AgentPolicyId *string `json:"agentPolicyId,omitempty"`
+
+	// Geo Geographic coordinates (WGS84) for the location.
+	Geo *struct {
+		// Lat The latitude of the location.
+		Lat float32 `json:"lat"`
+
+		// Lon The longitude of the location.
+		Lon float32 `json:"lon"`
+	} `json:"geo,omitempty"`
+
+	// Id The unique identifier of the private location.
+	Id *string `json:"id,omitempty"`
+
+	// IsInvalid Indicates whether the location is invalid. If `true`, the location is invalid, which means the agent policy associated with the location is deleted.
+	IsInvalid *bool `json:"isInvalid,omitempty"`
+
+	// Label A label for the private location.
+	Label *string `json:"label,omitempty"`
+
+	// Namespace The namespace of the location, which is the same as the namespace of the agent policy associated with the location.
+	Namespace *string `json:"namespace,omitempty"`
+
+	// Spaces The space IDs where the private location is available.
+	Spaces *[]string `json:"spaces,omitempty"`
+
+	// Tags An array of tags to categorize the private location.
+	Tags                 *[]string              `json:"tags,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
 // PostPrivateLocationJSONBody defines parameters for PostPrivateLocation.
 type PostPrivateLocationJSONBody struct {
-	// AgentPolicyId The ID of the agent policy associated with the private location.
+	// AgentPolicyId The ID of the agent policy associated with the private location. Each agent policy can back only one private location.
 	AgentPolicyId string `json:"agentPolicyId"`
 
 	// Geo Geographic coordinates (WGS84) for the location.
@@ -92325,7 +92785,7 @@ type PostPrivateLocationJSONBody struct {
 		Lon float64 `json:"lon"`
 	} `json:"geo,omitempty"`
 
-	// Label A label for the private location.
+	// Label A label for the private location. Must be unique.
 	Label string `json:"label"`
 
 	// Spaces An array of space IDs where the private location is available. If it is not provided, the private location is available in all spaces.
@@ -92340,8 +92800,45 @@ type PutPrivateLocationJSONBody struct {
 	// AgentPolicyId The ID of the Fleet agent policy to move the private location to.
 	AgentPolicyId *string `json:"agentPolicyId,omitempty"`
 
-	// Label A new label for the private location. Must be at least 1 character long.
+	// Label A new label for the private location. Monitors using this location are updated to match.
 	Label *string `json:"label,omitempty"`
+
+	// Tags An array of tags to categorize the private location.
+	Tags *[]string `json:"tags,omitempty"`
+}
+
+// PutPrivateLocation200JSONResponseBody defines parameters for PutPrivateLocation.
+type PutPrivateLocation200JSONResponseBody struct {
+	// AgentPolicyId The ID of the agent policy associated with the private location.
+	AgentPolicyId *string `json:"agentPolicyId,omitempty"`
+
+	// Geo Geographic coordinates (WGS84) for the location.
+	Geo *struct {
+		// Lat The latitude of the location.
+		Lat float32 `json:"lat"`
+
+		// Lon The longitude of the location.
+		Lon float32 `json:"lon"`
+	} `json:"geo,omitempty"`
+
+	// Id The unique identifier of the private location.
+	Id *string `json:"id,omitempty"`
+
+	// IsInvalid Indicates whether the location is invalid. If `true`, the location is invalid, which means the agent policy associated with the location is deleted.
+	IsInvalid *bool `json:"isInvalid,omitempty"`
+
+	// Label A label for the private location.
+	Label *string `json:"label,omitempty"`
+
+	// Namespace The namespace of the location, which is the same as the namespace of the agent policy associated with the location.
+	Namespace *string `json:"namespace,omitempty"`
+
+	// Spaces The space IDs where the private location is available.
+	Spaces *[]string `json:"spaces,omitempty"`
+
+	// Tags An array of tags to categorize the private location.
+	Tags                 *[]string              `json:"tags,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
 }
 
 // GetTagsParams defines parameters for GetTags.
@@ -94571,6 +95068,383 @@ type DeleteSloInstancesOpJSONRequestBody = SLOsDeleteSloInstancesRequest
 
 // UpdateSloOpJSONRequestBody defines body for UpdateSloOp for application/json ContentType.
 type UpdateSloOpJSONRequestBody = SLOsUpdateSloRequest
+
+// Getter for additional properties for KibanaHTTPAPIsApiMonitorFields_Alert_Status. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsApiMonitorFields_Alert_Status) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsApiMonitorFields_Alert_Status
+func (a *KibanaHTTPAPIsApiMonitorFields_Alert_Status) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsApiMonitorFields_Alert_Status to handle AdditionalProperties
+func (a *KibanaHTTPAPIsApiMonitorFields_Alert_Status) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["groupBy"]; found {
+		err = json.Unmarshal(raw, &a.GroupBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'groupBy': %w", err)
+		}
+		delete(object, "groupBy")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsApiMonitorFields_Alert_Status to handle AdditionalProperties
+func (a KibanaHTTPAPIsApiMonitorFields_Alert_Status) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["enabled"], err = json.Marshal(a.Enabled)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+	}
+
+	if a.GroupBy != nil {
+		object["groupBy"], err = json.Marshal(a.GroupBy)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'groupBy': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for KibanaHTTPAPIsApiMonitorFields_Alert_Tls. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsApiMonitorFields_Alert_Tls) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsApiMonitorFields_Alert_Tls
+func (a *KibanaHTTPAPIsApiMonitorFields_Alert_Tls) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsApiMonitorFields_Alert_Tls to handle AdditionalProperties
+func (a *KibanaHTTPAPIsApiMonitorFields_Alert_Tls) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["enabled"]; found {
+		err = json.Unmarshal(raw, &a.Enabled)
+		if err != nil {
+			return fmt.Errorf("error reading 'enabled': %w", err)
+		}
+		delete(object, "enabled")
+	}
+
+	if raw, found := object["groupBy"]; found {
+		err = json.Unmarshal(raw, &a.GroupBy)
+		if err != nil {
+			return fmt.Errorf("error reading 'groupBy': %w", err)
+		}
+		delete(object, "groupBy")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsApiMonitorFields_Alert_Tls to handle AdditionalProperties
+func (a KibanaHTTPAPIsApiMonitorFields_Alert_Tls) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["enabled"], err = json.Marshal(a.Enabled)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
+	}
+
+	if a.GroupBy != nil {
+		object["groupBy"], err = json.Marshal(a.GroupBy)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'groupBy': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for KibanaHTTPAPIsApiMonitorFields_Alert. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsApiMonitorFields_Alert) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsApiMonitorFields_Alert
+func (a *KibanaHTTPAPIsApiMonitorFields_Alert) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsApiMonitorFields_Alert to handle AdditionalProperties
+func (a *KibanaHTTPAPIsApiMonitorFields_Alert) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["status"]; found {
+		err = json.Unmarshal(raw, &a.Status)
+		if err != nil {
+			return fmt.Errorf("error reading 'status': %w", err)
+		}
+		delete(object, "status")
+	}
+
+	if raw, found := object["tls"]; found {
+		err = json.Unmarshal(raw, &a.Tls)
+		if err != nil {
+			return fmt.Errorf("error reading 'tls': %w", err)
+		}
+		delete(object, "tls")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsApiMonitorFields_Alert to handle AdditionalProperties
+func (a KibanaHTTPAPIsApiMonitorFields_Alert) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Status != nil {
+		object["status"], err = json.Marshal(a.Status)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'status': %w", err)
+		}
+	}
+
+	if a.Tls != nil {
+		object["tls"], err = json.Marshal(a.Tls)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tls': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for KibanaHTTPAPIsApiMonitorFieldsLocations1. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsApiMonitorFieldsLocations1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsApiMonitorFieldsLocations1
+func (a *KibanaHTTPAPIsApiMonitorFieldsLocations1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsApiMonitorFieldsLocations1 to handle AdditionalProperties
+func (a *KibanaHTTPAPIsApiMonitorFieldsLocations1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsApiMonitorFieldsLocations1 to handle AdditionalProperties
+func (a KibanaHTTPAPIsApiMonitorFieldsLocations1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1
+func (a *KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1 to handle AdditionalProperties
+func (a *KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1 to handle AdditionalProperties
+func (a KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
 
 // Getter for additional properties for KibanaHTTPAPIsConnectorExecuteRequest_Params. Returns the specified
 // element and whether it was found
@@ -103643,6 +104517,14 @@ func (a *KibanaHTTPAPIsOutputResponseKafka) UnmarshalJSON(b []byte) error {
 		delete(object, "is_preconfigured")
 	}
 
+	if raw, found := object["kerberos"]; found {
+		err = json.Unmarshal(raw, &a.Kerberos)
+		if err != nil {
+			return fmt.Errorf("error reading 'kerberos': %w", err)
+		}
+		delete(object, "kerberos")
+	}
+
 	if raw, found := object["key"]; found {
 		err = json.Unmarshal(raw, &a.Key)
 		if err != nil {
@@ -103946,6 +104828,13 @@ func (a KibanaHTTPAPIsOutputResponseKafka) MarshalJSON() ([]byte, error) {
 		}
 	}
 
+	if a.Kerberos != nil {
+		object["kerberos"], err = json.Marshal(a.Kerberos)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'kerberos': %w", err)
+		}
+	}
+
 	if a.Key != nil {
 		object["key"], err = json.Marshal(a.Key)
 		if err != nil {
@@ -104242,6 +105131,158 @@ func (a KibanaHTTPAPIsOutputResponseKafka_Headers_Item) MarshalJSON() ([]byte, e
 	object["value"], err = json.Marshal(a.Value)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'value': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for KibanaHTTPAPIsOutputResponseKafka_Kerberos. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsOutputResponseKafka_Kerberos) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsOutputResponseKafka_Kerberos
+func (a *KibanaHTTPAPIsOutputResponseKafka_Kerberos) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafka_Kerberos to handle AdditionalProperties
+func (a *KibanaHTTPAPIsOutputResponseKafka_Kerberos) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["auth_type"]; found {
+		err = json.Unmarshal(raw, &a.AuthType)
+		if err != nil {
+			return fmt.Errorf("error reading 'auth_type': %w", err)
+		}
+		delete(object, "auth_type")
+	}
+
+	if raw, found := object["config_path"]; found {
+		err = json.Unmarshal(raw, &a.ConfigPath)
+		if err != nil {
+			return fmt.Errorf("error reading 'config_path': %w", err)
+		}
+		delete(object, "config_path")
+	}
+
+	if raw, found := object["enable_krb5_fast"]; found {
+		err = json.Unmarshal(raw, &a.EnableKrb5Fast)
+		if err != nil {
+			return fmt.Errorf("error reading 'enable_krb5_fast': %w", err)
+		}
+		delete(object, "enable_krb5_fast")
+	}
+
+	if raw, found := object["keytab"]; found {
+		err = json.Unmarshal(raw, &a.Keytab)
+		if err != nil {
+			return fmt.Errorf("error reading 'keytab': %w", err)
+		}
+		delete(object, "keytab")
+	}
+
+	if raw, found := object["realm"]; found {
+		err = json.Unmarshal(raw, &a.Realm)
+		if err != nil {
+			return fmt.Errorf("error reading 'realm': %w", err)
+		}
+		delete(object, "realm")
+	}
+
+	if raw, found := object["service_name"]; found {
+		err = json.Unmarshal(raw, &a.ServiceName)
+		if err != nil {
+			return fmt.Errorf("error reading 'service_name': %w", err)
+		}
+		delete(object, "service_name")
+	}
+
+	if raw, found := object["username"]; found {
+		err = json.Unmarshal(raw, &a.Username)
+		if err != nil {
+			return fmt.Errorf("error reading 'username': %w", err)
+		}
+		delete(object, "username")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafka_Kerberos to handle AdditionalProperties
+func (a KibanaHTTPAPIsOutputResponseKafka_Kerberos) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	object["auth_type"], err = json.Marshal(a.AuthType)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'auth_type': %w", err)
+	}
+
+	object["config_path"], err = json.Marshal(a.ConfigPath)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'config_path': %w", err)
+	}
+
+	if a.EnableKrb5Fast != nil {
+		object["enable_krb5_fast"], err = json.Marshal(a.EnableKrb5Fast)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'enable_krb5_fast': %w", err)
+		}
+	}
+
+	if a.Keytab != nil {
+		object["keytab"], err = json.Marshal(a.Keytab)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'keytab': %w", err)
+		}
+	}
+
+	object["realm"], err = json.Marshal(a.Realm)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'realm': %w", err)
+	}
+
+	if a.ServiceName != nil {
+		object["service_name"], err = json.Marshal(a.ServiceName)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'service_name': %w", err)
+		}
+	}
+
+	if a.Username != nil {
+		object["username"], err = json.Marshal(a.Username)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'username': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -104906,6 +105947,155 @@ func (a KibanaHTTPAPIsOutputResponseKafka_Sasl) MarshalJSON() ([]byte, error) {
 	return json.Marshal(object)
 }
 
+// Getter for additional properties for KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0
+func (a *KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0 to handle AdditionalProperties
+func (a *KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["hash"]; found {
+		err = json.Unmarshal(raw, &a.Hash)
+		if err != nil {
+			return fmt.Errorf("error reading 'hash': %w", err)
+		}
+		delete(object, "hash")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0 to handle AdditionalProperties
+func (a KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Hash != nil {
+		object["hash"], err = json.Marshal(a.Hash)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'hash': %w", err)
+		}
+	}
+
+	object["id"], err = json.Marshal(a.Id)
+	if err != nil {
+		return nil, fmt.Errorf("error marshaling 'id': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos
+func (a *KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos to handle AdditionalProperties
+func (a *KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["password"]; found {
+		err = json.Unmarshal(raw, &a.Password)
+		if err != nil {
+			return fmt.Errorf("error reading 'password': %w", err)
+		}
+		delete(object, "password")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos to handle AdditionalProperties
+func (a KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Password != nil {
+		object["password"], err = json.Marshal(a.Password)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'password': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
 // Getter for additional properties for KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0. Returns the specified
 // element and whether it was found
 func (a KibanaHTTPAPIsOutputResponseKafkaSecretsOauth2ClientCertificateKey0) Get(fieldName string) (value interface{}, found bool) {
@@ -105404,6 +106594,14 @@ func (a *KibanaHTTPAPIsOutputResponseKafka_Secrets) UnmarshalJSON(b []byte) erro
 		return err
 	}
 
+	if raw, found := object["kerberos"]; found {
+		err = json.Unmarshal(raw, &a.Kerberos)
+		if err != nil {
+			return fmt.Errorf("error reading 'kerberos': %w", err)
+		}
+		delete(object, "kerberos")
+	}
+
 	if raw, found := object["oauth2"]; found {
 		err = json.Unmarshal(raw, &a.Oauth2)
 		if err != nil {
@@ -105446,6 +106644,13 @@ func (a *KibanaHTTPAPIsOutputResponseKafka_Secrets) UnmarshalJSON(b []byte) erro
 func (a KibanaHTTPAPIsOutputResponseKafka_Secrets) MarshalJSON() ([]byte, error) {
 	var err error
 	object := make(map[string]json.RawMessage)
+
+	if a.Kerberos != nil {
+		object["kerberos"], err = json.Marshal(a.Kerberos)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'kerberos': %w", err)
+		}
+	}
 
 	if a.Oauth2 != nil {
 		object["oauth2"], err = json.Marshal(a.Oauth2)
@@ -110877,685 +112082,6 @@ func (a KibanaHTTPAPIsUpdatePackageRequest_NamespaceCustomizationSettings_Additi
 	return json.Marshal(object)
 }
 
-// Getter for additional properties for SyntheticsApiMonitorFields. Returns the specified
-// element and whether it was found
-func (a SyntheticsApiMonitorFields) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for SyntheticsApiMonitorFields
-func (a *SyntheticsApiMonitorFields) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for SyntheticsApiMonitorFields to handle AdditionalProperties
-func (a *SyntheticsApiMonitorFields) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["alert"]; found {
-		err = json.Unmarshal(raw, &a.Alert)
-		if err != nil {
-			return fmt.Errorf("error reading 'alert': %w", err)
-		}
-		delete(object, "alert")
-	}
-
-	if raw, found := object["certificate_error_spki_allowlist"]; found {
-		err = json.Unmarshal(raw, &a.CertificateErrorSpkiAllowlist)
-		if err != nil {
-			return fmt.Errorf("error reading 'certificate_error_spki_allowlist': %w", err)
-		}
-		delete(object, "certificate_error_spki_allowlist")
-	}
-
-	if raw, found := object["enabled"]; found {
-		err = json.Unmarshal(raw, &a.Enabled)
-		if err != nil {
-			return fmt.Errorf("error reading 'enabled': %w", err)
-		}
-		delete(object, "enabled")
-	}
-
-	if raw, found := object["ignore_https_errors"]; found {
-		err = json.Unmarshal(raw, &a.IgnoreHttpsErrors)
-		if err != nil {
-			return fmt.Errorf("error reading 'ignore_https_errors': %w", err)
-		}
-		delete(object, "ignore_https_errors")
-	}
-
-	if raw, found := object["inline_script"]; found {
-		err = json.Unmarshal(raw, &a.InlineScript)
-		if err != nil {
-			return fmt.Errorf("error reading 'inline_script': %w", err)
-		}
-		delete(object, "inline_script")
-	}
-
-	if raw, found := object["labels"]; found {
-		err = json.Unmarshal(raw, &a.Labels)
-		if err != nil {
-			return fmt.Errorf("error reading 'labels': %w", err)
-		}
-		delete(object, "labels")
-	}
-
-	if raw, found := object["locations"]; found {
-		err = json.Unmarshal(raw, &a.Locations)
-		if err != nil {
-			return fmt.Errorf("error reading 'locations': %w", err)
-		}
-		delete(object, "locations")
-	}
-
-	if raw, found := object["name"]; found {
-		err = json.Unmarshal(raw, &a.Name)
-		if err != nil {
-			return fmt.Errorf("error reading 'name': %w", err)
-		}
-		delete(object, "name")
-	}
-
-	if raw, found := object["namespace"]; found {
-		err = json.Unmarshal(raw, &a.Namespace)
-		if err != nil {
-			return fmt.Errorf("error reading 'namespace': %w", err)
-		}
-		delete(object, "namespace")
-	}
-
-	if raw, found := object["params"]; found {
-		err = json.Unmarshal(raw, &a.Params)
-		if err != nil {
-			return fmt.Errorf("error reading 'params': %w", err)
-		}
-		delete(object, "params")
-	}
-
-	if raw, found := object["playwright_options"]; found {
-		err = json.Unmarshal(raw, &a.PlaywrightOptions)
-		if err != nil {
-			return fmt.Errorf("error reading 'playwright_options': %w", err)
-		}
-		delete(object, "playwright_options")
-	}
-
-	if raw, found := object["private_locations"]; found {
-		err = json.Unmarshal(raw, &a.PrivateLocations)
-		if err != nil {
-			return fmt.Errorf("error reading 'private_locations': %w", err)
-		}
-		delete(object, "private_locations")
-	}
-
-	if raw, found := object["retest_on_failure"]; found {
-		err = json.Unmarshal(raw, &a.RetestOnFailure)
-		if err != nil {
-			return fmt.Errorf("error reading 'retest_on_failure': %w", err)
-		}
-		delete(object, "retest_on_failure")
-	}
-
-	if raw, found := object["schedule"]; found {
-		err = json.Unmarshal(raw, &a.Schedule)
-		if err != nil {
-			return fmt.Errorf("error reading 'schedule': %w", err)
-		}
-		delete(object, "schedule")
-	}
-
-	if raw, found := object["service.name"]; found {
-		err = json.Unmarshal(raw, &a.ServiceName)
-		if err != nil {
-			return fmt.Errorf("error reading 'service.name': %w", err)
-		}
-		delete(object, "service.name")
-	}
-
-	if raw, found := object["synthetics_args"]; found {
-		err = json.Unmarshal(raw, &a.SyntheticsArgs)
-		if err != nil {
-			return fmt.Errorf("error reading 'synthetics_args': %w", err)
-		}
-		delete(object, "synthetics_args")
-	}
-
-	if raw, found := object["tags"]; found {
-		err = json.Unmarshal(raw, &a.Tags)
-		if err != nil {
-			return fmt.Errorf("error reading 'tags': %w", err)
-		}
-		delete(object, "tags")
-	}
-
-	if raw, found := object["timeout"]; found {
-		err = json.Unmarshal(raw, &a.Timeout)
-		if err != nil {
-			return fmt.Errorf("error reading 'timeout': %w", err)
-		}
-		delete(object, "timeout")
-	}
-
-	if raw, found := object["type"]; found {
-		err = json.Unmarshal(raw, &a.Type)
-		if err != nil {
-			return fmt.Errorf("error reading 'type': %w", err)
-		}
-		delete(object, "type")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for SyntheticsApiMonitorFields to handle AdditionalProperties
-func (a SyntheticsApiMonitorFields) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Alert != nil {
-		object["alert"], err = json.Marshal(a.Alert)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'alert': %w", err)
-		}
-	}
-
-	if a.CertificateErrorSpkiAllowlist != nil {
-		object["certificate_error_spki_allowlist"], err = json.Marshal(a.CertificateErrorSpkiAllowlist)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'certificate_error_spki_allowlist': %w", err)
-		}
-	}
-
-	if a.Enabled != nil {
-		object["enabled"], err = json.Marshal(a.Enabled)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
-		}
-	}
-
-	if a.IgnoreHttpsErrors != nil {
-		object["ignore_https_errors"], err = json.Marshal(a.IgnoreHttpsErrors)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'ignore_https_errors': %w", err)
-		}
-	}
-
-	object["inline_script"], err = json.Marshal(a.InlineScript)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'inline_script': %w", err)
-	}
-
-	if a.Labels != nil {
-		object["labels"], err = json.Marshal(a.Labels)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'labels': %w", err)
-		}
-	}
-
-	if a.Locations != nil {
-		object["locations"], err = json.Marshal(a.Locations)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'locations': %w", err)
-		}
-	}
-
-	object["name"], err = json.Marshal(a.Name)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'name': %w", err)
-	}
-
-	if a.Namespace != nil {
-		object["namespace"], err = json.Marshal(a.Namespace)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'namespace': %w", err)
-		}
-	}
-
-	if a.Params != nil {
-		object["params"], err = json.Marshal(a.Params)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'params': %w", err)
-		}
-	}
-
-	if a.PlaywrightOptions != nil {
-		object["playwright_options"], err = json.Marshal(a.PlaywrightOptions)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'playwright_options': %w", err)
-		}
-	}
-
-	if a.PrivateLocations != nil {
-		object["private_locations"], err = json.Marshal(a.PrivateLocations)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'private_locations': %w", err)
-		}
-	}
-
-	if a.RetestOnFailure != nil {
-		object["retest_on_failure"], err = json.Marshal(a.RetestOnFailure)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'retest_on_failure': %w", err)
-		}
-	}
-
-	if a.Schedule != nil {
-		object["schedule"], err = json.Marshal(a.Schedule)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'schedule': %w", err)
-		}
-	}
-
-	if a.ServiceName != nil {
-		object["service.name"], err = json.Marshal(a.ServiceName)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'service.name': %w", err)
-		}
-	}
-
-	if a.SyntheticsArgs != nil {
-		object["synthetics_args"], err = json.Marshal(a.SyntheticsArgs)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'synthetics_args': %w", err)
-		}
-	}
-
-	if a.Tags != nil {
-		object["tags"], err = json.Marshal(a.Tags)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
-		}
-	}
-
-	if a.Timeout != nil {
-		object["timeout"], err = json.Marshal(a.Timeout)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'timeout': %w", err)
-		}
-	}
-
-	object["type"], err = json.Marshal(a.Type)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'type': %w", err)
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for SyntheticsBrowserMonitorFields. Returns the specified
-// element and whether it was found
-func (a SyntheticsBrowserMonitorFields) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for SyntheticsBrowserMonitorFields
-func (a *SyntheticsBrowserMonitorFields) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for SyntheticsBrowserMonitorFields to handle AdditionalProperties
-func (a *SyntheticsBrowserMonitorFields) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["alert"]; found {
-		err = json.Unmarshal(raw, &a.Alert)
-		if err != nil {
-			return fmt.Errorf("error reading 'alert': %w", err)
-		}
-		delete(object, "alert")
-	}
-
-	if raw, found := object["certificate_error_spki_allowlist"]; found {
-		err = json.Unmarshal(raw, &a.CertificateErrorSpkiAllowlist)
-		if err != nil {
-			return fmt.Errorf("error reading 'certificate_error_spki_allowlist': %w", err)
-		}
-		delete(object, "certificate_error_spki_allowlist")
-	}
-
-	if raw, found := object["enabled"]; found {
-		err = json.Unmarshal(raw, &a.Enabled)
-		if err != nil {
-			return fmt.Errorf("error reading 'enabled': %w", err)
-		}
-		delete(object, "enabled")
-	}
-
-	if raw, found := object["ignore_https_errors"]; found {
-		err = json.Unmarshal(raw, &a.IgnoreHttpsErrors)
-		if err != nil {
-			return fmt.Errorf("error reading 'ignore_https_errors': %w", err)
-		}
-		delete(object, "ignore_https_errors")
-	}
-
-	if raw, found := object["inline_script"]; found {
-		err = json.Unmarshal(raw, &a.InlineScript)
-		if err != nil {
-			return fmt.Errorf("error reading 'inline_script': %w", err)
-		}
-		delete(object, "inline_script")
-	}
-
-	if raw, found := object["labels"]; found {
-		err = json.Unmarshal(raw, &a.Labels)
-		if err != nil {
-			return fmt.Errorf("error reading 'labels': %w", err)
-		}
-		delete(object, "labels")
-	}
-
-	if raw, found := object["locations"]; found {
-		err = json.Unmarshal(raw, &a.Locations)
-		if err != nil {
-			return fmt.Errorf("error reading 'locations': %w", err)
-		}
-		delete(object, "locations")
-	}
-
-	if raw, found := object["name"]; found {
-		err = json.Unmarshal(raw, &a.Name)
-		if err != nil {
-			return fmt.Errorf("error reading 'name': %w", err)
-		}
-		delete(object, "name")
-	}
-
-	if raw, found := object["namespace"]; found {
-		err = json.Unmarshal(raw, &a.Namespace)
-		if err != nil {
-			return fmt.Errorf("error reading 'namespace': %w", err)
-		}
-		delete(object, "namespace")
-	}
-
-	if raw, found := object["params"]; found {
-		err = json.Unmarshal(raw, &a.Params)
-		if err != nil {
-			return fmt.Errorf("error reading 'params': %w", err)
-		}
-		delete(object, "params")
-	}
-
-	if raw, found := object["playwright_options"]; found {
-		err = json.Unmarshal(raw, &a.PlaywrightOptions)
-		if err != nil {
-			return fmt.Errorf("error reading 'playwright_options': %w", err)
-		}
-		delete(object, "playwright_options")
-	}
-
-	if raw, found := object["private_locations"]; found {
-		err = json.Unmarshal(raw, &a.PrivateLocations)
-		if err != nil {
-			return fmt.Errorf("error reading 'private_locations': %w", err)
-		}
-		delete(object, "private_locations")
-	}
-
-	if raw, found := object["retest_on_failure"]; found {
-		err = json.Unmarshal(raw, &a.RetestOnFailure)
-		if err != nil {
-			return fmt.Errorf("error reading 'retest_on_failure': %w", err)
-		}
-		delete(object, "retest_on_failure")
-	}
-
-	if raw, found := object["schedule"]; found {
-		err = json.Unmarshal(raw, &a.Schedule)
-		if err != nil {
-			return fmt.Errorf("error reading 'schedule': %w", err)
-		}
-		delete(object, "schedule")
-	}
-
-	if raw, found := object["screenshots"]; found {
-		err = json.Unmarshal(raw, &a.Screenshots)
-		if err != nil {
-			return fmt.Errorf("error reading 'screenshots': %w", err)
-		}
-		delete(object, "screenshots")
-	}
-
-	if raw, found := object["service.name"]; found {
-		err = json.Unmarshal(raw, &a.ServiceName)
-		if err != nil {
-			return fmt.Errorf("error reading 'service.name': %w", err)
-		}
-		delete(object, "service.name")
-	}
-
-	if raw, found := object["synthetics_args"]; found {
-		err = json.Unmarshal(raw, &a.SyntheticsArgs)
-		if err != nil {
-			return fmt.Errorf("error reading 'synthetics_args': %w", err)
-		}
-		delete(object, "synthetics_args")
-	}
-
-	if raw, found := object["tags"]; found {
-		err = json.Unmarshal(raw, &a.Tags)
-		if err != nil {
-			return fmt.Errorf("error reading 'tags': %w", err)
-		}
-		delete(object, "tags")
-	}
-
-	if raw, found := object["timeout"]; found {
-		err = json.Unmarshal(raw, &a.Timeout)
-		if err != nil {
-			return fmt.Errorf("error reading 'timeout': %w", err)
-		}
-		delete(object, "timeout")
-	}
-
-	if raw, found := object["type"]; found {
-		err = json.Unmarshal(raw, &a.Type)
-		if err != nil {
-			return fmt.Errorf("error reading 'type': %w", err)
-		}
-		delete(object, "type")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for SyntheticsBrowserMonitorFields to handle AdditionalProperties
-func (a SyntheticsBrowserMonitorFields) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Alert != nil {
-		object["alert"], err = json.Marshal(a.Alert)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'alert': %w", err)
-		}
-	}
-
-	if a.CertificateErrorSpkiAllowlist != nil {
-		object["certificate_error_spki_allowlist"], err = json.Marshal(a.CertificateErrorSpkiAllowlist)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'certificate_error_spki_allowlist': %w", err)
-		}
-	}
-
-	if a.Enabled != nil {
-		object["enabled"], err = json.Marshal(a.Enabled)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
-		}
-	}
-
-	if a.IgnoreHttpsErrors != nil {
-		object["ignore_https_errors"], err = json.Marshal(a.IgnoreHttpsErrors)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'ignore_https_errors': %w", err)
-		}
-	}
-
-	object["inline_script"], err = json.Marshal(a.InlineScript)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'inline_script': %w", err)
-	}
-
-	if a.Labels != nil {
-		object["labels"], err = json.Marshal(a.Labels)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'labels': %w", err)
-		}
-	}
-
-	if a.Locations != nil {
-		object["locations"], err = json.Marshal(a.Locations)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'locations': %w", err)
-		}
-	}
-
-	object["name"], err = json.Marshal(a.Name)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'name': %w", err)
-	}
-
-	if a.Namespace != nil {
-		object["namespace"], err = json.Marshal(a.Namespace)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'namespace': %w", err)
-		}
-	}
-
-	if a.Params != nil {
-		object["params"], err = json.Marshal(a.Params)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'params': %w", err)
-		}
-	}
-
-	if a.PlaywrightOptions != nil {
-		object["playwright_options"], err = json.Marshal(a.PlaywrightOptions)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'playwright_options': %w", err)
-		}
-	}
-
-	if a.PrivateLocations != nil {
-		object["private_locations"], err = json.Marshal(a.PrivateLocations)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'private_locations': %w", err)
-		}
-	}
-
-	if a.RetestOnFailure != nil {
-		object["retest_on_failure"], err = json.Marshal(a.RetestOnFailure)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'retest_on_failure': %w", err)
-		}
-	}
-
-	if a.Schedule != nil {
-		object["schedule"], err = json.Marshal(a.Schedule)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'schedule': %w", err)
-		}
-	}
-
-	if a.Screenshots != nil {
-		object["screenshots"], err = json.Marshal(a.Screenshots)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'screenshots': %w", err)
-		}
-	}
-
-	if a.ServiceName != nil {
-		object["service.name"], err = json.Marshal(a.ServiceName)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'service.name': %w", err)
-		}
-	}
-
-	if a.SyntheticsArgs != nil {
-		object["synthetics_args"], err = json.Marshal(a.SyntheticsArgs)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'synthetics_args': %w", err)
-		}
-	}
-
-	if a.Tags != nil {
-		object["tags"], err = json.Marshal(a.Tags)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
-		}
-	}
-
-	if a.Timeout != nil {
-		object["timeout"], err = json.Marshal(a.Timeout)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'timeout': %w", err)
-		}
-	}
-
-	object["type"], err = json.Marshal(a.Type)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'type': %w", err)
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
 // Getter for additional properties for SyntheticsGetPrivateLocation. Returns the specified
 // element and whether it was found
 func (a SyntheticsGetPrivateLocation) Get(fieldName string) (value interface{}, found bool) {
@@ -111629,6 +112155,22 @@ func (a *SyntheticsGetPrivateLocation) UnmarshalJSON(b []byte) error {
 		delete(object, "namespace")
 	}
 
+	if raw, found := object["spaces"]; found {
+		err = json.Unmarshal(raw, &a.Spaces)
+		if err != nil {
+			return fmt.Errorf("error reading 'spaces': %w", err)
+		}
+		delete(object, "spaces")
+	}
+
+	if raw, found := object["tags"]; found {
+		err = json.Unmarshal(raw, &a.Tags)
+		if err != nil {
+			return fmt.Errorf("error reading 'tags': %w", err)
+		}
+		delete(object, "tags")
+	}
+
 	if len(object) != 0 {
 		a.AdditionalProperties = make(map[string]interface{})
 		for fieldName, fieldBuf := range object {
@@ -111690,409 +112232,10 @@ func (a SyntheticsGetPrivateLocation) MarshalJSON() ([]byte, error) {
 		}
 	}
 
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
+	if a.Spaces != nil {
+		object["spaces"], err = json.Marshal(a.Spaces)
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for SyntheticsHttpMonitorFields. Returns the specified
-// element and whether it was found
-func (a SyntheticsHttpMonitorFields) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for SyntheticsHttpMonitorFields
-func (a *SyntheticsHttpMonitorFields) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for SyntheticsHttpMonitorFields to handle AdditionalProperties
-func (a *SyntheticsHttpMonitorFields) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["alert"]; found {
-		err = json.Unmarshal(raw, &a.Alert)
-		if err != nil {
-			return fmt.Errorf("error reading 'alert': %w", err)
-		}
-		delete(object, "alert")
-	}
-
-	if raw, found := object["check"]; found {
-		err = json.Unmarshal(raw, &a.Check)
-		if err != nil {
-			return fmt.Errorf("error reading 'check': %w", err)
-		}
-		delete(object, "check")
-	}
-
-	if raw, found := object["enabled"]; found {
-		err = json.Unmarshal(raw, &a.Enabled)
-		if err != nil {
-			return fmt.Errorf("error reading 'enabled': %w", err)
-		}
-		delete(object, "enabled")
-	}
-
-	if raw, found := object["ipv4"]; found {
-		err = json.Unmarshal(raw, &a.Ipv4)
-		if err != nil {
-			return fmt.Errorf("error reading 'ipv4': %w", err)
-		}
-		delete(object, "ipv4")
-	}
-
-	if raw, found := object["ipv6"]; found {
-		err = json.Unmarshal(raw, &a.Ipv6)
-		if err != nil {
-			return fmt.Errorf("error reading 'ipv6': %w", err)
-		}
-		delete(object, "ipv6")
-	}
-
-	if raw, found := object["labels"]; found {
-		err = json.Unmarshal(raw, &a.Labels)
-		if err != nil {
-			return fmt.Errorf("error reading 'labels': %w", err)
-		}
-		delete(object, "labels")
-	}
-
-	if raw, found := object["locations"]; found {
-		err = json.Unmarshal(raw, &a.Locations)
-		if err != nil {
-			return fmt.Errorf("error reading 'locations': %w", err)
-		}
-		delete(object, "locations")
-	}
-
-	if raw, found := object["max_redirects"]; found {
-		err = json.Unmarshal(raw, &a.MaxRedirects)
-		if err != nil {
-			return fmt.Errorf("error reading 'max_redirects': %w", err)
-		}
-		delete(object, "max_redirects")
-	}
-
-	if raw, found := object["mode"]; found {
-		err = json.Unmarshal(raw, &a.Mode)
-		if err != nil {
-			return fmt.Errorf("error reading 'mode': %w", err)
-		}
-		delete(object, "mode")
-	}
-
-	if raw, found := object["name"]; found {
-		err = json.Unmarshal(raw, &a.Name)
-		if err != nil {
-			return fmt.Errorf("error reading 'name': %w", err)
-		}
-		delete(object, "name")
-	}
-
-	if raw, found := object["namespace"]; found {
-		err = json.Unmarshal(raw, &a.Namespace)
-		if err != nil {
-			return fmt.Errorf("error reading 'namespace': %w", err)
-		}
-		delete(object, "namespace")
-	}
-
-	if raw, found := object["params"]; found {
-		err = json.Unmarshal(raw, &a.Params)
-		if err != nil {
-			return fmt.Errorf("error reading 'params': %w", err)
-		}
-		delete(object, "params")
-	}
-
-	if raw, found := object["password"]; found {
-		err = json.Unmarshal(raw, &a.Password)
-		if err != nil {
-			return fmt.Errorf("error reading 'password': %w", err)
-		}
-		delete(object, "password")
-	}
-
-	if raw, found := object["private_locations"]; found {
-		err = json.Unmarshal(raw, &a.PrivateLocations)
-		if err != nil {
-			return fmt.Errorf("error reading 'private_locations': %w", err)
-		}
-		delete(object, "private_locations")
-	}
-
-	if raw, found := object["proxy_headers"]; found {
-		err = json.Unmarshal(raw, &a.ProxyHeaders)
-		if err != nil {
-			return fmt.Errorf("error reading 'proxy_headers': %w", err)
-		}
-		delete(object, "proxy_headers")
-	}
-
-	if raw, found := object["proxy_url"]; found {
-		err = json.Unmarshal(raw, &a.ProxyUrl)
-		if err != nil {
-			return fmt.Errorf("error reading 'proxy_url': %w", err)
-		}
-		delete(object, "proxy_url")
-	}
-
-	if raw, found := object["response"]; found {
-		err = json.Unmarshal(raw, &a.Response)
-		if err != nil {
-			return fmt.Errorf("error reading 'response': %w", err)
-		}
-		delete(object, "response")
-	}
-
-	if raw, found := object["retest_on_failure"]; found {
-		err = json.Unmarshal(raw, &a.RetestOnFailure)
-		if err != nil {
-			return fmt.Errorf("error reading 'retest_on_failure': %w", err)
-		}
-		delete(object, "retest_on_failure")
-	}
-
-	if raw, found := object["schedule"]; found {
-		err = json.Unmarshal(raw, &a.Schedule)
-		if err != nil {
-			return fmt.Errorf("error reading 'schedule': %w", err)
-		}
-		delete(object, "schedule")
-	}
-
-	if raw, found := object["service.name"]; found {
-		err = json.Unmarshal(raw, &a.ServiceName)
-		if err != nil {
-			return fmt.Errorf("error reading 'service.name': %w", err)
-		}
-		delete(object, "service.name")
-	}
-
-	if raw, found := object["ssl"]; found {
-		err = json.Unmarshal(raw, &a.Ssl)
-		if err != nil {
-			return fmt.Errorf("error reading 'ssl': %w", err)
-		}
-		delete(object, "ssl")
-	}
-
-	if raw, found := object["tags"]; found {
-		err = json.Unmarshal(raw, &a.Tags)
-		if err != nil {
-			return fmt.Errorf("error reading 'tags': %w", err)
-		}
-		delete(object, "tags")
-	}
-
-	if raw, found := object["timeout"]; found {
-		err = json.Unmarshal(raw, &a.Timeout)
-		if err != nil {
-			return fmt.Errorf("error reading 'timeout': %w", err)
-		}
-		delete(object, "timeout")
-	}
-
-	if raw, found := object["type"]; found {
-		err = json.Unmarshal(raw, &a.Type)
-		if err != nil {
-			return fmt.Errorf("error reading 'type': %w", err)
-		}
-		delete(object, "type")
-	}
-
-	if raw, found := object["url"]; found {
-		err = json.Unmarshal(raw, &a.Url)
-		if err != nil {
-			return fmt.Errorf("error reading 'url': %w", err)
-		}
-		delete(object, "url")
-	}
-
-	if raw, found := object["username"]; found {
-		err = json.Unmarshal(raw, &a.Username)
-		if err != nil {
-			return fmt.Errorf("error reading 'username': %w", err)
-		}
-		delete(object, "username")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for SyntheticsHttpMonitorFields to handle AdditionalProperties
-func (a SyntheticsHttpMonitorFields) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Alert != nil {
-		object["alert"], err = json.Marshal(a.Alert)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'alert': %w", err)
-		}
-	}
-
-	if a.Check != nil {
-		object["check"], err = json.Marshal(a.Check)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'check': %w", err)
-		}
-	}
-
-	if a.Enabled != nil {
-		object["enabled"], err = json.Marshal(a.Enabled)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
-		}
-	}
-
-	if a.Ipv4 != nil {
-		object["ipv4"], err = json.Marshal(a.Ipv4)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'ipv4': %w", err)
-		}
-	}
-
-	if a.Ipv6 != nil {
-		object["ipv6"], err = json.Marshal(a.Ipv6)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'ipv6': %w", err)
-		}
-	}
-
-	if a.Labels != nil {
-		object["labels"], err = json.Marshal(a.Labels)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'labels': %w", err)
-		}
-	}
-
-	if a.Locations != nil {
-		object["locations"], err = json.Marshal(a.Locations)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'locations': %w", err)
-		}
-	}
-
-	if a.MaxRedirects != nil {
-		object["max_redirects"], err = json.Marshal(a.MaxRedirects)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'max_redirects': %w", err)
-		}
-	}
-
-	if a.Mode != nil {
-		object["mode"], err = json.Marshal(a.Mode)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'mode': %w", err)
-		}
-	}
-
-	object["name"], err = json.Marshal(a.Name)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'name': %w", err)
-	}
-
-	if a.Namespace != nil {
-		object["namespace"], err = json.Marshal(a.Namespace)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'namespace': %w", err)
-		}
-	}
-
-	if a.Params != nil {
-		object["params"], err = json.Marshal(a.Params)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'params': %w", err)
-		}
-	}
-
-	if a.Password != nil {
-		object["password"], err = json.Marshal(a.Password)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'password': %w", err)
-		}
-	}
-
-	if a.PrivateLocations != nil {
-		object["private_locations"], err = json.Marshal(a.PrivateLocations)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'private_locations': %w", err)
-		}
-	}
-
-	if a.ProxyHeaders != nil {
-		object["proxy_headers"], err = json.Marshal(a.ProxyHeaders)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'proxy_headers': %w", err)
-		}
-	}
-
-	if a.ProxyUrl != nil {
-		object["proxy_url"], err = json.Marshal(a.ProxyUrl)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'proxy_url': %w", err)
-		}
-	}
-
-	if a.Response != nil {
-		object["response"], err = json.Marshal(a.Response)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'response': %w", err)
-		}
-	}
-
-	if a.RetestOnFailure != nil {
-		object["retest_on_failure"], err = json.Marshal(a.RetestOnFailure)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'retest_on_failure': %w", err)
-		}
-	}
-
-	if a.Schedule != nil {
-		object["schedule"], err = json.Marshal(a.Schedule)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'schedule': %w", err)
-		}
-	}
-
-	if a.ServiceName != nil {
-		object["service.name"], err = json.Marshal(a.ServiceName)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'service.name': %w", err)
-		}
-	}
-
-	if a.Ssl != nil {
-		object["ssl"], err = json.Marshal(a.Ssl)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'ssl': %w", err)
+			return nil, fmt.Errorf("error marshaling 'spaces': %w", err)
 		}
 	}
 
@@ -112101,717 +112244,6 @@ func (a SyntheticsHttpMonitorFields) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
 		}
-	}
-
-	if a.Timeout != nil {
-		object["timeout"], err = json.Marshal(a.Timeout)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'timeout': %w", err)
-		}
-	}
-
-	object["type"], err = json.Marshal(a.Type)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'type': %w", err)
-	}
-
-	object["url"], err = json.Marshal(a.Url)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'url': %w", err)
-	}
-
-	if a.Username != nil {
-		object["username"], err = json.Marshal(a.Username)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'username': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for SyntheticsHttpMonitorFields_Check_Response. Returns the specified
-// element and whether it was found
-func (a SyntheticsHttpMonitorFields_Check_Response) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for SyntheticsHttpMonitorFields_Check_Response
-func (a *SyntheticsHttpMonitorFields_Check_Response) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for SyntheticsHttpMonitorFields_Check_Response to handle AdditionalProperties
-func (a *SyntheticsHttpMonitorFields_Check_Response) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["body"]; found {
-		err = json.Unmarshal(raw, &a.Body)
-		if err != nil {
-			return fmt.Errorf("error reading 'body': %w", err)
-		}
-		delete(object, "body")
-	}
-
-	if raw, found := object["headers"]; found {
-		err = json.Unmarshal(raw, &a.Headers)
-		if err != nil {
-			return fmt.Errorf("error reading 'headers': %w", err)
-		}
-		delete(object, "headers")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for SyntheticsHttpMonitorFields_Check_Response to handle AdditionalProperties
-func (a SyntheticsHttpMonitorFields_Check_Response) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Body != nil {
-		object["body"], err = json.Marshal(a.Body)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'body': %w", err)
-		}
-	}
-
-	if a.Headers != nil {
-		object["headers"], err = json.Marshal(a.Headers)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'headers': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for SyntheticsIcmpMonitorFields. Returns the specified
-// element and whether it was found
-func (a SyntheticsIcmpMonitorFields) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for SyntheticsIcmpMonitorFields
-func (a *SyntheticsIcmpMonitorFields) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for SyntheticsIcmpMonitorFields to handle AdditionalProperties
-func (a *SyntheticsIcmpMonitorFields) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["alert"]; found {
-		err = json.Unmarshal(raw, &a.Alert)
-		if err != nil {
-			return fmt.Errorf("error reading 'alert': %w", err)
-		}
-		delete(object, "alert")
-	}
-
-	if raw, found := object["enabled"]; found {
-		err = json.Unmarshal(raw, &a.Enabled)
-		if err != nil {
-			return fmt.Errorf("error reading 'enabled': %w", err)
-		}
-		delete(object, "enabled")
-	}
-
-	if raw, found := object["host"]; found {
-		err = json.Unmarshal(raw, &a.Host)
-		if err != nil {
-			return fmt.Errorf("error reading 'host': %w", err)
-		}
-		delete(object, "host")
-	}
-
-	if raw, found := object["labels"]; found {
-		err = json.Unmarshal(raw, &a.Labels)
-		if err != nil {
-			return fmt.Errorf("error reading 'labels': %w", err)
-		}
-		delete(object, "labels")
-	}
-
-	if raw, found := object["locations"]; found {
-		err = json.Unmarshal(raw, &a.Locations)
-		if err != nil {
-			return fmt.Errorf("error reading 'locations': %w", err)
-		}
-		delete(object, "locations")
-	}
-
-	if raw, found := object["name"]; found {
-		err = json.Unmarshal(raw, &a.Name)
-		if err != nil {
-			return fmt.Errorf("error reading 'name': %w", err)
-		}
-		delete(object, "name")
-	}
-
-	if raw, found := object["namespace"]; found {
-		err = json.Unmarshal(raw, &a.Namespace)
-		if err != nil {
-			return fmt.Errorf("error reading 'namespace': %w", err)
-		}
-		delete(object, "namespace")
-	}
-
-	if raw, found := object["params"]; found {
-		err = json.Unmarshal(raw, &a.Params)
-		if err != nil {
-			return fmt.Errorf("error reading 'params': %w", err)
-		}
-		delete(object, "params")
-	}
-
-	if raw, found := object["private_locations"]; found {
-		err = json.Unmarshal(raw, &a.PrivateLocations)
-		if err != nil {
-			return fmt.Errorf("error reading 'private_locations': %w", err)
-		}
-		delete(object, "private_locations")
-	}
-
-	if raw, found := object["retest_on_failure"]; found {
-		err = json.Unmarshal(raw, &a.RetestOnFailure)
-		if err != nil {
-			return fmt.Errorf("error reading 'retest_on_failure': %w", err)
-		}
-		delete(object, "retest_on_failure")
-	}
-
-	if raw, found := object["schedule"]; found {
-		err = json.Unmarshal(raw, &a.Schedule)
-		if err != nil {
-			return fmt.Errorf("error reading 'schedule': %w", err)
-		}
-		delete(object, "schedule")
-	}
-
-	if raw, found := object["service.name"]; found {
-		err = json.Unmarshal(raw, &a.ServiceName)
-		if err != nil {
-			return fmt.Errorf("error reading 'service.name': %w", err)
-		}
-		delete(object, "service.name")
-	}
-
-	if raw, found := object["tags"]; found {
-		err = json.Unmarshal(raw, &a.Tags)
-		if err != nil {
-			return fmt.Errorf("error reading 'tags': %w", err)
-		}
-		delete(object, "tags")
-	}
-
-	if raw, found := object["timeout"]; found {
-		err = json.Unmarshal(raw, &a.Timeout)
-		if err != nil {
-			return fmt.Errorf("error reading 'timeout': %w", err)
-		}
-		delete(object, "timeout")
-	}
-
-	if raw, found := object["type"]; found {
-		err = json.Unmarshal(raw, &a.Type)
-		if err != nil {
-			return fmt.Errorf("error reading 'type': %w", err)
-		}
-		delete(object, "type")
-	}
-
-	if raw, found := object["wait"]; found {
-		err = json.Unmarshal(raw, &a.Wait)
-		if err != nil {
-			return fmt.Errorf("error reading 'wait': %w", err)
-		}
-		delete(object, "wait")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for SyntheticsIcmpMonitorFields to handle AdditionalProperties
-func (a SyntheticsIcmpMonitorFields) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Alert != nil {
-		object["alert"], err = json.Marshal(a.Alert)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'alert': %w", err)
-		}
-	}
-
-	if a.Enabled != nil {
-		object["enabled"], err = json.Marshal(a.Enabled)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
-		}
-	}
-
-	object["host"], err = json.Marshal(a.Host)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'host': %w", err)
-	}
-
-	if a.Labels != nil {
-		object["labels"], err = json.Marshal(a.Labels)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'labels': %w", err)
-		}
-	}
-
-	if a.Locations != nil {
-		object["locations"], err = json.Marshal(a.Locations)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'locations': %w", err)
-		}
-	}
-
-	object["name"], err = json.Marshal(a.Name)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'name': %w", err)
-	}
-
-	if a.Namespace != nil {
-		object["namespace"], err = json.Marshal(a.Namespace)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'namespace': %w", err)
-		}
-	}
-
-	if a.Params != nil {
-		object["params"], err = json.Marshal(a.Params)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'params': %w", err)
-		}
-	}
-
-	if a.PrivateLocations != nil {
-		object["private_locations"], err = json.Marshal(a.PrivateLocations)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'private_locations': %w", err)
-		}
-	}
-
-	if a.RetestOnFailure != nil {
-		object["retest_on_failure"], err = json.Marshal(a.RetestOnFailure)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'retest_on_failure': %w", err)
-		}
-	}
-
-	if a.Schedule != nil {
-		object["schedule"], err = json.Marshal(a.Schedule)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'schedule': %w", err)
-		}
-	}
-
-	if a.ServiceName != nil {
-		object["service.name"], err = json.Marshal(a.ServiceName)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'service.name': %w", err)
-		}
-	}
-
-	if a.Tags != nil {
-		object["tags"], err = json.Marshal(a.Tags)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
-		}
-	}
-
-	if a.Timeout != nil {
-		object["timeout"], err = json.Marshal(a.Timeout)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'timeout': %w", err)
-		}
-	}
-
-	object["type"], err = json.Marshal(a.Type)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'type': %w", err)
-	}
-
-	if a.Wait != nil {
-		object["wait"], err = json.Marshal(a.Wait)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'wait': %w", err)
-		}
-	}
-
-	for fieldName, field := range a.AdditionalProperties {
-		object[fieldName], err = json.Marshal(field)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
-		}
-	}
-	return json.Marshal(object)
-}
-
-// Getter for additional properties for SyntheticsTcpMonitorFields. Returns the specified
-// element and whether it was found
-func (a SyntheticsTcpMonitorFields) Get(fieldName string) (value interface{}, found bool) {
-	if a.AdditionalProperties != nil {
-		value, found = a.AdditionalProperties[fieldName]
-	}
-	return
-}
-
-// Setter for additional properties for SyntheticsTcpMonitorFields
-func (a *SyntheticsTcpMonitorFields) Set(fieldName string, value interface{}) {
-	if a.AdditionalProperties == nil {
-		a.AdditionalProperties = make(map[string]interface{})
-	}
-	a.AdditionalProperties[fieldName] = value
-}
-
-// Override default JSON handling for SyntheticsTcpMonitorFields to handle AdditionalProperties
-func (a *SyntheticsTcpMonitorFields) UnmarshalJSON(b []byte) error {
-	object := make(map[string]json.RawMessage)
-	err := json.Unmarshal(b, &object)
-	if err != nil {
-		return err
-	}
-
-	if raw, found := object["alert"]; found {
-		err = json.Unmarshal(raw, &a.Alert)
-		if err != nil {
-			return fmt.Errorf("error reading 'alert': %w", err)
-		}
-		delete(object, "alert")
-	}
-
-	if raw, found := object["enabled"]; found {
-		err = json.Unmarshal(raw, &a.Enabled)
-		if err != nil {
-			return fmt.Errorf("error reading 'enabled': %w", err)
-		}
-		delete(object, "enabled")
-	}
-
-	if raw, found := object["host"]; found {
-		err = json.Unmarshal(raw, &a.Host)
-		if err != nil {
-			return fmt.Errorf("error reading 'host': %w", err)
-		}
-		delete(object, "host")
-	}
-
-	if raw, found := object["labels"]; found {
-		err = json.Unmarshal(raw, &a.Labels)
-		if err != nil {
-			return fmt.Errorf("error reading 'labels': %w", err)
-		}
-		delete(object, "labels")
-	}
-
-	if raw, found := object["locations"]; found {
-		err = json.Unmarshal(raw, &a.Locations)
-		if err != nil {
-			return fmt.Errorf("error reading 'locations': %w", err)
-		}
-		delete(object, "locations")
-	}
-
-	if raw, found := object["name"]; found {
-		err = json.Unmarshal(raw, &a.Name)
-		if err != nil {
-			return fmt.Errorf("error reading 'name': %w", err)
-		}
-		delete(object, "name")
-	}
-
-	if raw, found := object["namespace"]; found {
-		err = json.Unmarshal(raw, &a.Namespace)
-		if err != nil {
-			return fmt.Errorf("error reading 'namespace': %w", err)
-		}
-		delete(object, "namespace")
-	}
-
-	if raw, found := object["params"]; found {
-		err = json.Unmarshal(raw, &a.Params)
-		if err != nil {
-			return fmt.Errorf("error reading 'params': %w", err)
-		}
-		delete(object, "params")
-	}
-
-	if raw, found := object["private_locations"]; found {
-		err = json.Unmarshal(raw, &a.PrivateLocations)
-		if err != nil {
-			return fmt.Errorf("error reading 'private_locations': %w", err)
-		}
-		delete(object, "private_locations")
-	}
-
-	if raw, found := object["proxy_url"]; found {
-		err = json.Unmarshal(raw, &a.ProxyUrl)
-		if err != nil {
-			return fmt.Errorf("error reading 'proxy_url': %w", err)
-		}
-		delete(object, "proxy_url")
-	}
-
-	if raw, found := object["proxy_use_local_resolver"]; found {
-		err = json.Unmarshal(raw, &a.ProxyUseLocalResolver)
-		if err != nil {
-			return fmt.Errorf("error reading 'proxy_use_local_resolver': %w", err)
-		}
-		delete(object, "proxy_use_local_resolver")
-	}
-
-	if raw, found := object["retest_on_failure"]; found {
-		err = json.Unmarshal(raw, &a.RetestOnFailure)
-		if err != nil {
-			return fmt.Errorf("error reading 'retest_on_failure': %w", err)
-		}
-		delete(object, "retest_on_failure")
-	}
-
-	if raw, found := object["schedule"]; found {
-		err = json.Unmarshal(raw, &a.Schedule)
-		if err != nil {
-			return fmt.Errorf("error reading 'schedule': %w", err)
-		}
-		delete(object, "schedule")
-	}
-
-	if raw, found := object["service.name"]; found {
-		err = json.Unmarshal(raw, &a.ServiceName)
-		if err != nil {
-			return fmt.Errorf("error reading 'service.name': %w", err)
-		}
-		delete(object, "service.name")
-	}
-
-	if raw, found := object["ssl"]; found {
-		err = json.Unmarshal(raw, &a.Ssl)
-		if err != nil {
-			return fmt.Errorf("error reading 'ssl': %w", err)
-		}
-		delete(object, "ssl")
-	}
-
-	if raw, found := object["tags"]; found {
-		err = json.Unmarshal(raw, &a.Tags)
-		if err != nil {
-			return fmt.Errorf("error reading 'tags': %w", err)
-		}
-		delete(object, "tags")
-	}
-
-	if raw, found := object["timeout"]; found {
-		err = json.Unmarshal(raw, &a.Timeout)
-		if err != nil {
-			return fmt.Errorf("error reading 'timeout': %w", err)
-		}
-		delete(object, "timeout")
-	}
-
-	if raw, found := object["type"]; found {
-		err = json.Unmarshal(raw, &a.Type)
-		if err != nil {
-			return fmt.Errorf("error reading 'type': %w", err)
-		}
-		delete(object, "type")
-	}
-
-	if len(object) != 0 {
-		a.AdditionalProperties = make(map[string]interface{})
-		for fieldName, fieldBuf := range object {
-			var fieldVal interface{}
-			err := json.Unmarshal(fieldBuf, &fieldVal)
-			if err != nil {
-				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
-			}
-			a.AdditionalProperties[fieldName] = fieldVal
-		}
-	}
-	return nil
-}
-
-// Override default JSON handling for SyntheticsTcpMonitorFields to handle AdditionalProperties
-func (a SyntheticsTcpMonitorFields) MarshalJSON() ([]byte, error) {
-	var err error
-	object := make(map[string]json.RawMessage)
-
-	if a.Alert != nil {
-		object["alert"], err = json.Marshal(a.Alert)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'alert': %w", err)
-		}
-	}
-
-	if a.Enabled != nil {
-		object["enabled"], err = json.Marshal(a.Enabled)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'enabled': %w", err)
-		}
-	}
-
-	object["host"], err = json.Marshal(a.Host)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'host': %w", err)
-	}
-
-	if a.Labels != nil {
-		object["labels"], err = json.Marshal(a.Labels)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'labels': %w", err)
-		}
-	}
-
-	if a.Locations != nil {
-		object["locations"], err = json.Marshal(a.Locations)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'locations': %w", err)
-		}
-	}
-
-	object["name"], err = json.Marshal(a.Name)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'name': %w", err)
-	}
-
-	if a.Namespace != nil {
-		object["namespace"], err = json.Marshal(a.Namespace)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'namespace': %w", err)
-		}
-	}
-
-	if a.Params != nil {
-		object["params"], err = json.Marshal(a.Params)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'params': %w", err)
-		}
-	}
-
-	if a.PrivateLocations != nil {
-		object["private_locations"], err = json.Marshal(a.PrivateLocations)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'private_locations': %w", err)
-		}
-	}
-
-	if a.ProxyUrl != nil {
-		object["proxy_url"], err = json.Marshal(a.ProxyUrl)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'proxy_url': %w", err)
-		}
-	}
-
-	if a.ProxyUseLocalResolver != nil {
-		object["proxy_use_local_resolver"], err = json.Marshal(a.ProxyUseLocalResolver)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'proxy_use_local_resolver': %w", err)
-		}
-	}
-
-	if a.RetestOnFailure != nil {
-		object["retest_on_failure"], err = json.Marshal(a.RetestOnFailure)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'retest_on_failure': %w", err)
-		}
-	}
-
-	if a.Schedule != nil {
-		object["schedule"], err = json.Marshal(a.Schedule)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'schedule': %w", err)
-		}
-	}
-
-	if a.ServiceName != nil {
-		object["service.name"], err = json.Marshal(a.ServiceName)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'service.name': %w", err)
-		}
-	}
-
-	if a.Ssl != nil {
-		object["ssl"], err = json.Marshal(a.Ssl)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'ssl': %w", err)
-		}
-	}
-
-	if a.Tags != nil {
-		object["tags"], err = json.Marshal(a.Tags)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
-		}
-	}
-
-	if a.Timeout != nil {
-		object["timeout"], err = json.Marshal(a.Timeout)
-		if err != nil {
-			return nil, fmt.Errorf("error marshaling 'timeout': %w", err)
-		}
-	}
-
-	object["type"], err = json.Marshal(a.Type)
-	if err != nil {
-		return nil, fmt.Errorf("error marshaling 'type': %w", err)
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -114648,6 +114080,420 @@ func (a PostFleetPackagePoliciesUpgradeDryrun200JSONResponseBody_AgentDiff_Item)
 	object["use_output"], err = json.Marshal(a.UseOutput)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'use_output': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for PutSyntheticMonitor200JSONResponseBody. Returns the specified
+// element and whether it was found
+func (a PutSyntheticMonitor200JSONResponseBody) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PutSyntheticMonitor200JSONResponseBody
+func (a *PutSyntheticMonitor200JSONResponseBody) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PutSyntheticMonitor200JSONResponseBody to handle AdditionalProperties
+func (a *PutSyntheticMonitor200JSONResponseBody) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["warnings"]; found {
+		err = json.Unmarshal(raw, &a.Warnings)
+		if err != nil {
+			return fmt.Errorf("error reading 'warnings': %w", err)
+		}
+		delete(object, "warnings")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PutSyntheticMonitor200JSONResponseBody to handle AdditionalProperties
+func (a PutSyntheticMonitor200JSONResponseBody) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Warnings != nil {
+		object["warnings"], err = json.Marshal(a.Warnings)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'warnings': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for GetPrivateLocations200JSONResponseBody_Item. Returns the specified
+// element and whether it was found
+func (a GetPrivateLocations200JSONResponseBody_Item) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for GetPrivateLocations200JSONResponseBody_Item
+func (a *GetPrivateLocations200JSONResponseBody_Item) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for GetPrivateLocations200JSONResponseBody_Item to handle AdditionalProperties
+func (a *GetPrivateLocations200JSONResponseBody_Item) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["agentPolicyId"]; found {
+		err = json.Unmarshal(raw, &a.AgentPolicyId)
+		if err != nil {
+			return fmt.Errorf("error reading 'agentPolicyId': %w", err)
+		}
+		delete(object, "agentPolicyId")
+	}
+
+	if raw, found := object["geo"]; found {
+		err = json.Unmarshal(raw, &a.Geo)
+		if err != nil {
+			return fmt.Errorf("error reading 'geo': %w", err)
+		}
+		delete(object, "geo")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["isInvalid"]; found {
+		err = json.Unmarshal(raw, &a.IsInvalid)
+		if err != nil {
+			return fmt.Errorf("error reading 'isInvalid': %w", err)
+		}
+		delete(object, "isInvalid")
+	}
+
+	if raw, found := object["label"]; found {
+		err = json.Unmarshal(raw, &a.Label)
+		if err != nil {
+			return fmt.Errorf("error reading 'label': %w", err)
+		}
+		delete(object, "label")
+	}
+
+	if raw, found := object["namespace"]; found {
+		err = json.Unmarshal(raw, &a.Namespace)
+		if err != nil {
+			return fmt.Errorf("error reading 'namespace': %w", err)
+		}
+		delete(object, "namespace")
+	}
+
+	if raw, found := object["spaces"]; found {
+		err = json.Unmarshal(raw, &a.Spaces)
+		if err != nil {
+			return fmt.Errorf("error reading 'spaces': %w", err)
+		}
+		delete(object, "spaces")
+	}
+
+	if raw, found := object["tags"]; found {
+		err = json.Unmarshal(raw, &a.Tags)
+		if err != nil {
+			return fmt.Errorf("error reading 'tags': %w", err)
+		}
+		delete(object, "tags")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for GetPrivateLocations200JSONResponseBody_Item to handle AdditionalProperties
+func (a GetPrivateLocations200JSONResponseBody_Item) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.AgentPolicyId != nil {
+		object["agentPolicyId"], err = json.Marshal(a.AgentPolicyId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'agentPolicyId': %w", err)
+		}
+	}
+
+	if a.Geo != nil {
+		object["geo"], err = json.Marshal(a.Geo)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'geo': %w", err)
+		}
+	}
+
+	if a.Id != nil {
+		object["id"], err = json.Marshal(a.Id)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'id': %w", err)
+		}
+	}
+
+	if a.IsInvalid != nil {
+		object["isInvalid"], err = json.Marshal(a.IsInvalid)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'isInvalid': %w", err)
+		}
+	}
+
+	if a.Label != nil {
+		object["label"], err = json.Marshal(a.Label)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'label': %w", err)
+		}
+	}
+
+	if a.Namespace != nil {
+		object["namespace"], err = json.Marshal(a.Namespace)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'namespace': %w", err)
+		}
+	}
+
+	if a.Spaces != nil {
+		object["spaces"], err = json.Marshal(a.Spaces)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'spaces': %w", err)
+		}
+	}
+
+	if a.Tags != nil {
+		object["tags"], err = json.Marshal(a.Tags)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
+		}
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for PutPrivateLocation200JSONResponseBody. Returns the specified
+// element and whether it was found
+func (a PutPrivateLocation200JSONResponseBody) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for PutPrivateLocation200JSONResponseBody
+func (a *PutPrivateLocation200JSONResponseBody) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for PutPrivateLocation200JSONResponseBody to handle AdditionalProperties
+func (a *PutPrivateLocation200JSONResponseBody) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["agentPolicyId"]; found {
+		err = json.Unmarshal(raw, &a.AgentPolicyId)
+		if err != nil {
+			return fmt.Errorf("error reading 'agentPolicyId': %w", err)
+		}
+		delete(object, "agentPolicyId")
+	}
+
+	if raw, found := object["geo"]; found {
+		err = json.Unmarshal(raw, &a.Geo)
+		if err != nil {
+			return fmt.Errorf("error reading 'geo': %w", err)
+		}
+		delete(object, "geo")
+	}
+
+	if raw, found := object["id"]; found {
+		err = json.Unmarshal(raw, &a.Id)
+		if err != nil {
+			return fmt.Errorf("error reading 'id': %w", err)
+		}
+		delete(object, "id")
+	}
+
+	if raw, found := object["isInvalid"]; found {
+		err = json.Unmarshal(raw, &a.IsInvalid)
+		if err != nil {
+			return fmt.Errorf("error reading 'isInvalid': %w", err)
+		}
+		delete(object, "isInvalid")
+	}
+
+	if raw, found := object["label"]; found {
+		err = json.Unmarshal(raw, &a.Label)
+		if err != nil {
+			return fmt.Errorf("error reading 'label': %w", err)
+		}
+		delete(object, "label")
+	}
+
+	if raw, found := object["namespace"]; found {
+		err = json.Unmarshal(raw, &a.Namespace)
+		if err != nil {
+			return fmt.Errorf("error reading 'namespace': %w", err)
+		}
+		delete(object, "namespace")
+	}
+
+	if raw, found := object["spaces"]; found {
+		err = json.Unmarshal(raw, &a.Spaces)
+		if err != nil {
+			return fmt.Errorf("error reading 'spaces': %w", err)
+		}
+		delete(object, "spaces")
+	}
+
+	if raw, found := object["tags"]; found {
+		err = json.Unmarshal(raw, &a.Tags)
+		if err != nil {
+			return fmt.Errorf("error reading 'tags': %w", err)
+		}
+		delete(object, "tags")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for PutPrivateLocation200JSONResponseBody to handle AdditionalProperties
+func (a PutPrivateLocation200JSONResponseBody) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.AgentPolicyId != nil {
+		object["agentPolicyId"], err = json.Marshal(a.AgentPolicyId)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'agentPolicyId': %w", err)
+		}
+	}
+
+	if a.Geo != nil {
+		object["geo"], err = json.Marshal(a.Geo)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'geo': %w", err)
+		}
+	}
+
+	if a.Id != nil {
+		object["id"], err = json.Marshal(a.Id)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'id': %w", err)
+		}
+	}
+
+	if a.IsInvalid != nil {
+		object["isInvalid"], err = json.Marshal(a.IsInvalid)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'isInvalid': %w", err)
+		}
+	}
+
+	if a.Label != nil {
+		object["label"], err = json.Marshal(a.Label)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'label': %w", err)
+		}
+	}
+
+	if a.Namespace != nil {
+		object["namespace"], err = json.Marshal(a.Namespace)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'namespace': %w", err)
+		}
+	}
+
+	if a.Spaces != nil {
+		object["spaces"], err = json.Marshal(a.Spaces)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'spaces': %w", err)
+		}
+	}
+
+	if a.Tags != nil {
+		object["tags"], err = json.Marshal(a.Tags)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'tags': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -117885,6 +117731,32 @@ func (t *CasesUserActionsFindResponseProperties_Payload) FromCasesPayloadAssigne
 
 // MergeCasesPayloadAssignees performs a merge with any union data inside the CasesUserActionsFindResponseProperties_Payload, using the provided CasesPayloadAssignees
 func (t *CasesUserActionsFindResponseProperties_Payload) MergeCasesPayloadAssignees(v CasesPayloadAssignees) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsCasesPayloadBulkAttachments returns the union data inside the CasesUserActionsFindResponseProperties_Payload as a CasesPayloadBulkAttachments
+func (t CasesUserActionsFindResponseProperties_Payload) AsCasesPayloadBulkAttachments() (CasesPayloadBulkAttachments, error) {
+	var body CasesPayloadBulkAttachments
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromCasesPayloadBulkAttachments overwrites any union data inside the CasesUserActionsFindResponseProperties_Payload as the provided CasesPayloadBulkAttachments
+func (t *CasesUserActionsFindResponseProperties_Payload) FromCasesPayloadBulkAttachments(v CasesPayloadBulkAttachments) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeCasesPayloadBulkAttachments performs a merge with any union data inside the CasesUserActionsFindResponseProperties_Payload, using the provided CasesPayloadBulkAttachments
+func (t *CasesUserActionsFindResponseProperties_Payload) MergeCasesPayloadBulkAttachments(v CasesPayloadBulkAttachments) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -122619,6 +122491,440 @@ func (t *KibanaHTTPAPIsAlertingRuleRecovery) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsKibanaHTTPAPIsApiMonitorFieldsLocations0 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_Locations_Item as a KibanaHTTPAPIsApiMonitorFieldsLocations0
+func (t KibanaHTTPAPIsApiMonitorFields_Locations_Item) AsKibanaHTTPAPIsApiMonitorFieldsLocations0() (KibanaHTTPAPIsApiMonitorFieldsLocations0, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsLocations0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsLocations0 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_Locations_Item as the provided KibanaHTTPAPIsApiMonitorFieldsLocations0
+func (t *KibanaHTTPAPIsApiMonitorFields_Locations_Item) FromKibanaHTTPAPIsApiMonitorFieldsLocations0(v KibanaHTTPAPIsApiMonitorFieldsLocations0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsLocations0 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_Locations_Item, using the provided KibanaHTTPAPIsApiMonitorFieldsLocations0
+func (t *KibanaHTTPAPIsApiMonitorFields_Locations_Item) MergeKibanaHTTPAPIsApiMonitorFieldsLocations0(v KibanaHTTPAPIsApiMonitorFieldsLocations0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFieldsLocations1 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_Locations_Item as a KibanaHTTPAPIsApiMonitorFieldsLocations1
+func (t KibanaHTTPAPIsApiMonitorFields_Locations_Item) AsKibanaHTTPAPIsApiMonitorFieldsLocations1() (KibanaHTTPAPIsApiMonitorFieldsLocations1, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsLocations1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsLocations1 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_Locations_Item as the provided KibanaHTTPAPIsApiMonitorFieldsLocations1
+func (t *KibanaHTTPAPIsApiMonitorFields_Locations_Item) FromKibanaHTTPAPIsApiMonitorFieldsLocations1(v KibanaHTTPAPIsApiMonitorFieldsLocations1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsLocations1 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_Locations_Item, using the provided KibanaHTTPAPIsApiMonitorFieldsLocations1
+func (t *KibanaHTTPAPIsApiMonitorFields_Locations_Item) MergeKibanaHTTPAPIsApiMonitorFieldsLocations1(v KibanaHTTPAPIsApiMonitorFieldsLocations1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsApiMonitorFields_Locations_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsApiMonitorFields_Locations_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFieldsParams0 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_Params as a KibanaHTTPAPIsApiMonitorFieldsParams0
+func (t KibanaHTTPAPIsApiMonitorFields_Params) AsKibanaHTTPAPIsApiMonitorFieldsParams0() (KibanaHTTPAPIsApiMonitorFieldsParams0, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsParams0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsParams0 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_Params as the provided KibanaHTTPAPIsApiMonitorFieldsParams0
+func (t *KibanaHTTPAPIsApiMonitorFields_Params) FromKibanaHTTPAPIsApiMonitorFieldsParams0(v KibanaHTTPAPIsApiMonitorFieldsParams0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsParams0 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_Params, using the provided KibanaHTTPAPIsApiMonitorFieldsParams0
+func (t *KibanaHTTPAPIsApiMonitorFields_Params) MergeKibanaHTTPAPIsApiMonitorFieldsParams0(v KibanaHTTPAPIsApiMonitorFieldsParams0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFieldsParams1 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_Params as a KibanaHTTPAPIsApiMonitorFieldsParams1
+func (t KibanaHTTPAPIsApiMonitorFields_Params) AsKibanaHTTPAPIsApiMonitorFieldsParams1() (KibanaHTTPAPIsApiMonitorFieldsParams1, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsParams1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsParams1 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_Params as the provided KibanaHTTPAPIsApiMonitorFieldsParams1
+func (t *KibanaHTTPAPIsApiMonitorFields_Params) FromKibanaHTTPAPIsApiMonitorFieldsParams1(v KibanaHTTPAPIsApiMonitorFieldsParams1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsParams1 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_Params, using the provided KibanaHTTPAPIsApiMonitorFieldsParams1
+func (t *KibanaHTTPAPIsApiMonitorFields_Params) MergeKibanaHTTPAPIsApiMonitorFieldsParams1(v KibanaHTTPAPIsApiMonitorFieldsParams1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsApiMonitorFields_Params) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsApiMonitorFields_Params) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFieldsPrivateLocations0 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item as a KibanaHTTPAPIsApiMonitorFieldsPrivateLocations0
+func (t KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item) AsKibanaHTTPAPIsApiMonitorFieldsPrivateLocations0() (KibanaHTTPAPIsApiMonitorFieldsPrivateLocations0, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsPrivateLocations0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsPrivateLocations0 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item as the provided KibanaHTTPAPIsApiMonitorFieldsPrivateLocations0
+func (t *KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item) FromKibanaHTTPAPIsApiMonitorFieldsPrivateLocations0(v KibanaHTTPAPIsApiMonitorFieldsPrivateLocations0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsPrivateLocations0 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item, using the provided KibanaHTTPAPIsApiMonitorFieldsPrivateLocations0
+func (t *KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item) MergeKibanaHTTPAPIsApiMonitorFieldsPrivateLocations0(v KibanaHTTPAPIsApiMonitorFieldsPrivateLocations0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFieldsPrivateLocations1 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item as a KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1
+func (t KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item) AsKibanaHTTPAPIsApiMonitorFieldsPrivateLocations1() (KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsPrivateLocations1 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item as the provided KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1
+func (t *KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item) FromKibanaHTTPAPIsApiMonitorFieldsPrivateLocations1(v KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsPrivateLocations1 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item, using the provided KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1
+func (t *KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item) MergeKibanaHTTPAPIsApiMonitorFieldsPrivateLocations1(v KibanaHTTPAPIsApiMonitorFieldsPrivateLocations1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsApiMonitorFields_PrivateLocations_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFieldsSchedule1Number0 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number as a KibanaHTTPAPIsApiMonitorFieldsSchedule1Number0
+func (t KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number) AsKibanaHTTPAPIsApiMonitorFieldsSchedule1Number0() (KibanaHTTPAPIsApiMonitorFieldsSchedule1Number0, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsSchedule1Number0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsSchedule1Number0 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number as the provided KibanaHTTPAPIsApiMonitorFieldsSchedule1Number0
+func (t *KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number) FromKibanaHTTPAPIsApiMonitorFieldsSchedule1Number0(v KibanaHTTPAPIsApiMonitorFieldsSchedule1Number0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsSchedule1Number0 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number, using the provided KibanaHTTPAPIsApiMonitorFieldsSchedule1Number0
+func (t *KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number) MergeKibanaHTTPAPIsApiMonitorFieldsSchedule1Number0(v KibanaHTTPAPIsApiMonitorFieldsSchedule1Number0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFieldsSchedule1Number1 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number as a KibanaHTTPAPIsApiMonitorFieldsSchedule1Number1
+func (t KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number) AsKibanaHTTPAPIsApiMonitorFieldsSchedule1Number1() (KibanaHTTPAPIsApiMonitorFieldsSchedule1Number1, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsSchedule1Number1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsSchedule1Number1 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number as the provided KibanaHTTPAPIsApiMonitorFieldsSchedule1Number1
+func (t *KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number) FromKibanaHTTPAPIsApiMonitorFieldsSchedule1Number1(v KibanaHTTPAPIsApiMonitorFieldsSchedule1Number1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsSchedule1Number1 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number, using the provided KibanaHTTPAPIsApiMonitorFieldsSchedule1Number1
+func (t *KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number) MergeKibanaHTTPAPIsApiMonitorFieldsSchedule1Number1(v KibanaHTTPAPIsApiMonitorFieldsSchedule1Number1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsApiMonitorFields_Schedule_1_Number) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFieldsSchedule0 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_Schedule as a KibanaHTTPAPIsApiMonitorFieldsSchedule0
+func (t KibanaHTTPAPIsApiMonitorFields_Schedule) AsKibanaHTTPAPIsApiMonitorFieldsSchedule0() (KibanaHTTPAPIsApiMonitorFieldsSchedule0, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsSchedule0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsSchedule0 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_Schedule as the provided KibanaHTTPAPIsApiMonitorFieldsSchedule0
+func (t *KibanaHTTPAPIsApiMonitorFields_Schedule) FromKibanaHTTPAPIsApiMonitorFieldsSchedule0(v KibanaHTTPAPIsApiMonitorFieldsSchedule0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsSchedule0 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_Schedule, using the provided KibanaHTTPAPIsApiMonitorFieldsSchedule0
+func (t *KibanaHTTPAPIsApiMonitorFields_Schedule) MergeKibanaHTTPAPIsApiMonitorFieldsSchedule0(v KibanaHTTPAPIsApiMonitorFieldsSchedule0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFieldsSchedule1 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_Schedule as a KibanaHTTPAPIsApiMonitorFieldsSchedule1
+func (t KibanaHTTPAPIsApiMonitorFields_Schedule) AsKibanaHTTPAPIsApiMonitorFieldsSchedule1() (KibanaHTTPAPIsApiMonitorFieldsSchedule1, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsSchedule1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsSchedule1 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_Schedule as the provided KibanaHTTPAPIsApiMonitorFieldsSchedule1
+func (t *KibanaHTTPAPIsApiMonitorFields_Schedule) FromKibanaHTTPAPIsApiMonitorFieldsSchedule1(v KibanaHTTPAPIsApiMonitorFieldsSchedule1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsSchedule1 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_Schedule, using the provided KibanaHTTPAPIsApiMonitorFieldsSchedule1
+func (t *KibanaHTTPAPIsApiMonitorFields_Schedule) MergeKibanaHTTPAPIsApiMonitorFieldsSchedule1(v KibanaHTTPAPIsApiMonitorFieldsSchedule1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsApiMonitorFields_Schedule) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsApiMonitorFields_Schedule) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFieldsTags0 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_Tags as a KibanaHTTPAPIsApiMonitorFieldsTags0
+func (t KibanaHTTPAPIsApiMonitorFields_Tags) AsKibanaHTTPAPIsApiMonitorFieldsTags0() (KibanaHTTPAPIsApiMonitorFieldsTags0, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsTags0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsTags0 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_Tags as the provided KibanaHTTPAPIsApiMonitorFieldsTags0
+func (t *KibanaHTTPAPIsApiMonitorFields_Tags) FromKibanaHTTPAPIsApiMonitorFieldsTags0(v KibanaHTTPAPIsApiMonitorFieldsTags0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsTags0 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_Tags, using the provided KibanaHTTPAPIsApiMonitorFieldsTags0
+func (t *KibanaHTTPAPIsApiMonitorFields_Tags) MergeKibanaHTTPAPIsApiMonitorFieldsTags0(v KibanaHTTPAPIsApiMonitorFieldsTags0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFieldsTags1 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_Tags as a KibanaHTTPAPIsApiMonitorFieldsTags1
+func (t KibanaHTTPAPIsApiMonitorFields_Tags) AsKibanaHTTPAPIsApiMonitorFieldsTags1() (KibanaHTTPAPIsApiMonitorFieldsTags1, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsTags1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsTags1 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_Tags as the provided KibanaHTTPAPIsApiMonitorFieldsTags1
+func (t *KibanaHTTPAPIsApiMonitorFields_Tags) FromKibanaHTTPAPIsApiMonitorFieldsTags1(v KibanaHTTPAPIsApiMonitorFieldsTags1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsTags1 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_Tags, using the provided KibanaHTTPAPIsApiMonitorFieldsTags1
+func (t *KibanaHTTPAPIsApiMonitorFields_Tags) MergeKibanaHTTPAPIsApiMonitorFieldsTags1(v KibanaHTTPAPIsApiMonitorFieldsTags1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsApiMonitorFields_Tags) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsApiMonitorFields_Tags) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFieldsTimeout0 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_Timeout as a KibanaHTTPAPIsApiMonitorFieldsTimeout0
+func (t KibanaHTTPAPIsApiMonitorFields_Timeout) AsKibanaHTTPAPIsApiMonitorFieldsTimeout0() (KibanaHTTPAPIsApiMonitorFieldsTimeout0, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsTimeout0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsTimeout0 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_Timeout as the provided KibanaHTTPAPIsApiMonitorFieldsTimeout0
+func (t *KibanaHTTPAPIsApiMonitorFields_Timeout) FromKibanaHTTPAPIsApiMonitorFieldsTimeout0(v KibanaHTTPAPIsApiMonitorFieldsTimeout0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsTimeout0 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_Timeout, using the provided KibanaHTTPAPIsApiMonitorFieldsTimeout0
+func (t *KibanaHTTPAPIsApiMonitorFields_Timeout) MergeKibanaHTTPAPIsApiMonitorFieldsTimeout0(v KibanaHTTPAPIsApiMonitorFieldsTimeout0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFieldsTimeout1 returns the union data inside the KibanaHTTPAPIsApiMonitorFields_Timeout as a KibanaHTTPAPIsApiMonitorFieldsTimeout1
+func (t KibanaHTTPAPIsApiMonitorFields_Timeout) AsKibanaHTTPAPIsApiMonitorFieldsTimeout1() (KibanaHTTPAPIsApiMonitorFieldsTimeout1, error) {
+	var body KibanaHTTPAPIsApiMonitorFieldsTimeout1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFieldsTimeout1 overwrites any union data inside the KibanaHTTPAPIsApiMonitorFields_Timeout as the provided KibanaHTTPAPIsApiMonitorFieldsTimeout1
+func (t *KibanaHTTPAPIsApiMonitorFields_Timeout) FromKibanaHTTPAPIsApiMonitorFieldsTimeout1(v KibanaHTTPAPIsApiMonitorFieldsTimeout1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFieldsTimeout1 performs a merge with any union data inside the KibanaHTTPAPIsApiMonitorFields_Timeout, using the provided KibanaHTTPAPIsApiMonitorFieldsTimeout1
+func (t *KibanaHTTPAPIsApiMonitorFields_Timeout) MergeKibanaHTTPAPIsApiMonitorFieldsTimeout1(v KibanaHTTPAPIsApiMonitorFieldsTimeout1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsApiMonitorFields_Timeout) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsApiMonitorFields_Timeout) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsKibanaHTTPAPIsApmErrorRateCreateRuleBodyAlertingParamsSearchConfigurationQueryQuery0 returns the union data inside the KibanaHTTPAPIsApmErrorRateCreateRuleBodyAlerting_Params_SearchConfiguration_Query_Query as a KibanaHTTPAPIsApmErrorRateCreateRuleBodyAlertingParamsSearchConfigurationQueryQuery0
 func (t KibanaHTTPAPIsApmErrorRateCreateRuleBodyAlerting_Params_SearchConfiguration_Query_Query) AsKibanaHTTPAPIsApmErrorRateCreateRuleBodyAlertingParamsSearchConfigurationQueryQuery0() (KibanaHTTPAPIsApmErrorRateCreateRuleBodyAlertingParamsSearchConfigurationQueryQuery0, error) {
 	var body KibanaHTTPAPIsApmErrorRateCreateRuleBodyAlertingParamsSearchConfigurationQueryQuery0
@@ -123622,6 +123928,185 @@ func (t *KibanaHTTPAPIsConnectorExecuteRequest_Params) MergeRunValidchannelid(v 
 
 	merged, err := runtime.JSONMerge(t.union, b)
 	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsHttpMonitorFields returns the union data inside the KibanaHTTPAPIsCreateMonitorRequest as a KibanaHTTPAPIsHttpMonitorFields
+func (t KibanaHTTPAPIsCreateMonitorRequest) AsKibanaHTTPAPIsHttpMonitorFields() (KibanaHTTPAPIsHttpMonitorFields, error) {
+	var body KibanaHTTPAPIsHttpMonitorFields
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsHttpMonitorFields overwrites any union data inside the KibanaHTTPAPIsCreateMonitorRequest as the provided KibanaHTTPAPIsHttpMonitorFields
+func (t *KibanaHTTPAPIsCreateMonitorRequest) FromKibanaHTTPAPIsHttpMonitorFields(v KibanaHTTPAPIsHttpMonitorFields) error {
+	v.Type = "http"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsHttpMonitorFields performs a merge with any union data inside the KibanaHTTPAPIsCreateMonitorRequest, using the provided KibanaHTTPAPIsHttpMonitorFields
+func (t *KibanaHTTPAPIsCreateMonitorRequest) MergeKibanaHTTPAPIsHttpMonitorFields(v KibanaHTTPAPIsHttpMonitorFields) error {
+	v.Type = "http"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsTcpMonitorFields returns the union data inside the KibanaHTTPAPIsCreateMonitorRequest as a KibanaHTTPAPIsTcpMonitorFields
+func (t KibanaHTTPAPIsCreateMonitorRequest) AsKibanaHTTPAPIsTcpMonitorFields() (KibanaHTTPAPIsTcpMonitorFields, error) {
+	var body KibanaHTTPAPIsTcpMonitorFields
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsTcpMonitorFields overwrites any union data inside the KibanaHTTPAPIsCreateMonitorRequest as the provided KibanaHTTPAPIsTcpMonitorFields
+func (t *KibanaHTTPAPIsCreateMonitorRequest) FromKibanaHTTPAPIsTcpMonitorFields(v KibanaHTTPAPIsTcpMonitorFields) error {
+	v.Type = "tcp"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsTcpMonitorFields performs a merge with any union data inside the KibanaHTTPAPIsCreateMonitorRequest, using the provided KibanaHTTPAPIsTcpMonitorFields
+func (t *KibanaHTTPAPIsCreateMonitorRequest) MergeKibanaHTTPAPIsTcpMonitorFields(v KibanaHTTPAPIsTcpMonitorFields) error {
+	v.Type = "tcp"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsIcmpMonitorFields returns the union data inside the KibanaHTTPAPIsCreateMonitorRequest as a KibanaHTTPAPIsIcmpMonitorFields
+func (t KibanaHTTPAPIsCreateMonitorRequest) AsKibanaHTTPAPIsIcmpMonitorFields() (KibanaHTTPAPIsIcmpMonitorFields, error) {
+	var body KibanaHTTPAPIsIcmpMonitorFields
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsIcmpMonitorFields overwrites any union data inside the KibanaHTTPAPIsCreateMonitorRequest as the provided KibanaHTTPAPIsIcmpMonitorFields
+func (t *KibanaHTTPAPIsCreateMonitorRequest) FromKibanaHTTPAPIsIcmpMonitorFields(v KibanaHTTPAPIsIcmpMonitorFields) error {
+	v.Type = "icmp"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsIcmpMonitorFields performs a merge with any union data inside the KibanaHTTPAPIsCreateMonitorRequest, using the provided KibanaHTTPAPIsIcmpMonitorFields
+func (t *KibanaHTTPAPIsCreateMonitorRequest) MergeKibanaHTTPAPIsIcmpMonitorFields(v KibanaHTTPAPIsIcmpMonitorFields) error {
+	v.Type = "icmp"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsBrowserMonitorFields returns the union data inside the KibanaHTTPAPIsCreateMonitorRequest as a KibanaHTTPAPIsBrowserMonitorFields
+func (t KibanaHTTPAPIsCreateMonitorRequest) AsKibanaHTTPAPIsBrowserMonitorFields() (KibanaHTTPAPIsBrowserMonitorFields, error) {
+	var body KibanaHTTPAPIsBrowserMonitorFields
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsBrowserMonitorFields overwrites any union data inside the KibanaHTTPAPIsCreateMonitorRequest as the provided KibanaHTTPAPIsBrowserMonitorFields
+func (t *KibanaHTTPAPIsCreateMonitorRequest) FromKibanaHTTPAPIsBrowserMonitorFields(v KibanaHTTPAPIsBrowserMonitorFields) error {
+	v.Type = "browser"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsBrowserMonitorFields performs a merge with any union data inside the KibanaHTTPAPIsCreateMonitorRequest, using the provided KibanaHTTPAPIsBrowserMonitorFields
+func (t *KibanaHTTPAPIsCreateMonitorRequest) MergeKibanaHTTPAPIsBrowserMonitorFields(v KibanaHTTPAPIsBrowserMonitorFields) error {
+	v.Type = "browser"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsApiMonitorFields returns the union data inside the KibanaHTTPAPIsCreateMonitorRequest as a KibanaHTTPAPIsApiMonitorFields
+func (t KibanaHTTPAPIsCreateMonitorRequest) AsKibanaHTTPAPIsApiMonitorFields() (KibanaHTTPAPIsApiMonitorFields, error) {
+	var body KibanaHTTPAPIsApiMonitorFields
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsApiMonitorFields overwrites any union data inside the KibanaHTTPAPIsCreateMonitorRequest as the provided KibanaHTTPAPIsApiMonitorFields
+func (t *KibanaHTTPAPIsCreateMonitorRequest) FromKibanaHTTPAPIsApiMonitorFields(v KibanaHTTPAPIsApiMonitorFields) error {
+	v.Type = "api"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsApiMonitorFields performs a merge with any union data inside the KibanaHTTPAPIsCreateMonitorRequest, using the provided KibanaHTTPAPIsApiMonitorFields
+func (t *KibanaHTTPAPIsCreateMonitorRequest) MergeKibanaHTTPAPIsApiMonitorFields(v KibanaHTTPAPIsApiMonitorFields) error {
+	v.Type = "api"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsCreateMonitorRequest) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t KibanaHTTPAPIsCreateMonitorRequest) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "api":
+		return t.AsKibanaHTTPAPIsApiMonitorFields()
+	case "browser":
+		return t.AsKibanaHTTPAPIsBrowserMonitorFields()
+	case "http":
+		return t.AsKibanaHTTPAPIsHttpMonitorFields()
+	case "icmp":
+		return t.AsKibanaHTTPAPIsIcmpMonitorFields()
+	case "tcp":
+		return t.AsKibanaHTTPAPIsTcpMonitorFields()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t KibanaHTTPAPIsCreateMonitorRequest) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsCreateMonitorRequest) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
 	return err
 }
 
@@ -126163,6 +126648,130 @@ func (t KibanaHTTPAPIsGetPackageInfo_Type) MarshalJSON() ([]byte, error) {
 }
 
 func (t *KibanaHTTPAPIsGetPackageInfo_Type) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0 returns the union data inside the KibanaHTTPAPIsHttpMonitorFields_MaxRedirects as a KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0
+func (t KibanaHTTPAPIsHttpMonitorFields_MaxRedirects) AsKibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0() (KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0, error) {
+	var body KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0 overwrites any union data inside the KibanaHTTPAPIsHttpMonitorFields_MaxRedirects as the provided KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0
+func (t *KibanaHTTPAPIsHttpMonitorFields_MaxRedirects) FromKibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0(v KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0 performs a merge with any union data inside the KibanaHTTPAPIsHttpMonitorFields_MaxRedirects, using the provided KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0
+func (t *KibanaHTTPAPIsHttpMonitorFields_MaxRedirects) MergeKibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0(v KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1 returns the union data inside the KibanaHTTPAPIsHttpMonitorFields_MaxRedirects as a KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1
+func (t KibanaHTTPAPIsHttpMonitorFields_MaxRedirects) AsKibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1() (KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1, error) {
+	var body KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1 overwrites any union data inside the KibanaHTTPAPIsHttpMonitorFields_MaxRedirects as the provided KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1
+func (t *KibanaHTTPAPIsHttpMonitorFields_MaxRedirects) FromKibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1(v KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1 performs a merge with any union data inside the KibanaHTTPAPIsHttpMonitorFields_MaxRedirects, using the provided KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1
+func (t *KibanaHTTPAPIsHttpMonitorFields_MaxRedirects) MergeKibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1(v KibanaHTTPAPIsHttpMonitorFieldsMaxRedirects1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsHttpMonitorFields_MaxRedirects) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsHttpMonitorFields_MaxRedirects) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsIcmpMonitorFieldsWait0 returns the union data inside the KibanaHTTPAPIsIcmpMonitorFields_Wait as a KibanaHTTPAPIsIcmpMonitorFieldsWait0
+func (t KibanaHTTPAPIsIcmpMonitorFields_Wait) AsKibanaHTTPAPIsIcmpMonitorFieldsWait0() (KibanaHTTPAPIsIcmpMonitorFieldsWait0, error) {
+	var body KibanaHTTPAPIsIcmpMonitorFieldsWait0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsIcmpMonitorFieldsWait0 overwrites any union data inside the KibanaHTTPAPIsIcmpMonitorFields_Wait as the provided KibanaHTTPAPIsIcmpMonitorFieldsWait0
+func (t *KibanaHTTPAPIsIcmpMonitorFields_Wait) FromKibanaHTTPAPIsIcmpMonitorFieldsWait0(v KibanaHTTPAPIsIcmpMonitorFieldsWait0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsIcmpMonitorFieldsWait0 performs a merge with any union data inside the KibanaHTTPAPIsIcmpMonitorFields_Wait, using the provided KibanaHTTPAPIsIcmpMonitorFieldsWait0
+func (t *KibanaHTTPAPIsIcmpMonitorFields_Wait) MergeKibanaHTTPAPIsIcmpMonitorFieldsWait0(v KibanaHTTPAPIsIcmpMonitorFieldsWait0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsIcmpMonitorFieldsWait1 returns the union data inside the KibanaHTTPAPIsIcmpMonitorFields_Wait as a KibanaHTTPAPIsIcmpMonitorFieldsWait1
+func (t KibanaHTTPAPIsIcmpMonitorFields_Wait) AsKibanaHTTPAPIsIcmpMonitorFieldsWait1() (KibanaHTTPAPIsIcmpMonitorFieldsWait1, error) {
+	var body KibanaHTTPAPIsIcmpMonitorFieldsWait1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsIcmpMonitorFieldsWait1 overwrites any union data inside the KibanaHTTPAPIsIcmpMonitorFields_Wait as the provided KibanaHTTPAPIsIcmpMonitorFieldsWait1
+func (t *KibanaHTTPAPIsIcmpMonitorFields_Wait) FromKibanaHTTPAPIsIcmpMonitorFieldsWait1(v KibanaHTTPAPIsIcmpMonitorFieldsWait1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsIcmpMonitorFieldsWait1 performs a merge with any union data inside the KibanaHTTPAPIsIcmpMonitorFields_Wait, using the provided KibanaHTTPAPIsIcmpMonitorFieldsWait1
+func (t *KibanaHTTPAPIsIcmpMonitorFields_Wait) MergeKibanaHTTPAPIsIcmpMonitorFieldsWait1(v KibanaHTTPAPIsIcmpMonitorFieldsWait1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsIcmpMonitorFields_Wait) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsIcmpMonitorFields_Wait) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -132828,6 +133437,68 @@ func (t *KibanaHTTPAPIsNewOutputElasticsearch_Secrets_Ssl_Key) UnmarshalJSON(b [
 	return err
 }
 
+// AsKibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0 returns the union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password as a KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0
+func (t KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password) AsKibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0() (KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0, error) {
+	var body KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0 overwrites any union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password as the provided KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password) FromKibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0(v KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0 performs a merge with any union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password, using the provided KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password) MergeKibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0(v KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1 returns the union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password as a KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1
+func (t KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password) AsKibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1() (KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1, error) {
+	var body KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1 overwrites any union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password as the provided KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password) FromKibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1(v KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1 performs a merge with any union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password, using the provided KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password) MergeKibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1(v KibanaHTTPAPIsNewOutputKafkaSecretsKerberosPassword1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsNewOutputKafka_Secrets_Kerberos_Password) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0 returns the union data inside the KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey as a KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0
 func (t KibanaHTTPAPIsNewOutputKafka_Secrets_Oauth2_ClientCertificateKey) AsKibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0() (KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0, error) {
 	var body KibanaHTTPAPIsNewOutputKafkaSecretsOauth2ClientCertificateKey0
@@ -133967,6 +134638,68 @@ func (t KibanaHTTPAPIsOutputResponseElasticsearch_Secrets_Ssl_Key) MarshalJSON()
 }
 
 func (t *KibanaHTTPAPIsOutputResponseElasticsearch_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0 returns the union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password as a KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0
+func (t KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password) AsKibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0() (KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0, error) {
+	var body KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0 overwrites any union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password as the provided KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password) FromKibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0(v KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0 performs a merge with any union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password, using the provided KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password) MergeKibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0(v KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1 returns the union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password as a KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1
+func (t KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password) AsKibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1() (KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1, error) {
+	var body KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1 overwrites any union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password as the provided KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password) FromKibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1(v KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1 performs a merge with any union data inside the KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password, using the provided KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password) MergeKibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1(v KibanaHTTPAPIsOutputResponseKafkaSecretsKerberosPassword1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsOutputResponseKafka_Secrets_Kerberos_Password) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -136726,6 +137459,68 @@ func (t KibanaHTTPAPIsUpdateOutputElasticsearch_Secrets_Ssl_Key) MarshalJSON() (
 }
 
 func (t *KibanaHTTPAPIsUpdateOutputElasticsearch_Secrets_Ssl_Key) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0 returns the union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password as a KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0
+func (t KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password) AsKibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0() (KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0, error) {
+	var body KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0 overwrites any union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password as the provided KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password) FromKibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0(v KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0 performs a merge with any union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password, using the provided KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password) MergeKibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0(v KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1 returns the union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password as a KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1
+func (t KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password) AsKibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1() (KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1, error) {
+	var body KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1 overwrites any union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password as the provided KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password) FromKibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1(v KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1 performs a merge with any union data inside the KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password, using the provided KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password) MergeKibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1(v KibanaHTTPAPIsUpdateOutputKafkaSecretsKerberosPassword1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsUpdateOutputKafka_Secrets_Kerberos_Password) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -163588,130 +164383,6 @@ func (t *SecurityTimelineAPITimelineSavedToReturnObject_EqlOptions_Size) Unmarsh
 	return err
 }
 
-// AsSyntheticsHttpMonitorFieldsMaxRedirects0 returns the union data inside the SyntheticsHttpMonitorFields_MaxRedirects as a SyntheticsHttpMonitorFieldsMaxRedirects0
-func (t SyntheticsHttpMonitorFields_MaxRedirects) AsSyntheticsHttpMonitorFieldsMaxRedirects0() (SyntheticsHttpMonitorFieldsMaxRedirects0, error) {
-	var body SyntheticsHttpMonitorFieldsMaxRedirects0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromSyntheticsHttpMonitorFieldsMaxRedirects0 overwrites any union data inside the SyntheticsHttpMonitorFields_MaxRedirects as the provided SyntheticsHttpMonitorFieldsMaxRedirects0
-func (t *SyntheticsHttpMonitorFields_MaxRedirects) FromSyntheticsHttpMonitorFieldsMaxRedirects0(v SyntheticsHttpMonitorFieldsMaxRedirects0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeSyntheticsHttpMonitorFieldsMaxRedirects0 performs a merge with any union data inside the SyntheticsHttpMonitorFields_MaxRedirects, using the provided SyntheticsHttpMonitorFieldsMaxRedirects0
-func (t *SyntheticsHttpMonitorFields_MaxRedirects) MergeSyntheticsHttpMonitorFieldsMaxRedirects0(v SyntheticsHttpMonitorFieldsMaxRedirects0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsSyntheticsHttpMonitorFieldsMaxRedirects1 returns the union data inside the SyntheticsHttpMonitorFields_MaxRedirects as a SyntheticsHttpMonitorFieldsMaxRedirects1
-func (t SyntheticsHttpMonitorFields_MaxRedirects) AsSyntheticsHttpMonitorFieldsMaxRedirects1() (SyntheticsHttpMonitorFieldsMaxRedirects1, error) {
-	var body SyntheticsHttpMonitorFieldsMaxRedirects1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromSyntheticsHttpMonitorFieldsMaxRedirects1 overwrites any union data inside the SyntheticsHttpMonitorFields_MaxRedirects as the provided SyntheticsHttpMonitorFieldsMaxRedirects1
-func (t *SyntheticsHttpMonitorFields_MaxRedirects) FromSyntheticsHttpMonitorFieldsMaxRedirects1(v SyntheticsHttpMonitorFieldsMaxRedirects1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeSyntheticsHttpMonitorFieldsMaxRedirects1 performs a merge with any union data inside the SyntheticsHttpMonitorFields_MaxRedirects, using the provided SyntheticsHttpMonitorFieldsMaxRedirects1
-func (t *SyntheticsHttpMonitorFields_MaxRedirects) MergeSyntheticsHttpMonitorFieldsMaxRedirects1(v SyntheticsHttpMonitorFieldsMaxRedirects1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t SyntheticsHttpMonitorFields_MaxRedirects) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *SyntheticsHttpMonitorFields_MaxRedirects) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsSyntheticsIcmpMonitorFieldsWait0 returns the union data inside the SyntheticsIcmpMonitorFields_Wait as a SyntheticsIcmpMonitorFieldsWait0
-func (t SyntheticsIcmpMonitorFields_Wait) AsSyntheticsIcmpMonitorFieldsWait0() (SyntheticsIcmpMonitorFieldsWait0, error) {
-	var body SyntheticsIcmpMonitorFieldsWait0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromSyntheticsIcmpMonitorFieldsWait0 overwrites any union data inside the SyntheticsIcmpMonitorFields_Wait as the provided SyntheticsIcmpMonitorFieldsWait0
-func (t *SyntheticsIcmpMonitorFields_Wait) FromSyntheticsIcmpMonitorFieldsWait0(v SyntheticsIcmpMonitorFieldsWait0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeSyntheticsIcmpMonitorFieldsWait0 performs a merge with any union data inside the SyntheticsIcmpMonitorFields_Wait, using the provided SyntheticsIcmpMonitorFieldsWait0
-func (t *SyntheticsIcmpMonitorFields_Wait) MergeSyntheticsIcmpMonitorFieldsWait0(v SyntheticsIcmpMonitorFieldsWait0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsSyntheticsIcmpMonitorFieldsWait1 returns the union data inside the SyntheticsIcmpMonitorFields_Wait as a SyntheticsIcmpMonitorFieldsWait1
-func (t SyntheticsIcmpMonitorFields_Wait) AsSyntheticsIcmpMonitorFieldsWait1() (SyntheticsIcmpMonitorFieldsWait1, error) {
-	var body SyntheticsIcmpMonitorFieldsWait1
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromSyntheticsIcmpMonitorFieldsWait1 overwrites any union data inside the SyntheticsIcmpMonitorFields_Wait as the provided SyntheticsIcmpMonitorFieldsWait1
-func (t *SyntheticsIcmpMonitorFields_Wait) FromSyntheticsIcmpMonitorFieldsWait1(v SyntheticsIcmpMonitorFieldsWait1) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeSyntheticsIcmpMonitorFieldsWait1 performs a merge with any union data inside the SyntheticsIcmpMonitorFields_Wait, using the provided SyntheticsIcmpMonitorFieldsWait1
-func (t *SyntheticsIcmpMonitorFields_Wait) MergeSyntheticsIcmpMonitorFieldsWait1(v SyntheticsIcmpMonitorFieldsWait1) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t SyntheticsIcmpMonitorFields_Wait) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *SyntheticsIcmpMonitorFields_Wait) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
 // AsAgentPolicyGlobalDataTagsItemValue0 returns the union data inside the AgentPolicyGlobalDataTagsItem_Value as a AgentPolicyGlobalDataTagsItemValue0
 func (t AgentPolicyGlobalDataTagsItem_Value) AsAgentPolicyGlobalDataTagsItemValue0() (AgentPolicyGlobalDataTagsItemValue0, error) {
 	var body AgentPolicyGlobalDataTagsItemValue0
@@ -166694,120 +167365,6 @@ func (t SyntheticsMonitor_Wait) MarshalJSON() ([]byte, error) {
 }
 
 func (t *SyntheticsMonitor_Wait) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsSyntheticsBrowserMonitorFields returns the union data inside the SyntheticsMonitorRequest as a SyntheticsBrowserMonitorFields
-func (t SyntheticsMonitorRequest) AsSyntheticsBrowserMonitorFields() (SyntheticsBrowserMonitorFields, error) {
-	var body SyntheticsBrowserMonitorFields
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromSyntheticsBrowserMonitorFields overwrites any union data inside the SyntheticsMonitorRequest as the provided SyntheticsBrowserMonitorFields
-func (t *SyntheticsMonitorRequest) FromSyntheticsBrowserMonitorFields(v SyntheticsBrowserMonitorFields) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeSyntheticsBrowserMonitorFields performs a merge with any union data inside the SyntheticsMonitorRequest, using the provided SyntheticsBrowserMonitorFields
-func (t *SyntheticsMonitorRequest) MergeSyntheticsBrowserMonitorFields(v SyntheticsBrowserMonitorFields) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsSyntheticsHttpMonitorFields returns the union data inside the SyntheticsMonitorRequest as a SyntheticsHttpMonitorFields
-func (t SyntheticsMonitorRequest) AsSyntheticsHttpMonitorFields() (SyntheticsHttpMonitorFields, error) {
-	var body SyntheticsHttpMonitorFields
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromSyntheticsHttpMonitorFields overwrites any union data inside the SyntheticsMonitorRequest as the provided SyntheticsHttpMonitorFields
-func (t *SyntheticsMonitorRequest) FromSyntheticsHttpMonitorFields(v SyntheticsHttpMonitorFields) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeSyntheticsHttpMonitorFields performs a merge with any union data inside the SyntheticsMonitorRequest, using the provided SyntheticsHttpMonitorFields
-func (t *SyntheticsMonitorRequest) MergeSyntheticsHttpMonitorFields(v SyntheticsHttpMonitorFields) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsSyntheticsIcmpMonitorFields returns the union data inside the SyntheticsMonitorRequest as a SyntheticsIcmpMonitorFields
-func (t SyntheticsMonitorRequest) AsSyntheticsIcmpMonitorFields() (SyntheticsIcmpMonitorFields, error) {
-	var body SyntheticsIcmpMonitorFields
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromSyntheticsIcmpMonitorFields overwrites any union data inside the SyntheticsMonitorRequest as the provided SyntheticsIcmpMonitorFields
-func (t *SyntheticsMonitorRequest) FromSyntheticsIcmpMonitorFields(v SyntheticsIcmpMonitorFields) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeSyntheticsIcmpMonitorFields performs a merge with any union data inside the SyntheticsMonitorRequest, using the provided SyntheticsIcmpMonitorFields
-func (t *SyntheticsMonitorRequest) MergeSyntheticsIcmpMonitorFields(v SyntheticsIcmpMonitorFields) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsSyntheticsTcpMonitorFields returns the union data inside the SyntheticsMonitorRequest as a SyntheticsTcpMonitorFields
-func (t SyntheticsMonitorRequest) AsSyntheticsTcpMonitorFields() (SyntheticsTcpMonitorFields, error) {
-	var body SyntheticsTcpMonitorFields
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromSyntheticsTcpMonitorFields overwrites any union data inside the SyntheticsMonitorRequest as the provided SyntheticsTcpMonitorFields
-func (t *SyntheticsMonitorRequest) FromSyntheticsTcpMonitorFields(v SyntheticsTcpMonitorFields) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeSyntheticsTcpMonitorFields performs a merge with any union data inside the SyntheticsMonitorRequest, using the provided SyntheticsTcpMonitorFields
-func (t *SyntheticsMonitorRequest) MergeSyntheticsTcpMonitorFields(v SyntheticsTcpMonitorFields) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t SyntheticsMonitorRequest) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *SyntheticsMonitorRequest) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -178034,24 +178591,22 @@ func (t *PutStreamsStreamnameAttachmentsAttachmenttypeAttachmentidJSONBody) Unma
 	return err
 }
 
-// AsSyntheticsBrowserMonitorFields returns the union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as a SyntheticsBrowserMonitorFields
-func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) AsSyntheticsBrowserMonitorFields() (SyntheticsBrowserMonitorFields, error) {
-	var body SyntheticsBrowserMonitorFields
+// AsKibanaHTTPAPIsParameterRequest returns the union data inside the PostParametersJSONBody as a KibanaHTTPAPIsParameterRequest
+func (t PostParametersJSONBody) AsKibanaHTTPAPIsParameterRequest() (KibanaHTTPAPIsParameterRequest, error) {
+	var body KibanaHTTPAPIsParameterRequest
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromSyntheticsBrowserMonitorFields overwrites any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as the provided SyntheticsBrowserMonitorFields
-func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) FromSyntheticsBrowserMonitorFields(v SyntheticsBrowserMonitorFields) error {
-	v.Type = "Synthetics_browserMonitorFields"
+// FromKibanaHTTPAPIsParameterRequest overwrites any union data inside the PostParametersJSONBody as the provided KibanaHTTPAPIsParameterRequest
+func (t *PostParametersJSONBody) FromKibanaHTTPAPIsParameterRequest(v KibanaHTTPAPIsParameterRequest) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeSyntheticsBrowserMonitorFields performs a merge with any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item, using the provided SyntheticsBrowserMonitorFields
-func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) MergeSyntheticsBrowserMonitorFields(v SyntheticsBrowserMonitorFields) error {
-	v.Type = "Synthetics_browserMonitorFields"
+// MergeKibanaHTTPAPIsParameterRequest performs a merge with any union data inside the PostParametersJSONBody, using the provided KibanaHTTPAPIsParameterRequest
+func (t *PostParametersJSONBody) MergeKibanaHTTPAPIsParameterRequest(v KibanaHTTPAPIsParameterRequest) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -178062,199 +178617,22 @@ func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) MergeSyntheticsB
 	return err
 }
 
-// AsSyntheticsHttpMonitorFields returns the union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as a SyntheticsHttpMonitorFields
-func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) AsSyntheticsHttpMonitorFields() (SyntheticsHttpMonitorFields, error) {
-	var body SyntheticsHttpMonitorFields
+// AsPostParametersJSONBody1 returns the union data inside the PostParametersJSONBody as a PostParametersJSONBody1
+func (t PostParametersJSONBody) AsPostParametersJSONBody1() (PostParametersJSONBody1, error) {
+	var body PostParametersJSONBody1
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromSyntheticsHttpMonitorFields overwrites any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as the provided SyntheticsHttpMonitorFields
-func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) FromSyntheticsHttpMonitorFields(v SyntheticsHttpMonitorFields) error {
-	v.Type = "Synthetics_httpMonitorFields"
+// FromPostParametersJSONBody1 overwrites any union data inside the PostParametersJSONBody as the provided PostParametersJSONBody1
+func (t *PostParametersJSONBody) FromPostParametersJSONBody1(v PostParametersJSONBody1) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeSyntheticsHttpMonitorFields performs a merge with any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item, using the provided SyntheticsHttpMonitorFields
-func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) MergeSyntheticsHttpMonitorFields(v SyntheticsHttpMonitorFields) error {
-	v.Type = "Synthetics_httpMonitorFields"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsSyntheticsIcmpMonitorFields returns the union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as a SyntheticsIcmpMonitorFields
-func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) AsSyntheticsIcmpMonitorFields() (SyntheticsIcmpMonitorFields, error) {
-	var body SyntheticsIcmpMonitorFields
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromSyntheticsIcmpMonitorFields overwrites any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as the provided SyntheticsIcmpMonitorFields
-func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) FromSyntheticsIcmpMonitorFields(v SyntheticsIcmpMonitorFields) error {
-	v.Type = "Synthetics_icmpMonitorFields"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeSyntheticsIcmpMonitorFields performs a merge with any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item, using the provided SyntheticsIcmpMonitorFields
-func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) MergeSyntheticsIcmpMonitorFields(v SyntheticsIcmpMonitorFields) error {
-	v.Type = "Synthetics_icmpMonitorFields"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsSyntheticsTcpMonitorFields returns the union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as a SyntheticsTcpMonitorFields
-func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) AsSyntheticsTcpMonitorFields() (SyntheticsTcpMonitorFields, error) {
-	var body SyntheticsTcpMonitorFields
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromSyntheticsTcpMonitorFields overwrites any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as the provided SyntheticsTcpMonitorFields
-func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) FromSyntheticsTcpMonitorFields(v SyntheticsTcpMonitorFields) error {
-	v.Type = "Synthetics_tcpMonitorFields"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeSyntheticsTcpMonitorFields performs a merge with any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item, using the provided SyntheticsTcpMonitorFields
-func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) MergeSyntheticsTcpMonitorFields(v SyntheticsTcpMonitorFields) error {
-	v.Type = "Synthetics_tcpMonitorFields"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsSyntheticsApiMonitorFields returns the union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as a SyntheticsApiMonitorFields
-func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) AsSyntheticsApiMonitorFields() (SyntheticsApiMonitorFields, error) {
-	var body SyntheticsApiMonitorFields
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromSyntheticsApiMonitorFields overwrites any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item as the provided SyntheticsApiMonitorFields
-func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) FromSyntheticsApiMonitorFields(v SyntheticsApiMonitorFields) error {
-	v.Type = "Synthetics_apiMonitorFields"
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeSyntheticsApiMonitorFields performs a merge with any union data inside the PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item, using the provided SyntheticsApiMonitorFields
-func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) MergeSyntheticsApiMonitorFields(v SyntheticsApiMonitorFields) error {
-	v.Type = "Synthetics_apiMonitorFields"
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) Discriminator() (string, error) {
-	var discriminator struct {
-		Discriminator string `json:"type"`
-	}
-	err := json.Unmarshal(t.union, &discriminator)
-	return discriminator.Discriminator, err
-}
-
-func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) ValueByDiscriminator() (interface{}, error) {
-	discriminator, err := t.Discriminator()
-	if err != nil {
-		return nil, err
-	}
-	switch discriminator {
-	case "Synthetics_apiMonitorFields":
-		return t.AsSyntheticsApiMonitorFields()
-	case "Synthetics_browserMonitorFields":
-		return t.AsSyntheticsBrowserMonitorFields()
-	case "Synthetics_httpMonitorFields":
-		return t.AsSyntheticsHttpMonitorFields()
-	case "Synthetics_icmpMonitorFields":
-		return t.AsSyntheticsIcmpMonitorFields()
-	case "Synthetics_tcpMonitorFields":
-		return t.AsSyntheticsTcpMonitorFields()
-	default:
-		return nil, errors.New("unknown discriminator value: " + discriminator)
-	}
-}
-
-func (t PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) MarshalJSON() ([]byte, error) {
-	b, err := t.union.MarshalJSON()
-	return b, err
-}
-
-func (t *PostSyntheticMonitorsBulkCreateJSONBody_Monitors_Item) UnmarshalJSON(b []byte) error {
-	err := t.union.UnmarshalJSON(b)
-	return err
-}
-
-// AsPostParametersJSONBody0 returns the union data inside the PostParametersJSONBody as a PostParametersJSONBody0
-func (t PostParametersJSONBody) AsPostParametersJSONBody0() (PostParametersJSONBody0, error) {
-	var body PostParametersJSONBody0
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromPostParametersJSONBody0 overwrites any union data inside the PostParametersJSONBody as the provided PostParametersJSONBody0
-func (t *PostParametersJSONBody) FromPostParametersJSONBody0(v PostParametersJSONBody0) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergePostParametersJSONBody0 performs a merge with any union data inside the PostParametersJSONBody, using the provided PostParametersJSONBody0
-func (t *PostParametersJSONBody) MergePostParametersJSONBody0(v PostParametersJSONBody0) error {
-	b, err := json.Marshal(v)
-	if err != nil {
-		return err
-	}
-
-	merged, err := runtime.JSONMerge(t.union, b)
-	t.union = merged
-	return err
-}
-
-// AsSyntheticsParameterRequest returns the union data inside the PostParametersJSONBody as a SyntheticsParameterRequest
-func (t PostParametersJSONBody) AsSyntheticsParameterRequest() (SyntheticsParameterRequest, error) {
-	var body SyntheticsParameterRequest
-	err := json.Unmarshal(t.union, &body)
-	return body, err
-}
-
-// FromSyntheticsParameterRequest overwrites any union data inside the PostParametersJSONBody as the provided SyntheticsParameterRequest
-func (t *PostParametersJSONBody) FromSyntheticsParameterRequest(v SyntheticsParameterRequest) error {
-	b, err := json.Marshal(v)
-	t.union = b
-	return err
-}
-
-// MergeSyntheticsParameterRequest performs a merge with any union data inside the PostParametersJSONBody, using the provided SyntheticsParameterRequest
-func (t *PostParametersJSONBody) MergeSyntheticsParameterRequest(v SyntheticsParameterRequest) error {
+// MergePostParametersJSONBody1 performs a merge with any union data inside the PostParametersJSONBody, using the provided PostParametersJSONBody1
+func (t *PostParametersJSONBody) MergePostParametersJSONBody1(v PostParametersJSONBody1) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -182467,9 +182845,9 @@ type ClientInterface interface {
 	GetSyntheticMonitors(ctx context.Context, params *GetSyntheticMonitorsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PostSyntheticMonitorsWithBody request with any body
-	PostSyntheticMonitorsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostSyntheticMonitorsWithBody(ctx context.Context, params *PostSyntheticMonitorsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
-	PostSyntheticMonitors(ctx context.Context, body PostSyntheticMonitorsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	PostSyntheticMonitors(ctx context.Context, params *PostSyntheticMonitorsParams, body PostSyntheticMonitorsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// PostSyntheticMonitorsBulkCreateWithBody request with any body
 	PostSyntheticMonitorsBulkCreateWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -193926,8 +194304,8 @@ func (c *Client) GetSyntheticMonitors(ctx context.Context, params *GetSyntheticM
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostSyntheticMonitorsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostSyntheticMonitorsRequestWithBody(c.Server, contentType, body)
+func (c *Client) PostSyntheticMonitorsWithBody(ctx context.Context, params *PostSyntheticMonitorsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostSyntheticMonitorsRequestWithBody(c.Server, params, contentType, body)
 	if err != nil {
 		return nil, err
 	}
@@ -193938,8 +194316,8 @@ func (c *Client) PostSyntheticMonitorsWithBody(ctx context.Context, contentType 
 	return c.Client.Do(req)
 }
 
-func (c *Client) PostSyntheticMonitors(ctx context.Context, body PostSyntheticMonitorsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
-	req, err := NewPostSyntheticMonitorsRequest(c.Server, body)
+func (c *Client) PostSyntheticMonitors(ctx context.Context, params *PostSyntheticMonitorsParams, body PostSyntheticMonitorsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostSyntheticMonitorsRequest(c.Server, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -228598,78 +228976,6 @@ func NewGetSyntheticMonitorsRequest(server string, params *GetSyntheticMonitorsP
 		// per the OpenAPI spec (e.g. "color=blue,black,brown").
 		var rawQueryFragments []string
 
-		if params.Filter != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "filter", *params.Filter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Locations != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "locations", *params.Locations, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.MonitorTypes != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "monitorTypes", *params.MonitorTypes, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Page != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.PerPage != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "per_page", *params.PerPage, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "integer", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Projects != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "projects", *params.Projects, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
 		if params.Query != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "query", *params.Query, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
@@ -228682,9 +228988,189 @@ func NewGetSyntheticMonitorsRequest(server string, params *GetSyntheticMonitorsP
 
 		}
 
+		if params.Filter != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "filter", *params.Filter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Tags != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tags", *params.Tags, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.MonitorTypes != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "monitorTypes", *params.MonitorTypes, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Locations != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "locations", *params.Locations, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Projects != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "projects", *params.Projects, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
 		if params.Schedules != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "schedules", *params.Schedules, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "schedules", *params.Schedules, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.RemoteNames != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "remoteNames", *params.RemoteNames, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Status != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.MonitorQueryIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "monitorQueryIds", *params.MonitorQueryIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ConfigIds != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "configIds", *params.ConfigIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ShowFromAllSpaces != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "showFromAllSpaces", *params.ShowFromAllSpaces, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.UseLogicalAndFor != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "useLogicalAndFor", *params.UseLogicalAndFor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DateRangeStart != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "dateRangeStart", *params.DateRangeStart, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.DateRangeEnd != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "dateRangeEnd", *params.DateRangeEnd, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PerPage != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "perPage", *params.PerPage, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -228718,33 +229204,9 @@ func NewGetSyntheticMonitorsRequest(server string, params *GetSyntheticMonitorsP
 
 		}
 
-		if params.Status != nil {
+		if params.SearchAfter != nil {
 
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "status", *params.Status, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.Tags != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tags", *params.Tags, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
-				return nil, err
-			} else {
-				for _, qp := range strings.Split(queryFrag, "&") {
-					rawQueryFragments = append(rawQueryFragments, qp)
-				}
-			}
-
-		}
-
-		if params.UseLogicalAndFor != nil {
-
-			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "useLogicalAndFor", *params.UseLogicalAndFor, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "searchAfter", *params.SearchAfter, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
@@ -228769,18 +229231,18 @@ func NewGetSyntheticMonitorsRequest(server string, params *GetSyntheticMonitorsP
 }
 
 // NewPostSyntheticMonitorsRequest calls the generic PostSyntheticMonitors builder with application/json body
-func NewPostSyntheticMonitorsRequest(server string, body PostSyntheticMonitorsJSONRequestBody) (*http.Request, error) {
+func NewPostSyntheticMonitorsRequest(server string, params *PostSyntheticMonitorsParams, body PostSyntheticMonitorsJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
 		return nil, err
 	}
 	bodyReader = bytes.NewReader(buf)
-	return NewPostSyntheticMonitorsRequestWithBody(server, "application/json", bodyReader)
+	return NewPostSyntheticMonitorsRequestWithBody(server, params, "application/json", bodyReader)
 }
 
 // NewPostSyntheticMonitorsRequestWithBody generates requests for PostSyntheticMonitors with any type of body
-func NewPostSyntheticMonitorsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+func NewPostSyntheticMonitorsRequestWithBody(server string, params *PostSyntheticMonitorsParams, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	serverURL, err := url.Parse(server)
@@ -228796,6 +229258,45 @@ func NewPostSyntheticMonitorsRequestWithBody(server string, contentType string, 
 	queryURL, err := serverURL.Parse(operationPath)
 	if err != nil {
 		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Id != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "id", *params.Id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PreserveNamespace != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "preserve_namespace", *params.PreserveNamespace, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
 	}
 
 	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
@@ -238544,9 +239045,9 @@ type ClientWithResponsesInterface interface {
 	GetSyntheticMonitorsWithResponse(ctx context.Context, params *GetSyntheticMonitorsParams, reqEditors ...RequestEditorFn) (*GetSyntheticMonitorsResponse, error)
 
 	// PostSyntheticMonitorsWithBodyWithResponse request with any body
-	PostSyntheticMonitorsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsResponse, error)
+	PostSyntheticMonitorsWithBodyWithResponse(ctx context.Context, params *PostSyntheticMonitorsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsResponse, error)
 
-	PostSyntheticMonitorsWithResponse(ctx context.Context, body PostSyntheticMonitorsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsResponse, error)
+	PostSyntheticMonitorsWithResponse(ctx context.Context, params *PostSyntheticMonitorsParams, body PostSyntheticMonitorsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsResponse, error)
 
 	// PostSyntheticMonitorsBulkCreateWithBodyWithResponse request with any body
 	PostSyntheticMonitorsBulkCreateWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsBulkCreateResponse, error)
@@ -262445,7 +262946,13 @@ func (r PostSyntheticsMonitorTestResponse) ContentType() string {
 type GetSyntheticMonitorsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *map[string]interface{}
+	JSON200      *struct {
+		AbsoluteTotal *int                      `json:"absoluteTotal,omitempty"`
+		Monitors      *[]map[string]interface{} `json:"monitors,omitempty"`
+		Page          *int                      `json:"page,omitempty"`
+		PerPage       *int                      `json:"perPage,omitempty"`
+		Total         *int                      `json:"total,omitempty"`
+	}
 }
 
 // Status returns HTTPResponse.Status
@@ -262557,11 +263064,11 @@ type DeleteSyntheticMonitorsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *[]struct {
-		// Deleted If it is `true`, the monitor was successfully deleted If it is `false`, the monitor was not deleted.
+		// Deleted If `true`, the object was deleted. If `false`, it was not deleted.
 		Deleted *bool `json:"deleted,omitempty"`
 
-		// Ids The unique identifier of the deleted monitor.
-		Ids *string `json:"ids,omitempty"`
+		// Id The unique identifier of the deleted object.
+		Id *string `json:"id,omitempty"`
 	}
 }
 
@@ -262635,6 +263142,13 @@ func (r PutSyntheticMonitorsBulkUpdateResponse) ContentType() string {
 type DeleteSyntheticMonitorResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *[]struct {
+		// Deleted If `true`, the object was deleted. If `false`, it was not deleted.
+		Deleted *bool `json:"deleted,omitempty"`
+
+		// Id The unique identifier of the deleted object.
+		Id *string `json:"id,omitempty"`
+	}
 }
 
 // Status returns HTTPResponse.Status
@@ -262694,10 +263208,7 @@ func (r GetSyntheticMonitorResponse) ContentType() string {
 type PutSyntheticMonitorResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *struct {
-		// Warnings An optional array of warnings about the monitor configuration.
-		Warnings *[]SyntheticsMonitorWarning `json:"warnings,omitempty"`
-	}
+	JSON200      *PutSyntheticMonitor200JSONResponseBody
 }
 
 // Status returns HTTPResponse.Status
@@ -262757,7 +263268,25 @@ func (r DeleteSyntheticsParamsResponse) ContentType() string {
 type GetParametersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]SyntheticsGetParameterResponse
+	JSON200      *[]struct {
+		// Description The description of the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+		Description *string `json:"description,omitempty"`
+
+		// Id The unique identifier of the parameter.
+		Id *string `json:"id,omitempty"`
+
+		// Key The key of the parameter.
+		Key *string `json:"key,omitempty"`
+
+		// Namespaces The namespaces associated with the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+		Namespaces *[]string `json:"namespaces,omitempty"`
+
+		// Tags An array of tags associated with the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+		Tags *[]string `json:"tags,omitempty"`
+
+		// Value The value associated with the parameter. It will be included in the response if the user has write permissions.
+		Value *string `json:"value,omitempty"`
+	}
 }
 
 // Status returns HTTPResponse.Status
@@ -262818,10 +263347,10 @@ type DeleteParametersResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	JSON200      *[]struct {
-		// Deleted Indicates whether the parameter was successfully deleted. It is `true` if it was deleted. It is `false` if it was not deleted.
+		// Deleted If `true`, the object was deleted. If `false`, it was not deleted.
 		Deleted *bool `json:"deleted,omitempty"`
 
-		// Id The unique identifier for the deleted parameter.
+		// Id The unique identifier of the deleted object.
 		Id *string `json:"id,omitempty"`
 	}
 }
@@ -262853,6 +263382,13 @@ func (r DeleteParametersResponse) ContentType() string {
 type DeleteParameterResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
+	JSON200      *[]struct {
+		// Deleted If `true`, the object was deleted. If `false`, it was not deleted.
+		Deleted *bool `json:"deleted,omitempty"`
+
+		// Id The unique identifier of the deleted object.
+		Id *string `json:"id,omitempty"`
+	}
 }
 
 // Status returns HTTPResponse.Status
@@ -262912,7 +263448,25 @@ func (r GetParameterResponse) ContentType() string {
 type PutParameterResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *map[string]interface{}
+	JSON200      *struct {
+		// Description The description of the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+		Description *string `json:"description,omitempty"`
+
+		// Id The unique identifier of the parameter.
+		Id *string `json:"id,omitempty"`
+
+		// Key The key of the parameter.
+		Key *string `json:"key,omitempty"`
+
+		// Namespaces The namespaces associated with the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+		Namespaces *[]string `json:"namespaces,omitempty"`
+
+		// Tags An array of tags associated with the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+		Tags *[]string `json:"tags,omitempty"`
+
+		// Value The value associated with the parameter. It will be included in the response if the user has write permissions.
+		Value *string `json:"value,omitempty"`
+	}
 }
 
 // Status returns HTTPResponse.Status
@@ -262942,7 +263496,7 @@ func (r PutParameterResponse) ContentType() string {
 type GetPrivateLocationsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *[]SyntheticsGetPrivateLocation
+	JSON200      *[]GetPrivateLocations200JSONResponseBody_Item
 }
 
 // Status returns HTTPResponse.Status
@@ -263061,7 +263615,7 @@ func (r GetPrivateLocationResponse) ContentType() string {
 type PutPrivateLocationResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *SyntheticsGetPrivateLocation
+	JSON200      *PutPrivateLocation200JSONResponseBody
 }
 
 // Status returns HTTPResponse.Status
@@ -274735,16 +275289,16 @@ func (c *ClientWithResponses) GetSyntheticMonitorsWithResponse(ctx context.Conte
 }
 
 // PostSyntheticMonitorsWithBodyWithResponse request with arbitrary body returning *PostSyntheticMonitorsResponse
-func (c *ClientWithResponses) PostSyntheticMonitorsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsResponse, error) {
-	rsp, err := c.PostSyntheticMonitorsWithBody(ctx, contentType, body, reqEditors...)
+func (c *ClientWithResponses) PostSyntheticMonitorsWithBodyWithResponse(ctx context.Context, params *PostSyntheticMonitorsParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsResponse, error) {
+	rsp, err := c.PostSyntheticMonitorsWithBody(ctx, params, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
 	return ParsePostSyntheticMonitorsResponse(rsp)
 }
 
-func (c *ClientWithResponses) PostSyntheticMonitorsWithResponse(ctx context.Context, body PostSyntheticMonitorsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsResponse, error) {
-	rsp, err := c.PostSyntheticMonitors(ctx, body, reqEditors...)
+func (c *ClientWithResponses) PostSyntheticMonitorsWithResponse(ctx context.Context, params *PostSyntheticMonitorsParams, body PostSyntheticMonitorsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostSyntheticMonitorsResponse, error) {
+	rsp, err := c.PostSyntheticMonitors(ctx, params, body, reqEditors...)
 	if err != nil {
 		return nil, err
 	}
@@ -300971,7 +301525,13 @@ func ParseGetSyntheticMonitorsResponse(rsp *http.Response) (*GetSyntheticMonitor
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest map[string]interface{}
+		var dest struct {
+			AbsoluteTotal *int                      `json:"absoluteTotal,omitempty"`
+			Monitors      *[]map[string]interface{} `json:"monitors,omitempty"`
+			Page          *int                      `json:"page,omitempty"`
+			PerPage       *int                      `json:"perPage,omitempty"`
+			Total         *int                      `json:"total,omitempty"`
+		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -301077,11 +301637,11 @@ func ParseDeleteSyntheticMonitorsResponse(rsp *http.Response) (*DeleteSyntheticM
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest []struct {
-			// Deleted If it is `true`, the monitor was successfully deleted If it is `false`, the monitor was not deleted.
+			// Deleted If `true`, the object was deleted. If `false`, it was not deleted.
 			Deleted *bool `json:"deleted,omitempty"`
 
-			// Ids The unique identifier of the deleted monitor.
-			Ids *string `json:"ids,omitempty"`
+			// Id The unique identifier of the deleted object.
+			Id *string `json:"id,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
@@ -301145,6 +301705,22 @@ func ParseDeleteSyntheticMonitorResponse(rsp *http.Response) (*DeleteSyntheticMo
 		HTTPResponse: rsp,
 	}
 
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []struct {
+			// Deleted If `true`, the object was deleted. If `false`, it was not deleted.
+			Deleted *bool `json:"deleted,omitempty"`
+
+			// Id The unique identifier of the deleted object.
+			Id *string `json:"id,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
 	return response, nil
 }
 
@@ -301189,10 +301765,7 @@ func ParsePutSyntheticMonitorResponse(rsp *http.Response) (*PutSyntheticMonitorR
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest struct {
-			// Warnings An optional array of warnings about the monitor configuration.
-			Warnings *[]SyntheticsMonitorWarning `json:"warnings,omitempty"`
-		}
+		var dest PutSyntheticMonitor200JSONResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -301244,7 +301817,25 @@ func ParseGetParametersResponse(rsp *http.Response) (*GetParametersResponse, err
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []SyntheticsGetParameterResponse
+		var dest []struct {
+			// Description The description of the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+			Description *string `json:"description,omitempty"`
+
+			// Id The unique identifier of the parameter.
+			Id *string `json:"id,omitempty"`
+
+			// Key The key of the parameter.
+			Key *string `json:"key,omitempty"`
+
+			// Namespaces The namespaces associated with the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+			Namespaces *[]string `json:"namespaces,omitempty"`
+
+			// Tags An array of tags associated with the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+			Tags *[]string `json:"tags,omitempty"`
+
+			// Value The value associated with the parameter. It will be included in the response if the user has write permissions.
+			Value *string `json:"value,omitempty"`
+		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -301297,10 +301888,10 @@ func ParseDeleteParametersResponse(rsp *http.Response) (*DeleteParametersRespons
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
 		var dest []struct {
-			// Deleted Indicates whether the parameter was successfully deleted. It is `true` if it was deleted. It is `false` if it was not deleted.
+			// Deleted If `true`, the object was deleted. If `false`, it was not deleted.
 			Deleted *bool `json:"deleted,omitempty"`
 
-			// Id The unique identifier for the deleted parameter.
+			// Id The unique identifier of the deleted object.
 			Id *string `json:"id,omitempty"`
 		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
@@ -301324,6 +301915,22 @@ func ParseDeleteParameterResponse(rsp *http.Response) (*DeleteParameterResponse,
 	response := &DeleteParameterResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest []struct {
+			// Deleted If `true`, the object was deleted. If `false`, it was not deleted.
+			Deleted *bool `json:"deleted,omitempty"`
+
+			// Id The unique identifier of the deleted object.
+			Id *string `json:"id,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
 	}
 
 	return response, nil
@@ -301370,7 +301977,25 @@ func ParsePutParameterResponse(rsp *http.Response) (*PutParameterResponse, error
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest map[string]interface{}
+		var dest struct {
+			// Description The description of the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+			Description *string `json:"description,omitempty"`
+
+			// Id The unique identifier of the parameter.
+			Id *string `json:"id,omitempty"`
+
+			// Key The key of the parameter.
+			Key *string `json:"key,omitempty"`
+
+			// Namespaces The namespaces associated with the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+			Namespaces *[]string `json:"namespaces,omitempty"`
+
+			// Tags An array of tags associated with the parameter. It is included in the response if the user has read-only permissions to the Synthetics app.
+			Tags *[]string `json:"tags,omitempty"`
+
+			// Value The value associated with the parameter. It will be included in the response if the user has write permissions.
+			Value *string `json:"value,omitempty"`
+		}
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -301396,7 +302021,7 @@ func ParseGetPrivateLocationsResponse(rsp *http.Response) (*GetPrivateLocationsR
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest []SyntheticsGetPrivateLocation
+		var dest []GetPrivateLocations200JSONResponseBody_Item
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -301490,7 +302115,7 @@ func ParsePutPrivateLocationResponse(rsp *http.Response) (*PutPrivateLocationRes
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest SyntheticsGetPrivateLocation
+		var dest PutPrivateLocation200JSONResponseBody
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

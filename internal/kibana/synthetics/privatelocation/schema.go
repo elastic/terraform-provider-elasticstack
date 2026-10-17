@@ -85,25 +85,12 @@ func getSchema(_ context.Context) schema.Schema {
 	}
 }
 
-// tagsFromAdditionalProperties extracts the tags slice from the API response.
-// The generated OpenAPI struct does not have a first-class Tags field, so tags are
-// stored in AdditionalProperties["tags"] as []interface{}.
-func tagsFromAdditionalProperties(loc kbapi.SyntheticsGetPrivateLocation) []string {
-	val, found := loc.Get("tags")
-	if !found || val == nil {
+// tagsFromAPIResponse returns the tags slice from the API response, or nil when absent.
+func tagsFromAPIResponse(loc kbapi.SyntheticsGetPrivateLocation) []string {
+	if loc.Tags == nil {
 		return nil
 	}
-	rawSlice, ok := val.([]any)
-	if !ok {
-		return nil
-	}
-	tags := make([]string, 0, len(rawSlice))
-	for _, v := range rawSlice {
-		if s, ok := v.(string); ok {
-			tags = append(tags, s)
-		}
-	}
-	return tags
+	return *loc.Tags
 }
 
 // geoFromAPIResponse converts the nested geo struct from the API response to a tfGeoConfigV0.

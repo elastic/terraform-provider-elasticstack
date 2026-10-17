@@ -38,9 +38,9 @@ func newTestClient(t *testing.T, srv *httptest.Server) *Client {
 func httpMonitorRequest(t *testing.T, name, url string) kbapi.SyntheticsMonitorRequest {
 	t.Helper()
 	req := kbapi.SyntheticsMonitorRequest{}
-	err := req.FromSyntheticsHttpMonitorFields(kbapi.SyntheticsHttpMonitorFields{
+	err := req.FromKibanaHTTPAPIsHttpMonitorFields(kbapi.KibanaHTTPAPIsHttpMonitorFields{
 		Name:   name,
-		Type:   kbapi.SyntheticsHttpMonitorFieldsType(kbapi.SyntheticsMonitorTypeHttp),
+		Type:   kbapi.KibanaHTTPAPIsHttpMonitorFieldsType(kbapi.SyntheticsMonitorTypeHttp),
 		Url:    url,
 		Labels: &map[string]string{},
 	})
@@ -51,9 +51,9 @@ func httpMonitorRequest(t *testing.T, name, url string) kbapi.SyntheticsMonitorR
 func tcpMonitorRequest(t *testing.T, name, host string) kbapi.SyntheticsMonitorRequest {
 	t.Helper()
 	req := kbapi.SyntheticsMonitorRequest{}
-	err := req.FromSyntheticsTcpMonitorFields(kbapi.SyntheticsTcpMonitorFields{
+	err := req.FromKibanaHTTPAPIsTcpMonitorFields(kbapi.KibanaHTTPAPIsTcpMonitorFields{
 		Name:   name,
-		Type:   kbapi.SyntheticsTcpMonitorFieldsType(kbapi.SyntheticsMonitorTypeTcp),
+		Type:   kbapi.KibanaHTTPAPIsTcpMonitorFieldsType(kbapi.SyntheticsMonitorTypeTcp),
 		Host:   host,
 		Labels: &map[string]string{},
 	})
@@ -64,9 +64,9 @@ func tcpMonitorRequest(t *testing.T, name, host string) kbapi.SyntheticsMonitorR
 func icmpMonitorRequest(t *testing.T, name, host string) kbapi.SyntheticsMonitorRequest {
 	t.Helper()
 	req := kbapi.SyntheticsMonitorRequest{}
-	err := req.FromSyntheticsIcmpMonitorFields(kbapi.SyntheticsIcmpMonitorFields{
+	err := req.FromKibanaHTTPAPIsIcmpMonitorFields(kbapi.KibanaHTTPAPIsIcmpMonitorFields{
 		Name:   name,
-		Type:   kbapi.SyntheticsIcmpMonitorFieldsType(kbapi.SyntheticsMonitorTypeIcmp),
+		Type:   kbapi.KibanaHTTPAPIsIcmpMonitorFieldsType(kbapi.SyntheticsMonitorTypeIcmp),
 		Host:   host,
 		Labels: &map[string]string{},
 	})
@@ -77,9 +77,9 @@ func icmpMonitorRequest(t *testing.T, name, host string) kbapi.SyntheticsMonitor
 func browserMonitorRequest(t *testing.T, name, script string) kbapi.SyntheticsMonitorRequest {
 	t.Helper()
 	req := kbapi.SyntheticsMonitorRequest{}
-	err := req.FromSyntheticsBrowserMonitorFields(kbapi.SyntheticsBrowserMonitorFields{
+	err := req.FromKibanaHTTPAPIsBrowserMonitorFields(kbapi.KibanaHTTPAPIsBrowserMonitorFields{
 		Name:         name,
-		Type:         kbapi.SyntheticsBrowserMonitorFieldsType(kbapi.SyntheticsMonitorTypeBrowser),
+		Type:         kbapi.KibanaHTTPAPIsBrowserMonitorFieldsType(kbapi.SyntheticsMonitorTypeBrowser),
 		InlineScript: script,
 		Labels:       &map[string]string{},
 	})
