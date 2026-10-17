@@ -31,8 +31,8 @@ import (
 // elasticDefendIntegrationPolicyModel is the Terraform state model for the
 // elasticstack_fleet_elastic_defend_integration_policy resource.
 type elasticDefendIntegrationPolicyModel struct {
+	entitycore.KibanaConnectionField
 	ID                               types.String `tfsdk:"id"`
-	KibanaConnection                 types.List   `tfsdk:"kibana_connection"`
 	PolicyID                         types.String `tfsdk:"policy_id"`
 	Name                             types.String `tfsdk:"name"`
 	Namespace                        types.String `tfsdk:"namespace"`

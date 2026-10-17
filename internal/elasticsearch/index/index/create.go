@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -143,7 +144,7 @@ func (r *Resource) adoptExistingIndexOnCreate(
 	}
 
 	synthetic := tfModel{
-		ElasticsearchConnection: plan.ElasticsearchConnection,
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: plan.ElasticsearchConnection},
 	}
 	existingState, convertDiags := modelToIndexState(existing)
 	resp.Diagnostics.Append(convertDiags...)

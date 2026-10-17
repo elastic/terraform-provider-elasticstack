@@ -30,13 +30,13 @@ import (
 
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String `tfsdk:"id"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
-	Name                    types.String `tfsdk:"name"`
-	DataRetention           types.String `tfsdk:"data_retention"`
-	ExpandWildcards         types.String `tfsdk:"expand_wildcards"`
-	Enabled                 types.Bool   `tfsdk:"enabled"`
-	Downsampling            types.List   `tfsdk:"downsampling"`
+	entitycore.ElasticsearchConnectionField
+	ID              types.String `tfsdk:"id"`
+	Name            types.String `tfsdk:"name"`
+	DataRetention   types.String `tfsdk:"data_retention"`
+	ExpandWildcards types.String `tfsdk:"expand_wildcards"`
+	Enabled         types.Bool   `tfsdk:"enabled"`
+	Downsampling    types.List   `tfsdk:"downsampling"`
 }
 
 type downsamplingTfModel struct {
@@ -53,9 +53,8 @@ func (model tfModel) GetTFID() (*clients.CompositeID, diag.Diagnostics) {
 	return compID, nil
 }
 
-func (model tfModel) GetID() types.String                    { return model.ID }
-func (model tfModel) GetResourceID() types.String            { return model.Name }
-func (model tfModel) GetElasticsearchConnection() types.List { return model.ElasticsearchConnection }
+func (model tfModel) GetID() types.String         { return model.ID }
+func (model tfModel) GetResourceID() types.String { return model.Name }
 
 func (model tfModel) toAPIModel(ctx context.Context) (models.LifecycleSettings, diag.Diagnostics) {
 	var diags diag.Diagnostics

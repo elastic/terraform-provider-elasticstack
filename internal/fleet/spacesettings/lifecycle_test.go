@@ -29,6 +29,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -171,7 +172,7 @@ func planFor(t *testing.T, model spaceSettingsModel) tfsdk.Plan {
 func planModel(spaceID string, prefixes ...string) spaceSettingsModel {
 	return spaceSettingsModel{
 		ID:                       types.StringUnknown(),
-		KibanaConnection:         providerschema.KibanaConnectionNullList(),
+		KibanaConnectionField:    entitycore.KibanaConnectionField{KibanaConnection: providerschema.KibanaConnectionNullList()},
 		SpaceID:                  types.StringValue(spaceID),
 		AllowedNamespacePrefixes: prefixSet(prefixes...),
 		ManagedBy:                types.StringUnknown(),

@@ -39,8 +39,6 @@ func (m Model) GetSpaceID() types.String {
 	return m.ID
 }
 
-func (m Model) GetKibanaConnection() types.List { return m.KibanaConnection }
-
 var _ entitycore.KibanaResourceModel = Model{}
 
 // Model represents the Terraform state/config model for the
@@ -48,11 +46,11 @@ var _ entitycore.KibanaResourceModel = Model{}
 // .lists and .items data streams required for security lists and exceptions.
 type Model struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	SpaceID          types.String `tfsdk:"space_id"`
-	ListIndex        types.Bool   `tfsdk:"list_index"`
-	ListItemIndex    types.Bool   `tfsdk:"list_item_index"`
+	entitycore.KibanaConnectionField
+	ID            types.String `tfsdk:"id"`
+	SpaceID       types.String `tfsdk:"space_id"`
+	ListIndex     types.Bool   `tfsdk:"list_index"`
+	ListItemIndex types.Bool   `tfsdk:"list_item_index"`
 }
 
 // fromAPIResponse populates the model from API response data.

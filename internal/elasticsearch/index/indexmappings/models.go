@@ -25,12 +25,11 @@ import (
 
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String        `tfsdk:"id"`
-	Index                   types.String        `tfsdk:"index"`
-	Mappings                index.MappingsValue `tfsdk:"mappings"`
-	ElasticsearchConnection types.List          `tfsdk:"elasticsearch_connection"`
+	entitycore.ElasticsearchConnectionField
+	ID       types.String        `tfsdk:"id"`
+	Index    types.String        `tfsdk:"index"`
+	Mappings index.MappingsValue `tfsdk:"mappings"`
 }
 
-func (model tfModel) GetID() types.String                    { return model.ID }
-func (model tfModel) GetResourceID() types.String            { return model.Index }
-func (model tfModel) GetElasticsearchConnection() types.List { return model.ElasticsearchConnection }
+func (model tfModel) GetID() types.String         { return model.ID }
+func (model tfModel) GetResourceID() types.String { return model.Index }

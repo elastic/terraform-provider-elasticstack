@@ -59,18 +59,18 @@ type AccessModel struct {
 
 type TfModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String                                                              `tfsdk:"id"`
-	ElasticsearchConnection types.List                                                                `tfsdk:"elasticsearch_connection"`
-	KeyID                   types.String                                                              `tfsdk:"key_id"`
-	Name                    types.String                                                              `tfsdk:"name"`
-	Type                    types.String                                                              `tfsdk:"type"`
-	RoleDescriptors         customtypes.JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor] `tfsdk:"role_descriptors"`
-	Expiration              types.String                                                              `tfsdk:"expiration"`
-	ExpirationTimestamp     types.Int64                                                               `tfsdk:"expiration_timestamp"`
-	Metadata                jsontypes.Normalized                                                      `tfsdk:"metadata"`
-	Access                  types.Object                                                              `tfsdk:"access"`
-	APIKey                  types.String                                                              `tfsdk:"api_key"`
-	Encoded                 types.String                                                              `tfsdk:"encoded"`
+	entitycore.ElasticsearchConnectionField
+	ID                  types.String                                                              `tfsdk:"id"`
+	KeyID               types.String                                                              `tfsdk:"key_id"`
+	Name                types.String                                                              `tfsdk:"name"`
+	Type                types.String                                                              `tfsdk:"type"`
+	RoleDescriptors     customtypes.JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor] `tfsdk:"role_descriptors"`
+	Expiration          types.String                                                              `tfsdk:"expiration"`
+	ExpirationTimestamp types.Int64                                                               `tfsdk:"expiration_timestamp"`
+	Metadata            jsontypes.Normalized                                                      `tfsdk:"metadata"`
+	Access              types.Object                                                              `tfsdk:"access"`
+	APIKey              types.String                                                              `tfsdk:"api_key"`
+	Encoded             types.String                                                              `tfsdk:"encoded"`
 }
 
 func (model TfModel) GetID() types.String {
@@ -79,10 +79,6 @@ func (model TfModel) GetID() types.String {
 
 func (model TfModel) GetResourceID() types.String {
 	return model.Name
-}
-
-func (model TfModel) GetElasticsearchConnection() types.List {
-	return model.ElasticsearchConnection
 }
 
 // GetReadResourceID satisfies entitycore.WithReadResourceID: the API key read

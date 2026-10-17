@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -67,10 +68,10 @@ func readCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedCli
 	}
 
 	out := TFModel{
-		ElasticsearchConnection: state.ElasticsearchConnection,
-		CalendarID:              types.StringValue(calendarID),
-		JobID:                   types.StringValue(jobID),
-		ID:                      types.StringValue(compID.String()),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: state.ElasticsearchConnection},
+		CalendarID:                   types.StringValue(calendarID),
+		JobID:                        types.StringValue(jobID),
+		ID:                           types.StringValue(compID.String()),
 	}
 
 	tflog.Debug(ctx, fmt.Sprintf("Successfully read ML calendar job assignment: calendar=%s job=%s", calendarID, jobID))

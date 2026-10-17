@@ -33,8 +33,8 @@ import (
 
 type outputModel struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.KibanaConnectionField
 	ID                          types.String                    `tfsdk:"id"`
-	KibanaConnection            types.List                      `tfsdk:"kibana_connection"`
 	OutputID                    types.String                    `tfsdk:"output_id"`
 	Name                        types.String                    `tfsdk:"name"`
 	Type                        types.String                    `tfsdk:"type"`
@@ -54,9 +54,8 @@ type outputModel struct {
 	Preset                      types.String                    `tfsdk:"preset"`
 }
 
-func (model outputModel) GetID() types.String             { return model.ID }
-func (model outputModel) GetResourceID() types.String     { return model.OutputID }
-func (model outputModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+func (model outputModel) GetID() types.String         { return model.ID }
+func (model outputModel) GetResourceID() types.String { return model.OutputID }
 
 func (model outputModel) GetSpaceID() types.String {
 	return fleet.SpaceIDFromSetOrDefault(model.SpaceIDs, "")

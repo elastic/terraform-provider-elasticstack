@@ -114,9 +114,9 @@ type tfBrowserMonitorFieldsV0 struct {
 
 type tfModelV0 struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.KibanaConnectionField
 
 	ID               types.String              `tfsdk:"id"`
-	KibanaConnection types.List                `tfsdk:"kibana_connection"`
 	Name             types.String              `tfsdk:"name"`
 	SpaceID          types.String              `tfsdk:"space_id"`
 	Namespace        types.String              `tfsdk:"namespace"`
@@ -735,21 +735,21 @@ func (v *tfModelV0) toModelV0(ctx context.Context, api *kbapi.SyntheticsMonitor,
 		// spec requires using the practitioner-configured identifiers (from state) rather
 		// than re-deriving from the API response. Private locations are re-derived from
 		// the API response where IsServiceManaged == false.
-		Locations:        v.Locations,
-		PrivateLocations: typeutils.StringSliceValue(privateLocLabels),
-		Enabled:          types.BoolPointerValue(api.Enabled),
-		Tags:             typeutils.StringSliceValue(typeutils.Deref(api.Tags)),
-		Labels:           typeutils.MapValueFrom(ctx, typeutils.Deref(api.Labels), types.StringType, path.Root("labels"), &dg),
-		Alert:            alertV0,
-		APMServiceName:   types.StringPointerValue(api.ServiceName),
-		TimeoutSeconds:   types.Int64Value(timeout),
-		Params:           params,
-		HTTP:             httpFields,
-		TCP:              tcp,
-		ICMP:             icmp,
-		Browser:          browser,
-		RetestOnFailure:  v.RetestOnFailure,
-		KibanaConnection: v.KibanaConnection,
+		Locations:             v.Locations,
+		PrivateLocations:      typeutils.StringSliceValue(privateLocLabels),
+		Enabled:               types.BoolPointerValue(api.Enabled),
+		Tags:                  typeutils.StringSliceValue(typeutils.Deref(api.Tags)),
+		Labels:                typeutils.MapValueFrom(ctx, typeutils.Deref(api.Labels), types.StringType, path.Root("labels"), &dg),
+		Alert:                 alertV0,
+		APMServiceName:        types.StringPointerValue(api.ServiceName),
+		TimeoutSeconds:        types.Int64Value(timeout),
+		Params:                params,
+		HTTP:                  httpFields,
+		TCP:                   tcp,
+		ICMP:                  icmp,
+		Browser:               browser,
+		RetestOnFailure:       v.RetestOnFailure,
+		KibanaConnectionField: entitycore.KibanaConnectionField{KibanaConnection: v.KibanaConnection},
 	}, dg
 }
 
@@ -1297,8 +1297,6 @@ func (v tfModelV0) GetSpaceID() types.String {
 }
 
 func (v tfModelV0) IsUnscopedSpace() bool { return true }
-
-func (v tfModelV0) GetKibanaConnection() types.List { return v.KibanaConnection }
 
 // knownStringPtr returns a pointer to the string value when it is known, even if empty.
 func knownStringPtr(v types.String) *string {

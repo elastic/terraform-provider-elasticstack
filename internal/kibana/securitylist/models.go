@@ -29,31 +29,30 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (m Model) GetID() types.String             { return m.ID }
-func (m Model) GetResourceID() types.String     { return m.ListID }
-func (m Model) GetSpaceID() types.String        { return m.SpaceID }
-func (m Model) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m Model) GetID() types.String         { return m.ID }
+func (m Model) GetResourceID() types.String { return m.ListID }
+func (m Model) GetSpaceID() types.String    { return m.SpaceID }
 
 var _ entitycore.KibanaResourceModel = Model{}
 
 type Model struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String         `tfsdk:"id"`
-	KibanaConnection types.List           `tfsdk:"kibana_connection"`
-	SpaceID          types.String         `tfsdk:"space_id"`
-	ListID           types.String         `tfsdk:"list_id"`
-	Name             types.String         `tfsdk:"name"`
-	Description      types.String         `tfsdk:"description"`
-	Type             types.String         `tfsdk:"type"`
-	Meta             jsontypes.Normalized `tfsdk:"meta"`
-	Version          types.Int64          `tfsdk:"version"`
-	VersionID        types.String         `tfsdk:"version_id"`
-	Immutable        types.Bool           `tfsdk:"immutable"`
-	CreatedAt        types.String         `tfsdk:"created_at"`
-	CreatedBy        types.String         `tfsdk:"created_by"`
-	UpdatedAt        types.String         `tfsdk:"updated_at"`
-	UpdatedBy        types.String         `tfsdk:"updated_by"`
-	TieBreakerID     types.String         `tfsdk:"tie_breaker_id"`
+	entitycore.KibanaConnectionField
+	ID           types.String         `tfsdk:"id"`
+	SpaceID      types.String         `tfsdk:"space_id"`
+	ListID       types.String         `tfsdk:"list_id"`
+	Name         types.String         `tfsdk:"name"`
+	Description  types.String         `tfsdk:"description"`
+	Type         types.String         `tfsdk:"type"`
+	Meta         jsontypes.Normalized `tfsdk:"meta"`
+	Version      types.Int64          `tfsdk:"version"`
+	VersionID    types.String         `tfsdk:"version_id"`
+	Immutable    types.Bool           `tfsdk:"immutable"`
+	CreatedAt    types.String         `tfsdk:"created_at"`
+	CreatedBy    types.String         `tfsdk:"created_by"`
+	UpdatedAt    types.String         `tfsdk:"updated_at"`
+	UpdatedBy    types.String         `tfsdk:"updated_by"`
+	TieBreakerID types.String         `tfsdk:"tie_breaker_id"`
 }
 
 // toCreateRequest converts the Terraform model to API create request

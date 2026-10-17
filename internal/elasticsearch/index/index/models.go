@@ -59,8 +59,8 @@ var (
 
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.ElasticsearchConnectionField
 	ID                            types.String `tfsdk:"id"`
-	ElasticsearchConnection       types.List   `tfsdk:"elasticsearch_connection"`
 	Name                          types.String `tfsdk:"name"`
 	ConcreteName                  types.String `tfsdk:"concrete_name"`
 	NumberOfShards                types.Int64  `tfsdk:"number_of_shards"`
@@ -245,9 +245,6 @@ func (model tfModel) GetID() types.String { return model.ID }
 // Returns the configured index name (which may be a date-math expression)
 // used as the write identity on create.
 func (model tfModel) GetResourceID() types.String { return model.Name }
-
-// GetElasticsearchConnection satisfies [entitycore.ElasticsearchResourceModel].
-func (model tfModel) GetElasticsearchConnection() types.List { return model.ElasticsearchConnection }
 
 func (model tfModel) getCompositeID() (*clients.CompositeID, diag.Diagnostics) {
 	compID, compIDDiags := clients.CompositeIDFromStr(model.ID.ValueString())

@@ -35,9 +35,9 @@ const (
 
 type integrationModel struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.KibanaConnectionField
 
 	ID                        types.String `tfsdk:"id"`
-	KibanaConnection          types.List   `tfsdk:"kibana_connection"`
 	Name                      types.String `tfsdk:"name"`
 	Version                   types.String `tfsdk:"version"`
 	Force                     types.Bool   `tfsdk:"force"`
@@ -63,10 +63,6 @@ func (m integrationModel) GetSpaceID() types.String {
 		return types.StringValue("")
 	}
 	return m.SpaceID
-}
-
-func (m integrationModel) GetKibanaConnection() types.List {
-	return m.KibanaConnection
 }
 
 func (m integrationModel) IsUnscopedSpace() bool {

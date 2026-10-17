@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -51,19 +52,19 @@ func TestUpgradeV2ToV3_DropsEnabled(t *testing.T) {
 			liveSchema := getSchemaV3()
 
 			prior := integrationPolicyModelV2{
-				ID:                 types.StringValue("policy-id-1"),
-				KibanaConnection:   providerschema.KibanaConnectionNullList(),
-				PolicyID:           types.StringValue("policy-id-1"),
-				Name:               types.StringValue("test-policy"),
-				Namespace:          types.StringValue("default"),
-				AgentPolicyID:      types.StringValue("agent-1"),
-				AgentPolicyIDs:     types.ListNull(types.StringType),
-				Description:        types.StringValue("a description"),
-				Enabled:            types.BoolValue(tt.enabled),
-				Force:              types.BoolValue(false),
-				IntegrationName:    types.StringValue("tcp"),
-				IntegrationVersion: types.StringValue("1.16.0"),
-				OutputID:           types.StringNull(),
+				ID:                    types.StringValue("policy-id-1"),
+				KibanaConnectionField: entitycore.KibanaConnectionField{KibanaConnection: providerschema.KibanaConnectionNullList()},
+				PolicyID:              types.StringValue("policy-id-1"),
+				Name:                  types.StringValue("test-policy"),
+				Namespace:             types.StringValue("default"),
+				AgentPolicyID:         types.StringValue("agent-1"),
+				AgentPolicyIDs:        types.ListNull(types.StringType),
+				Description:           types.StringValue("a description"),
+				Enabled:               types.BoolValue(tt.enabled),
+				Force:                 types.BoolValue(false),
+				IntegrationName:       types.StringValue("tcp"),
+				IntegrationVersion:    types.StringValue("1.16.0"),
+				OutputID:              types.StringNull(),
 				// V2's frozen inputs element type predates the `condition`
 				// attribute added to the live schema; use the frozen V2 type
 				// here so this fixture matches what real V2 state looked
@@ -169,22 +170,22 @@ func TestUpgradeV2ToV3_PreservesPopulatedInputs(t *testing.T) {
 	liveSchema := getSchemaV3()
 
 	prior := integrationPolicyModelV2{
-		ID:                 types.StringValue("policy-id-1"),
-		KibanaConnection:   providerschema.KibanaConnectionNullList(),
-		PolicyID:           types.StringValue("policy-id-1"),
-		Name:               types.StringValue("test-policy"),
-		Namespace:          types.StringValue("default"),
-		AgentPolicyID:      types.StringValue("agent-1"),
-		AgentPolicyIDs:     types.ListNull(types.StringType),
-		Description:        types.StringValue("a description"),
-		Enabled:            types.BoolValue(true),
-		Force:              types.BoolValue(false),
-		IntegrationName:    types.StringValue("tcp"),
-		IntegrationVersion: types.StringValue("1.16.0"),
-		OutputID:           types.StringNull(),
-		Inputs:             priorInputs,
-		VarsJSON:           NewVarsJSONNull(),
-		SpaceIDs:           types.SetNull(types.StringType),
+		ID:                    types.StringValue("policy-id-1"),
+		KibanaConnectionField: entitycore.KibanaConnectionField{KibanaConnection: providerschema.KibanaConnectionNullList()},
+		PolicyID:              types.StringValue("policy-id-1"),
+		Name:                  types.StringValue("test-policy"),
+		Namespace:             types.StringValue("default"),
+		AgentPolicyID:         types.StringValue("agent-1"),
+		AgentPolicyIDs:        types.ListNull(types.StringType),
+		Description:           types.StringValue("a description"),
+		Enabled:               types.BoolValue(true),
+		Force:                 types.BoolValue(false),
+		IntegrationName:       types.StringValue("tcp"),
+		IntegrationVersion:    types.StringValue("1.16.0"),
+		OutputID:              types.StringNull(),
+		Inputs:                priorInputs,
+		VarsJSON:              NewVarsJSONNull(),
+		SpaceIDs:              types.SetNull(types.StringType),
 	}
 
 	rawState := tfsdk.State{Schema: priorSchema}

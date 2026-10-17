@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -75,7 +76,7 @@ func Test_compareStaticSettings_noMismatches_allStaticMatch(t *testing.T) {
 		SortOrder:                     sortOrder,
 		MappingCoerce:                 basetypes.NewBoolValue(false),
 		Settings:                      basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection:       basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField:  entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 
 	existing := models.Index{
@@ -101,10 +102,10 @@ func Test_compareStaticSettings_singleMismatch_numberOfShards(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		NumberOfShards:          basetypes.NewInt64Value(1),
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		NumberOfShards:               basetypes.NewInt64Value(1),
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -124,11 +125,11 @@ func Test_compareStaticSettings_multipleMismatches(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		NumberOfShards:          basetypes.NewInt64Value(1),
-		Codec:                   basetypes.NewStringValue("best_compression"),
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		NumberOfShards:               basetypes.NewInt64Value(1),
+		Codec:                        basetypes.NewStringValue("best_compression"),
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -148,11 +149,11 @@ func Test_compareStaticSettings_skipsNullAndUnknown(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		NumberOfShards:          basetypes.NewInt64Null(),
-		Codec:                   basetypes.NewStringUnknown(),
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		NumberOfShards:               basetypes.NewInt64Null(),
+		Codec:                        basetypes.NewStringUnknown(),
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -170,10 +171,10 @@ func Test_compareStaticSettings_normalization_intString(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		RoutingPartitionSize:    basetypes.NewInt64Value(1),
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		RoutingPartitionSize:         basetypes.NewInt64Value(1),
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -190,10 +191,10 @@ func Test_compareStaticSettings_normalization_intFloat64(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		NumberOfShards:          basetypes.NewInt64Value(2),
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		NumberOfShards:               basetypes.NewInt64Value(2),
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -210,10 +211,10 @@ func Test_compareStaticSettings_normalization_boolString(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		MappingCoerce:           basetypes.NewBoolValue(true),
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		MappingCoerce:                basetypes.NewBoolValue(true),
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -230,10 +231,10 @@ func Test_compareStaticSettings_normalization_string(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		Codec:                   basetypes.NewStringValue("best_compression"),
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		Codec:                        basetypes.NewStringValue("best_compression"),
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -250,10 +251,10 @@ func Test_compareStaticSettings_intParseFailureIsMismatch(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		NumberOfShards:          basetypes.NewInt64Value(1),
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		NumberOfShards:               basetypes.NewInt64Value(1),
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -274,10 +275,10 @@ func Test_compareStaticSettings_sortField_setVsArray(t *testing.T) {
 	require.Empty(t, diags)
 
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		SortField:               sortField,
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		SortField:                    sortField,
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -297,10 +298,10 @@ func Test_compareStaticSettings_sortField_setVsSingleString(t *testing.T) {
 	require.Empty(t, diags)
 
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		SortField:               sortField,
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		SortField:                    sortField,
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -320,10 +321,10 @@ func Test_compareStaticSettings_sortOrder_orderedEquality(t *testing.T) {
 	require.Empty(t, diags)
 
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		SortOrder:               sortOrder,
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		SortOrder:                    sortOrder,
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -343,10 +344,10 @@ func Test_compareStaticSettings_sortOrder_singleStringVsList(t *testing.T) {
 	require.Empty(t, diags)
 
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		SortOrder:               sortOrder,
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		SortOrder:                    sortOrder,
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -363,10 +364,10 @@ func Test_compareStaticSettings_bareKeyWithoutIndexPrefix(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		NumberOfShards:          basetypes.NewInt64Value(5),
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		NumberOfShards:               basetypes.NewInt64Value(5),
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -386,7 +387,7 @@ func Test_compareStaticSettings_prefixedKeyPreferred(t *testing.T) {
 		Name:                          basetypes.NewStringValue("i"),
 		LoadFixedBitsetFiltersEagerly: basetypes.NewBoolValue(false),
 		Settings:                      basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection:       basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField:  entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -404,10 +405,10 @@ func Test_compareStaticSettings_missingSettingReportsAbsent(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		NumberOfShards:          basetypes.NewInt64Value(1),
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		NumberOfShards:               basetypes.NewInt64Value(1),
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 
 	mismatches, diags := compareStaticSettings(ctx, plan, models.Index{Settings: map[string]any{}})
@@ -423,10 +424,10 @@ func Test_compareStaticSettings_sortOrder_orderMatters(t *testing.T) {
 	require.Empty(t, diags)
 
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		SortOrder:               sortOrder,
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		SortOrder:                    sortOrder,
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -449,9 +450,9 @@ func Test_compareStaticSettings_deprecatedSettingsBlock_staticMismatch(t *testin
 	})
 
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		Settings:                settings,
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		Settings:                     settings,
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -476,9 +477,9 @@ func Test_compareStaticSettings_deprecatedSettingsBlock_staticMatch(t *testing.T
 	})
 
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		Settings:                settings,
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		Settings:                     settings,
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -499,10 +500,10 @@ func Test_compareStaticSettings_sortField_mismatch(t *testing.T) {
 	require.Empty(t, diags)
 
 	plan := &tfModel{
-		Name:                    basetypes.NewStringValue("i"),
-		SortField:               sortField,
-		Settings:                basetypes.NewListNull(basetypes.ObjectType{}),
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		Name:                         basetypes.NewStringValue("i"),
+		SortField:                    sortField,
+		Settings:                     basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	existing := models.Index{
 		Settings: map[string]any{
@@ -542,7 +543,7 @@ func Test_populateFromAPI_syntheticAdoptPriorState(t *testing.T) {
 	indexName := "synthetic-adopt-unit-index"
 
 	m := &tfModel{
-		ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{}),
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: basetypes.NewListNull(basetypes.ObjectType{})},
 	}
 	apiModel := models.Index{
 		Aliases: map[string]models.IndexAlias{

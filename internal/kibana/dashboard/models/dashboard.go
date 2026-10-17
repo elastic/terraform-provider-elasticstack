@@ -52,27 +52,26 @@ type OptionsModel struct {
 	HidePanelBorders types.Bool `tfsdk:"hide_panel_borders"`
 }
 
-func (m DashboardModel) GetID() types.String             { return m.ID }
-func (m DashboardModel) GetResourceID() types.String     { return m.DashboardID }
-func (m DashboardModel) GetSpaceID() types.String        { return m.SpaceID }
-func (m DashboardModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m DashboardModel) GetID() types.String         { return m.ID }
+func (m DashboardModel) GetResourceID() types.String { return m.DashboardID }
+func (m DashboardModel) GetSpaceID() types.String    { return m.SpaceID }
 
 type DashboardModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String          `tfsdk:"id"`
-	KibanaConnection types.List            `tfsdk:"kibana_connection"`
-	SpaceID          types.String          `tfsdk:"space_id"`
-	DashboardID      types.String          `tfsdk:"dashboard_id"`
-	Title            types.String          `tfsdk:"title"`
-	Description      types.String          `tfsdk:"description"`
-	TimeRange        *TimeRangeModel       `tfsdk:"time_range"`
-	RefreshInterval  *RefreshIntervalModel `tfsdk:"refresh_interval"`
-	Query            *DashboardQueryModel  `tfsdk:"query"`
-	Filters          types.List            `tfsdk:"filters"`
-	Tags             types.List            `tfsdk:"tags"`
-	Options          *OptionsModel         `tfsdk:"options"`
-	AccessControl    *AccessControlValue   `tfsdk:"access_control"`
-	Panels           []PanelModel          `tfsdk:"panels"`
-	PinnedPanels     []PinnedPanelModel    `tfsdk:"pinned_panels"`
-	Sections         []SectionModel        `tfsdk:"sections"`
+	entitycore.KibanaConnectionField
+	ID              types.String          `tfsdk:"id"`
+	SpaceID         types.String          `tfsdk:"space_id"`
+	DashboardID     types.String          `tfsdk:"dashboard_id"`
+	Title           types.String          `tfsdk:"title"`
+	Description     types.String          `tfsdk:"description"`
+	TimeRange       *TimeRangeModel       `tfsdk:"time_range"`
+	RefreshInterval *RefreshIntervalModel `tfsdk:"refresh_interval"`
+	Query           *DashboardQueryModel  `tfsdk:"query"`
+	Filters         types.List            `tfsdk:"filters"`
+	Tags            types.List            `tfsdk:"tags"`
+	Options         *OptionsModel         `tfsdk:"options"`
+	AccessControl   *AccessControlValue   `tfsdk:"access_control"`
+	Panels          []PanelModel          `tfsdk:"panels"`
+	PinnedPanels    []PinnedPanelModel    `tfsdk:"pinned_panels"`
+	Sections        []SectionModel        `tfsdk:"sections"`
 }

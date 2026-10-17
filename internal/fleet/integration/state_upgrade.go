@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -110,7 +111,7 @@ func (r *integrationResource) UpgradeState(ctx context.Context) map[int64]resour
 
 				upgradedState := integrationModel{
 					ID:                        priorState.ID,
-					KibanaConnection:          providerschema.KibanaConnectionNullList(),
+					KibanaConnectionField:     entitycore.KibanaConnectionField{KibanaConnection: providerschema.KibanaConnectionNullList()},
 					Name:                      priorState.Name,
 					Version:                   priorState.Version,
 					Force:                     priorState.Force,

@@ -24,6 +24,7 @@ import (
 	esindex "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/aliasutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -44,9 +45,9 @@ func flattenToData(ctx context.Context, tpl *models.ComponentTemplateResponse, p
 	var diags diag.Diagnostics
 
 	out := Data{
-		ID:                      prior.ID,
-		ElasticsearchConnection: prior.ElasticsearchConnection,
-		Name:                    types.StringValue(tpl.Name),
+		ID:                           prior.ID,
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: prior.ElasticsearchConnection},
+		Name:                         types.StringValue(tpl.Name),
 	}
 
 	if tpl.ComponentTemplate.Meta != nil {

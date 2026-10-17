@@ -28,9 +28,9 @@ import (
 
 type prebuiltRuleModel struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.KibanaConnectionField
 	ID                    types.String `tfsdk:"id"`
 	SpaceID               types.String `tfsdk:"space_id"`
-	KibanaConnection      types.List   `tfsdk:"kibana_connection"`
 	RulesInstalled        types.Int64  `tfsdk:"rules_installed"`
 	RulesNotInstalled     types.Int64  `tfsdk:"rules_not_installed"`
 	RulesNotUpdated       types.Int64  `tfsdk:"rules_not_updated"`
@@ -39,10 +39,9 @@ type prebuiltRuleModel struct {
 	TimelinesNotUpdated   types.Int64  `tfsdk:"timelines_not_updated"`
 }
 
-func (m prebuiltRuleModel) GetID() types.String             { return m.ID }
-func (m prebuiltRuleModel) GetResourceID() types.String     { return m.SpaceID }
-func (m prebuiltRuleModel) GetSpaceID() types.String        { return m.SpaceID }
-func (m prebuiltRuleModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m prebuiltRuleModel) GetID() types.String         { return m.ID }
+func (m prebuiltRuleModel) GetResourceID() types.String { return m.SpaceID }
+func (m prebuiltRuleModel) GetSpaceID() types.String    { return m.SpaceID }
 
 var _ entitycore.KibanaResourceModel = prebuiltRuleModel{}
 

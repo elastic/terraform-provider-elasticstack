@@ -18,18 +18,19 @@
 package sourcemap
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // SourceMap holds the state for the elasticstack_apm_source_map resource.
 type SourceMap struct {
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	ID               types.String `tfsdk:"id"`
-	BundleFilepath   types.String `tfsdk:"bundle_filepath"`
-	ServiceName      types.String `tfsdk:"service_name"`
-	ServiceVersion   types.String `tfsdk:"service_version"`
-	Sourcemap        *Attr        `tfsdk:"sourcemap"`
-	SpaceID          types.String `tfsdk:"space_id"`
+	entitycore.KibanaConnectionField
+	ID             types.String `tfsdk:"id"`
+	BundleFilepath types.String `tfsdk:"bundle_filepath"`
+	ServiceName    types.String `tfsdk:"service_name"`
+	ServiceVersion types.String `tfsdk:"service_version"`
+	Sourcemap      *Attr        `tfsdk:"sourcemap"`
+	SpaceID        types.String `tfsdk:"space_id"`
 }
 
 // Attr holds the nested sourcemap content attributes.

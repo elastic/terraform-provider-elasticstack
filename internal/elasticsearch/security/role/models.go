@@ -39,17 +39,17 @@ import (
 
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String                                      `tfsdk:"id"`
-	ElasticsearchConnection types.List                                        `tfsdk:"elasticsearch_connection"`
-	Name                    types.String                                      `tfsdk:"name"`
-	Description             types.String                                      `tfsdk:"description"`
-	Applications            types.Set                                         `tfsdk:"applications"`
-	Global                  customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"global"`
-	Cluster                 types.Set                                         `tfsdk:"cluster"`
-	Indices                 types.Set                                         `tfsdk:"indices"`
-	RemoteIndices           types.Set                                         `tfsdk:"remote_indices"`
-	Metadata                jsontypes.Normalized                              `tfsdk:"metadata"`
-	RunAs                   types.Set                                         `tfsdk:"run_as"`
+	entitycore.ElasticsearchConnectionField
+	ID            types.String                                      `tfsdk:"id"`
+	Name          types.String                                      `tfsdk:"name"`
+	Description   types.String                                      `tfsdk:"description"`
+	Applications  types.Set                                         `tfsdk:"applications"`
+	Global        customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"global"`
+	Cluster       types.Set                                         `tfsdk:"cluster"`
+	Indices       types.Set                                         `tfsdk:"indices"`
+	RemoteIndices types.Set                                         `tfsdk:"remote_indices"`
+	Metadata      jsontypes.Normalized                              `tfsdk:"metadata"`
+	RunAs         types.Set                                         `tfsdk:"run_as"`
 }
 
 type ApplicationData struct {
@@ -489,9 +489,8 @@ func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) di
 	return diags
 }
 
-func (data Data) GetID() types.String                    { return data.ID }
-func (data Data) GetResourceID() types.String            { return data.Name }
-func (data Data) GetElasticsearchConnection() types.List { return data.ElasticsearchConnection }
+func (data Data) GetID() types.String         { return data.ID }
+func (data Data) GetResourceID() types.String { return data.Name }
 
 var _ entitycore.WithVersionRequirements = Data{}
 

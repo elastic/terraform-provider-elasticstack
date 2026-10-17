@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -61,8 +62,8 @@ type integrationPolicyInputStreamModelV2 struct {
 // V2→V3 state upgrader can decode prior state. It differs from the live model
 // only by the presence of the now-removed `enabled` attribute.
 type integrationPolicyModelV2 struct {
+	entitycore.KibanaConnectionField
 	ID                 types.String  `tfsdk:"id"`
-	KibanaConnection   types.List    `tfsdk:"kibana_connection"`
 	PolicyID           types.String  `tfsdk:"policy_id"`
 	Name               types.String  `tfsdk:"name"`
 	Namespace          types.String  `tfsdk:"namespace"`
@@ -262,21 +263,21 @@ func upgradeV2ToV3(ctx context.Context, req resource.UpgradeStateRequest, resp *
 	}
 
 	next := integrationPolicyModel{
-		ID:                 prior.ID,
-		KibanaConnection:   prior.KibanaConnection,
-		PolicyID:           prior.PolicyID,
-		Name:               prior.Name,
-		Namespace:          prior.Namespace,
-		AgentPolicyID:      prior.AgentPolicyID,
-		AgentPolicyIDs:     prior.AgentPolicyIDs,
-		Description:        prior.Description,
-		Force:              prior.Force,
-		IntegrationName:    prior.IntegrationName,
-		IntegrationVersion: prior.IntegrationVersion,
-		OutputID:           prior.OutputID,
-		Inputs:             inputs,
-		VarsJSON:           prior.VarsJSON,
-		SpaceIDs:           prior.SpaceIDs,
+		ID:                    prior.ID,
+		KibanaConnectionField: entitycore.KibanaConnectionField{KibanaConnection: prior.KibanaConnection},
+		PolicyID:              prior.PolicyID,
+		Name:                  prior.Name,
+		Namespace:             prior.Namespace,
+		AgentPolicyID:         prior.AgentPolicyID,
+		AgentPolicyIDs:        prior.AgentPolicyIDs,
+		Description:           prior.Description,
+		Force:                 prior.Force,
+		IntegrationName:       prior.IntegrationName,
+		IntegrationVersion:    prior.IntegrationVersion,
+		OutputID:              prior.OutputID,
+		Inputs:                inputs,
+		VarsJSON:              prior.VarsJSON,
+		SpaceIDs:              prior.SpaceIDs,
 
 		// V2 state predates the attribute, so there is nothing to carry over.
 		AdditionalDatastreamsPermissions: types.ListNull(types.StringType),

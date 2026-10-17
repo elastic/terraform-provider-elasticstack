@@ -26,24 +26,23 @@ import (
 // Data holds the Terraform state for the snapshot lifecycle resource.
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	Name                    types.String         `tfsdk:"name"`
-	Schedule                types.String         `tfsdk:"schedule"`
-	Repository              types.String         `tfsdk:"repository"`
-	SnapshotName            types.String         `tfsdk:"snapshot_name"`
-	ExpandWildcards         types.String         `tfsdk:"expand_wildcards"`
-	IgnoreUnavailable       types.Bool           `tfsdk:"ignore_unavailable"`
-	IncludeGlobalState      types.Bool           `tfsdk:"include_global_state"`
-	Indices                 types.List           `tfsdk:"indices"`
-	FeatureStates           types.Set            `tfsdk:"feature_states"`
-	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
-	Partial                 types.Bool           `tfsdk:"partial"`
-	ExpireAfter             types.String         `tfsdk:"expire_after"`
-	MaxCount                types.Int64          `tfsdk:"max_count"`
-	MinCount                types.Int64          `tfsdk:"min_count"`
+	entitycore.ElasticsearchConnectionField
+	ID                 types.String         `tfsdk:"id"`
+	Name               types.String         `tfsdk:"name"`
+	Schedule           types.String         `tfsdk:"schedule"`
+	Repository         types.String         `tfsdk:"repository"`
+	SnapshotName       types.String         `tfsdk:"snapshot_name"`
+	ExpandWildcards    types.String         `tfsdk:"expand_wildcards"`
+	IgnoreUnavailable  types.Bool           `tfsdk:"ignore_unavailable"`
+	IncludeGlobalState types.Bool           `tfsdk:"include_global_state"`
+	Indices            types.List           `tfsdk:"indices"`
+	FeatureStates      types.Set            `tfsdk:"feature_states"`
+	Metadata           jsontypes.Normalized `tfsdk:"metadata"`
+	Partial            types.Bool           `tfsdk:"partial"`
+	ExpireAfter        types.String         `tfsdk:"expire_after"`
+	MaxCount           types.Int64          `tfsdk:"max_count"`
+	MinCount           types.Int64          `tfsdk:"min_count"`
 }
 
-func (d Data) GetID() types.String                    { return d.ID }
-func (d Data) GetResourceID() types.String            { return d.Name }
-func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+func (d Data) GetID() types.String         { return d.ID }
+func (d Data) GetResourceID() types.String { return d.Name }

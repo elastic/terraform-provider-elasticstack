@@ -156,8 +156,8 @@ func NewResource() resource.Resource {
 }
 
 type modelV0 struct {
+	entitycore.KibanaConnectionField
 	ID                 types.String `tfsdk:"id"`
-	KibanaConnection   types.List   `tfsdk:"kibana_connection"`
 	SpaceID            types.String `tfsdk:"space_id"`
 	IgnoreImportErrors types.Bool   `tfsdk:"ignore_import_errors"`
 	CreateNewCopies    types.Bool   `tfsdk:"create_new_copies"`

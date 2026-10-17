@@ -30,15 +30,14 @@ const resourceID = "cluster-settings"
 // tfModel is the top-level Terraform model for elasticstack_elasticsearch_cluster_settings.
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String `tfsdk:"id"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
-	Persistent              types.Object `tfsdk:"persistent"`
-	Transient               types.Object `tfsdk:"transient"`
+	entitycore.ElasticsearchConnectionField
+	ID         types.String `tfsdk:"id"`
+	Persistent types.Object `tfsdk:"persistent"`
+	Transient  types.Object `tfsdk:"transient"`
 }
 
-func (m tfModel) GetID() types.String                    { return m.ID }
-func (m tfModel) GetResourceID() types.String            { return types.StringValue(resourceID) }
-func (m tfModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
+func (m tfModel) GetID() types.String         { return m.ID }
+func (m tfModel) GetResourceID() types.String { return types.StringValue(resourceID) }
 
 // settingsBlockModel represents the persistent/transient block, which contains a set of settings.
 type settingsBlockModel struct {

@@ -31,14 +31,14 @@ import (
 
 type serverHostModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	HostID           types.String `tfsdk:"host_id"`
-	Name             types.String `tfsdk:"name"`
-	Hosts            types.List   `tfsdk:"hosts"`
-	Default          types.Bool   `tfsdk:"default"`
-	ProxyID          types.String `tfsdk:"proxy_id"`
-	SpaceIDs         types.Set    `tfsdk:"space_ids"` // > string
+	entitycore.KibanaConnectionField
+	ID       types.String `tfsdk:"id"`
+	HostID   types.String `tfsdk:"host_id"`
+	Name     types.String `tfsdk:"name"`
+	Hosts    types.List   `tfsdk:"hosts"`
+	Default  types.Bool   `tfsdk:"default"`
+	ProxyID  types.String `tfsdk:"proxy_id"`
+	SpaceIDs types.Set    `tfsdk:"space_ids"` // > string
 }
 
 func (m serverHostModel) GetID() types.String         { return m.ID }
@@ -46,7 +46,6 @@ func (m serverHostModel) GetResourceID() types.String { return m.HostID }
 func (m serverHostModel) GetSpaceID() types.String {
 	return fleet.SpaceIDFromSetOrDefault(m.SpaceIDs, "")
 }
-func (m serverHostModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 // IsUnscopedSpace implements entitycore.KibanaUnscopedSpace.
 func (m serverHostModel) IsUnscopedSpace() bool { return true }

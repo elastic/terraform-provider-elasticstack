@@ -190,17 +190,17 @@ func invalidateOnCloseValue(value types.Bool) bool {
 
 func (m tfModel) toShared() apikey.TfModel {
 	return apikey.TfModel{
-		ElasticsearchConnection: m.ElasticsearchConnection,
-		KeyID:                   m.KeyID,
-		Name:                    m.Name,
-		Type:                    effectiveAPIKeyType(m.Type),
-		RoleDescriptors:         m.RoleDescriptors,
-		Expiration:              m.Expiration,
-		ExpirationTimestamp:     m.ExpirationTimestamp,
-		Metadata:                m.Metadata,
-		Access:                  m.Access,
-		APIKey:                  m.APIKey,
-		Encoded:                 m.Encoded,
+		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: m.ElasticsearchConnection},
+		KeyID:                        m.KeyID,
+		Name:                         m.Name,
+		Type:                         effectiveAPIKeyType(m.Type),
+		RoleDescriptors:              m.RoleDescriptors,
+		Expiration:                   m.Expiration,
+		ExpirationTimestamp:          m.ExpirationTimestamp,
+		Metadata:                     m.Metadata,
+		Access:                       m.Access,
+		APIKey:                       m.APIKey,
+		Encoded:                      m.Encoded,
 	}
 }
 

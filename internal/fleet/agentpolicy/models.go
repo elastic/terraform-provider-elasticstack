@@ -25,6 +25,7 @@ import (
 	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -62,8 +63,8 @@ func agentFeaturesFromPolicy(p *kbapi.KibanaHTTPAPIsAgentPolicyResponse) []apiAg
 }
 
 type agentPolicyModel struct {
+	entitycore.KibanaConnectionField
 	ID                        types.String         `tfsdk:"id"`
-	KibanaConnection          types.List           `tfsdk:"kibana_connection"`
 	PolicyID                  types.String         `tfsdk:"policy_id"`
 	Name                      types.String         `tfsdk:"name"`
 	Namespace                 types.String         `tfsdk:"namespace"`

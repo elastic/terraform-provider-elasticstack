@@ -34,8 +34,8 @@ import (
 
 type proxyModel struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.KibanaConnectionField
 	ID                     types.String `tfsdk:"id"`
-	KibanaConnection       types.List   `tfsdk:"kibana_connection"`
 	ProxyID                types.String `tfsdk:"proxy_id"`
 	SpaceID                types.String `tfsdk:"space_id"`
 	Name                   types.String `tfsdk:"name"`
@@ -49,10 +49,9 @@ type proxyModel struct {
 
 var proxyMinVersion = version.Must(version.NewVersion("8.7.1"))
 
-func (m proxyModel) GetID() types.String             { return m.ID }
-func (m proxyModel) GetResourceID() types.String     { return m.ProxyID }
-func (m proxyModel) GetSpaceID() types.String        { return m.SpaceID }
-func (m proxyModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m proxyModel) GetID() types.String         { return m.ID }
+func (m proxyModel) GetResourceID() types.String { return m.ProxyID }
+func (m proxyModel) GetSpaceID() types.String    { return m.SpaceID }
 
 func (m proxyModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return entitycore.SingleVersionRequirement(

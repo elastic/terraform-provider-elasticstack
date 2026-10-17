@@ -34,19 +34,18 @@ import (
 
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String                                      `tfsdk:"id"`
-	ElasticsearchConnection types.List                                        `tfsdk:"elasticsearch_connection"`
-	InferenceID             types.String                                      `tfsdk:"inference_id"`
-	TaskType                types.String                                      `tfsdk:"task_type"`
-	Service                 types.String                                      `tfsdk:"service"`
-	ServiceSettings         jsontypes.Normalized                              `tfsdk:"service_settings"`
-	TaskSettings            jsontypes.Normalized                              `tfsdk:"task_settings"`
-	ChunkingSettings        customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"chunking_settings"`
+	entitycore.ElasticsearchConnectionField
+	ID               types.String                                      `tfsdk:"id"`
+	InferenceID      types.String                                      `tfsdk:"inference_id"`
+	TaskType         types.String                                      `tfsdk:"task_type"`
+	Service          types.String                                      `tfsdk:"service"`
+	ServiceSettings  jsontypes.Normalized                              `tfsdk:"service_settings"`
+	TaskSettings     jsontypes.Normalized                              `tfsdk:"task_settings"`
+	ChunkingSettings customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"chunking_settings"`
 }
 
-func (data Data) GetID() types.String                    { return data.ID }
-func (data Data) GetResourceID() types.String            { return data.InferenceID }
-func (data Data) GetElasticsearchConnection() types.List { return data.ElasticsearchConnection }
+func (data Data) GetID() types.String         { return data.ID }
+func (data Data) GetResourceID() types.String { return data.InferenceID }
 
 func (data *Data) toAPIModel(_ context.Context) (*estypes.InferenceEndpoint, diag.Diagnostics) {
 	var diags diag.Diagnostics

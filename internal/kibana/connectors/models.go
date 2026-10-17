@@ -29,8 +29,8 @@ import (
 
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.KibanaConnectionField
 	ID               types.String         `tfsdk:"id"`
-	KibanaConnection types.List           `tfsdk:"kibana_connection"`
 	ConnectorID      types.String         `tfsdk:"connector_id"`
 	SpaceID          types.String         `tfsdk:"space_id"`
 	Name             types.String         `tfsdk:"name"`
@@ -46,9 +46,8 @@ type tfModel struct {
 
 var _ entitycore.KibanaResourceModel = tfModel{}
 
-func (model tfModel) GetID() types.String             { return model.ID }
-func (model tfModel) GetSpaceID() types.String        { return model.SpaceID }
-func (model tfModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+func (model tfModel) GetID() types.String      { return model.ID }
+func (model tfModel) GetSpaceID() types.String { return model.SpaceID }
 
 // GetResourceID returns the plan-safe connector identity: the user-supplied
 // connector_id when known and non-empty, otherwise empty.

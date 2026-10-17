@@ -29,18 +29,16 @@ import (
 
 type TFModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String `tfsdk:"id"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
-	FilterID                types.String `tfsdk:"filter_id"`
-	Description             types.String `tfsdk:"description"`
-	Items                   types.Set    `tfsdk:"items"`
+	entitycore.ElasticsearchConnectionField
+	ID          types.String `tfsdk:"id"`
+	FilterID    types.String `tfsdk:"filter_id"`
+	Description types.String `tfsdk:"description"`
+	Items       types.Set    `tfsdk:"items"`
 }
 
 func (m TFModel) GetID() types.String { return m.ID }
 
 func (m TFModel) GetResourceID() types.String { return m.FilterID }
-
-func (m TFModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
 
 type UpdateAPIModel struct {
 	Description *string  `json:"description,omitempty"`
