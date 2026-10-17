@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"sort"
 	"strconv"
 	"strings"
@@ -193,7 +194,7 @@ func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any, sortIsLi
 
 		if sortIsListNested {
 			// Order-sensitive comparison and display when plan uses the new sort ListNestedAttribute.
-			if !slicesEqual(planElems, actSlice) {
+			if !slices.Equal(planElems, actSlice) {
 				// Use order-preserving display so mismatch messages reflect planned element order.
 				return mismatch(tfAttr, strings.Join(planElems, ", "), strings.Join(actSlice, ", "))
 			}
@@ -207,24 +208,24 @@ func compareStaticPlanAndES(tfAttr, key string, planVal, actualRaw any, sortIsLi
 
 	case indexparent.SettingSortOrder:
 		planElems, cfg := planStringSliceForSortOrder(planVal)
-		actSlice := stringSliceOrderedFromAny(actualRaw)
-		if !slicesEqual(planElems, actSlice) {
+		actSlice := stringSliceFromSortFieldAny(actualRaw)
+		if !slices.Equal(planElems, actSlice) {
 			return mismatch(tfAttr, cfg, strings.Join(actSlice, ", "))
 		}
 		return nil
 
 	case indexparent.SettingSortMissing:
 		planElems, cfg := planStringSliceForSortOrder(planVal)
-		actSlice := stringSliceOrderedFromAny(actualRaw)
-		if !slicesEqual(planElems, actSlice) {
+		actSlice := stringSliceFromSortFieldAny(actualRaw)
+		if !slices.Equal(planElems, actSlice) {
 			return mismatch(tfAttr, cfg, strings.Join(actSlice, ", "))
 		}
 		return nil
 
 	case indexparent.SettingSortMode:
 		planElems, cfg := planStringSliceForSortOrder(planVal)
-		actSlice := stringSliceOrderedFromAny(actualRaw)
-		if !slicesEqual(planElems, actSlice) {
+		actSlice := stringSliceFromSortFieldAny(actualRaw)
+		if !slices.Equal(planElems, actSlice) {
 			return mismatch(tfAttr, cfg, strings.Join(actSlice, ", "))
 		}
 		return nil
@@ -387,10 +388,6 @@ func stringSliceFromSortFieldAny(v any) []string {
 	}
 }
 
-func stringSliceOrderedFromAny(v any) []string {
-	return stringSliceFromSortFieldAny(v)
-}
-
 func elemToString(e any) string {
 	if e == nil {
 		return ""
@@ -433,16 +430,4 @@ func equalAsStringSets(a, b []string) bool {
 func formatAsSortedUniqueSet(elems []string) string {
 	su := sortUniqueStrings(elems)
 	return strings.Join(su, ", ")
-}
-
-func slicesEqual(a, b []string) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }

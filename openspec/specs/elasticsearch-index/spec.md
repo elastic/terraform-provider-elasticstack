@@ -532,7 +532,7 @@ The deprecated `sort_field` and `sort_order` plan modifiers SHALL suppress repla
 
 The `sort.missing` and `sort.mode` Elasticsearch settings keys SHALL be added to `staticSettingsKeys`. The `use_existing` index adoption flow SHALL compare these settings against the existing index's static settings when they are explicitly set in the plan.
 
-When the plan originates from the new `sort` `ListNestedAttribute`, the `compareStaticPlanAndES` function in `use_existing.go` SHALL compare `sort.field`, `sort.order`, `sort.missing`, and `sort.mode` as ordered string slices (using `stringSliceOrderedFromAny`). This preserves the order-significant semantics of the nested `sort` list defined in REQ-SORT-01.
+When the plan originates from the new `sort` `ListNestedAttribute`, the `compareStaticPlanAndES` function in `use_existing.go` SHALL compare `sort.field`, `sort.order`, `sort.missing`, and `sort.mode` as ordered string slices (using `stringSliceFromSortFieldAny`). This preserves the order-significant semantics of the nested `sort` list defined in REQ-SORT-01.
 
 When the plan originates from the deprecated `sort_field`/`sort_order` attributes, the `compareStaticPlanAndES` function in `use_existing.go` SHALL preserve the existing legacy behavior for `sort.field`: compare `sort.field` as an unordered set, while continuing to compare ordered per-position settings only where the plan shape preserves positional meaning.
 
