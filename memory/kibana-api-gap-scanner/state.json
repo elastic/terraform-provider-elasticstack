@@ -110,6 +110,63 @@
       "reason": "experimental_data_stream_features is a genuine user-configurable, infrastructure-affecting setting not covered by vars_json or any existing attribute; filed alongside the bundled fips_compatible/requires_root descriptors.",
       "date": "2026-10-16",
       "issue": "elasticstack_fleet_integration_policy#/components/schemas/Kibana_HTTP_APIs_create_package_policy_request/properties/package"
+    },
+    "elasticstack_fleet_managed_integration#/components/schemas/Kibana_HTTP_APIs_create_managed_integration_request/properties/cloud_connector": {
+      "fingerprint": "3b4986ea7c4d60468cb41c06cced05e91539f66dc834b53ffc70320e43d8bef1",
+      "verdict": "suppress",
+      "reason": "Already fully implemented: schema.go has a cloud_connector block, models_convert.go builds it via a raw map into body.CloudConnector, and cloud_connector_read.go merges enabled/cloud_connector_id from the API; the AST scanner missed it because the fields are assigned dynamically rather than via named struct fields.",
+      "date": "2026-10-17"
+    },
+    "elasticstack_fleet_managed_integration#/components/schemas/Kibana_HTTP_APIs_create_managed_integration_request/properties/package": {
+      "fingerprint": "a7e64dd248f214a30700cd6d121ce6a71ac3558b13d75a8d98241bd5bb9b160f",
+      "verdict": "file",
+      "reason": "experimental_data_stream_features is a genuine user-configurable override (synthetic_source/tsdb/doc_value_only per data stream), not yet exposed anywhere in the package block (schema.go only has name/version/title); worth adding alongside fips_compatible and requires_root.",
+      "date": "2026-10-17",
+      "issue": "elasticstack_fleet_managed_integration#/components/schemas/Kibana_HTTP_APIs_create_managed_integration_request/properties/package"
+    },
+    "elasticstack_fleet_managed_integration#/paths/~1api~1status/get/parameters/v7format": {
+      "fingerprint": "cfeb58049f4b4249e90c97b2162e8e47ef0c61b46e34235221a0a588e9394377",
+      "verdict": "suppress",
+      "reason": "v7format is a query parameter on the unrelated internal GET /api/status preflight call (topology.go) used only to detect serverless/cloud build flavor; it controls response envelope format, not any resource configuration, so it has no place in a Terraform schema.",
+      "date": "2026-10-17"
+    },
+    "elasticstack_fleet_managed_integration#/paths/~1api~1status/get/parameters/v8format": {
+      "fingerprint": "cfeb58049f4b4249e90c97b2162e8e47ef0c61b46e34235221a0a588e9394377",
+      "verdict": "suppress",
+      "reason": "Same /api/status preflight call as v7format; purely a response-format version flag for an internal status check, not a configurable resource field.",
+      "date": "2026-10-17"
+    },
+    "elasticstack_fleet_output#/components/schemas/Kibana_HTTP_APIs_new_output_elasticsearch/properties/allow_edit": {
+      "fingerprint": "57c92c5902bcae9ff235f5f282faf45aeaa0519de051c3367ff0a86d989bba0d",
+      "verdict": "suppress",
+      "reason": "allow_edit lists which fields a kibana.yml-preconfigured output may still be edited through, which only has meaning for preconfigured outputs; it is server-managed state irrelevant to outputs created and fully owned through the API/Terraform.",
+      "date": "2026-10-17"
+    },
+    "elasticstack_fleet_output#/components/schemas/Kibana_HTTP_APIs_new_output_elasticsearch/properties/is_internal": {
+      "fingerprint": "9b5acf4a23c40089e3122e6a03e1dcae48d1c81e5a184993e81086bc4f265416",
+      "verdict": "suppress",
+      "reason": "is_internal flags outputs Fleet itself creates and manages internally; it is server-computed state, not something a user sets when creating an output.",
+      "date": "2026-10-17"
+    },
+    "elasticstack_fleet_output#/components/schemas/Kibana_HTTP_APIs_new_output_elasticsearch/properties/is_preconfigured": {
+      "fingerprint": "48b061c62c01a563243490baa7efa93122d8b312dd02431663b9b0aab5972b73",
+      "verdict": "suppress",
+      "reason": "is_preconfigured indicates the output originated from kibana.yml static config rather than the API; it is computed/reported state that doesn't apply to API/Terraform-managed outputs.",
+      "date": "2026-10-17"
+    },
+    "elasticstack_fleet_output#/components/schemas/Kibana_HTTP_APIs_new_output_elasticsearch/properties/otel_disable_beatsauth": {
+      "fingerprint": "738e25461873f21c43b650c717b5197663112426a11df2af388c8b7b62c5c3ab",
+      "verdict": "file",
+      "reason": "This is a real per-output toggle with functional effect on the compiled agent policy (controls auth behavior in the OTel exporter pipeline), not server-managed state or UI bookkeeping, and is entirely absent from schema.go/models.go for every output type.",
+      "date": "2026-10-17",
+      "issue": "elasticstack_fleet_output#/components/schemas/Kibana_HTTP_APIs_new_output_elasticsearch/properties/otel_disable_beatsauth"
+    },
+    "elasticstack_fleet_output#/components/schemas/Kibana_HTTP_APIs_new_output_elasticsearch/properties/secrets": {
+      "fingerprint": "c0b0868ad5848b86d0241ba04b565eab68902db9e5cfac33ba6533c835dfd712",
+      "verdict": "file",
+      "reason": "The secrets container stores sensitive fields (e.g. ssl.key) via Fleet secret storage instead of plaintext; models_ssl.go only ever sets the plaintext ssl.key and there is no secret-reference path for any output type, unlike the precedent already set for the kafka password field.",
+      "date": "2026-10-17",
+      "issue": "elasticstack_fleet_output#/components/schemas/Kibana_HTTP_APIs_new_output_elasticsearch/properties/secrets"
     }
   },
   "resources": {
@@ -118,6 +175,8 @@
     "elasticstack_fleet_custom_integration": "2026-10-15T11:28:15Z",
     "elasticstack_fleet_elastic_defend_integration_policy": "2026-10-15T19:50:34Z",
     "elasticstack_fleet_integration": "2026-10-16T07:16:57Z",
-    "elasticstack_fleet_integration_policy": "2026-10-16T19:47:08Z"
+    "elasticstack_fleet_integration_policy": "2026-10-16T19:47:08Z",
+    "elasticstack_fleet_managed_integration": "2026-10-17T05:01:07Z",
+    "elasticstack_fleet_output": "2026-10-17T05:01:07Z"
   }
 }
