@@ -117,7 +117,7 @@ on:
       if: >-
         steps.qualify_trigger.outputs.event_eligible == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
-      uses: actions/upload-artifact@v7.0.1
+      uses: actions/upload-artifact@v7.0.2
       with:
         name: change-factory-issue-context
         path: /tmp/change-factory-context/
@@ -171,7 +171,7 @@ if: >-
   needs.pre_activation.outputs.duplicate_pr_found != 'true'
 steps:
   - name: Download issue context artifact
-    uses: actions/download-artifact@v8.0.1
+    uses: actions/download-artifact@v8.0.2
     with:
       name: change-factory-issue-context
       path: /tmp/change-factory-context/

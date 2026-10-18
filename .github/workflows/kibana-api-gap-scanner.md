@@ -73,7 +73,7 @@ if: >-
   needs.discover.outputs.run_agent == 'true'
 steps:
   - name: Download Kibana API gap report
-    uses: actions/download-artifact@v8.0.1
+    uses: actions/download-artifact@v8.0.2
     with:
       name: kibana-api-gap-report
       path: /tmp/gh-aw/agent
@@ -176,7 +176,7 @@ jobs:
       # `go run`, so it needs neither a Go build nor any module download inside the sandbox.
       - name: Upload Kibana API gap report
         if: success()
-        uses: actions/upload-artifact@v7.0.1
+        uses: actions/upload-artifact@v7.0.2
         with:
           name: kibana-api-gap-report
           path: |
