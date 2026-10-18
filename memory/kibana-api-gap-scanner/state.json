@@ -167,6 +167,39 @@
       "reason": "The secrets container stores sensitive fields (e.g. ssl.key) via Fleet secret storage instead of plaintext; models_ssl.go only ever sets the plaintext ssl.key and there is no secret-reference path for any output type, unlike the precedent already set for the kafka password field.",
       "date": "2026-10-17",
       "issue": "elasticstack_fleet_output#/components/schemas/Kibana_HTTP_APIs_new_output_elasticsearch/properties/secrets"
+    },
+    "elasticstack_fleet_proxy#/paths/~1api~1fleet~1proxies/post/requestBody/content/application~1json/schema/properties/is_preconfigured": {
+      "fingerprint": "45ffbfb180c5bdbe94e3459a98604935f95fe113f351dd078645abba9286a766",
+      "verdict": "suppress",
+      "reason": "Server-managed flag indicating a kibana.yml-defined proxy; the resource already exposes it as a computed, read-only attribute, consistent with it never appearing in request bodies.",
+      "date": "2026-10-18"
+    },
+    "elasticstack_fleet_server_host#/paths/~1api~1fleet~1fleet_server_hosts/post/requestBody/content/application~1json/schema/properties/allow_edit": {
+      "fingerprint": "3645466bc76a90919fbdbe27b4876c8d11e39f3eb47b185e4da80026c71d27ac",
+      "verdict": "file",
+      "reason": "allow_edit is a user-settable allowlist (POST and PUT bodies) controlling which fields remain editable on this host, independent of server-managed preconfiguration flags; not covered by any existing attribute.",
+      "date": "2026-10-18",
+      "issue": "elasticstack_fleet_server_host#/paths/~1api~1fleet~1fleet_server_hosts/post/requestBody/content/application~1json/schema/properties/allow_edit"
+    },
+    "elasticstack_fleet_server_host#/paths/~1api~1fleet~1fleet_server_hosts/post/requestBody/content/application~1json/schema/properties/is_internal": {
+      "fingerprint": "b1623561e637c83564068e710639a3dd1dacd8402c681104a62af1043452a73b",
+      "verdict": "suppress",
+      "reason": "is_internal marks server hosts created for internal Kibana/Fleet bookkeeping purposes rather than user-managed infrastructure; not a meaningful knob for Terraform-authored hosts.",
+      "date": "2026-10-18"
+    },
+    "elasticstack_fleet_server_host#/paths/~1api~1fleet~1fleet_server_hosts/post/requestBody/content/application~1json/schema/properties/secrets": {
+      "fingerprint": "23637eef4a4d4d97e1673a7837d14c34cf1e34c08b2ff8c39faf1c6ee7a0be14",
+      "verdict": "file",
+      "reason": "secrets lets users reference existing Kibana secrets for SSL key material instead of plaintext; the resource currently has no SSL/TLS support at all, a real functionality gap.",
+      "date": "2026-10-18",
+      "issue": "elasticstack_fleet_server_host#/paths/~1api~1fleet~1fleet_server_hosts/post/requestBody/content/application~1json/schema/properties/secrets"
+    },
+    "elasticstack_fleet_server_host#/paths/~1api~1fleet~1fleet_server_hosts/post/requestBody/content/application~1json/schema/properties/ssl": {
+      "fingerprint": "799746056676fc063514f2ef45f097cd7e718ed5d5543d2acf47701eca55c854",
+      "verdict": "file",
+      "reason": "ssl carries certificate/key/client_auth configuration for the Fleet Server host connection; the resource exposes no TLS attributes today, a significant gap for production use.",
+      "date": "2026-10-18",
+      "issue": "elasticstack_fleet_server_host#/paths/~1api~1fleet~1fleet_server_hosts/post/requestBody/content/application~1json/schema/properties/ssl"
     }
   },
   "resources": {
@@ -177,6 +210,8 @@
     "elasticstack_fleet_integration": "2026-10-16T07:16:57Z",
     "elasticstack_fleet_integration_policy": "2026-10-16T19:47:08Z",
     "elasticstack_fleet_managed_integration": "2026-10-17T05:01:07Z",
-    "elasticstack_fleet_output": "2026-10-17T05:01:07Z"
+    "elasticstack_fleet_output": "2026-10-17T05:01:07Z",
+    "elasticstack_fleet_proxy": "2026-10-18T10:47:34Z",
+    "elasticstack_fleet_server_host": "2026-10-18T10:47:34Z"
   }
 }
