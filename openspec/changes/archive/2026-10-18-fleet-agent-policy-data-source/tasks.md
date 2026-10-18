@@ -54,4 +54,4 @@
 ## 5. OpenSpec
 
 - [x] 5.1 Confirm `openspec validate fleet-agent-policy-data-source --type change` passes with the delta spec under `openspec/changes/fleet-agent-policy-data-source/specs/fleet-agent-policy/spec.md`.
-- [ ] 5.2 On archive, merge the delta `## ADDED Requirements` into `openspec/specs/fleet-agent-policy/spec.md`, including a `## Schema` addition documenting the new `data "elasticstack_fleet_agent_policy"` block alongside the existing resource schema.
+- [x] 5.2 On archive, merge the delta `## ADDED Requirements` into `openspec/specs/fleet-agent-policy/spec.md`, including a `## Schema` addition documenting the new `data "elasticstack_fleet_agent_policy"` block alongside the existing resource schema.
