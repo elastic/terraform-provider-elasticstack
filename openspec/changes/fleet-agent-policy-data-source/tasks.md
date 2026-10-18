@@ -39,17 +39,17 @@
 
 ## 4. Acceptance tests (`internal/fleet/agentpolicyds/acc_test.go`)
 
-- [ ] 4.1 Baseline fixture at the resource's agent-policy floor (`minVersionAgentPolicy = 8.6.0`, `internal/fleet/agentpolicy/acc_test.go:41`) with only ungated fields set; look it up by `policy_id`; assert each data-source attribute equals the raw API value.
-- [ ] 4.2 Same baseline fixture, look it up by `name`; assert `policy_id` is populated and matches the fixture's resource ID.
-- [ ] 4.3 A fixture with optional fields left unset at create time; assert the data source reports `description` as whatever the API actually returns (commonly empty string, not null) and reports `data_output_id`/`monitoring_output_id`/`fleet_server_host_id` as null only if the API itself returns null.
-- [ ] 4.4 Neither `policy_id` nor `name` set → plan-time validation error from `ExactlyOneOf`.
-- [ ] 4.5 Both `policy_id` and `name` set → plan-time validation error from `ExactlyOneOf`.
-- [ ] 4.6 `name` matching zero policies → apply-time "not found" error.
-- [ ] 4.7 Do not create duplicate same-name live policies for the ambiguity case: Fleet rejects the second policy with HTTP 409. Cover this defensive branch with the mocked list-response test in task 2.12.
-- [ ] 4.8 `space_id` omitted vs. explicit default vs. a non-default space, gated at 9.1.0 (mirroring `TestAccDataSourceEnrollmentTokensSpaceID`, `internal/fleet/enrollmenttokens/data_source_test.go:40,102`) — assert the lookup only matches within the given space, and that two fixtures with the same `name` in *different* spaces do not trigger the ambiguous-match error for a space-scoped `name` lookup.
-- [ ] 4.9 Multi-step update: start with `monitor_logs`/`monitor_metrics` both `true` on the fixture resource, update the resource to `false` in a second step, re-read the data source, assert it now reports `false` (regression guard against a stale `true`).
-- [ ] 4.10 Multi-step selector switch: look up the same fixture by `policy_id` in step one and by `name` in step two, confirming the now-populated computed `name`/`policy_id` values from step one don't trip `ExactlyOneOf` or cause a planning error in step two.
-- [ ] 4.11 Version-gated steps for the advanced attributes (`global_data_tags` 8.15.0, `advanced_settings` 8.17.0/`advanced_settings.internal` 9.3.0, `advanced_monitoring_options` 8.16.0, `supports_agentless` 8.15.0, `inactivity_timeout`/`host_name_format=fqdn` 8.7.0, `unenrollment_timeout` 8.15.0, `required_versions`/`space_ids` 9.1.0), each skipped below its own floor via `versionutils.SkipIfUnsupported`, asserting the data source surfaces each fixture's configured value correctly. The `is_protected=true` fixture needs create-disabled → attach Elastic Defend integration (8.14.0 floor) → update-enabled steps, since `internal/fleet/agentpolicy/modify_plan.go:28-54` rejects creating a policy with `is_protected=true` directly.
+- [x] 4.1 Baseline fixture at the resource's agent-policy floor (`minVersionAgentPolicy = 8.6.0`, `internal/fleet/agentpolicy/acc_test.go:41`) with only ungated fields set; look it up by `policy_id`; assert each data-source attribute equals the raw API value.
+- [x] 4.2 Same baseline fixture, look it up by `name`; assert `policy_id` is populated and matches the fixture's resource ID.
+- [x] 4.3 A fixture with optional fields left unset at create time; assert the data source reports `description` as whatever the API actually returns (commonly empty string, not null) and reports `data_output_id`/`monitoring_output_id`/`fleet_server_host_id` as null only if the API itself returns null.
+- [x] 4.4 Neither `policy_id` nor `name` set → plan-time validation error from `ExactlyOneOf`.
+- [x] 4.5 Both `policy_id` and `name` set → plan-time validation error from `ExactlyOneOf`.
+- [x] 4.6 `name` matching zero policies → apply-time "not found" error.
+- [x] 4.7 Do not create duplicate same-name live policies for the ambiguity case: Fleet rejects the second policy with HTTP 409. Cover this defensive branch with the mocked list-response test in task 2.12.
+- [x] 4.8 `space_id` omitted vs. explicit default vs. a non-default space, gated at 9.1.0 (mirroring `TestAccDataSourceEnrollmentTokensSpaceID`, `internal/fleet/enrollmenttokens/data_source_test.go:40,102`) — assert the lookup only matches within the given space, and that two fixtures with the same `name` in *different* spaces do not trigger the ambiguous-match error for a space-scoped `name` lookup.
+- [x] 4.9 Multi-step update: start with `monitor_logs`/`monitor_metrics` both `true` on the fixture resource, update the resource to `false` in a second step, re-read the data source, assert it now reports `false` (regression guard against a stale `true`).
+- [x] 4.10 Multi-step selector switch: look up the same fixture by `policy_id` in step one and by `name` in step two, confirming the now-populated computed `name`/`policy_id` values from step one don't trip `ExactlyOneOf` or cause a planning error in step two.
+- [x] 4.11 Version-gated steps for the advanced attributes (`global_data_tags` 8.15.0, `advanced_settings` 8.17.0/`advanced_settings.internal` 9.3.0, `advanced_monitoring_options` 8.16.0, `supports_agentless` 8.15.0, `inactivity_timeout`/`host_name_format=fqdn` 8.7.0, `unenrollment_timeout` 8.15.0, `required_versions`/`space_ids` 9.1.0), each skipped below its own floor via `versionutils.SkipIfUnsupported`, asserting the data source surfaces each fixture's configured value correctly. The `is_protected=true` fixture needs create-disabled → attach Elastic Defend integration (8.14.0 floor) → update-enabled steps, since `internal/fleet/agentpolicy/modify_plan.go:28-54` rejects creating a policy with `is_protected=true` directly.
 
 ## 5. OpenSpec
 
