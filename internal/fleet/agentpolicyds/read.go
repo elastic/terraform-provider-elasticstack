@@ -64,7 +64,20 @@ func readByName(ctx context.Context, fleetClient *fleet.Client, spaceID string, 
 		)
 		return config, false, diags
 	case 1:
-		return applyPolicy(ctx, config, matches[0])
+		// The list item omits empty collections that the get endpoint returns as [].
+		policy, getDiags := fleet.GetAgentPolicy(ctx, fleetClient, matches[0].Id, spaceID)
+		diags.Append(getDiags...)
+		if diags.HasError() {
+			return config, false, diags
+		}
+		if policy == nil {
+			diags.AddError(
+				"Agent policy not found",
+				fmt.Sprintf("no agent policy found matching name %q in space %q", name, spaceID),
+			)
+			return config, false, diags
+		}
+		return applyPolicy(ctx, config, policy)
 	default:
 		diags.AddError(
 			"Multiple agent policies match name",

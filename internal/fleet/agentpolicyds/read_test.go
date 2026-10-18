@@ -83,9 +83,13 @@ func TestRead_ByNameLookupPopulatesPolicyID(t *testing.T) {
 	const policyName = "k8s-metrics-pernode"
 	const policyID = "policy-9"
 
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, fleetPolicyListBody(1, fleetPolicyObject(policyID, policyName)))
+		if r.URL.Query().Get("kuery") != "" {
+			fmt.Fprint(w, fleetPolicyListBody(1, fleetPolicyObject(policyID, policyName)))
+			return
+		}
+		fmt.Fprint(w, fleetPolicyGetBody(policyID, policyName))
 	}))
 	t.Cleanup(srv.Close)
 
@@ -99,18 +103,45 @@ func TestRead_ByNameLookupPopulatesPolicyID(t *testing.T) {
 	require.Equal(t, policyName, got.Name.ValueString())
 }
 
+func TestRead_ByNameLookupUsesGetResponseForEmptySpaceIDs(t *testing.T) {
+	const policyName = "k8s-metrics-pernode"
+	const policyID = "policy-9"
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Query().Get("kuery") != "" {
+			fmt.Fprint(w, fleetPolicyListBody(1, fleetPolicyObject(policyID, policyName)))
+			return
+		}
+		fmt.Fprint(w, fleetPolicyGetBody(policyID, policyName, `"space_ids":[]`))
+	}))
+	t.Cleanup(srv.Close)
+
+	got, found, diags := readDataSource(t.Context(), newReadTestClient(t, srv), "_", "default", agentPolicyModel{
+		Name: types.StringValue(policyName),
+	})
+
+	require.False(t, diags.HasError(), diags)
+	require.True(t, found)
+	require.False(t, got.SpaceIDs.IsNull())
+	require.Empty(t, got.SpaceIDs.Elements())
+}
+
 func TestRead_PopulatesIDOnByNameLookup(t *testing.T) {
 	const policyName = "k8s-metrics-pernode"
 	const policyID = "policy-9"
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		if !strings.Contains(r.URL.Path, "/agent_policies") || r.URL.Query().Get("kuery") == "" {
+		switch {
+		case r.URL.Query().Get("kuery") != "":
+			fmt.Fprint(w, fleetPolicyListBody(1, fleetPolicyObject(policyID, policyName)))
+		case strings.HasSuffix(r.URL.Path, "/agent_policies/"+policyID):
+			fmt.Fprint(w, fleetPolicyGetBody(policyID, policyName))
+		default:
 			w.WriteHeader(http.StatusNotFound)
 			fmt.Fprint(w, `{"statusCode":404,"error":"Not Found","message":"not found"}`)
-			return
 		}
-		fmt.Fprint(w, fleetPolicyListBody(1, fleetPolicyObject(policyID, policyName)))
 	}))
 	t.Cleanup(srv.Close)
 
