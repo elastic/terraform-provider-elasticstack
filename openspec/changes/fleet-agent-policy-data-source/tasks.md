@@ -1,20 +1,20 @@
 ## 1. Client layer
 
-- [ ] 1.1 Add `GetAgentPolicyByName(ctx, client, name, spaceID string) ([]*kbapi.KibanaHTTPAPIsAgentPolicyResponse, diag.Diagnostics)` to `internal/clients/fleet/agent_policy.go`, alongside the existing `GetAgentPolicy`.
-- [ ] 1.2 Implement the escaped, quoted Kuery term by escaping the raw `name` once (backslashes first, then double quotes) and interpolating it into a quoted literal: `fmt.Sprintf("ingest-agent-policies.name:\"%s\"", escapedName)`.
-- [ ] 1.3 Implement pagination of the *filtered* result set using `GetFleetAgentPoliciesWithResponse` with `Kuery` set and an explicit `SortField: "name"` (never `"id"` — confirmed rejected by the API).
-- [ ] 1.4 Implement the anomaly-detecting pagination loop: track seen `Id`s (error on duplicate), error if a page is shorter than expected before reaching `Total`, error if `Total` changes between page requests.
-- [ ] 1.5 Implement the client-side exact-match filter: from the filtered (and fully paginated) result set, keep only items where `item.Name == name`.
-- [ ] 1.6 Return a slice containing all exact matches; an empty slice represents zero matches, allowing the caller to distinguish no match from ambiguity and enumerate every conflicting `policy_id`.
-- [ ] 1.7 Add unit tests in `internal/clients/fleet/agent_policy_test.go` against a mocked/httptest Kibana server:
-  - [ ] 1.7.1 A single exact match on the first page.
-  - [ ] 1.7.2 Two exact matches, one of which only appears on a later page (proves pagination is exhaustive before the ambiguity check runs).
-  - [ ] 1.7.3 A filtered response containing similar-but-not-identical names, proving the client-side exact-match filter drops all non-exact matches.
-  - [ ] 1.7.4 Zero items in the filtered response → sentinel "no match" result, not an error.
-  - [ ] 1.7.5 An `Items` page that comes back short, or a `Total` that changes, before pagination completes → error, not a possibly-incomplete match.
-  - [ ] 1.7.6 By-ID 404 (existing `GetAgentPolicy`, for parity) → `found=false`.
-  - [ ] 1.7.7 A non-2xx/network error from either endpoint propagates as a diagnostic, not a silent empty result.
-  - [ ] 1.7.8 The Kuery string sent on the wire is asserted against a known name containing a double quote and a backslash, confirming the escaping is applied before the request is sent.
+- [x] 1.1 Add `GetAgentPolicyByName(ctx, client, name, spaceID string) ([]*kbapi.KibanaHTTPAPIsAgentPolicyResponse, diag.Diagnostics)` to `internal/clients/fleet/agent_policy.go`, alongside the existing `GetAgentPolicy`.
+- [x] 1.2 Implement the escaped, quoted Kuery term by escaping the raw `name` once (backslashes first, then double quotes) and interpolating it into a quoted literal: `fmt.Sprintf("ingest-agent-policies.name:\"%s\"", escapedName)`.
+- [x] 1.3 Implement pagination of the *filtered* result set using `GetFleetAgentPoliciesWithResponse` with `Kuery` set and an explicit `SortField: "name"` (never `"id"` — confirmed rejected by the API).
+- [x] 1.4 Implement the anomaly-detecting pagination loop: track seen `Id`s (error on duplicate), error if a page is shorter than expected before reaching `Total`, error if `Total` changes between page requests.
+- [x] 1.5 Implement the client-side exact-match filter: from the filtered (and fully paginated) result set, keep only items where `item.Name == name`.
+- [x] 1.6 Return a slice containing all exact matches; an empty slice represents zero matches, allowing the caller to distinguish no match from ambiguity and enumerate every conflicting `policy_id`.
+- [x] 1.7 Add unit tests in `internal/clients/fleet/agent_policy_test.go` against a mocked/httptest Kibana server:
+  - [x] 1.7.1 A single exact match on the first page.
+  - [x] 1.7.2 Two exact matches, one of which only appears on a later page (proves pagination is exhaustive before the ambiguity check runs).
+  - [x] 1.7.3 A filtered response containing similar-but-not-identical names, proving the client-side exact-match filter drops all non-exact matches.
+  - [x] 1.7.4 Zero items in the filtered response → sentinel "no match" result, not an error.
+  - [x] 1.7.5 An `Items` page that comes back short, or a `Total` that changes, before pagination completes → error, not a possibly-incomplete match.
+  - [x] 1.7.6 By-ID 404 (existing `GetAgentPolicy`, for parity) → `found=false`.
+  - [x] 1.7.7 A non-2xx/network error from either endpoint propagates as a diagnostic, not a silent empty result.
+  - [x] 1.7.8 The Kuery string sent on the wire is asserted against a known name containing a double quote and a backslash, confirming the escaping is applied before the request is sent.
 
 ## 2. Data source package `internal/fleet/agentpolicyds`
 
