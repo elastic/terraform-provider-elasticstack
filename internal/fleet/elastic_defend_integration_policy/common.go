@@ -349,6 +349,68 @@ func buildCommonPolicyPayloadFields(ctx context.Context, target map[string]any, 
 	}
 }
 
+// macWindowsMalwareFields holds the malware and ransomware sub-objects, which
+// are byte-for-byte identical between mapMacPolicyFromAPI and
+// mapWindowsPolicyFromAPI. Linux is excluded: its malware shape lacks
+// notify_user and it has no ransomware field, so it is not covered by
+// commonPolicyFields.
+type macWindowsMalwareFields struct {
+	Malware    types.Object
+	Ransomware types.Object
+}
+
+// mapMalwareAndRansomwareFromAPI extracts malware and ransomware — blocks
+// that are byte-for-byte identical across mapMacPolicyFromAPI and
+// mapWindowsPolicyFromAPI.
+func mapMalwareAndRansomwareFromAPI(ctx context.Context, data map[string]any) (macWindowsMalwareFields, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	malwareObj, d := mapOptionalObject(ctx, data, attrMalware, malwareFullAttrTypes(), func(m map[string]any) malwareFullModel {
+		return malwareFullModel{
+			Mode:        typeutils.StringFromMap(m, attrMode),
+			Blocklist:   typeutils.BoolFromMap(m, attrBlocklist),
+			OnWriteScan: typeutils.BoolFromMap(m, attrOnWriteScan),
+			NotifyUser:  typeutils.BoolFromMap(m, attrNotifyUser),
+		}
+	})
+	diags.Append(d...)
+
+	ransomwareObj, d := mapOptionalObject(ctx, data, attrRansomware, protectionModeAttrTypes(), func(m map[string]any) protectionModeModel {
+		return protectionModeModel{
+			Mode:      typeutils.StringFromMap(m, attrMode),
+			Supported: typeutils.BoolFromMap(m, attrSupported),
+		}
+	})
+	diags.Append(d...)
+
+	return macWindowsMalwareFields{
+		Malware:    malwareObj,
+		Ransomware: ransomwareObj,
+	}, diags
+}
+
+// buildMalwareAndRansomwarePayloadFields decodes malware and ransomware —
+// blocks that are byte-for-byte identical across buildMacPolicyPayload and
+// buildWindowsPolicyPayload — and writes the resulting maps into target under
+// their respective attribute keys when present.
+func buildMalwareAndRansomwarePayloadFields(ctx context.Context, target map[string]any, fields macWindowsMalwareFields, diags *diag.Diagnostics) {
+	if mm, ok := decodeObjectField[malwareFullModel](ctx, fields.Malware, diags); ok {
+		malware := map[string]any{}
+		typeutils.SetStringInMap(malware, attrMode, mm.Mode)
+		typeutils.SetBoolInMap(malware, attrBlocklist, mm.Blocklist)
+		typeutils.SetBoolInMap(malware, attrOnWriteScan, mm.OnWriteScan)
+		typeutils.SetBoolInMap(malware, attrNotifyUser, mm.NotifyUser)
+		target[attrMalware] = malware
+	}
+
+	if rm, ok := decodeObjectField[protectionModeModel](ctx, fields.Ransomware, diags); ok {
+		ransomware := map[string]any{}
+		typeutils.SetStringInMap(ransomware, attrMode, rm.Mode)
+		typeutils.SetBoolInMap(ransomware, attrSupported, rm.Supported)
+		target[attrRansomware] = ransomware
+	}
+}
+
 // buildDeviceControlPayloadField decodes device_control — a block that is
 // byte-for-byte identical across buildMacPolicyPayload and
 // buildWindowsPolicyPayload — and writes it into target when present.
