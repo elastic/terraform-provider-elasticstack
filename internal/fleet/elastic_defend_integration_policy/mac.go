@@ -44,22 +44,7 @@ func mapMacPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object
 	})
 	diags.Append(d...)
 
-	malwareObj, d := mapOptionalObject(ctx, data, attrMalware, malwareFullAttrTypes(), func(m map[string]any) malwareFullModel {
-		return malwareFullModel{
-			Mode:        typeutils.StringFromMap(m, attrMode),
-			Blocklist:   typeutils.BoolFromMap(m, attrBlocklist),
-			OnWriteScan: typeutils.BoolFromMap(m, attrOnWriteScan),
-			NotifyUser:  typeutils.BoolFromMap(m, attrNotifyUser),
-		}
-	})
-	diags.Append(d...)
-
-	ransomwareObj, d := mapOptionalObject(ctx, data, attrRansomware, protectionModeAttrTypes(), func(m map[string]any) protectionModeModel {
-		return protectionModeModel{
-			Mode:      typeutils.StringFromMap(m, attrMode),
-			Supported: typeutils.BoolFromMap(m, attrSupported),
-		}
-	})
+	malwareFields, d := mapMalwareAndRansomwareFromAPI(ctx, data)
 	diags.Append(d...)
 
 	common, d := mapCommonPolicyFieldsFromAPI(ctx, data)
@@ -79,8 +64,8 @@ func mapMacPolicyFromAPI(ctx context.Context, data map[string]any) (types.Object
 
 	macObj, d := types.ObjectValueFrom(ctx, macAttrTypes(), macPolicyModel{
 		Events:             eventsObj,
-		Malware:            malwareObj,
-		Ransomware:         ransomwareObj,
+		Malware:            malwareFields.Malware,
+		Ransomware:         malwareFields.Ransomware,
 		MemoryProtection:   common.MemoryProtection,
 		BehaviorProtection: common.BehaviorProtection,
 		DeviceControl:      deviceControlObj,
@@ -116,21 +101,10 @@ func buildMacPolicyPayload(ctx context.Context, macObj types.Object) (map[string
 		mac[attrEvents] = events
 	}
 
-	if malwareModel, ok := decodeObjectField[malwareFullModel](ctx, mm.Malware, &diags); ok {
-		malware := map[string]any{}
-		typeutils.SetStringInMap(malware, attrMode, malwareModel.Mode)
-		typeutils.SetBoolInMap(malware, attrBlocklist, malwareModel.Blocklist)
-		typeutils.SetBoolInMap(malware, attrOnWriteScan, malwareModel.OnWriteScan)
-		typeutils.SetBoolInMap(malware, attrNotifyUser, malwareModel.NotifyUser)
-		mac[attrMalware] = malware
-	}
-
-	if rm, ok := decodeObjectField[protectionModeModel](ctx, mm.Ransomware, &diags); ok {
-		ransomware := map[string]any{}
-		typeutils.SetStringInMap(ransomware, attrMode, rm.Mode)
-		typeutils.SetBoolInMap(ransomware, attrSupported, rm.Supported)
-		mac[attrRansomware] = ransomware
-	}
+	buildMalwareAndRansomwarePayloadFields(ctx, mac, macWindowsMalwareFields{
+		Malware:    mm.Malware,
+		Ransomware: mm.Ransomware,
+	}, &diags)
 
 	buildCommonPolicyPayloadFields(ctx, mac, commonPolicyPayloadFields{
 		MemoryProtection:   mm.MemoryProtection,
