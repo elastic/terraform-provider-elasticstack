@@ -19,6 +19,9 @@ package fleet
 
 import (
 	"context"
+	"fmt"
+	"net/http"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
@@ -35,6 +38,78 @@ func GetAgentPolicy(ctx context.Context, client *Client, id string, spaceID stri
 	}
 
 	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.KibanaHTTPAPIsAgentPolicyResponse { return &resp.JSON200.Item })
+}
+
+const agentPolicyByNamePerPage float32 = 100
+
+// GetAgentPolicyByName returns every agent policy in spaceID whose name equals name.
+// An empty slice means nothing matched and is not an error.
+func GetAgentPolicyByName(ctx context.Context, client *Client, name string, spaceID string) ([]*kbapi.KibanaHTTPAPIsAgentPolicyResponse, diag.Diagnostics) {
+	kuery := fmt.Sprintf("ingest-agent-policies.name:\"%s\"", escapeKueryQuotedLiteral(name))
+	sortField := "name"
+	perPage := agentPolicyByNamePerPage
+
+	var collected []kbapi.KibanaHTTPAPIsAgentPolicyResponse
+	seenIDs := make(map[string]struct{})
+	var expectedTotal float32
+	for page := float32(1); ; page++ {
+		params := &kbapi.GetFleetAgentPoliciesParams{
+			Kuery:     &kuery,
+			SortField: &sortField,
+			Page:      new(page),
+			PerPage:   new(perPage),
+		}
+		resp, err := client.API.GetFleetAgentPoliciesWithResponse(ctx, params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		if err != nil {
+			return nil, diagutil.FrameworkDiagFromError(err)
+		}
+		if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); diags.HasError() {
+			return nil, diags
+		}
+		pageResult, diags := diagutil.UnwrapJSON200(resp.JSON200, "agent policy list")
+		if diags.HasError() {
+			return nil, diags
+		}
+
+		if page > 1 && pageResult.Total != expectedTotal {
+			return nil, inconsistentAgentPolicyList(fmt.Sprintf("total changed from %g to %g while paging agent policies", expectedTotal, pageResult.Total))
+		}
+		expectedTotal = pageResult.Total
+
+		for _, item := range pageResult.Items {
+			if _, seen := seenIDs[item.Id]; seen {
+				return nil, inconsistentAgentPolicyList(fmt.Sprintf("agent policy id %q was returned more than once", item.Id))
+			}
+			seenIDs[item.Id] = struct{}{}
+		}
+
+		collected = append(collected, pageResult.Items...)
+		if float32(len(collected)) >= expectedTotal {
+			break
+		}
+		if len(pageResult.Items) < int(perPage) {
+			return nil, inconsistentAgentPolicyList(fmt.Sprintf("page %g returned %d items, fewer than perPage %g, before reaching total %g", page, len(pageResult.Items), perPage, expectedTotal))
+		}
+	}
+
+	matches := make([]*kbapi.KibanaHTTPAPIsAgentPolicyResponse, 0)
+	for i := range collected {
+		if collected[i].Name == name {
+			matches = append(matches, &collected[i])
+		}
+	}
+	return matches, nil
+}
+
+func inconsistentAgentPolicyList(detail string) diag.Diagnostics {
+	return diag.Diagnostics{diag.NewErrorDiagnostic("Inconsistent agent policy list", detail)}
+}
+
+// escapeKueryQuotedLiteral escapes value for a double-quoted KQL literal.
+// Backslashes are escaped before quotes so the backslashes added for quotes are not doubled.
+func escapeKueryQuotedLiteral(value string) string {
+	escaped := strings.ReplaceAll(value, `\`, `\\`)
+	return strings.ReplaceAll(escaped, `"`, `\"`)
 }
 
 // CreateAgentPolicy creates a new agent policy.
