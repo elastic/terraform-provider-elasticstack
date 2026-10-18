@@ -8,6 +8,8 @@ The `thresholds[].axis` values `bottom`, `left` and `right` are no longer accept
 
 ### Changes
 
+- Add write-only secrets support (e.g. SSL key) to elasticstack_fleet_agent_download_source ([#5310](https://github.com/elastic/terraform-provider-elasticstack/pull/5310))
+- Add `allow_outdated_version` to `elasticstack_fleet_integration` (requires Kibana 9.6.0+). ([#5336](https://github.com/elastic/terraform-provider-elasticstack/pull/5336))
 - Add `additional_datastreams_permissions` to `elasticstack_fleet_elastic_defend_integration_policy` ([#5322](https://github.com/elastic/terraform-provider-elasticstack/pull/5322))
 - Add elasticstack_elasticsearch_rollover_index_series to bootstrap or adopt an ILM rollover series and delete its current alias members. ([#5297](https://github.com/elastic/terraform-provider-elasticstack/pull/5297))
 - Add `features_disable_policy_change_acks_enabled`, `features_include_tags_in_events_enabled` and `internal` to `advanced_settings` on `elasticstack_fleet_agent_policy`. ([#5279](https://github.com/elastic/terraform-provider-elasticstack/pull/5279))
