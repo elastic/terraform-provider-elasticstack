@@ -41,10 +41,10 @@ func TestTfModel_GetVersionRequirements(t *testing.T) {
 
 func TestModelGetters(t *testing.T) {
 	model := tfModel{
-		ID:                           types.StringValue("cluster-uuid/logs-system.syslog@custom"),
-		IndexTemplate:                types.StringValue("logs-system.syslog"),
-		LifecycleName:                types.StringValue("my-policy"),
-		ElasticsearchConnectionField: entitycore.ElasticsearchConnectionField{ElasticsearchConnection: types.ListNull(types.ObjectType{})},
+		ID:                      types.StringValue("cluster-uuid/logs-system.syslog@custom"),
+		IndexTemplate:           types.StringValue("logs-system.syslog"),
+		LifecycleName:           types.StringValue("my-policy"),
+		ElasticsearchConnection: types.ListNull(types.ObjectType{}),
 	}
 	assert.Equal(t, types.StringValue("cluster-uuid/logs-system.syslog@custom"), model.GetID())
 	assert.Equal(t, types.StringValue("logs-system.syslog@custom"), model.GetResourceID())

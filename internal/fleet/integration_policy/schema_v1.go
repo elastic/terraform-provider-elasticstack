@@ -22,7 +22,6 @@ import (
 	_ "embed" // Used for embedding schema descriptions
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -86,20 +85,20 @@ func (m integrationPolicyModelV1) toV3(ctx context.Context) (integrationPolicyMo
 	// request API does not accept it, so it has never had any effect on the
 	// wire and was removed from the schema in V3.
 	stateModelV3 := integrationPolicyModel{
-		ID:                    m.ID,
-		KibanaConnectionField: entitycore.KibanaConnectionField{KibanaConnection: providerschema.KibanaConnectionNullList()},
-		PolicyID:              m.PolicyID,
-		Name:                  m.Name,
-		Namespace:             m.Namespace,
-		AgentPolicyID:         m.AgentPolicyID,
-		AgentPolicyIDs:        m.AgentPolicyIDs,
-		Description:           m.Description,
-		Force:                 m.Force,
-		IntegrationName:       m.IntegrationName,
-		IntegrationVersion:    m.IntegrationVersion,
-		OutputID:              m.OutputID,
-		SpaceIDs:              m.SpaceIDs,
-		VarsJSON:              varsJSONVal,
+		ID:                 m.ID,
+		KibanaConnection:   providerschema.KibanaConnectionNullList(),
+		PolicyID:           m.PolicyID,
+		Name:               m.Name,
+		Namespace:          m.Namespace,
+		AgentPolicyID:      m.AgentPolicyID,
+		AgentPolicyIDs:     m.AgentPolicyIDs,
+		Description:        m.Description,
+		Force:              m.Force,
+		IntegrationName:    m.IntegrationName,
+		IntegrationVersion: m.IntegrationVersion,
+		OutputID:           m.OutputID,
+		SpaceIDs:           m.SpaceIDs,
+		VarsJSON:           varsJSONVal,
 
 		// V0 and V1 state predate the attribute. The zero-value types.List
 		// carries no element type, which fails when state is set.
