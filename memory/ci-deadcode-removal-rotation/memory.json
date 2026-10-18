@@ -1889,6 +1889,23 @@
         ],
         "buildExitCode": 2
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/clients.NewKibanaScopedClientWithFleetForTest",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/clients",
+      "attemptedAt": "2026-10-18T03:02:57.449153376Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/section.CustomerImpact.MarshalJSON",
+      "package": "github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/section",
+      "attemptedAt": "2026-10-18T03:20:42.951316021Z",
+      "reason": "verification_timeout",
+      "context": {
+        "impactedPackages": [
+          "./scripts/changelog/internal/section"
+        ]
+      }
     }
   ]
 }
