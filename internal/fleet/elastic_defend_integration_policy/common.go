@@ -421,8 +421,8 @@ func policyAttrTypes() map[string]attr.Type {
 // policy requests: agent policy id(s), additional datastream permissions,
 // description, and force.
 type basePackagePolicyFields struct {
-	PolicyId                         *string
-	PolicyIds                        *[]string
+	PolicyID                         *string
+	PolicyIDs                        *[]string
 	AdditionalDatastreamsPermissions *[]string
 	Description                      *string
 	Force                            *bool
@@ -440,7 +440,7 @@ func buildBasePackagePolicyFields(ctx context.Context, model *elasticDefendInteg
 	if diags.HasError() {
 		return fields, diags
 	}
-	fields.PolicyId, fields.PolicyIds = policyID, policyIDs
+	fields.PolicyID, fields.PolicyIDs = policyID, policyIDs
 
 	perms, permsDiags := additionalDatastreamsPermissionsFromModel(ctx, model)
 	diags.Append(permsDiags...)
@@ -484,7 +484,7 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 	if diags.HasError() {
 		return req, diags
 	}
-	req.PolicyId, req.PolicyIds = base.PolicyId, base.PolicyIds
+	req.PolicyId, req.PolicyIds = base.PolicyID, base.PolicyIDs
 	req.AdditionalDatastreamsPermissions = base.AdditionalDatastreamsPermissions
 	req.Description = base.Description
 	req.Force = base.Force
@@ -544,7 +544,7 @@ func buildFinalizeRequest(
 		// Propagate errors from ElementsAs
 		return req, diags
 	}
-	req.PolicyId, req.PolicyIds = base.PolicyId, base.PolicyIds
+	req.PolicyId, req.PolicyIds = base.PolicyID, base.PolicyIDs
 	req.AdditionalDatastreamsPermissions = base.AdditionalDatastreamsPermissions
 	req.Description = base.Description
 	req.Force = base.Force
