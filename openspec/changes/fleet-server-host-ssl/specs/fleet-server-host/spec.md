@@ -96,11 +96,12 @@ The `certificate_authorities` sub-attribute SHALL accept at most 10 entries, mat
 
 The `ssl` attribute SHALL be guarded by its own attribute-scoped minimum Kibana version requirement of 9.1.0, enforced only when `ssl` is configured, independent of the resource's other attributes. Configurations that do not set `ssl` SHALL NOT be affected by this requirement, on any stack version. `serverHostModel` SHALL implement `GetVersionRequirements` to enforce this.
 
-#### Scenario: ssl configured against unsupported stack version
+#### Scenario: ssl create or update against unsupported stack version
 
 - **WHEN** the practitioner configures `ssl` with at least one sub-attribute set
 - **AND** the connected Kibana is below version 9.1.0
-- **THEN** the provider SHALL emit an attribute-scoped diagnostic on `ssl` that it is not supported on this version
+- **AND** the practitioner applies a create or update
+- **THEN** the provider SHALL emit an attribute-scoped diagnostic on `ssl` that it is not supported on this version before sending a Fleet mutation request
 
 #### Scenario: ssl omitted against old stack version is unaffected
 
@@ -109,19 +110,36 @@ The `ssl` attribute SHALL be guarded by its own attribute-scoped minimum Kibana 
 - **THEN** the provider SHALL NOT emit a version diagnostic related to `ssl`
 - **AND** the apply SHALL proceed as it did before this change
 
+### Requirement: Upgrade migration for pre-existing server-side ssl
+
+The provider SHALL document that users upgrading with an existing server-side `ssl` object must add its settings to Terraform configuration as part of the upgrade. The provider's read hydration SHALL NOT be described as preserving unmanaged remote `ssl` when configuration omits it; an unchanged configuration that omits such an object may plan its removal or resource replacement, according to the tested PUT semantics.
+
+#### Scenario: Unchanged configuration with no pre-existing ssl
+
+- **GIVEN** a resource managed by the previous provider version has no server-side `ssl` object
+- **WHEN** the provider is upgraded and the unchanged configuration still omits `ssl`
+- **THEN** refresh and planning SHALL produce no diff attributable to `ssl`
+
+#### Scenario: Unchanged configuration with pre-existing unmanaged ssl
+
+- **GIVEN** a resource managed by the previous provider version has a server-side `ssl` object that its configuration omits
+- **WHEN** the provider is upgraded and the unchanged configuration still omits `ssl`
+- **THEN** planning SHALL surface the removal or replacement implied by the tested API semantics
+- **AND** the resource documentation SHALL direct the practitioner to add the existing SSL settings to configuration to adopt them
+
 ### Requirement: ssl removal consistency with PUT semantics
 
-When removing a previously-set `ssl` from configuration would produce a plan/state inconsistency because the Fleet PUT API does not honor that removal in place (as determined by a pre-implementation probe against a live Kibana instance), the resource SHALL force replacement for that specific transition via a plan modifier, instead of issuing an in-place update that silently leaves the stale `ssl` value on the server while the plan shows it removed.
+Before choosing removal behavior, implementation SHALL independently probe omission, `{}`, and explicit JSON `ssl: null` against fresh hosts with populated `ssl`. It SHALL use an in-place clearing form if one works; otherwise it SHALL force replacement.
 
 #### Scenario: In-place removal when the API honors it
 
-- **GIVEN** the pre-implementation probe determines that omitting `ssl` (or a specific `ssl` child), or sending `ssl = {}`, from the PUT body clears it server-side
+- **GIVEN** the pre-implementation probe determines that at least one of omitting `ssl`, sending `ssl = {}`, or sending explicit JSON `ssl: null` from the PUT body clears it server-side
 - **WHEN** the practitioner removes `ssl` (or that child) from configuration and applies
 - **THEN** the provider SHALL perform an in-place update, and a subsequent read SHALL show the removed value as null
 
 #### Scenario: Forced replacement when the API cannot honor in-place removal
 
-- **GIVEN** the pre-implementation probe determines that neither omitting `ssl` nor sending `ssl = {}` clears a previously-set `ssl`, or that omitting a specific child does not clear that child
+- **GIVEN** the pre-implementation probe determines that omitting `ssl`, sending `ssl = {}`, and sending explicit JSON `ssl: null` all fail to clear a previously-set `ssl`, or that omitting a specific child does not clear that child
 - **WHEN** the practitioner removes `ssl` (or that child) from configuration and applies
 - **THEN** Terraform SHALL plan a replace operation for the resource
 

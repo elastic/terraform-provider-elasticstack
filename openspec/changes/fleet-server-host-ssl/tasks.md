@@ -3,16 +3,17 @@
 - [ ] 1.1 Against a live Kibana ≥ 9.1, create an `elasticstack_fleet_server_host`-equivalent server host with `ssl` fully populated (`certificate`, `key`, `certificate_authorities`, `client_auth`) via the generated client
 - [ ] 1.2 PUT an update that omits `ssl` entirely; independently GET the host afterward; record whether `ssl` persisted or was cleared
 - [ ] 1.3 Against a fresh copy of the same starting state, PUT an update sending `ssl = {}`; GET and record the result
-- [ ] 1.4 Against four independent fresh copies of the same fully-populated starting state, PUT four separate updates that each omit exactly one child (`certificate` only, `key` only, `certificate_authorities` only, `client_auth` only); GET each afterward and record whether the omitted child cleared while the retained children persisted
-- [ ] 1.5 Record whether the create/update/GET responses echo `key` verbatim or redact/omit it
-- [ ] 1.6 Confirm the minimum Kibana version that accepts a non-null `ssl` body on `fleet_server_hosts` create/update (expected 9.1.0 per Kibana release notes kibana#208091; verify against the `kibana-openapi-spec` changelog pinned in this repo if available)
-- [ ] 1.7 Record all probe results in design.md "Open questions" / "Decision 3" / "Decision 4"; decide, per the pre-specified branches in the delta spec, whether `toAPIUpdateModel`'s removal path needs a `RequiresReplace` plan-modifier fallback (whole-object, per-child, or neither), and whether `populateFromAPI` needs to preserve a configured `key` instead of hydrating it from the response
+- [ ] 1.4 Against another fresh copy of the same starting state, send a PUT body containing explicit JSON `"ssl": null` (not an omitted field or a nil generated-client pointer with `omitempty`); GET and record the result
+- [ ] 1.5 Against four independent fresh copies of the same fully-populated starting state, PUT four separate updates that each omit exactly one child (`certificate` only, `key` only, `certificate_authorities` only, `client_auth` only); GET each afterward and record whether the omitted child cleared while the retained children persisted
+- [ ] 1.6 Record whether the create/update/GET responses echo `key` verbatim or redact/omit it
+- [ ] 1.7 Confirm the minimum Kibana version that accepts a non-null `ssl` body on `fleet_server_hosts` create/update (expected 9.1.0 per Kibana release notes kibana#208091; verify against the `kibana-openapi-spec` changelog pinned in this repo if available)
+- [ ] 1.8 Record all probe results in design.md "Open questions" / "Decision 3" / "Decision 4"; decide, per the pre-specified branches in the delta spec, whether `toAPIUpdateModel`'s removal path needs a `RequiresReplace` plan-modifier fallback (whole-object, per-child, or neither), and whether `populateFromAPI` needs to preserve a configured `key` instead of hydrating it from the response
 
 ## 2. Model and mapping
 
 - [ ] 2.1 Create `internal/fleet/serverhost/models_ssl.go` adapted from `internal/fleet/output/models_ssl.go`: a `serverHostSslModel` embedding `sslcore.Values` plus a `ClientAuth types.String` sibling field, `objectValueToSSL`, and `sslToObjectValue` against the kbapi anonymous `Ssl` struct on `PostFleetFleetServerHostsJSONBody`/`PutFleetFleetServerHostsItemidJSONBody`/`ServerHost`
 - [ ] 2.2 Update `internal/fleet/serverhost/models.go`: add `Ssl types.Object` to `serverHostModel`; wire `objectValueToSSL`/`objectValueToSSLUpdate` into `toAPICreateModel` and `toAPIUpdateModel`; apply the Task 1 probe decision to `toAPIUpdateModel`'s removal path; update `populateFromAPI` to hydrate `Ssl` from the response, applying the Task 1 probe decision for `key` (hydrate verbatim, or preserve the configured/prior value if redacted)
-- [ ] 2.3 Add `GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics)` to `serverHostModel` (does not exist today), returning an attribute-scoped requirement on `path.Root("ssl")` at the version confirmed in Task 1.6, appended only when `ssl` is known/configured — following `internal/fleet/agentdownloadsource/models.go`'s `GetVersionRequirements` pattern
+- [ ] 2.3 Add `GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics)` to `serverHostModel` (does not exist today), returning an attribute-scoped requirement on `path.Root("ssl")` at the version confirmed in Task 1.7, appended only when `ssl` is known/configured — following `internal/fleet/agentdownloadsource/models.go`'s `GetVersionRequirements` pattern
 
 ## 3. Schema
 
@@ -33,7 +34,7 @@
 
 ## 6. Acceptance tests
 
-- [ ] 6.1 Add `TestAccResourceFleetServerHost_SSL` to `internal/fleet/serverhost/acc_test.go`, version-skipped below the Task 1.6-confirmed floor via `versionutils.SkipIfUnsupported`, modeled on `internal/fleet/agentdownloadsource/acc_test.go`'s SSL tests
+- [ ] 6.1 Add `TestAccResourceFleetServerHost_SSL` to `internal/fleet/serverhost/acc_test.go`, version-skipped below the Task 1.7-confirmed floor via `versionutils.SkipIfUnsupported`, modeled on `internal/fleet/agentdownloadsource/acc_test.go`'s SSL tests
 - [ ] 6.2 Step `with_ssl`: create with `certificate`, `key`, `certificate_authorities`, and `client_auth` set; assert round-trip via `TestCheckResourceAttr`; assert `ssl.key` is a sensitive value via `plancheck.ExpectSensitiveValue(..., tfjsonpath.New("ssl").AtMapKey("key"))`
 - [ ] 6.3 Step `with_ssl_updated`: change all four fields to different values; assert round-trip and no-diff-after-apply
 - [ ] 6.4 Step `clear_ssl`: remove `ssl` entirely; assert the outcome matches the Task 1 probe decision — either `TestCheckNoResourceAttr(..., "ssl")` after an in-place update, or that the step triggers resource replacement; additionally confirm via a subsequent read that Kibana itself no longer reports `ssl` as set
@@ -42,7 +43,8 @@
 - [ ] 6.7 Validator-rejection cases, each asserted separately: `certificate = ""`, `key = ""`, `certificate_authorities = []`, a nonempty CA list containing one empty-string element, and an invalid `client_auth` value
 - [ ] 6.8 CA-list boundary: exactly 10 entries accepted; 11 entries rejected
 - [ ] 6.9 Import: confirm `ssl` round-trips through the resource's existing composite/plain import ID handling, applying the Task 1.5 probe decision for `key`
-- [ ] 6.10 Version-gating cases, explicit rather than skip-only: (a) successful `ssl` create/update on a stack at or above the Task 1.6-confirmed floor; (b) an `ssl`-configured plan against a stack below the floor produces the attribute-specific `GetVersionRequirements` error, not a generic failure; (c) a config that omits `ssl` entirely still applies successfully below the floor, confirming the gate is per-attribute and not resource-wide
+- [ ] 6.10 Version-gating cases, explicit rather than skip-only: (a) successful `ssl` create/update on a stack at or above the Task 1.7-confirmed floor; (b) applying an `ssl`-configured create or update against a stack below the floor produces the attribute-specific `GetVersionRequirements` error before any Fleet mutation request; (c) a config that omits `ssl` entirely still applies successfully below the floor, confirming the gate is per-attribute and not resource-wide
+- [ ] 6.11 Upgrade compatibility: verify that an unchanged configuration omitting `ssl` produces no `ssl` diff after provider upgrade when the existing host has no server-side `ssl`; separately seed a host with pre-existing server-side `ssl` and verify that the unchanged configuration surfaces the removal/replacement plan, confirming the documented requirement to add the existing settings to configuration to adopt them
 
 ## 7. Docs and examples
 
@@ -50,11 +52,12 @@
 - [ ] 7.2 Regenerate `docs/resources/fleet_server_host.md` via the existing `make` docs target
 - [ ] 7.3 Add a CHANGELOG entry following the repo's existing format
 - [ ] 7.4 Document in the resource's generated docs that changing SSL settings on an enrolled Fleet Server host can disconnect connected Elastic Agents and may require re-enrollment
+- [ ] 7.5 Document the required configuration migration for hosts with pre-existing server-side `ssl`: add the existing SSL settings to configuration when upgrading the provider
 
 ## 8. Validation and cleanup
 
 - [ ] 8.1 Run `make build` and `make check-lint` — fix any issues
 - [ ] 8.2 Run `make check-openspec` — confirm the change validates
-- [ ] 8.3 Run targeted acceptance tests against a real Kibana at or above the Task 1.6-confirmed floor (per `dev-docs/high-level/testing.md`)
+- [ ] 8.3 Run targeted acceptance tests against a real Kibana at or above the Task 1.7-confirmed floor (per `dev-docs/high-level/testing.md`)
 - [ ] 8.4 Run the full unit test suite for `internal/fleet/serverhost`
 - [ ] 8.5 Self-review with the `requirements-verification` skill against this change's specs
