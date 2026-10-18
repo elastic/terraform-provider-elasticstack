@@ -33,9 +33,9 @@
 
 ## 3. Registration and docs
 
-- [ ] 3.1 Register `agentpolicyds.NewDataSource` in `provider/plugin_framework.go`'s `dataSources()` list, next to `enrollmenttokens.NewDataSource`, `outputds.NewDataSource`, `integrationds.NewDataSource`.
-- [ ] 3.2 Add `examples/data-sources/elasticstack_fleet_agent_policy/data-source.tf` demonstrating lookup by `name` and by `policy_id`, including the `elasticstack_fleet_enrollment_tokens` pairing from the issue.
-- [ ] 3.3 Generate/add `docs/data-sources/fleet_agent_policy.md` per the project's documentation generation workflow (`dev-docs/high-level/documentation.md`).
+- [x] 3.1 Register `agentpolicyds.NewDataSource` in `provider/plugin_framework.go`'s `dataSources()` list, next to `enrollmenttokens.NewDataSource`, `outputds.NewDataSource`, `integrationds.NewDataSource`.
+- [x] 3.2 Add `examples/data-sources/elasticstack_fleet_agent_policy/data-source.tf` demonstrating lookup by `name` and by `policy_id`, including the `elasticstack_fleet_enrollment_tokens` pairing from the issue.
+- [x] 3.3 Generate/add `docs/data-sources/fleet_agent_policy.md` per the project's documentation generation workflow (`dev-docs/high-level/documentation.md`).
 
 ## 4. Acceptance tests (`internal/fleet/agentpolicyds/acc_test.go`)
 
