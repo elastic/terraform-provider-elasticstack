@@ -62,11 +62,7 @@ type agentPolicyModel struct {
 	AdvancedMonitoringOptions types.Object         `tfsdk:"advanced_monitoring_options"`
 }
 
-func (m agentPolicyModel) GetID() types.String { return m.ID }
-
-func (agentPolicyModel) GetVersionRequirements(context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return nil, nil
-}
+func (m agentPolicyModel) GetID() types.String      { return m.ID }
 func (m agentPolicyModel) GetSpaceID() types.String { return m.SpaceID }
 func (m agentPolicyModel) GetResourceID() types.String {
 	if !m.PolicyID.IsNull() && m.PolicyID.ValueString() != "" {
@@ -163,7 +159,7 @@ func durationFromSeconds(seconds *float32) customtypes.Duration {
 		return customtypes.NewDurationNull()
 	}
 	d := time.Duration(int64(*seconds)) * time.Second
-	return customtypes.NewDurationValue(d.Truncate(time.Second).String())
+	return customtypes.NewDurationValue(d.String())
 }
 
 func requiredVersionsFromAPI(versions *[]struct {
@@ -302,7 +298,7 @@ func (m *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Context
 		return diags
 	}
 	m.AdvancedMonitoringOptions = obj
-	return nil
+	return diags
 }
 
 func httpMonitoringEndpointFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPolicyResponse) (types.Object, diag.Diagnostics) {
@@ -355,7 +351,7 @@ func diagnosticsFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPoli
 
 func rateLimitsFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPolicyResponse) (types.Object, diag.Diagnostics) {
 	attrTypes := objectAttrTypes(ctx, "advanced_monitoring_options", "diagnostics", "rate_limits")
-	if data.MonitoringDiagnostics == nil || data.MonitoringDiagnostics.Limit == nil {
+	if data.MonitoringDiagnostics.Limit == nil {
 		return types.ObjectNull(attrTypes), nil
 	}
 	limits := rateLimitsModel{
@@ -373,7 +369,7 @@ func rateLimitsFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPolic
 
 func fileUploaderFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPolicyResponse) (types.Object, diag.Diagnostics) {
 	attrTypes := objectAttrTypes(ctx, "advanced_monitoring_options", "diagnostics", "file_uploader")
-	if data.MonitoringDiagnostics == nil || data.MonitoringDiagnostics.Uploader == nil {
+	if data.MonitoringDiagnostics.Uploader == nil {
 		return types.ObjectNull(attrTypes), nil
 	}
 	uploader := fileUploaderModel{

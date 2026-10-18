@@ -35,6 +35,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -48,17 +49,20 @@ func randomPolicyName() string {
 }
 
 var minVersionAgentPolicy = version.Must(version.NewVersion("8.6.0"))
-var minVersionAgentPolicySpaceID = version.Must(version.NewVersion("9.1.0"))
-var minVersionRequiredVersions = version.Must(version.NewVersion("9.1.0"))
 var minVersionTamperProtection = version.Must(version.NewVersion("8.14.0"))
-var minVersionGlobalDataTags = version.Must(version.NewVersion("8.15.0"))
-var minVersionAdvancedSettings = version.Must(version.NewVersion("8.17.0"))
-var minVersionAgentInternal = version.Must(version.NewVersion("9.3.0"))
-var minVersionAdvancedMonitoring = version.Must(version.NewVersion("8.16.0"))
-var minVersionSupportsAgentless = version.Must(version.NewVersion("8.15.0"))
-var minVersionInactivityTimeout = version.Must(version.NewVersion("8.7.0"))
-var minVersionHostNameFormat = version.Must(version.NewVersion("8.7.0"))
-var minVersionUnenrollmentTimeout = version.Must(version.NewVersion("8.15.0"))
+
+var (
+	minVersionAgentPolicySpaceID  = agentpolicy.MinVersionSpaceIDs
+	minVersionRequiredVersions    = agentpolicy.MinVersionRequiredVersions
+	minVersionGlobalDataTags      = agentpolicy.MinVersionGlobalDataTags
+	minVersionAdvancedSettings    = agentpolicy.MinVersionAdvancedSettings
+	minVersionAgentInternal       = agentpolicy.MinVersionAgentInternal
+	minVersionAdvancedMonitoring  = agentpolicy.MinVersionAdvancedMonitoring
+	minVersionSupportsAgentless   = agentpolicy.MinSupportsAgentlessVersion
+	minVersionInactivityTimeout   = agentpolicy.MinVersionInactivityTimeout
+	minVersionHostNameFormat      = agentpolicy.MinVersionAgentFeatures
+	minVersionUnenrollmentTimeout = agentpolicy.MinVersionUnenrollmentTimeout
+)
 
 const agentInternalYAML = "agent:\n  monitoring:\n    http:\n      enabled: true\n    # trailing comment\n  logging:\n    level: info\n"
 
@@ -821,7 +825,7 @@ func expectDurationSeconds(m *attrMismatches, attrs map[string]string, key strin
 		return
 	}
 	d := time.Duration(int64(*seconds)) * time.Second
-	expectAttr(m, attrs, key, d.Truncate(time.Second).String())
+	expectAttr(m, attrs, key, d.String())
 }
 
 func expectNoPrefix(m *attrMismatches, attrs map[string]string, prefix string) {
@@ -946,12 +950,12 @@ func expectAdvancedSettings(m *attrMismatches, attrs map[string]string, settings
 	}
 	expectAnyString(m, attrs, "advanced_settings.logging_level", settings.AgentLoggingLevel)
 	expectAnyBool(m, attrs, "advanced_settings.logging_to_files", settings.AgentLoggingToFiles)
-	expectAnyDuration(m, attrs, "advanced_settings.logging_files_interval", settings.AgentLoggingFilesInterval)
+	expectAnyString(m, attrs, "advanced_settings.logging_files_interval", settings.AgentLoggingFilesInterval)
 	expectAnyInt32(m, attrs, "advanced_settings.logging_files_keepfiles", settings.AgentLoggingFilesKeepfiles)
 	expectAnyInt64(m, attrs, "advanced_settings.logging_files_rotateeverybytes", settings.AgentLoggingFilesRotateeverybytes)
-	expectAnyDuration(m, attrs, "advanced_settings.logging_metrics_period", settings.AgentLoggingMetricsPeriod)
+	expectAnyString(m, attrs, "advanced_settings.logging_metrics_period", settings.AgentLoggingMetricsPeriod)
 	expectAnyInt32(m, attrs, "advanced_settings.go_max_procs", settings.AgentLimitsGoMaxProcs)
-	expectAnyDuration(m, attrs, "advanced_settings.download_timeout", settings.AgentDownloadTimeout)
+	expectAnyString(m, attrs, "advanced_settings.download_timeout", settings.AgentDownloadTimeout)
 	expectAnyString(m, attrs, "advanced_settings.download_target_directory", settings.AgentDownloadTargetDirectory)
 	expectAnyString(m, attrs, "advanced_settings.monitoring_runtime_experimental", settings.AgentMonitoringRuntimeExperimental)
 	expectAnyBool(m, attrs, "advanced_settings.features_disable_policy_change_acks_enabled", settings.AgentFeaturesDisablePolicyChangeAcksEnabled)
@@ -975,15 +979,6 @@ func expectAnyBool(m *attrMismatches, attrs map[string]string, key string, api a
 		return
 	}
 	expectAttr(m, attrs, key, strconv.FormatBool(value))
-}
-
-func expectAnyDuration(m *attrMismatches, attrs map[string]string, key string, api any) {
-	str, ok := api.(string)
-	if !ok {
-		expectNull(m, attrs, key)
-		return
-	}
-	expectAttr(m, attrs, key, str)
 }
 
 func expectAnyInt32(m *attrMismatches, attrs map[string]string, key string, api any) {

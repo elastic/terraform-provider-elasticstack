@@ -92,7 +92,7 @@ func applyPolicy(ctx context.Context, config agentPolicyModel, policy *kbapi.Kib
 	if diags.HasError() {
 		return config, false, diags
 	}
-	return config, true, nil
+	return config, true, diags
 }
 
 func policyIDList(matches []*kbapi.KibanaHTTPAPIsAgentPolicyResponse) string {
