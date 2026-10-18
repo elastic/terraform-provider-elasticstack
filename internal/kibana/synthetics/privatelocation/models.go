@@ -32,12 +32,12 @@ import (
 type Model struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
-	ID            types.String   `tfsdk:"id"`
-	Label         types.String   `tfsdk:"label"`
-	AgentPolicyID types.String   `tfsdk:"agent_policy_id"`
-	SpaceID       types.String   `tfsdk:"space_id"`
-	Tags          []types.String `tfsdk:"tags"`
-	Geo           *tfGeoConfigV0 `tfsdk:"geo"`
+	ID            types.String `tfsdk:"id"`
+	Label         types.String `tfsdk:"label"`
+	AgentPolicyID types.String `tfsdk:"agent_policy_id"`
+	entitycore.SpaceIDField
+	Tags []types.String `tfsdk:"tags"`
+	Geo  *tfGeoConfigV0 `tfsdk:"geo"`
 }
 
 var _ entitycore.KibanaResourceModel = Model{}
@@ -55,7 +55,6 @@ func (Model) IsUnscopedSpace() bool { return true }
 
 func (m Model) GetID() types.String         { return m.ID }
 func (m Model) GetResourceID() types.String { return m.ID }
-func (m Model) GetSpaceID() types.String    { return m.SpaceID }
 
 func (m Model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	effectiveSpace := versionGateSpaceID(m)

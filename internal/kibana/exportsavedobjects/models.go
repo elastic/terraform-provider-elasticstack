@@ -30,8 +30,8 @@ type objectModel struct {
 // dataSourceModel maps the data source schema data.
 type dataSourceModel struct {
 	entitycore.KibanaConnectionField
-	ID                    types.String `tfsdk:"id"`
-	SpaceID               types.String `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	Objects               types.List   `tfsdk:"objects"`
 	ExcludeExportDetails  types.Bool   `tfsdk:"exclude_export_details"`
 	IncludeReferencesDeep types.Bool   `tfsdk:"include_references_deep"`
@@ -40,4 +40,3 @@ type dataSourceModel struct {
 
 func (m dataSourceModel) GetID() types.String         { return m.ID }
 func (m dataSourceModel) GetResourceID() types.String { return types.StringValue("export") }
-func (m dataSourceModel) GetSpaceID() types.String    { return m.SpaceID }

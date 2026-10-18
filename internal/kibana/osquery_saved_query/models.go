@@ -53,15 +53,15 @@ type osquerySavedQueryBaseModel struct {
 	ID            types.String `tfsdk:"id"`
 	SavedObjectID types.String `tfsdk:"saved_object_id"`
 	SavedQueryID  types.String `tfsdk:"saved_query_id"`
-	SpaceID       types.String `tfsdk:"space_id"`
-	Query         types.String `tfsdk:"query"`
-	Description   types.String `tfsdk:"description"`
-	Platform      types.Set    `tfsdk:"platform"`
-	Interval      types.Int64  `tfsdk:"interval"`
-	Version       types.String `tfsdk:"version"`
-	Snapshot      types.Bool   `tfsdk:"snapshot"`
-	Removed       types.Bool   `tfsdk:"removed"`
-	EcsMapping    types.Map    `tfsdk:"ecs_mapping"`
+	entitycore.SpaceIDField
+	Query       types.String `tfsdk:"query"`
+	Description types.String `tfsdk:"description"`
+	Platform    types.Set    `tfsdk:"platform"`
+	Interval    types.Int64  `tfsdk:"interval"`
+	Version     types.String `tfsdk:"version"`
+	Snapshot    types.Bool   `tfsdk:"snapshot"`
+	Removed     types.Bool   `tfsdk:"removed"`
+	EcsMapping  types.Map    `tfsdk:"ecs_mapping"`
 }
 
 type osquerySavedQueryModel struct {
@@ -77,7 +77,6 @@ func getEcsMappingElemType() attr.Type {
 
 func (m osquerySavedQueryBaseModel) GetID() types.String         { return m.ID }
 func (m osquerySavedQueryBaseModel) GetResourceID() types.String { return m.SavedQueryID }
-func (m osquerySavedQueryBaseModel) GetSpaceID() types.String    { return m.SpaceID }
 
 func (m osquerySavedQueryBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return entitycore.SingleVersionRequirement(

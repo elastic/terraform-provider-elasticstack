@@ -54,10 +54,10 @@ type tfModel struct {
 	ID               types.String `tfsdk:"id"`
 	KibanaConnection types.List   `tfsdk:"kibana_connection"`
 
-	SloID        types.String `tfsdk:"slo_id"`
-	Name         types.String `tfsdk:"name"`
-	Description  types.String `tfsdk:"description"`
-	SpaceID      types.String `tfsdk:"space_id"`
+	SloID       types.String `tfsdk:"slo_id"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	entitycore.SpaceIDField
 	BudgetMethod types.String `tfsdk:"budgeting_method"`
 	Enabled      types.Bool   `tfsdk:"enabled"`
 
@@ -84,10 +84,6 @@ func (m tfModel) GetID() types.String {
 
 func (m tfModel) GetResourceID() types.String {
 	return clients.ResourceIDFromComposite(m.ID, m.ID)
-}
-
-func (m tfModel) GetSpaceID() types.String {
-	return m.SpaceID
 }
 
 func (m tfModel) GetKibanaConnection() types.List {

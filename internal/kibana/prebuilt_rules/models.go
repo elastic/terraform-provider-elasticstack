@@ -28,20 +28,19 @@ import (
 
 type prebuiltRuleModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                    types.String `tfsdk:"id"`
-	SpaceID               types.String `tfsdk:"space_id"`
-	KibanaConnection      types.List   `tfsdk:"kibana_connection"`
-	RulesInstalled        types.Int64  `tfsdk:"rules_installed"`
-	RulesNotInstalled     types.Int64  `tfsdk:"rules_not_installed"`
-	RulesNotUpdated       types.Int64  `tfsdk:"rules_not_updated"`
-	TimelinesInstalled    types.Int64  `tfsdk:"timelines_installed"`
-	TimelinesNotInstalled types.Int64  `tfsdk:"timelines_not_installed"`
-	TimelinesNotUpdated   types.Int64  `tfsdk:"timelines_not_updated"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
+	KibanaConnection      types.List  `tfsdk:"kibana_connection"`
+	RulesInstalled        types.Int64 `tfsdk:"rules_installed"`
+	RulesNotInstalled     types.Int64 `tfsdk:"rules_not_installed"`
+	RulesNotUpdated       types.Int64 `tfsdk:"rules_not_updated"`
+	TimelinesInstalled    types.Int64 `tfsdk:"timelines_installed"`
+	TimelinesNotInstalled types.Int64 `tfsdk:"timelines_not_installed"`
+	TimelinesNotUpdated   types.Int64 `tfsdk:"timelines_not_updated"`
 }
 
 func (m prebuiltRuleModel) GetID() types.String             { return m.ID }
 func (m prebuiltRuleModel) GetResourceID() types.String     { return m.SpaceID }
-func (m prebuiltRuleModel) GetSpaceID() types.String        { return m.SpaceID }
 func (m prebuiltRuleModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 var _ entitycore.KibanaResourceModel = prebuiltRuleModel{}
