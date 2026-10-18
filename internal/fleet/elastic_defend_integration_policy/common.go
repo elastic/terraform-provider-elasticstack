@@ -416,6 +416,50 @@ func policyAttrTypes() map[string]attr.Type {
 	}
 }
 
+// basePackagePolicyFields holds the request fields that are computed
+// identically for both the bootstrap (create) and finalize (update) package
+// policy requests: agent policy id(s), additional datastream permissions,
+// description, and force.
+type basePackagePolicyFields struct {
+	PolicyId                         *string
+	PolicyIds                        *[]string
+	AdditionalDatastreamsPermissions *[]string
+	Description                      *string
+	Force                            *bool
+}
+
+// buildBasePackagePolicyFields computes the request fields shared by
+// buildBootstrapRequest and buildFinalizeRequest, so the two request builders
+// don't duplicate the field-population logic for fields they have in common.
+func buildBasePackagePolicyFields(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (basePackagePolicyFields, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var fields basePackagePolicyFields
+
+	policyID, policyIDs, d := agentPoliciesFromModel(ctx, model)
+	diags.Append(d...)
+	if diags.HasError() {
+		return fields, diags
+	}
+	fields.PolicyId, fields.PolicyIds = policyID, policyIDs
+
+	perms, permsDiags := additionalDatastreamsPermissionsFromModel(ctx, model)
+	diags.Append(permsDiags...)
+	if diags.HasError() {
+		return fields, diags
+	}
+	fields.AdditionalDatastreamsPermissions = perms
+
+	if typeutils.IsKnown(model.Description) {
+		fields.Description = model.Description.ValueStringPointer()
+	}
+
+	if typeutils.IsKnown(model.Force) {
+		fields.Force = model.Force.ValueBoolPointer()
+	}
+
+	return fields, diags
+}
+
 // buildBootstrapRequest builds the minimal Defend package policy request used
 // for the first create step (bootstrap). Kibana expects the create bootstrap to
 // use the special ENDPOINT_INTEGRATION_CONFIG input type with preset mapped
@@ -434,26 +478,16 @@ func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationP
 		Package:   &pkg,
 		Enabled:   model.Enabled.ValueBoolPointer(),
 	}
-	policyID, policyIDs, d := agentPoliciesFromModel(ctx, model)
-	if d.HasError() {
-		return req, d
-	}
-	req.PolicyId, req.PolicyIds = policyID, policyIDs
 
-	var permsDiags diag.Diagnostics
-	req.AdditionalDatastreamsPermissions, permsDiags = additionalDatastreamsPermissionsFromModel(ctx, model)
-	d.Append(permsDiags...)
-	if d.HasError() {
-		return req, d
+	base, d := buildBasePackagePolicyFields(ctx, model)
+	diags.Append(d...)
+	if diags.HasError() {
+		return req, diags
 	}
-
-	if typeutils.IsKnown(model.Description) {
-		req.Description = model.Description.ValueStringPointer()
-	}
-
-	if typeutils.IsKnown(model.Force) {
-		req.Force = model.Force.ValueBoolPointer()
-	}
+	req.PolicyId, req.PolicyIds = base.PolicyId, base.PolicyIds
+	req.AdditionalDatastreamsPermissions = base.AdditionalDatastreamsPermissions
+	req.Description = base.Description
+	req.Force = base.Force
 
 	// Build bootstrap input config: _config.value.endpointConfig.preset
 	config := map[string]policyshape.TypedVarEntry{}
@@ -496,33 +530,24 @@ func buildFinalizeRequest(
 		Name:    endpointPackageName,
 		Version: model.IntegrationVersion.ValueString(),
 	}
+	name := model.Name.ValueString()
 	req := kbapi.PackagePolicyUpdateRequestTypedInputs{
-		Name:      &[]string{model.Name.ValueString()}[0],
+		Name:      &name,
 		Namespace: model.Namespace.ValueStringPointer(),
 		Package:   &pkg,
 		Enabled:   model.Enabled.ValueBoolPointer(),
 	}
-	policyID, policyIDs, d := agentPoliciesFromModel(ctx, model)
-	if d.HasError() {
+
+	base, d := buildBasePackagePolicyFields(ctx, model)
+	diags.Append(d...)
+	if diags.HasError() {
 		// Propagate errors from ElementsAs
-		return req, d
+		return req, diags
 	}
-	req.PolicyId, req.PolicyIds = policyID, policyIDs
-
-	var permsDiags diag.Diagnostics
-	req.AdditionalDatastreamsPermissions, permsDiags = additionalDatastreamsPermissionsFromModel(ctx, model)
-	d.Append(permsDiags...)
-	if d.HasError() {
-		return req, d
-	}
-
-	if typeutils.IsKnown(model.Description) {
-		req.Description = model.Description.ValueStringPointer()
-	}
-
-	if typeutils.IsKnown(model.Force) {
-		req.Force = model.Force.ValueBoolPointer()
-	}
+	req.PolicyId, req.PolicyIds = base.PolicyId, base.PolicyIds
+	req.AdditionalDatastreamsPermissions = base.AdditionalDatastreamsPermissions
+	req.Description = base.Description
+	req.Force = base.Force
 
 	// Include the version token for optimistic concurrency control
 	if ps.Version != "" {
