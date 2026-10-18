@@ -179,16 +179,7 @@ func sharedOptionsListAttributes() map[string]schema.Attribute {
 // byFieldAttributes returns the attributes for the by_field branch: the shared attribute set plus
 // the required data_view_id / field_name discriminating identifiers.
 func byFieldAttributes() map[string]schema.Attribute {
-	attrs := sharedOptionsListAttributes()
-	attrs["data_view_id"] = schema.StringAttribute{
-		MarkdownDescription: "The ID of the data view that the control is tied to.",
-		Required:            true,
-	}
-	attrs["field_name"] = schema.StringAttribute{
-		MarkdownDescription: "The name of the field in the data view that the control is tied to.",
-		Required:            true,
-	}
-	return attrs
+	return panelkit.ByFieldAttributes(sharedOptionsListAttributes())
 }
 
 // ByFieldAttributeNames returns the by_field branch's attribute names. Callers that need to
@@ -202,17 +193,9 @@ func ByFieldAttributeNames() []string {
 // byEsqlAttributes returns the attributes for the by_esql branch: the shared attribute set plus the
 // required esql_query / values_source discriminating identifiers.
 func byEsqlAttributes() map[string]schema.Attribute {
-	attrs := sharedOptionsListAttributes()
-	attrs["esql_query"] = schema.StringAttribute{
-		MarkdownDescription: "The ES|QL query that produces the available option values.",
-		Required:            true,
-	}
-	attrs["values_source"] = schema.StringAttribute{
-		MarkdownDescription: "The source discriminator for this branch. Must be `esql_query`.",
-		Required:            true,
-		Validators: []validator.String{
-			stringvalidator.OneOf(panelkit.EsqlValuesSourceUserValue),
-		},
-	}
-	return attrs
+	return panelkit.ByEsqlAttributes(
+		sharedOptionsListAttributes(),
+		"The ES|QL query that produces the available option values.",
+		"The source discriminator for this branch. Must be `esql_query`.",
+	)
 }

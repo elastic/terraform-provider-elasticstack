@@ -21,7 +21,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
-	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -117,16 +116,7 @@ func sharedAttributes() map[string]schema.Attribute {
 }
 
 func byFieldAttributes() map[string]schema.Attribute {
-	attrs := sharedAttributes()
-	attrs["data_view_id"] = schema.StringAttribute{
-		MarkdownDescription: "The ID of the data view that the control is tied to.",
-		Required:            true,
-	}
-	attrs["field_name"] = schema.StringAttribute{
-		MarkdownDescription: "The name of the field in the data view that the control is tied to.",
-		Required:            true,
-	}
-	return attrs
+	return panelkit.ByFieldAttributes(sharedAttributes())
 }
 
 // ByFieldAttributeNames returns the by_field branch's attribute names. Callers that need to
@@ -138,17 +128,9 @@ func ByFieldAttributeNames() []string {
 }
 
 func byEsqlAttributes() map[string]schema.Attribute {
-	attrs := sharedAttributes()
-	attrs["esql_query"] = schema.StringAttribute{
-		MarkdownDescription: "The ES|QL query that produces the min/max range values.",
-		Required:            true,
-	}
-	attrs["values_source"] = schema.StringAttribute{
-		MarkdownDescription: "The source of the range values. Must be `esql_query`.",
-		Required:            true,
-		Validators: []validator.String{
-			stringvalidator.OneOf(panelkit.EsqlValuesSourceUserValue),
-		},
-	}
-	return attrs
+	return panelkit.ByEsqlAttributes(
+		sharedAttributes(),
+		"The ES|QL query that produces the min/max range values.",
+		"The source of the range values. Must be `esql_query`.",
+	)
 }
