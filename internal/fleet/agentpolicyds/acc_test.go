@@ -62,7 +62,25 @@ var (
 	minVersionInactivityTimeout   = agentpolicy.MinVersionInactivityTimeout
 	minVersionHostNameFormat      = agentpolicy.MinVersionAgentFeatures
 	minVersionUnenrollmentTimeout = agentpolicy.MinVersionUnenrollmentTimeout
+	minVersionFeaturesDisableAcks = agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled
+	minVersionFeaturesIncludeTags = agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled
 )
+
+// skipUnlessMonitoringRuntimeExperimentalSupported skips the step unless the live
+// Elasticsearch server satisfies agentpolicy.MonitoringRuntimeExperimentalSupported
+// (8.19.x or 9.1.0+), a non-linear version check that versionutils.SkipIfUnsupported
+// cannot express.
+func skipUnlessMonitoringRuntimeExperimentalSupported() (bool, error) {
+	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
+	if err != nil {
+		return false, err
+	}
+	serverVersion, _, diags := clients.AcceptanceServerInfo(context.Background(), client)
+	if diags.HasError() {
+		return false, fmt.Errorf("failed to determine the elasticsearch server version: %v", diags)
+	}
+	return !agentpolicy.MonitoringRuntimeExperimentalSupported(serverVersion), nil
+}
 
 const agentInternalYAML = "agent:\n  monitoring:\n    http:\n      enabled: true\n    # trailing comment\n  logging:\n    level: info\n"
 
@@ -363,8 +381,36 @@ func TestAccDataSourceAgentPolicyGlobalDataTags(t *testing.T) {
 					"policy_name": config.StringVariable(policyName),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "global_data_tags.%", "2"),
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "global_data_tags.tag1.string_value", "value1"),
 					checkFloat32Attr("data.elasticstack_fleet_agent_policy.test", "global_data_tags.tag2.number_value", 1.1),
+					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
+				),
+			},
+			{
+				// A third entry proves multi-element handling beyond the original two tags.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multi"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "global_data_tags.%", "3"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "global_data_tags.tag1.string_value", "value1"),
+					checkFloat32Attr("data.elasticstack_fleet_agent_policy.test", "global_data_tags.tag2.number_value", 1.1),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "global_data_tags.tag3.string_value", "value3"),
+					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
+				),
+			},
+			{
+				// Removing all tags should surface as an empty collection, not a stale value.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "global_data_tags.%", "0"),
 					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
 				),
 			},
@@ -390,7 +436,86 @@ func TestAccDataSourceAgentPolicyAdvancedSettings(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "advanced_settings.logging_level", "debug"),
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "advanced_settings.logging_to_files", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "advanced_settings.logging_files_interval", "45s"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "advanced_settings.logging_files_keepfiles", "10"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "advanced_settings.logging_files_rotateeverybytes", "20971520"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "advanced_settings.logging_metrics_period", "1m"),
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "advanced_settings.go_max_procs", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "advanced_settings.download_timeout", "3h"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "advanced_settings.download_target_directory", "/tmp/agent-downloads"),
+					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceAgentPolicyAdvancedSettingsMonitoringRuntimeExperimental(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionAdvancedSettings, versionutils.FlavorAny)
+
+	policyName := randomPolicyName()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipUnlessMonitoringRuntimeExperimentalSupported,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "advanced_settings.monitoring_runtime_experimental", "process"),
+					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceAgentPolicyAdvancedSettingsFeaturesDisableAcks(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFeaturesDisableAcks, versionutils.FlavorAny)
+
+	policyName := randomPolicyName()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "advanced_settings.features_disable_policy_change_acks_enabled", "true"),
+					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceAgentPolicyAdvancedSettingsFeaturesIncludeTags(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFeaturesIncludeTags, versionutils.FlavorAny)
+
+	policyName := randomPolicyName()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "advanced_settings.features_include_tags_in_events_enabled", "true"),
 					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
 				),
 			},
@@ -499,6 +624,19 @@ func TestAccDataSourceAgentPolicyInactivityTimeout(t *testing.T) {
 					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
 				),
 			},
+			{
+				// Changing the duration on the backing resource proves the data source
+				// tracks updates rather than a value baked in at creation.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "inactivity_timeout", "5m0s"),
+					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
+				),
+			},
 		},
 	})
 }
@@ -520,6 +658,19 @@ func TestAccDataSourceAgentPolicyHostNameFormat(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "host_name_format", "fqdn"),
+					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
+				),
+			},
+			{
+				// host_name_format omitted on the backing resource should surface as the
+				// default "hostname" branch, which no other test asserts explicitly.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("default"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "host_name_format", "hostname"),
 					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
 				),
 			},
@@ -547,6 +698,19 @@ func TestAccDataSourceAgentPolicyUnenrollmentTimeout(t *testing.T) {
 					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
 				),
 			},
+			{
+				// Changing the duration on the backing resource proves the data source
+				// tracks updates rather than a value baked in at creation.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "unenrollment_timeout", "10m0s"),
+					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
+				),
+			},
 		},
 	})
 }
@@ -567,7 +731,34 @@ func TestAccDataSourceAgentPolicyRequiredVersions(t *testing.T) {
 					"policy_name": config.StringVariable(policyName),
 				},
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "required_versions.%", "1"),
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "required_versions.8.15.0", "100"),
+					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
+				),
+			},
+			{
+				// A second entry proves multi-element handling of the map.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multi"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "required_versions.%", "2"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "required_versions.8.15.0", "50"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "required_versions.8.16.0", "50"),
+					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
+				),
+			},
+			{
+				// Removing all entries should surface as an empty collection, not a stale value.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "required_versions.%", "0"),
 					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
 				),
 			},
@@ -581,6 +772,8 @@ func TestAccDataSourceAgentPolicySpaceIDs(t *testing.T) {
 	policyName := randomPolicyName()
 	spaceID := "test-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 	spaceName := "Test Space " + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	secondSpaceID := "test-" + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	secondSpaceName := "Test Space " + sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -597,6 +790,24 @@ func TestAccDataSourceAgentPolicySpaceIDs(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "space_ids.#", "1"),
 					resource.TestCheckTypeSetElemAttr("data.elasticstack_fleet_agent_policy.test", "space_ids.*", spaceID),
+					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
+				),
+			},
+			{
+				// A second space proves multi-element handling of the set.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multi"),
+				ConfigVariables: config.Variables{
+					"policy_name":       config.StringVariable(policyName),
+					"space_id":          config.StringVariable(spaceID),
+					"space_name":        config.StringVariable(spaceName),
+					"second_space_id":   config.StringVariable(secondSpaceID),
+					"second_space_name": config.StringVariable(secondSpaceName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_agent_policy.test", "space_ids.#", "2"),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_fleet_agent_policy.test", "space_ids.*", spaceID),
+					resource.TestCheckTypeSetElemAttr("data.elasticstack_fleet_agent_policy.test", "space_ids.*", secondSpaceID),
 					checkAgentPolicyDataSourceMatchesAPI("data.elasticstack_fleet_agent_policy.test"),
 				),
 			},
