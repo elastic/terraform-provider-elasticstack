@@ -200,6 +200,20 @@
       "reason": "ssl carries certificate/key/client_auth configuration for the Fleet Server host connection; the resource exposes no TLS attributes today, a significant gap for production use.",
       "date": "2026-10-18",
       "issue": "elasticstack_fleet_server_host#/paths/~1api~1fleet~1fleet_server_hosts/post/requestBody/content/application~1json/schema/properties/ssl"
+    },
+    "elasticstack_kibana_agentbuilder_agent#/paths/~1api~1agent_builder~1agents/post/requestBody/content/application~1json/schema/properties/access_control": {
+      "fingerprint": "8ea54487cef94382ba5475fe3c2c7fa4704dc1ac4a2fce63f1e71fabada2bee9",
+      "verdict": "file",
+      "reason": "access_control is entirely unexposed: grep for access_control/AccessControl across internal/kibana/agentbuilderagent (schema.go, models.go, create.go, update.go) finds no references. It is a user-controllable permissions setting on the agent, not server-managed state, so it belongs in Terraform.",
+      "date": "2026-10-19",
+      "issue": "elasticstack_kibana_agentbuilder_agent#/paths/~1api~1agent_builder~1agents/post/requestBody/content/application~1json/schema/properties/access_control"
+    },
+    "elasticstack_kibana_agentbuilder_agent#/paths/~1api~1agent_builder~1agents/post/requestBody/content/application~1json/schema/properties/configuration": {
+      "fingerprint": "9a605d8ab4480fca21944b906d6175378fc888d9b3873af6ea9ad8a5c41ce594",
+      "verdict": "file",
+      "reason": "Configuration sub-fields (ai_indices, connector_ids, plugin_ids, workflow_ids, subagent_ids, enable_elastic_capabilities, approvals.auto_approved_apis) control which indices, connectors, plugins, workflows, and subagents the agent can use; none are exposed in the Terraform schema (confirmed in internal/kibana/agentbuilderagent/models.go, where the anonymous Configuration struct declares these fields but only Instructions, Tools, and SkillIds are ever populated) or covered by any opaque attribute, so this is a real, user-controllable gap.",
+      "date": "2026-10-19",
+      "issue": "elasticstack_kibana_agentbuilder_agent#/paths/~1api~1agent_builder~1agents/post/requestBody/content/application~1json/schema/properties/configuration"
     }
   },
   "resources": {
@@ -212,6 +226,7 @@
     "elasticstack_fleet_managed_integration": "2026-10-17T05:01:07Z",
     "elasticstack_fleet_output": "2026-10-17T05:01:07Z",
     "elasticstack_fleet_proxy": "2026-10-18T10:47:34Z",
-    "elasticstack_fleet_server_host": "2026-10-18T10:47:34Z"
+    "elasticstack_fleet_server_host": "2026-10-18T10:47:34Z",
+    "elasticstack_kibana_agentbuilder_agent": "2026-10-19T01:48:45Z"
   }
 }
