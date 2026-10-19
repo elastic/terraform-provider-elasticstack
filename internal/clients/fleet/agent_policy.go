@@ -49,47 +49,51 @@ func GetAgentPolicyByName(ctx context.Context, client *Client, name string, spac
 	sortField := "name"
 	perPage := agentPolicyByNamePerPage
 
-	var collected []kbapi.KibanaHTTPAPIsAgentPolicyResponse
 	seenIDs := make(map[string]struct{})
 	var expectedTotal float32
-	for page := float32(1); ; page++ {
+	var seenCount float32
+
+	collected, diags := kibanaoapi.CollectAllPages(func(page int) ([]kbapi.KibanaHTTPAPIsAgentPolicyResponse, int, diag.Diagnostics) {
+		pageNum := float32(page)
 		params := &kbapi.GetFleetAgentPoliciesParams{
 			Kuery:     &kuery,
 			SortField: &sortField,
-			Page:      new(page),
+			Page:      new(pageNum),
 			PerPage:   new(perPage),
 		}
 		resp, err := client.API.GetFleetAgentPoliciesWithResponse(ctx, params, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
-			return nil, diagutil.FrameworkDiagFromError(err)
+			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
 		if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); diags.HasError() {
-			return nil, diags
+			return nil, 0, diags
 		}
 		pageResult, diags := diagutil.UnwrapJSON200(resp.JSON200, "agent policy list")
 		if diags.HasError() {
-			return nil, diags
+			return nil, 0, diags
 		}
 
 		if page > 1 && pageResult.Total != expectedTotal {
-			return nil, inconsistentAgentPolicyList(fmt.Sprintf("total changed from %g to %g while paging agent policies", expectedTotal, pageResult.Total))
+			return nil, 0, inconsistentAgentPolicyList(fmt.Sprintf("total changed from %g to %g while paging agent policies", expectedTotal, pageResult.Total))
 		}
 		expectedTotal = pageResult.Total
 
 		for _, item := range pageResult.Items {
 			if _, seen := seenIDs[item.Id]; seen {
-				return nil, inconsistentAgentPolicyList(fmt.Sprintf("agent policy id %q was returned more than once", item.Id))
+				return nil, 0, inconsistentAgentPolicyList(fmt.Sprintf("agent policy id %q was returned more than once", item.Id))
 			}
 			seenIDs[item.Id] = struct{}{}
 		}
 
-		collected = append(collected, pageResult.Items...)
-		if float32(len(collected)) >= expectedTotal {
-			break
+		seenCount += float32(len(pageResult.Items))
+		if seenCount < expectedTotal && float32(len(pageResult.Items)) < perPage {
+			return nil, 0, inconsistentAgentPolicyList(fmt.Sprintf("page %g returned %d items, fewer than perPage %g, before reaching total %g", pageNum, len(pageResult.Items), perPage, expectedTotal))
 		}
-		if len(pageResult.Items) < int(perPage) {
-			return nil, inconsistentAgentPolicyList(fmt.Sprintf("page %g returned %d items, fewer than perPage %g, before reaching total %g", page, len(pageResult.Items), perPage, expectedTotal))
-		}
+
+		return pageResult.Items, int(pageResult.Total), nil
+	})
+	if diags.HasError() {
+		return nil, diags
 	}
 
 	matches := make([]*kbapi.KibanaHTTPAPIsAgentPolicyResponse, 0)
