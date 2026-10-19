@@ -36,6 +36,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -423,6 +424,131 @@ func TestAccResourceSloPreventInitialBackfill(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.prevent_initial_backfill", "true"),
 				),
 			},
+			{
+				// Update: toggle prevent_initial_backfill from true to false on the same resource.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("prevent_initial_backfill_false"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "settings.prevent_initial_backfill", "false"),
+				),
+			},
+			{
+				// prevent_initial_backfill key omitted from an otherwise-present settings block;
+				// the computed value must still resolve (Optional+Computed, no explicit default).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unset"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_slo.test_slo", "settings.prevent_initial_backfill"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceSlo_settings_defaults covers the settings block's computed defaults:
+//   - omitted entirely: the provider keeps settings.* null (block itself is null/unconfigured).
+//   - present but empty: the Kibana API's computed defaults for sync_delay/frequency are
+//     surfaced in state once the block is configured, even with no attributes set inside it
+//     (sync_field has no server-side default and stays null either way).
+func TestAccResourceSlo_settings_defaults(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_slo.test_slo", "settings.sync_delay"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_slo.test_slo", "settings.frequency"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_slo.test_slo", "settings.sync_field"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("settings_block_present"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_slo.test_slo", "settings.sync_delay"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_slo.test_slo", "settings.frequency"),
+					// The API only returns syncField when it was explicitly set; it stays null here.
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_slo.test_slo", "settings.sync_field"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceSlo_tags_coverage covers tags omitted (null), explicit empty list, and an
+// update between two non-empty values on the same resource.
+func TestAccResourceSlo_tags_coverage(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
+		Steps: []resource.TestStep{
+			{
+				// tags omitted entirely (variable defaults to null).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_slo.test_slo", "tags.#"),
+				),
+			},
+			{
+				// explicit empty list.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+					"tags": config.ListVariable(),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.#", "0"),
+				),
+			},
+			{
+				// set non-empty values.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+					"tags": config.ListVariable(config.StringVariable("tag-a"), config.StringVariable("tag-b")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.0", "tag-a"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.1", "tag-b"),
+				),
+			},
+			{
+				// update: change tag values on the same resource.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+					"tags": config.ListVariable(config.StringVariable("tag-c")),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "tags.0", "tag-c"),
+				),
+			},
 		},
 	})
 }
@@ -549,6 +675,49 @@ func TestAccResourceSlo_timeslice_metric_indicator_multiple_mixed_metrics(t *tes
 	})
 }
 
+// TestAccResourceSlo_timeslice_metric_indicator_more_aggregations covers the timeslice metric
+// aggregation values that were previously untested (min, max, last_value, cardinality,
+// std_deviation), plus the LTE comparator (GT/GTE/LT are covered by sibling tests above).
+func TestAccResourceSlo_timeslice_metric_indicator_more_aggregations(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
+
+	cases := []struct {
+		aggregation string
+		comparator  string
+	}{
+		{aggregation: "min", comparator: "LTE"},
+		{aggregation: "max", comparator: "GT"},
+		{aggregation: "last_value", comparator: "GT"},
+		{aggregation: "cardinality", comparator: "GT"},
+		{aggregation: "std_deviation", comparator: "GT"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.aggregation, func(t *testing.T) {
+			sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+			resource.Test(t, resource.TestCase{
+				PreCheck:     func() { acctest.PreCheck(t) },
+				CheckDestroy: checkResourceSloDestroy,
+				Steps: []resource.TestStep{
+					{
+						ProtoV6ProviderFactories: acctest.Providers,
+						ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+						ConfigVariables: config.Variables{
+							"name": config.StringVariable(sloName),
+						},
+						Check: resource.ComposeTestCheckFunc(
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.name", "A"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.metrics.0.aggregation", tc.aggregation),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.equation", "A"),
+							resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "timeslice_metric_indicator.0.metric.0.comparator", tc.comparator),
+						),
+					},
+				},
+			})
+		})
+	}
+}
+
 func TestAccResourceSlo_metric_custom_indicator_doc_count(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, sloTimesliceMetricsMinVersion, versionutils.FlavorAny)
 
@@ -672,6 +841,24 @@ func TestAccResourceSloValidation(t *testing.T) {
 				},
 				// Fires on either the string or object arm of the KQL exclusive pair.
 				ExpectError: regexp.MustCompile(`(?s)Invalid Attribute Combination.*good`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("kql_filter_and_filter_kql"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("kql-filter-dup"),
+				},
+				// Fires on either the string or object arm of the filter/filter_kql exclusive pair.
+				ExpectError: regexp.MustCompile(`(?s)Invalid Attribute Combination.*filter`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("kql_total_and_total_kql"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable("kql-total-dup"),
+				},
+				// Fires on either the string or object arm of the total/total_kql exclusive pair.
+				ExpectError: regexp.MustCompile(`(?s)Invalid Attribute Combination.*total`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -1115,6 +1302,68 @@ func TestAccResourceSlo_36_char_slo_id(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_target", "0.95"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "objective.0.timeslice_window", "5m"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_slo.test_slo", "space_id", "default"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceSlo_slo_id_computed omits slo_id and asserts the server-generated value
+// (a UUIDv1) is surfaced as computed state.
+func TestAccResourceSlo_slo_id_computed(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(sloName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_slo.test_slo", "slo_id"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceSlo_slo_id_requires_replace verifies that changing slo_id on an existing
+// resource forces destroy-before-create rather than an in-place update (RequiresReplace).
+func TestAccResourceSlo_slo_id_requires_replace(t *testing.T) {
+	sloName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_kibana_slo.test_slo"
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSloDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name":   config.StringVariable(sloName),
+					"slo_id": config.StringVariable("id-" + sloName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "slo_id", "id-"+sloName),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("test"),
+				ConfigVariables: config.Variables{
+					"name":   config.StringVariable(sloName),
+					"slo_id": config.StringVariable("id2-" + sloName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "slo_id", "id2-"+sloName),
 				),
 			},
 		},
