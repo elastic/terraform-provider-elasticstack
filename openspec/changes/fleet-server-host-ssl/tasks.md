@@ -8,12 +8,15 @@
 - [ ] 1.6 Record whether the create/update/GET responses echo `key` verbatim or redact/omit it
 - [ ] 1.7 Confirm the minimum Kibana version that accepts a non-null `ssl` body on `fleet_server_hosts` create/update (expected 9.1.0 per Kibana release notes kibana#208091; verify against the `kibana-openapi-spec` changelog pinned in this repo if available)
 - [ ] 1.8 Record all probe results in design.md "Open questions" / "Decision 3" / "Decision 4"; decide, per the pre-specified branches in the delta spec, whether `toAPIUpdateModel`'s removal path needs a `RequiresReplace` plan-modifier fallback (whole-object, per-child, or neither), and whether `populateFromAPI` needs to preserve a configured `key` instead of hydrating it from the response
+- [ ] 1.9 Create a host with `client_auth` omitted; inspect the create and subsequent GET responses for a server-defaulted value, and record the result before finalizing the schema and hydration strategy
 
 ## 2. Model and mapping
 
 - [ ] 2.1 Create `internal/fleet/serverhost/models_ssl.go` adapted from `internal/fleet/output/models_ssl.go`: a `serverHostSslModel` embedding `sslcore.Values` plus a `ClientAuth types.String` sibling field, `objectValueToSSL`, and `sslToObjectValue` against the kbapi anonymous `Ssl` struct on `PostFleetFleetServerHostsJSONBody`/`PutFleetFleetServerHostsItemidJSONBody`/`ServerHost`
-- [ ] 2.2 Update `internal/fleet/serverhost/models.go`: add `Ssl types.Object` to `serverHostModel`; wire `objectValueToSSL`/`objectValueToSSLUpdate` into `toAPICreateModel` and `toAPIUpdateModel`; apply the Task 1 probe decision to `toAPIUpdateModel`'s removal path; update `populateFromAPI` to hydrate `Ssl` from the response, applying the Task 1 probe decision for `key` (hydrate verbatim, or preserve the configured/prior value if redacted)
+- [ ] 2.2 Update `internal/fleet/serverhost/models.go`: add `Ssl types.Object` to `serverHostModel`; wire `objectValueToSSL`/`objectValueToSSLUpdate` into `toAPICreateModel` and `toAPIUpdateModel`; apply the Task 1 probe decision to `toAPIUpdateModel`'s removal path; update `populateFromAPI` to hydrate `Ssl` from the response, applying the Task 1 probe decision for `key` (hydrate verbatim, or preserve the configured/prior value if redacted) and `client_auth` (Optional-only if no server default, otherwise a plan-consistent Optional+Computed strategy). Ensure omitted/unknown `client_auth` is omitted from the create request.
 - [ ] 2.3 Add `GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics)` to `serverHostModel` (does not exist today), returning an attribute-scoped requirement on `path.Root("ssl")` at the version confirmed in Task 1.7, appended only when `ssl` is known/configured — following `internal/fleet/agentdownloadsource/models.go`'s `GetVersionRequirements` pattern
+- [ ] 2.4 Before any PUT that would replace `ssl`, inspect the current server-side SSL object for non-null `agent_*`/`es_*` fields. If present and the update cannot preserve them, return an actionable diagnostic before mutation; do not silently drop these deferred fields.
+- [ ] 2.5 If Task 1.4 finds explicit JSON `ssl: null` is the only in-place clearing form, implement a request path that can serialize the explicit null (rather than passing a nil generated `Ssl` pointer with `omitempty`) and add a serialized-payload assertion for `"ssl": null`.
 
 ## 3. Schema
 
@@ -45,6 +48,8 @@
 - [ ] 6.9 Import: confirm `ssl` round-trips through the resource's existing composite/plain import ID handling, applying the Task 1.5 probe decision for `key`
 - [ ] 6.10 Version-gating cases, explicit rather than skip-only: (a) successful `ssl` create/update on a stack at or above the Task 1.7-confirmed floor; (b) applying an `ssl`-configured create or update against a stack below the floor produces the attribute-specific `GetVersionRequirements` error before any Fleet mutation request; (c) a config that omits `ssl` entirely still applies successfully below the floor, confirming the gate is per-attribute and not resource-wide
 - [ ] 6.11 Upgrade compatibility: verify that an unchanged configuration omitting `ssl` produces no `ssl` diff after provider upgrade when the existing host has no server-side `ssl`; separately seed a host with pre-existing server-side `ssl` and verify that the unchanged configuration surfaces the removal/replacement plan, confirming the documented requirement to add the existing settings to configuration to adopt them
+- [ ] 6.12 Seed a host whose `ssl` object contains non-null `agent_*`/`es_*` fields, attempt a supported-SSL update that would replace the object, and verify the provider returns an actionable diagnostic without sending a mutation or changing the seeded values
+- [ ] 6.13 Apply and refresh a configuration with `ssl` set but `client_auth` omitted; assert no inconsistent-result error and no subsequent diff. If the Task 1.9 probe observes a default, also assert the value is represented using the selected plan-consistent schema strategy while the initial request omitted it
 
 ## 7. Docs and examples
 
