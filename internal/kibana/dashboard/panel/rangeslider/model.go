@@ -240,22 +240,18 @@ func buildFieldConfig(cfg *models.RangeSliderControlByFieldModel, rsPanel *kbapi
 	// dashboardacctest.MinControlByFieldEsqlUnionSupport) reject the property entirely if present.
 	// Omitting it keeps by_field writes compatible with every Kibana version this resource supports.
 
-	if typeutils.IsKnown(cfg.Title) {
-		c.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.UseGlobalFilters) {
-		c.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.IgnoreValidations) {
-		c.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
-	}
+	common := panelkit.BuildCommonControlFields(panelkit.CommonControlFields{
+		Title:             cfg.Title,
+		UseGlobalFilters:  cfg.UseGlobalFilters,
+		IgnoreValidations: cfg.IgnoreValidations,
+	})
+	c.Title = common.Title
+	c.UseGlobalFilters = common.UseGlobalFilters
+	c.IgnoreValidations = common.IgnoreValidations
 	if typeutils.IsKnown(cfg.Value) {
 		c.Value = stringListToAPI(cfg.Value)
 	}
-	if typeutils.IsKnown(cfg.Step) {
-		v := cfg.Step.ValueFloat32()
-		c.Step = &v
-	}
+	c.Step = panelkit.CopyKnownFloat32(cfg.Step)
 
 	if err := rsPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaField(c); err != nil {
 		var diags diag.Diagnostics
@@ -274,22 +270,18 @@ func buildEsqlConfig(cfg *models.RangeSliderControlByEsqlModel, rsPanel *kbapi.K
 	// hardcoded here rather than derived from the (already-validated) model string.
 	c.ValuesSource = kbapi.KibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsqlValuesSourceEsql
 
-	if typeutils.IsKnown(cfg.Title) {
-		c.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.UseGlobalFilters) {
-		c.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.IgnoreValidations) {
-		c.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
-	}
+	common := panelkit.BuildCommonControlFields(panelkit.CommonControlFields{
+		Title:             cfg.Title,
+		UseGlobalFilters:  cfg.UseGlobalFilters,
+		IgnoreValidations: cfg.IgnoreValidations,
+	})
+	c.Title = common.Title
+	c.UseGlobalFilters = common.UseGlobalFilters
+	c.IgnoreValidations = common.IgnoreValidations
 	if typeutils.IsKnown(cfg.Value) {
 		c.Value = stringListToAPI(cfg.Value)
 	}
-	if typeutils.IsKnown(cfg.Step) {
-		v := cfg.Step.ValueFloat32()
-		c.Step = &v
-	}
+	c.Step = panelkit.CopyKnownFloat32(cfg.Step)
 
 	if err := rsPanel.Config.FromKibanaHTTPAPIsKbnControlsSchemasRangeSliderControlSchemaEsql(c); err != nil {
 		var diags diag.Diagnostics

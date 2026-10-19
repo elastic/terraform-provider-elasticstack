@@ -461,27 +461,18 @@ func buildFieldConfig(cfg *models.OptionsListControlByFieldModel, olPanel *kbapi
 	c.DataViewId = cfg.DataViewID.ValueString()
 	c.FieldName = cfg.FieldName.ValueString()
 
-	if typeutils.IsKnown(cfg.Title) {
-		c.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.UseGlobalFilters) {
-		c.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.IgnoreValidations) {
-		c.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.SingleSelect) {
-		c.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.Exclude) {
-		c.Exclude = cfg.Exclude.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.ExistsSelected) {
-		c.ExistsSelected = cfg.ExistsSelected.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.RunPastTimeout) {
-		c.RunPastTimeout = cfg.RunPastTimeout.ValueBoolPointer()
-	}
+	common := panelkit.BuildCommonControlFields(panelkit.CommonControlFields{
+		Title:             cfg.Title,
+		UseGlobalFilters:  cfg.UseGlobalFilters,
+		IgnoreValidations: cfg.IgnoreValidations,
+	})
+	c.Title = common.Title
+	c.UseGlobalFilters = common.UseGlobalFilters
+	c.IgnoreValidations = common.IgnoreValidations
+	c.SingleSelect = panelkit.CopyKnownBool(cfg.SingleSelect)
+	c.Exclude = panelkit.CopyKnownBool(cfg.Exclude)
+	c.ExistsSelected = panelkit.CopyKnownBool(cfg.ExistsSelected)
+	c.RunPastTimeout = panelkit.CopyKnownBool(cfg.RunPastTimeout)
 	if typeutils.IsKnown(cfg.SearchTechnique) {
 		st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaFieldSearchTechnique(cfg.SearchTechnique.ValueString())
 		c.SearchTechnique = &st
@@ -518,27 +509,18 @@ func buildEsqlConfig(cfg *models.OptionsListControlByEsqlModel, olPanel *kbapi.K
 	c.EsqlQuery = cfg.EsqlQuery.ValueString()
 	c.ValuesSource = kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlValuesSourceEsql
 
-	if typeutils.IsKnown(cfg.Title) {
-		c.Title = cfg.Title.ValueStringPointer()
-	}
-	if typeutils.IsKnown(cfg.UseGlobalFilters) {
-		c.UseGlobalFilters = cfg.UseGlobalFilters.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.IgnoreValidations) {
-		c.IgnoreValidations = cfg.IgnoreValidations.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.SingleSelect) {
-		c.SingleSelect = cfg.SingleSelect.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.Exclude) {
-		c.Exclude = cfg.Exclude.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.ExistsSelected) {
-		c.ExistsSelected = cfg.ExistsSelected.ValueBoolPointer()
-	}
-	if typeutils.IsKnown(cfg.RunPastTimeout) {
-		c.RunPastTimeout = cfg.RunPastTimeout.ValueBoolPointer()
-	}
+	common := panelkit.BuildCommonControlFields(panelkit.CommonControlFields{
+		Title:             cfg.Title,
+		UseGlobalFilters:  cfg.UseGlobalFilters,
+		IgnoreValidations: cfg.IgnoreValidations,
+	})
+	c.Title = common.Title
+	c.UseGlobalFilters = common.UseGlobalFilters
+	c.IgnoreValidations = common.IgnoreValidations
+	c.SingleSelect = panelkit.CopyKnownBool(cfg.SingleSelect)
+	c.Exclude = panelkit.CopyKnownBool(cfg.Exclude)
+	c.ExistsSelected = panelkit.CopyKnownBool(cfg.ExistsSelected)
+	c.RunPastTimeout = panelkit.CopyKnownBool(cfg.RunPastTimeout)
 	if typeutils.IsKnown(cfg.SearchTechnique) {
 		st := kbapi.KibanaHTTPAPIsKbnControlsSchemasOptionsListDslControlSchemaEsqlSearchTechnique(cfg.SearchTechnique.ValueString())
 		c.SearchTechnique = &st
