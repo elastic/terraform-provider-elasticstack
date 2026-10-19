@@ -41,11 +41,7 @@ func (model *outputModel) fromAPIRemoteElasticsearchModel(ctx context.Context, d
 	})
 
 	// Preserve configured secret when Fleet omits/redacts it in read responses.
-	if data.ServiceToken != nil {
-		model.ServiceToken = types.StringPointerValue(data.ServiceToken)
-	} else if model.ServiceToken.IsNull() || model.ServiceToken.IsUnknown() {
-		model.ServiceToken = types.StringNull()
-	}
+	model.ServiceToken = typeutils.PreserveRedactedSecret(data.ServiceToken, model.ServiceToken)
 
 	model.SyncIntegrations = types.BoolPointerValue(data.SyncIntegrations)
 	model.SyncUninstalledIntegrations = types.BoolPointerValue(data.SyncUninstalledIntegrations)

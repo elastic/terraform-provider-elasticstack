@@ -220,7 +220,7 @@ func hydratePlainSecret(apiValue *string, prior types.String, hasPrior bool) typ
 	if hasPrior && !typeutils.IsKnown(prior) {
 		return types.StringNull()
 	}
-	return preserveRedactedSecret(apiValue, prior)
+	return typeutils.PreserveRedactedSecret(apiValue, prior)
 }
 
 func authHeadersFromAPI(ctx context.Context, apiHeaders *[]downloadSourceAuthHeader) (types.List, diag.Diagnostics) {
@@ -230,17 +230,6 @@ func authHeadersFromAPI(ctx context.Context, apiHeaders *[]downloadSourceAuthHea
 			return authHeaderModel{Key: types.StringValue(header.Key), Value: types.StringValue(header.Value)}
 		})
 	return headers, diags
-}
-
-func preserveRedactedSecret(apiValue *string, fallback types.String) types.String {
-	switch {
-	case apiValue != nil && *apiValue != "":
-		return types.StringPointerValue(apiValue)
-	case typeutils.IsKnown(fallback):
-		return fallback
-	default:
-		return types.StringNull()
-	}
 }
 
 func authHeadersElementType(ctx context.Context) attr.Type {

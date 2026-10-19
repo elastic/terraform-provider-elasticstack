@@ -187,7 +187,7 @@ func hydrateSsl(ctx context.Context, api agentDownloadSourceSSLAPIModel, prior t
 		}
 		key = nil
 		if typeutils.IsKnown(priorModel.Key) {
-			key = preserveRedactedSecret(api.Key, priorModel.Key).ValueStringPointer()
+			key = typeutils.PreserveRedactedSecret(api.Key, priorModel.Key).ValueStringPointer()
 		}
 	}
 
