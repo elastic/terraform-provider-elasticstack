@@ -241,6 +241,40 @@ func TestAccRolloverIndexSeries_rejectNonNumericWriter(t *testing.T) {
 	})
 }
 
+func TestAccRolloverIndexSeries_rejectInvalidPrefixLiteral(t *testing.T) {
+	prefix, alias := accNames()
+	invalidPrefix := prefix + "*"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(invalidPrefix, alias),
+				ExpectError:              regexp.MustCompile("wildcard syntax"),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_rejectInvalidRolloverAliasLiteral(t *testing.T) {
+	prefix, alias := accNames()
+	invalidAlias := alias + ",other-alias"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVars(prefix, invalidAlias),
+				ExpectError:              regexp.MustCompile("contains a comma"),
+			},
+		},
+	})
+}
+
 func TestAccRolloverIndexSeries_rejectDataStream(t *testing.T) {
 	prefix, alias := accNames()
 	dataStream := prefix + "-stream"
@@ -1009,6 +1043,93 @@ func TestAccRolloverIndexSeries_deletionProtectionUpdatesStateOnly(t *testing.T)
 						}
 						return nil
 					},
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_deletionProtectionDefaultsToTrue(t *testing.T) {
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(bootstrap),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("default"),
+				ConfigVariables:          accVars(prefix, alias),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "true"),
+					checkIndexPresent(bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("override"),
+				ConfigVariables:          accImportVars(prefix, alias, false),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "false"),
+					checkIndexPresent(bootstrap),
+				),
+			},
+		},
+	})
+}
+
+func TestAccRolloverIndexSeries_reenableProtectionBlocksDestroy(t *testing.T) {
+	prefix, alias := accNames()
+	bootstrap := prefix + "-000001"
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkIndicesAbsent(bootstrap),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "false"),
+					checkIndexPresent(bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, true, "1m"),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(seriesAddr, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "true"),
+					checkIndexPresent(bootstrap),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, true, "1m"),
+				Destroy:                  true,
+				ExpectError:              regexp.MustCompile("deletion_protection=false"),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, true, "1m"),
+				Check:                    checkIndexPresent(bootstrap),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          accVarsWithProtection(prefix, alias, false, "1m"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(seriesAddr, "deletion_protection", "false"),
+					checkIndexPresent(bootstrap),
 				),
 			},
 		},

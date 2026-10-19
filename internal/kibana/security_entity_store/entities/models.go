@@ -34,8 +34,8 @@ var (
 
 type dsModel struct {
 	entitycore.KibanaConnectionField
-	ID          types.String         `tfsdk:"id"`
-	SpaceID     types.String         `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	EntityID    types.String         `tfsdk:"entity_id"`
 	Filter      types.String         `tfsdk:"filter"`
 	Size        types.Int64          `tfsdk:"size"`
@@ -58,7 +58,6 @@ const entitiesResourceID = "entity_store_entities"
 
 func (m dsModel) GetID() types.String       { return m.ID }
 func (dsModel) GetResourceID() types.String { return types.StringValue(entitiesResourceID) }
-func (m dsModel) GetSpaceID() types.String  { return m.SpaceID }
 
 var _ entitycore.WithVersionRequirements = (*dsModel)(nil)
 

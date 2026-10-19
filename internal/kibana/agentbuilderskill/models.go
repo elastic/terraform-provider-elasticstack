@@ -40,9 +40,9 @@ import (
 // fail against the timeouts-free data source schema.
 type skillBaseModel struct {
 	entitycore.KibanaConnectionField
-	ID                types.String                 `tfsdk:"id"`
-	SkillID           types.String                 `tfsdk:"skill_id"`
-	SpaceID           types.String                 `tfsdk:"space_id"`
+	ID      types.String `tfsdk:"id"`
+	SkillID types.String `tfsdk:"skill_id"`
+	entitycore.SpaceIDField
 	Name              types.String                 `tfsdk:"name"`
 	Description       types.String                 `tfsdk:"description"`
 	Content           types.String                 `tfsdk:"content"`
@@ -52,7 +52,6 @@ type skillBaseModel struct {
 
 func (model skillBaseModel) GetID() types.String         { return model.ID }
 func (model skillBaseModel) GetResourceID() types.String { return model.SkillID }
-func (model skillBaseModel) GetSpaceID() types.String    { return model.SpaceID }
 
 func (skillBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return entitycore.SingleVersionRequirement(

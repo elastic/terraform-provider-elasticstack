@@ -32,24 +32,23 @@ import (
 
 func (m Model) GetID() types.String         { return m.ID }
 func (m Model) GetResourceID() types.String { return m.ListItemID }
-func (m Model) GetSpaceID() types.String    { return m.SpaceID }
 
 var _ entitycore.KibanaResourceModel = Model{}
 
 type Model struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
-	ID         types.String         `tfsdk:"id"`
-	ListItemID types.String         `tfsdk:"list_item_id"`
-	SpaceID    types.String         `tfsdk:"space_id"`
-	ListID     types.String         `tfsdk:"list_id"`
-	Value      types.String         `tfsdk:"value"`
-	Meta       jsontypes.Normalized `tfsdk:"meta"`
-	CreatedAt  types.String         `tfsdk:"created_at"`
-	CreatedBy  types.String         `tfsdk:"created_by"`
-	UpdatedAt  types.String         `tfsdk:"updated_at"`
-	UpdatedBy  types.String         `tfsdk:"updated_by"`
-	VersionID  types.String         `tfsdk:"version_id"`
+	ID         types.String `tfsdk:"id"`
+	ListItemID types.String `tfsdk:"list_item_id"`
+	entitycore.SpaceIDField
+	ListID    types.String         `tfsdk:"list_id"`
+	Value     types.String         `tfsdk:"value"`
+	Meta      jsontypes.Normalized `tfsdk:"meta"`
+	CreatedAt types.String         `tfsdk:"created_at"`
+	CreatedBy types.String         `tfsdk:"created_by"`
+	UpdatedAt types.String         `tfsdk:"updated_at"`
+	UpdatedBy types.String         `tfsdk:"updated_by"`
+	VersionID types.String         `tfsdk:"version_id"`
 }
 
 // toAPICreateModel converts the Terraform model to the API create request body

@@ -243,7 +243,7 @@ on:
         steps.normalize_context.outputs.event_eligible == 'true' &&
         steps.normalize_context.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true'
-      uses: actions/upload-artifact@v7.0.1
+      uses: actions/upload-artifact@v7.0.2
       with:
         name: code-factory-issue-context
         path: /tmp/code-factory-context/
@@ -273,7 +273,7 @@ if: >-
   needs.pre_activation.outputs.issue_number != ''
 steps:
   - name: Download issue context artifact
-    uses: actions/download-artifact@v8.0.1
+    uses: actions/download-artifact@v8.0.2
     with:
       name: code-factory-issue-context
       path: /tmp/code-factory-context/

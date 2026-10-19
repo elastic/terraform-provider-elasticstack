@@ -53,7 +53,7 @@ func (f *fakePrivate) SetKey(_ context.Context, key string, value []byte) diag.D
 
 func (f *fakePrivate) storedHash(t *testing.T, attrPath string) []byte {
 	t.Helper()
-	hash, err := decodeSecretHashFromPrivateState(f.data[secretHashKey(attrPath)])
+	hash, err := secretHasher.DecodeFromPrivateState(f.data[secretHashKey(attrPath)])
 	require.NoError(t, err)
 	return hash
 }
@@ -69,14 +69,14 @@ func TestSecretHashEncodingRoundTrips(t *testing.T) {
 	t.Parallel()
 	hash, err := secretHasher.Compute("value")
 	require.NoError(t, err)
-	encoded, err := encodeSecretHashForPrivateState(hash)
+	encoded, err := secretHasher.EncodeForPrivateState(hash)
 	require.NoError(t, err)
 	require.True(t, strings.HasPrefix(string(encoded), `"`), "bcrypt bytes contain $ and must be JSON wrapped")
-	decoded, err := decodeSecretHashFromPrivateState(encoded)
+	decoded, err := secretHasher.DecodeFromPrivateState(encoded)
 	require.NoError(t, err)
 	require.Equal(t, hash, decoded)
 
-	empty, err := decodeSecretHashFromPrivateState(nil)
+	empty, err := secretHasher.DecodeFromPrivateState(nil)
 	require.NoError(t, err)
 	require.Nil(t, empty)
 }

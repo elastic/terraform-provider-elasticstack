@@ -26,8 +26,8 @@ import (
 // connectorDataSourceModel maps the action connector data source schema.
 type connectorDataSourceModel struct {
 	entitycore.KibanaConnectionField
-	ID               types.String         `tfsdk:"id"`
-	SpaceID          types.String         `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	Name             types.String         `tfsdk:"name"`
 	ConnectorTypeID  types.String         `tfsdk:"connector_type_id"`
 	ConnectorID      types.String         `tfsdk:"connector_id"`
@@ -39,4 +39,3 @@ type connectorDataSourceModel struct {
 
 func (m connectorDataSourceModel) GetID() types.String         { return m.ID }
 func (m connectorDataSourceModel) GetResourceID() types.String { return m.Name }
-func (m connectorDataSourceModel) GetSpaceID() types.String    { return m.SpaceID }

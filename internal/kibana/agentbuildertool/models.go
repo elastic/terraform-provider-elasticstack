@@ -44,9 +44,9 @@ import (
 // data source schema.
 type toolBaseModel struct {
 	entitycore.KibanaConnectionField
-	ID            types.String         `tfsdk:"id"`
-	ToolID        types.String         `tfsdk:"tool_id"`
-	SpaceID       types.String         `tfsdk:"space_id"`
+	ID     types.String `tfsdk:"id"`
+	ToolID types.String `tfsdk:"tool_id"`
+	entitycore.SpaceIDField
 	Type          types.String         `tfsdk:"type"`
 	Description   types.String         `tfsdk:"description"`
 	Tags          types.Set            `tfsdk:"tags"`
@@ -62,7 +62,6 @@ func (toolBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.Ver
 
 func (model toolBaseModel) GetID() types.String         { return model.ID }
 func (model toolBaseModel) GetResourceID() types.String { return model.ToolID }
-func (model toolBaseModel) GetSpaceID() types.String    { return model.SpaceID }
 
 // toolModel is the model for the Agent Builder tool resource. It embeds the
 // shared base plus the timeouts attribute that only the resource exposes.

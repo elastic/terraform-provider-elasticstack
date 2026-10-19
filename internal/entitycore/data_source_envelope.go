@@ -55,6 +55,19 @@ func (f ElasticsearchConnectionField) GetElasticsearchConnection() types.List {
 	return f.ElasticsearchConnection
 }
 
+// SpaceIDField is an embeddable struct that provides the space_id field
+// required by [KibanaDataSourceModel] and the equivalent Kibana resource
+// model interface for entity models whose GetSpaceID implementation is a
+// plain passthrough of the space_id attribute.
+type SpaceIDField struct {
+	SpaceID types.String `tfsdk:"space_id"`
+}
+
+// GetSpaceID returns the space_id attribute value.
+func (f SpaceIDField) GetSpaceID() types.String {
+	return f.SpaceID
+}
+
 // KibanaDataSourceModel is the type constraint for models passed to
 // [NewKibanaDataSource]. Concrete types must provide value-receiver methods
 // GetID, GetResourceID, GetSpaceID, and GetKibanaConnection.

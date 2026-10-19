@@ -35,16 +35,14 @@ const alertingRulesSearchResourceID = "alerting_rules"
 
 type alertingRulesDataSourceModel struct {
 	entitycore.KibanaConnectionField
-	ID      types.String `tfsdk:"id"`
-	SpaceID types.String `tfsdk:"space_id"`
-	RuleID  types.String `tfsdk:"rule_id"`
-	Filter  types.String `tfsdk:"filter"`
-	Rules   types.List   `tfsdk:"rules"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
+	RuleID types.String `tfsdk:"rule_id"`
+	Filter types.String `tfsdk:"filter"`
+	Rules  types.List   `tfsdk:"rules"`
 }
 
 func (m alertingRulesDataSourceModel) GetID() types.String { return m.ID }
-
-func (m alertingRulesDataSourceModel) GetSpaceID() types.String { return m.SpaceID }
 
 func (m alertingRulesDataSourceModel) GetResourceID() types.String {
 	if ruleIDConfigured(m.RuleID) {

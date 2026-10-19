@@ -51,13 +51,11 @@ var (
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
-
-	ID types.String `tfsdk:"id"`
-
-	SloID        types.String `tfsdk:"slo_id"`
-	Name         types.String `tfsdk:"name"`
-	Description  types.String `tfsdk:"description"`
-	SpaceID      types.String `tfsdk:"space_id"`
+	ID          types.String `tfsdk:"id"`
+	SloID       types.String `tfsdk:"slo_id"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	entitycore.SpaceIDField
 	BudgetMethod types.String `tfsdk:"budgeting_method"`
 	Enabled      types.Bool   `tfsdk:"enabled"`
 
@@ -84,10 +82,6 @@ func (m tfModel) GetID() types.String {
 
 func (m tfModel) GetResourceID() types.String {
 	return clients.ResourceIDFromComposite(m.ID, m.ID)
-}
-
-func (m tfModel) GetSpaceID() types.String {
-	return m.SpaceID
 }
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].

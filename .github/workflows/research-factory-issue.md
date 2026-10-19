@@ -286,7 +286,7 @@ on:
         steps.normalize_context.outputs.event_eligible == 'true' &&
         steps.normalize_context.outputs.actor_trusted == 'true' &&
         steps.normalize_context.outputs.issue_number != ''
-      uses: actions/upload-artifact@v7.0.1
+      uses: actions/upload-artifact@v7.0.2
       with:
         name: research-factory-issue-context
         path: /tmp/research-factory-context/
@@ -302,7 +302,7 @@ if: >-
   needs.pre_activation.outputs.issue_number != ''
 steps:
   - name: Download issue context artifact
-    uses: actions/download-artifact@v8.0.1
+    uses: actions/download-artifact@v8.0.2
     with:
       name: research-factory-issue-context
       path: /tmp/gh-aw/agent/

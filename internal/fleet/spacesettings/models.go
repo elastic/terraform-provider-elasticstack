@@ -35,15 +35,14 @@ var minVersionSpaceSettings = version.Must(version.NewVersion("9.1.0"))
 type spaceSettingsModel struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
+	entitycore.SpaceIDField
 	ID                       types.String `tfsdk:"id"`
-	SpaceID                  types.String `tfsdk:"space_id"`
 	AllowedNamespacePrefixes types.Set    `tfsdk:"allowed_namespace_prefixes"` // > string
 	ManagedBy                types.String `tfsdk:"managed_by"`
 }
 
 func (m spaceSettingsModel) GetID() types.String         { return m.ID }
 func (m spaceSettingsModel) GetResourceID() types.String { return m.SpaceID }
-func (m spaceSettingsModel) GetSpaceID() types.String    { return m.SpaceID }
 
 func (m *spaceSettingsModel) populateFromAPI(ctx context.Context, spaceID string, settings *fleet.SpaceSettings) (diags diag.Diagnostics) {
 	m.ID = types.StringValue(spaceID)

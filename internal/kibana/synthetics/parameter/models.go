@@ -30,8 +30,8 @@ import (
 type Model struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
-	ID                types.String   `tfsdk:"id"`
-	SpaceID           types.String   `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	Key               types.String   `tfsdk:"key"`
 	Value             types.String   `tfsdk:"value"`
 	Description       types.String   `tfsdk:"description"`
@@ -49,8 +49,6 @@ func (m Model) GetResourceID() types.String {
 	}
 	return clients.ResourceIDFromComposite(m.ID, m.ID)
 }
-
-func (m Model) GetSpaceID() types.String { return m.SpaceID }
 
 func (m *Model) setCompositeIdentity(spaceID, resourceID string) {
 	spaceID = clients.EffectiveSpaceID(spaceID)

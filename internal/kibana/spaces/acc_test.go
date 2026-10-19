@@ -39,6 +39,12 @@ import (
 
 var minSelfManagedVersionForSpaceSolution = version.Must(version.NewVersion("8.18.0"))
 
+// testCheckSolutionIfSupported asserts that solution is set on stack
+// versions that support the field, and is skipped entirely on versions that
+// don't. It's deliberately a set-only check: this helper runs against a
+// resource whose state may have carried a prior step's explicit solution
+// value forward (via the solution attribute's UseStateForUnknown plan
+// modifier), so it cannot assert one single exact default value.
 func testCheckSolutionIfSupported(resourceName string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		unsupported, err := versionutils.CheckIfVersionIsUnsupported(minSelfManagedVersionForSpaceSolution)()
@@ -49,6 +55,26 @@ func testCheckSolutionIfSupported(resourceName string) resource.TestCheckFunc {
 			return nil
 		}
 		return resource.TestCheckResourceAttrSet(resourceName, "solution")(s)
+	}
+}
+
+// testCheckSolutionDefaultIfSupported asserts the true default for solution
+// on a resource that was freshly created with solution omitted from config,
+// on stack versions that support the field (skipped entirely otherwise).
+// Although Kibana's UI presents an omitted solution as "classic", that
+// value is derived for display rather than persisted: the single-space GET
+// used by this resource's Read returns no solution at all for a space that
+// never had one explicitly set, so the attribute is absent from state.
+func testCheckSolutionDefaultIfSupported(resourceName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		unsupported, err := versionutils.CheckIfVersionIsUnsupported(minSelfManagedVersionForSpaceSolution)()
+		if err != nil {
+			return err
+		}
+		if unsupported {
+			return nil
+		}
+		return resource.TestCheckNoResourceAttr(resourceName, "solution")(s)
 	}
 }
 
@@ -148,6 +174,71 @@ func TestAccResourceSpace(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_kibana_space.test_space", "image_url"),
 					testCheckSolutionIfSupported("elasticstack_kibana_space.test_space"),
 				),
+			},
+		},
+	})
+}
+
+// TestAccResourceSpace_ComputedDefaults verifies the computed defaults on a
+// truly fresh create where description, disabled_features, initials, color,
+// image_url, and solution are all omitted from config (as opposed to being
+// carried over from a previous step's state, or explicitly set to an empty
+// value). Kibana's single-space GET only returns initials/color when they
+// were explicitly stored; the avatar values shown in the Kibana UI (and
+// returned by the spaces list API) are derived on the fly from the space
+// name rather than persisted, so a fresh, unmodified space has neither
+// attribute set.
+func TestAccResourceSpace_ComputedDefaults(t *testing.T) {
+	spaceID := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSpaceDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("fresh_defaults"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "name", "Test Coverage Space"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_space.test_space", "description"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_space.test_space", "disabled_features.#", "0"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_space.test_space", "initials"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_space.test_space", "color"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_space.test_space", "image_url"),
+					testCheckSolutionDefaultIfSupported("elasticstack_kibana_space.test_space"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceSpace_validation exercises the failure path of the
+// space_id and image_url regex validators, which are otherwise only ever
+// exercised with valid input elsewhere in this package.
+func TestAccResourceSpace_validation(t *testing.T) {
+	spaceID := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_space_id"),
+				PlanOnly:                 true,
+				ExpectError:              regexp.MustCompile(`(?s)must only contain lowercase letters, numbers, hyphens,.*underscores`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_image_url"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?s)must be a valid data-URL encoded image`),
 			},
 		},
 	})

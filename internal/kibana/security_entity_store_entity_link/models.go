@@ -41,8 +41,8 @@ var minKibanaEntityStoreResolutionVersion = version.Must(version.NewVersion("9.1
 type entityLinkModel struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
-	ID                  types.String         `tfsdk:"id"`
-	SpaceID             types.String         `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	TargetID            types.String         `tfsdk:"target_id"`
 	EntityIDs           types.Set            `tfsdk:"entity_ids"`
 	ResolutionGroupJSON jsontypes.Normalized `tfsdk:"resolution_group_json"`
@@ -50,7 +50,6 @@ type entityLinkModel struct {
 
 func (model entityLinkModel) GetID() types.String         { return model.ID }
 func (model entityLinkModel) GetResourceID() types.String { return model.TargetID }
-func (model entityLinkModel) GetSpaceID() types.String    { return model.SpaceID }
 
 func (model entityLinkModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return entitycore.SingleVersionRequirement(

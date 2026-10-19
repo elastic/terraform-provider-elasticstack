@@ -54,13 +54,12 @@ type OptionsModel struct {
 
 func (m DashboardModel) GetID() types.String         { return m.ID }
 func (m DashboardModel) GetResourceID() types.String { return m.DashboardID }
-func (m DashboardModel) GetSpaceID() types.String    { return m.SpaceID }
 
 type DashboardModel struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
+	entitycore.SpaceIDField
 	ID              types.String          `tfsdk:"id"`
-	SpaceID         types.String          `tfsdk:"space_id"`
 	DashboardID     types.String          `tfsdk:"dashboard_id"`
 	Title           types.String          `tfsdk:"title"`
 	Description     types.String          `tfsdk:"description"`
