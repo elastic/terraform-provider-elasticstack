@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 
@@ -31,35 +32,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-// Advanced Monitoring Options models
-type advancedMonitoringOptionsModel struct {
-	HTTPMonitoringEndpoint types.Object `tfsdk:"http_monitoring_endpoint"`
-	Diagnostics            types.Object `tfsdk:"diagnostics"`
-}
+// Advanced Monitoring Options models, shared with the
+// elasticstack_fleet_agent_policy data source via agentpolicyshape.
+type advancedMonitoringOptionsModel = agentpolicyshape.AdvancedMonitoringOptionsModel
 
-type httpMonitoringEndpointModel struct {
-	Enabled       types.Bool   `tfsdk:"enabled"`
-	Host          types.String `tfsdk:"host"`
-	Port          types.Int32  `tfsdk:"port"`
-	BufferEnabled types.Bool   `tfsdk:"buffer_enabled"`
-	PprofEnabled  types.Bool   `tfsdk:"pprof_enabled"`
-}
+type httpMonitoringEndpointModel = agentpolicyshape.HTTPMonitoringEndpointModel
 
-type diagnosticsModel struct {
-	RateLimits   types.Object `tfsdk:"rate_limits"`
-	FileUploader types.Object `tfsdk:"file_uploader"`
-}
+type diagnosticsModel = agentpolicyshape.DiagnosticsModel
 
-type rateLimitsModel struct {
-	Interval customtypes.Duration `tfsdk:"interval"`
-	Burst    types.Int32          `tfsdk:"burst"`
-}
+type rateLimitsModel = agentpolicyshape.RateLimitsModel
 
-type fileUploaderModel struct {
-	InitDuration    customtypes.Duration `tfsdk:"init_duration"`
-	BackoffDuration customtypes.Duration `tfsdk:"backoff_duration"`
-	MaxRetries      types.Int32          `tfsdk:"max_retries"`
-}
+type fileUploaderModel = agentpolicyshape.FileUploaderModel
 
 // Default values for advanced monitoring options
 const (
@@ -102,14 +85,46 @@ func fileUploaderAttrTypes() map[string]attr.Type {
 	return diagAttr.Attributes["file_uploader"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }
 
+// httpMonitoringEndpointDefaults returns the baseline http_monitoring_endpoint
+// values the resource reports when the Fleet API confirms the section exists
+// but omits a specific field, matching the schema's static defaults.
+func httpMonitoringEndpointDefaults() httpMonitoringEndpointModel {
+	return httpMonitoringEndpointModel{
+		Enabled:       types.BoolValue(defaultHTTPMonitoringEnabled),
+		Host:          types.StringValue(defaultHTTPMonitoringHost),
+		Port:          types.Int32Value(defaultHTTPMonitoringPort),
+		BufferEnabled: types.BoolValue(defaultHTTPMonitoringBufferEnabled),
+		PprofEnabled:  types.BoolValue(defaultHTTPMonitoringPprofEnabled),
+	}
+}
+
+// rateLimitsDefaults returns the baseline diagnostics.rate_limits values the
+// resource reports when the Fleet API confirms diagnostics rate limiting
+// exists but omits a specific field, matching the schema's static defaults.
+func rateLimitsDefaults() rateLimitsModel {
+	return rateLimitsModel{
+		Interval: customtypes.NewDurationValue(defaultDiagnosticsInterval),
+		Burst:    types.Int32Value(defaultDiagnosticsBurst),
+	}
+}
+
+// fileUploaderDefaults returns the baseline diagnostics.file_uploader values
+// the resource reports when the Fleet API confirms the file uploader exists
+// but omits a specific field, matching the schema's static defaults.
+func fileUploaderDefaults() fileUploaderModel {
+	return fileUploaderModel{
+		InitDuration:    customtypes.NewDurationValue(defaultDiagnosticsInitDuration),
+		BackoffDuration: customtypes.NewDurationValue(defaultDiagnosticsBackoffDuration),
+		MaxRetries:      types.Int32Value(defaultDiagnosticsMaxRetries),
+	}
+}
+
 // populateAdvancedMonitoringFromAPI populates the advanced monitoring options from API response
 func (model *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPolicyResponse) diag.Diagnostics {
-	// Check if any advanced monitoring data exists in the API response
-	hasHTTPMonitoring := data.MonitoringHttp != nil
-	hasPprofEnabled := data.MonitoringPprofEnabled != nil
-	hasDiagnostics := data.MonitoringDiagnostics != nil
+	httpEndpoint, hasHTTP := agentpolicyshape.PopulateHTTPMonitoringEndpoint(data, httpMonitoringEndpointDefaults())
+	hasDiagnostics := agentpolicyshape.HasDiagnostics(data)
 
-	if !hasHTTPMonitoring && !hasPprofEnabled && !hasDiagnostics {
+	if !hasHTTP && !hasDiagnostics {
 		// No advanced monitoring options in API response
 		model.AdvancedMonitoringOptions = types.ObjectNull(advancedMonitoringOptionsAttrTypes())
 		return nil
@@ -119,34 +134,7 @@ func (model *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Con
 	var diagnosticsObj types.Object
 
 	// Populate HTTP monitoring endpoint
-	if hasHTTPMonitoring || hasPprofEnabled {
-		httpEndpoint := httpMonitoringEndpointModel{
-			Enabled:       types.BoolValue(defaultHTTPMonitoringEnabled),
-			Host:          types.StringValue(defaultHTTPMonitoringHost),
-			Port:          types.Int32Value(defaultHTTPMonitoringPort),
-			BufferEnabled: types.BoolValue(defaultHTTPMonitoringBufferEnabled),
-			PprofEnabled:  types.BoolValue(defaultHTTPMonitoringPprofEnabled),
-		}
-
-		if data.MonitoringHttp != nil {
-			if data.MonitoringHttp.Enabled != nil {
-				httpEndpoint.Enabled = types.BoolValue(*data.MonitoringHttp.Enabled)
-			}
-			if data.MonitoringHttp.Host != nil {
-				httpEndpoint.Host = types.StringValue(*data.MonitoringHttp.Host)
-			}
-			if data.MonitoringHttp.Port != nil {
-				httpEndpoint.Port = types.Int32Value(int32(*data.MonitoringHttp.Port))
-			}
-			if data.MonitoringHttp.Buffer != nil && data.MonitoringHttp.Buffer.Enabled != nil {
-				httpEndpoint.BufferEnabled = types.BoolValue(*data.MonitoringHttp.Buffer.Enabled)
-			}
-		}
-
-		if data.MonitoringPprofEnabled != nil {
-			httpEndpoint.PprofEnabled = types.BoolValue(*data.MonitoringPprofEnabled)
-		}
-
+	if hasHTTP {
 		obj, diags := types.ObjectValueFrom(ctx, httpMonitoringEndpointAttrTypes(), httpEndpoint)
 		if diags.HasError() {
 			return diags
@@ -161,17 +149,7 @@ func (model *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Con
 		var rateLimitsObj types.Object
 		var fileUploaderObj types.Object
 
-		if data.MonitoringDiagnostics.Limit != nil {
-			rateLimits := rateLimitsModel{
-				Interval: customtypes.NewDurationValue(defaultDiagnosticsInterval),
-				Burst:    types.Int32Value(defaultDiagnosticsBurst),
-			}
-			if data.MonitoringDiagnostics.Limit.Interval != nil {
-				rateLimits.Interval = customtypes.NewDurationValue(*data.MonitoringDiagnostics.Limit.Interval)
-			}
-			if data.MonitoringDiagnostics.Limit.Burst != nil {
-				rateLimits.Burst = types.Int32Value(int32(*data.MonitoringDiagnostics.Limit.Burst))
-			}
+		if rateLimits, ok := agentpolicyshape.PopulateRateLimits(data, rateLimitsDefaults()); ok {
 			obj, diags := types.ObjectValueFrom(ctx, rateLimitsAttrTypes(), rateLimits)
 			if diags.HasError() {
 				return diags
@@ -181,21 +159,7 @@ func (model *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Con
 			rateLimitsObj = types.ObjectNull(rateLimitsAttrTypes())
 		}
 
-		if data.MonitoringDiagnostics.Uploader != nil {
-			fileUploader := fileUploaderModel{
-				InitDuration:    customtypes.NewDurationValue(defaultDiagnosticsInitDuration),
-				BackoffDuration: customtypes.NewDurationValue(defaultDiagnosticsBackoffDuration),
-				MaxRetries:      types.Int32Value(defaultDiagnosticsMaxRetries),
-			}
-			if data.MonitoringDiagnostics.Uploader.InitDur != nil {
-				fileUploader.InitDuration = customtypes.NewDurationValue(*data.MonitoringDiagnostics.Uploader.InitDur)
-			}
-			if data.MonitoringDiagnostics.Uploader.MaxDur != nil {
-				fileUploader.BackoffDuration = customtypes.NewDurationValue(*data.MonitoringDiagnostics.Uploader.MaxDur)
-			}
-			if data.MonitoringDiagnostics.Uploader.MaxRetries != nil {
-				fileUploader.MaxRetries = types.Int32Value(int32(*data.MonitoringDiagnostics.Uploader.MaxRetries))
-			}
+		if fileUploader, ok := agentpolicyshape.PopulateFileUploader(data, fileUploaderDefaults()); ok {
 			obj, diags := types.ObjectValueFrom(ctx, fileUploaderAttrTypes(), fileUploader)
 			if diags.HasError() {
 				return diags

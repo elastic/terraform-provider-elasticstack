@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"math"
 	"slices"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -162,22 +161,8 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 		}
 	}
 
-	if data.InactivityTimeout != nil {
-		// Convert seconds to duration string
-		seconds := int64(*data.InactivityTimeout)
-		d := time.Duration(seconds) * time.Second
-		model.InactivityTimeout = customtypes.NewDurationValue(d.Truncate(time.Second).String())
-	} else {
-		model.InactivityTimeout = customtypes.NewDurationNull()
-	}
-	if data.UnenrollTimeout != nil {
-		// Convert seconds to duration string
-		seconds := int64(*data.UnenrollTimeout)
-		d := time.Duration(seconds) * time.Second
-		model.UnenrollmentTimeout = customtypes.NewDurationValue(d.Truncate(time.Second).String())
-	} else {
-		model.UnenrollmentTimeout = customtypes.NewDurationNull()
-	}
+	model.InactivityTimeout = customtypes.NewDurationFromSeconds(data.InactivityTimeout)
+	model.UnenrollmentTimeout = customtypes.NewDurationFromSeconds(data.UnenrollTimeout)
 	if tags := typeutils.Deref(data.GlobalDataTags); tags != nil {
 		diags := diag.Diagnostics{}
 

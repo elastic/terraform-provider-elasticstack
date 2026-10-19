@@ -144,3 +144,14 @@ func NewDurationFromAny(v any) Duration {
 	}
 	return NewDurationNull()
 }
+
+// NewDurationFromSeconds converts a seconds count, as returned by APIs that
+// report durations as a number of seconds, to a Duration. Returns
+// NewDurationNull() when seconds is nil.
+func NewDurationFromSeconds(seconds *float32) Duration {
+	if seconds == nil {
+		return NewDurationNull()
+	}
+	d := time.Duration(int64(*seconds)) * time.Second
+	return NewDurationValue(d.String())
+}
