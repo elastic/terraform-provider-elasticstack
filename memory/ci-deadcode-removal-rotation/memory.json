@@ -1906,6 +1906,36 @@
           "./scripts/changelog/internal/section"
         ]
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_pack.ecsMappingAttrTypes",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_pack",
+      "attemptedAt": "2026-10-19T03:06:00.175603208Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_pack.ecsMappingMapElemType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_pack",
+      "attemptedAt": "2026-10-19T03:06:00.175603348Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/section.CustomerImpact.String",
+      "package": "github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/section",
+      "attemptedAt": "2026-10-19T03:06:00.175603418Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/section.CustomerImpact.UnmarshalJSON",
+      "package": "github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/section",
+      "attemptedAt": "2026-10-19T03:06:37.73000686Z",
+      "reason": "invalid_candidate_references",
+      "context": {
+        "referenceFileCount": 1,
+        "impactedPackages": [
+          "./scripts/changelog/internal/section"
+        ]
+      }
     }
   ]
 }
