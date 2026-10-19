@@ -25,13 +25,17 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"reflect"
 	"regexp"
 	"strings"
 	"testing"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/lastsync"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/updateerror"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/connector/updatestatus"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/connectorfieldtype"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/connectorstatus"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/types/enums/syncstatus"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
@@ -236,6 +240,19 @@ func testAccCheckDataSourceJSONObjectEmpty(attr string) resource.TestCheckFunc {
 	})
 }
 
+func testAccCheckDataSourceJSONValueEqual(attr string, expected any) resource.TestCheckFunc {
+	return resource.TestCheckResourceAttrWith(contentConnectorDataSourceAddr, attr, func(value string) error {
+		var got any
+		if err := json.Unmarshal([]byte(value), &got); err != nil {
+			return fmt.Errorf("%s is not valid JSON: %w", attr, err)
+		}
+		if !reflect.DeepEqual(got, expected) {
+			return fmt.Errorf("expected %s to equal %#v, got %#v", attr, expected, got)
+		}
+		return nil
+	})
+}
+
 func testAccCheckDataSourceJSONArrayNonEmpty(attr string) resource.TestCheckFunc {
 	return resource.TestCheckResourceAttrWith(contentConnectorDataSourceAddr, attr, func(value string) error {
 		var arr []json.RawMessage
@@ -435,6 +452,72 @@ func updateConnectorStatusViaAPI(t *testing.T, connectorID string, status connec
 	}
 }
 
+// updateConnectorNameViaAPI updates the connector's name and description.
+func updateConnectorNameViaAPI(t *testing.T, connectorID, name, description string) {
+	t.Helper()
+	accRequireConnectorSupported(t)
+	ctx := context.Background()
+	client := accConnectorClient(t)
+	diags := esclient.UpdateConnectorName(ctx, client, connectorID, &name, &description)
+	if diags.HasError() {
+		t.Fatalf("update connector %q name: %s", connectorID, diags[0].Summary())
+	}
+}
+
+// updateConnectorAPIKeyIDViaAPI sets the connector's api_key_id/api_key_secret_id.
+// These are normally populated by the connector service when it provisions a
+// native connector's API key; this test-only helper sets them directly.
+func updateConnectorAPIKeyIDViaAPI(t *testing.T, connectorID, apiKeyID, apiKeySecretID string) {
+	t.Helper()
+	accRequireConnectorSupported(t)
+	ctx := context.Background()
+	client := accConnectorClient(t)
+	diags := esclient.UpdateConnectorAPIKeyID(ctx, client, connectorID, &apiKeyID, &apiKeySecretID)
+	if diags.HasError() {
+		t.Fatalf("update connector %q api key id: %s", connectorID, diags[0].Summary())
+	}
+}
+
+// setConnectorLastSyncStats updates the connector's sync telemetry fields (last_seen,
+// last_synced, last_sync_status, document counts, scheduled-at timestamps, sync_cursor,
+// and sync error fields). These are normally populated by the connector service as it
+// runs sync jobs; this test-only helper sets them directly via the connector last-sync API.
+func setConnectorLastSyncStats(t *testing.T, connectorID string, req *lastsync.Request) {
+	t.Helper()
+	accRequireConnectorSupported(t)
+	ctx := context.Background()
+	client := accConnectorClient(t)
+	_, err := client.GetESClient().Connector.LastSync(connectorID).Request(req).Do(ctx)
+	if err != nil {
+		t.Fatalf("update connector %q last sync stats: %v", connectorID, err)
+	}
+}
+
+// checkInConnectorViaAPI updates the connector's last_seen field to the current
+// timestamp via the connector check-in API.
+func checkInConnectorViaAPI(t *testing.T, connectorID string) {
+	t.Helper()
+	accRequireConnectorSupported(t)
+	ctx := context.Background()
+	client := accConnectorClient(t)
+	_, err := client.GetESClient().Connector.CheckIn(connectorID).Do(ctx)
+	if err != nil {
+		t.Fatalf("check in connector %q: %v", connectorID, err)
+	}
+}
+
+// setConnectorErrorViaAPI sets the connector-level error field.
+func setConnectorErrorViaAPI(t *testing.T, connectorID, errMsg string) {
+	t.Helper()
+	accRequireConnectorSupported(t)
+	ctx := context.Background()
+	client := accConnectorClient(t)
+	_, err := client.GetESClient().Connector.UpdateError(connectorID).Request(&updateerror.Request{Error: errMsg}).Do(ctx)
+	if err != nil {
+		t.Fatalf("update connector %q error: %v", connectorID, err)
+	}
+}
+
 // testAccCheckNativeConnectorAPIKeysOrSkip skips the test when the
 // native_connector_api_keys feature is absent from the data source state.
 // This guards the native connector test on ES clusters that do not populate
@@ -538,7 +621,8 @@ func TestAccDataSourceContentConnector_statusNeedsConfiguration(t *testing.T) {
 }
 
 // TestAccDataSourceContentConnector_nativeConnector verifies features.native_connector_api_keys
-// is present for connectors created with is_native = true (REQ-010 gap 4).
+// is present for connectors created with is_native = true, using a value-specific assertion
+// since a native connector should always have this feature enabled (REQ-010 gap 4).
 // The test skips when the ES cluster does not populate this feature.
 func TestAccDataSourceContentConnector_nativeConnector(t *testing.T) {
 	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-nat")
@@ -556,7 +640,140 @@ func TestAccDataSourceContentConnector_nativeConnector(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "is_native", "true"),
 					testAccCheckNativeConnectorAPIKeysOrSkip(t),
-					resource.TestCheckResourceAttrSet(contentConnectorDataSourceAddr, "features.native_connector_api_keys.enabled"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "features.native_connector_api_keys.enabled", "true"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceContentConnector_apiKeyID verifies the data source surfaces
+// api_key_id/api_key_secret_id once populated on the connector document. These are
+// normally set by the connector service when it provisions a native connector's API
+// key; this test sets them out of band via the connector API (REQ-010 gap 4).
+func TestAccDataSourceContentConnector_apiKeyID(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-apikey")
+	vars := connectorIDVariables(connectorID)
+	apiKeyID := "tf-acc-native-api-key-id"
+	apiKeySecretID := "tf-acc-native-api-key-secret-id"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckContentConnectorDestroyByID(t, connectorID),
+		Steps: []resource.TestStep{
+			{
+				PreConfig: func() {
+					createConnectorViaAPI(t, connectorID)
+					updateConnectorAPIKeyIDViaAPI(t, connectorID, apiKeyID, apiKeySecretID)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "api_key_id", apiKeyID),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "api_key_secret_id", apiKeySecretID),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceContentConnector_syncTelemetry verifies the data source surfaces sync
+// telemetry fields that are only ever populated by the connector service out of band:
+// last_seen, last_synced, last_sync_status, document counts, scheduled-at timestamps,
+// sync errors, the connector-level error, and sync_cursor (REQ-010 gap 5).
+func TestAccDataSourceContentConnector_syncTelemetry(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-sync")
+	vars := connectorIDVariables(connectorID)
+
+	lastIndexedDocumentCount := int64(42)
+	lastDeletedDocumentCount := int64(7)
+	lastSyncError := "simulated last sync error"
+	lastAccessControlSyncError := "simulated last access control sync error"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckContentConnectorDestroyByID(t, connectorID),
+		Steps: []resource.TestStep{
+			{
+				PreConfig: func() {
+					createConnectorViaAPI(t, connectorID)
+					checkInConnectorViaAPI(t, connectorID)
+					setConnectorLastSyncStats(t, connectorID, &lastsync.Request{
+						LastSynced:                       "2024-06-02T09:15:00.000Z",
+						LastSyncStatus:                   &syncstatus.Completed,
+						LastIndexedDocumentCount:         &lastIndexedDocumentCount,
+						LastDeletedDocumentCount:         &lastDeletedDocumentCount,
+						LastSyncScheduledAt:              "2024-06-03T10:30:00.000Z",
+						LastSyncError:                    &lastSyncError,
+						LastAccessControlSyncStatus:      &syncstatus.Error,
+						LastAccessControlSyncError:       &lastAccessControlSyncError,
+						LastAccessControlSyncScheduledAt: "2024-06-04T11:45:00.000Z",
+						LastIncrementalSyncScheduledAt:   "2024-06-05T12:00:00.000Z",
+						SyncCursor:                       json.RawMessage(`{"stage":"pending"}`),
+					})
+					setConnectorErrorViaAPI(t, connectorID, "simulated connector error")
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(contentConnectorDataSourceAddr, "last_seen"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "last_synced", "2024-06-02T09:15:00.000Z"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "last_sync_status", "completed"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "last_indexed_document_count", "42"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "last_deleted_document_count", "7"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "last_sync_scheduled_at", "2024-06-03T10:30:00.000Z"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "last_sync_error", lastSyncError),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "last_access_control_sync_status", "error"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "last_access_control_sync_error", lastAccessControlSyncError),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "last_access_control_sync_scheduled_at", "2024-06-04T11:45:00.000Z"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "last_incremental_sync_scheduled_at", "2024-06-05T12:00:00.000Z"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "error", "simulated connector error"),
+					testAccCheckDataSourceJSONValueEqual("sync_cursor", map[string]any{"stage": "pending"}),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceContentConnector_nameUpdate verifies the data source re-reads an
+// updated connector name/description across refreshes, closing the update-coverage
+// gap for computed string attributes (REQ-010 gap 6).
+func TestAccDataSourceContentConnector_nameUpdate(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-ds-upd")
+	vars := connectorIDVariables(connectorID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckContentConnectorDestroyByID(t, connectorID),
+		Steps: []resource.TestStep{
+			{
+				PreConfig: func() {
+					createConnectorViaAPI(t, connectorID)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "name", "TF acc ds api"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "description", "created via API for data source acceptance test"),
+				),
+			},
+			{
+				PreConfig: func() {
+					updateConnectorNameViaAPI(t, connectorID, "TF acc ds api updated", "updated via API for data source acceptance test")
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "name", "TF acc ds api updated"),
+					resource.TestCheckResourceAttr(contentConnectorDataSourceAddr, "description", "updated via API for data source acceptance test"),
 				),
 			},
 		},
