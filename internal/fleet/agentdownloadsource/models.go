@@ -34,16 +34,16 @@ import (
 
 type model struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	SourceID         types.String `tfsdk:"source_id"`
-	Name             types.String `tfsdk:"name"`
-	Host             types.String `tfsdk:"host"`
-	Default          types.Bool   `tfsdk:"default"`
-	ProxyID          types.String `tfsdk:"proxy_id"`
-	Ssl              types.Object `tfsdk:"ssl"`
-	Auth             *authModel   `tfsdk:"auth"`
-	SpaceIDs         types.Set    `tfsdk:"space_ids"`         // > string
-	KibanaConnection types.List   `tfsdk:"kibana_connection"` // > provider schema connection block
+	entitycore.KibanaConnectionField
+	ID       types.String `tfsdk:"id"`
+	SourceID types.String `tfsdk:"source_id"`
+	Name     types.String `tfsdk:"name"`
+	Host     types.String `tfsdk:"host"`
+	Default  types.Bool   `tfsdk:"default"`
+	ProxyID  types.String `tfsdk:"proxy_id"`
+	Ssl      types.Object `tfsdk:"ssl"`
+	Auth     *authModel   `tfsdk:"auth"`
+	SpaceIDs types.Set    `tfsdk:"space_ids"` // > string
 }
 
 type authModel struct {
@@ -84,9 +84,8 @@ var (
 // configurations without ssl keep the 8.13.0 resource floor.
 var agentDownloadSourceSslMinVersion = version.Must(version.NewVersion("9.1.0"))
 
-func (m model) GetID() types.String             { return m.ID }
-func (m model) GetResourceID() types.String     { return m.SourceID }
-func (m model) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m model) GetID() types.String         { return m.ID }
+func (m model) GetResourceID() types.String { return m.SourceID }
 
 func (m model) GetSpaceID() types.String {
 	return fleet.SpaceIDFromSetOrDefault(m.SpaceIDs, clients.DefaultSpaceID)

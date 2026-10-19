@@ -24,16 +24,15 @@ import (
 
 type defaultDataViewModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	DataViewID       types.String `tfsdk:"data_view_id"`
-	Force            types.Bool   `tfsdk:"force"`
-	SkipDelete       types.Bool   `tfsdk:"skip_delete"`
+	entitycore.KibanaConnectionField
 	entitycore.SpaceIDField
+	ID         types.String `tfsdk:"id"`
+	DataViewID types.String `tfsdk:"data_view_id"`
+	Force      types.Bool   `tfsdk:"force"`
+	SkipDelete types.Bool   `tfsdk:"skip_delete"`
 }
 
-func (m defaultDataViewModel) GetID() types.String             { return m.ID }
-func (m defaultDataViewModel) GetResourceID() types.String     { return m.SpaceID }
-func (m defaultDataViewModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m defaultDataViewModel) GetID() types.String         { return m.ID }
+func (m defaultDataViewModel) GetResourceID() types.String { return m.SpaceID }
 
 var _ entitycore.KibanaResourceModel = defaultDataViewModel{}

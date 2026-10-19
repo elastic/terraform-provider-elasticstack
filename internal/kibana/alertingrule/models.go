@@ -36,9 +36,9 @@ import (
 // alertingRuleModel is the Terraform model for an alerting rule.
 type alertingRuleModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	RuleID           types.String `tfsdk:"rule_id"`
+	entitycore.KibanaConnectionField
+	ID     types.String `tfsdk:"id"`
+	RuleID types.String `tfsdk:"rule_id"`
 	entitycore.SpaceIDField
 	Name            types.String                       `tfsdk:"name"`
 	Consumer        types.String                       `tfsdk:"consumer"`
@@ -184,9 +184,8 @@ var (
 	artifactsMinSupportedVersion       = version.Must(version.NewVersion("9.1.0"))
 )
 
-func (m alertingRuleModel) GetID() types.String             { return m.ID }
-func (m alertingRuleModel) GetResourceID() types.String     { return m.RuleID }
-func (m alertingRuleModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m alertingRuleModel) GetID() types.String         { return m.ID }
+func (m alertingRuleModel) GetResourceID() types.String { return m.RuleID }
 
 var _ entitycore.KibanaResourceModel = alertingRuleModel{}
 

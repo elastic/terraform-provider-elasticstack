@@ -27,8 +27,8 @@ import (
 
 type enableRuleModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	entitycore.KibanaConnectionField
+	ID types.String `tfsdk:"id"`
 	entitycore.SpaceIDField
 	Key              types.String `tfsdk:"key"`
 	Value            types.String `tfsdk:"value"`
@@ -36,9 +36,8 @@ type enableRuleModel struct {
 	AllRulesEnabled  types.Bool   `tfsdk:"all_rules_enabled"`
 }
 
-func (m enableRuleModel) GetID() types.String             { return m.ID }
-func (m enableRuleModel) GetResourceID() types.String     { return m.Key }
-func (m enableRuleModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m enableRuleModel) GetID() types.String         { return m.ID }
+func (m enableRuleModel) GetResourceID() types.String { return m.Key }
 
 var _ entitycore.KibanaResourceModel = enableRuleModel{}
 

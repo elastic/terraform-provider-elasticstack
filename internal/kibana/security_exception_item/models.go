@@ -43,8 +43,8 @@ var MinVersionExpireTime = version.Must(version.NewVersion("8.7.2"))
 
 type ExceptionItemModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	entitycore.KibanaConnectionField
+	ID types.String `tfsdk:"id"`
 	entitycore.SpaceIDField
 	ItemID           types.String         `tfsdk:"item_id"`
 	ListID           types.String         `tfsdk:"list_id"`
@@ -70,7 +70,6 @@ func (m ExceptionItemModel) GetID() types.String { return m.ID }
 func (m ExceptionItemModel) GetResourceID() types.String {
 	return clients.ResourceIDFromComposite(m.ID, m.ItemID)
 }
-func (m ExceptionItemModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 var _ entitycore.KibanaResourceModel = ExceptionItemModel{}
 

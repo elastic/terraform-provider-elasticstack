@@ -114,9 +114,9 @@ type tfBrowserMonitorFieldsV0 struct {
 
 type tfModelV0 struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.KibanaConnectionField
 
 	ID               types.String              `tfsdk:"id"`
-	KibanaConnection types.List                `tfsdk:"kibana_connection"`
 	Name             types.String              `tfsdk:"name"`
 	SpaceID          types.String              `tfsdk:"space_id"`
 	Namespace        types.String              `tfsdk:"namespace"`
@@ -1297,8 +1297,6 @@ func (v tfModelV0) GetSpaceID() types.String {
 }
 
 func (v tfModelV0) IsUnscopedSpace() bool { return true }
-
-func (v tfModelV0) GetKibanaConnection() types.List { return v.KibanaConnection }
 
 // knownStringPtr returns a pointer to the string value when it is known, even if empty.
 func knownStringPtr(v types.String) *string {

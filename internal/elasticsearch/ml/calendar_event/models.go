@@ -30,16 +30,16 @@ import (
 
 type CalendarEventTFModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String      `tfsdk:"id"`
-	ElasticsearchConnection types.List        `tfsdk:"elasticsearch_connection"`
-	CalendarID              types.String      `tfsdk:"calendar_id"`
-	Description             types.String      `tfsdk:"description"`
-	StartTime               timetypes.RFC3339 `tfsdk:"start_time"`
-	EndTime                 timetypes.RFC3339 `tfsdk:"end_time"`
-	EventID                 types.String      `tfsdk:"event_id"`
-	SkipResult              types.Bool        `tfsdk:"skip_result"`
-	SkipModelUpdate         types.Bool        `tfsdk:"skip_model_update"`
-	ForceTimeShift          types.String      `tfsdk:"force_time_shift"`
+	entitycore.ElasticsearchConnectionField
+	ID              types.String      `tfsdk:"id"`
+	CalendarID      types.String      `tfsdk:"calendar_id"`
+	Description     types.String      `tfsdk:"description"`
+	StartTime       timetypes.RFC3339 `tfsdk:"start_time"`
+	EndTime         timetypes.RFC3339 `tfsdk:"end_time"`
+	EventID         types.String      `tfsdk:"event_id"`
+	SkipResult      types.Bool        `tfsdk:"skip_result"`
+	SkipModelUpdate types.Bool        `tfsdk:"skip_model_update"`
+	ForceTimeShift  types.String      `tfsdk:"force_time_shift"`
 }
 
 // GetID implements entitycore.ElasticsearchResourceModel.
@@ -61,11 +61,6 @@ func (m CalendarEventTFModel) GetResourceID() types.String {
 		return types.StringUnknown()
 	}
 	return types.StringValue(c + "/" + e)
-}
-
-// GetElasticsearchConnection implements entitycore.ElasticsearchResourceModel.
-func (m CalendarEventTFModel) GetElasticsearchConnection() types.List {
-	return m.ElasticsearchConnection
 }
 
 type CalendarEventAPIModel struct {

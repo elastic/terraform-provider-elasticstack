@@ -36,22 +36,22 @@ import (
 // Datafeed represents the Terraform resource model for ML datafeeds
 type Datafeed struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String                                      `tfsdk:"id"`
-	ElasticsearchConnection types.List                                        `tfsdk:"elasticsearch_connection"`
-	DatafeedID              types.String                                      `tfsdk:"datafeed_id"`
-	JobID                   types.String                                      `tfsdk:"job_id"`
-	Indices                 types.List                                        `tfsdk:"indices"`
-	Query                   jsontypes.Normalized                              `tfsdk:"query"`
-	Aggregations            jsontypes.Normalized                              `tfsdk:"aggregations"`
-	ScriptFields            customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"script_fields"`
-	RuntimeMappings         jsontypes.Normalized                              `tfsdk:"runtime_mappings"`
-	ScrollSize              types.Int64                                       `tfsdk:"scroll_size"`
-	ChunkingConfig          types.Object                                      `tfsdk:"chunking_config"`
-	Frequency               types.String                                      `tfsdk:"frequency"`
-	QueryDelay              types.String                                      `tfsdk:"query_delay"`
-	DelayedDataCheckConfig  types.Object                                      `tfsdk:"delayed_data_check_config"`
-	MaxEmptySearches        types.Int64                                       `tfsdk:"max_empty_searches"`
-	IndicesOptions          types.Object                                      `tfsdk:"indices_options"`
+	entitycore.ElasticsearchConnectionField
+	ID                     types.String                                      `tfsdk:"id"`
+	DatafeedID             types.String                                      `tfsdk:"datafeed_id"`
+	JobID                  types.String                                      `tfsdk:"job_id"`
+	Indices                types.List                                        `tfsdk:"indices"`
+	Query                  jsontypes.Normalized                              `tfsdk:"query"`
+	Aggregations           jsontypes.Normalized                              `tfsdk:"aggregations"`
+	ScriptFields           customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"script_fields"`
+	RuntimeMappings        jsontypes.Normalized                              `tfsdk:"runtime_mappings"`
+	ScrollSize             types.Int64                                       `tfsdk:"scroll_size"`
+	ChunkingConfig         types.Object                                      `tfsdk:"chunking_config"`
+	Frequency              types.String                                      `tfsdk:"frequency"`
+	QueryDelay             types.String                                      `tfsdk:"query_delay"`
+	DelayedDataCheckConfig types.Object                                      `tfsdk:"delayed_data_check_config"`
+	MaxEmptySearches       types.Int64                                       `tfsdk:"max_empty_searches"`
+	IndicesOptions         types.Object                                      `tfsdk:"indices_options"`
 }
 
 // GetID implements entitycore.ElasticsearchResourceModel.
@@ -60,9 +60,6 @@ func (m Datafeed) GetID() types.String { return m.ID }
 // GetResourceID implements entitycore.ElasticsearchResourceModel.
 // Returns the plan-safe write identity (datafeed_id).
 func (m Datafeed) GetResourceID() types.String { return m.DatafeedID }
-
-// GetElasticsearchConnection implements entitycore.ElasticsearchResourceModel.
-func (m Datafeed) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
 
 // ChunkingConfig represents the chunking configuration
 type ChunkingConfig struct {

@@ -31,17 +31,16 @@ import (
 // Data is the Terraform plan/state shape for the component template resource.
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String         `tfsdk:"id"`
-	Name                    types.String         `tfsdk:"name"`
-	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
-	Template                types.Object         `tfsdk:"template"`
-	Version                 types.Int64          `tfsdk:"version"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
+	entitycore.ElasticsearchConnectionField
+	ID       types.String         `tfsdk:"id"`
+	Name     types.String         `tfsdk:"name"`
+	Metadata jsontypes.Normalized `tfsdk:"metadata"`
+	Template types.Object         `tfsdk:"template"`
+	Version  types.Int64          `tfsdk:"version"`
 }
 
-func (d Data) GetID() types.String                    { return d.ID }
-func (d Data) GetResourceID() types.String            { return d.Name }
-func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+func (d Data) GetID() types.String         { return d.ID }
+func (d Data) GetResourceID() types.String { return d.Name }
 
 // GetTemplate satisfies [templateutil.TemplateModel].
 func (d Data) GetTemplate() types.Object { return d.Template }

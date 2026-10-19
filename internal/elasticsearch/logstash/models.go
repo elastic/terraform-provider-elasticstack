@@ -26,8 +26,8 @@ import (
 // Data holds the Terraform state for the logstash pipeline resource.
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String `tfsdk:"id"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
+	entitycore.ElasticsearchConnectionField
+	ID types.String `tfsdk:"id"`
 
 	PipelineID       types.String         `tfsdk:"pipeline_id"`
 	Description      types.String         `tfsdk:"description"`
@@ -54,6 +54,5 @@ type Data struct {
 	QueueType                  types.String `tfsdk:"queue_type"`
 }
 
-func (d Data) GetID() types.String                    { return d.ID }
-func (d Data) GetResourceID() types.String            { return d.PipelineID }
-func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+func (d Data) GetID() types.String         { return d.ID }
+func (d Data) GetResourceID() types.String { return d.PipelineID }

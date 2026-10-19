@@ -29,16 +29,15 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (m Model) GetID() types.String             { return m.ID }
-func (m Model) GetResourceID() types.String     { return m.ListID }
-func (m Model) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m Model) GetID() types.String         { return m.ID }
+func (m Model) GetResourceID() types.String { return m.ListID }
 
 var _ entitycore.KibanaResourceModel = Model{}
 
 type Model struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	entitycore.KibanaConnectionField
+	ID types.String `tfsdk:"id"`
 	entitycore.SpaceIDField
 	ListID       types.String         `tfsdk:"list_id"`
 	Name         types.String         `tfsdk:"name"`

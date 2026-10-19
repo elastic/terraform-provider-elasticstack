@@ -26,10 +26,10 @@ import (
 // TFModel is the Terraform state for a single calendar–job (or calendar–group) assignment.
 type TFModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String `tfsdk:"id"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
-	CalendarID              types.String `tfsdk:"calendar_id"`
-	JobID                   types.String `tfsdk:"job_id"`
+	entitycore.ElasticsearchConnectionField
+	ID         types.String `tfsdk:"id"`
+	CalendarID types.String `tfsdk:"calendar_id"`
+	JobID      types.String `tfsdk:"job_id"`
 }
 
 // GetID implements entitycore.ElasticsearchResourceModel.
@@ -53,6 +53,3 @@ func (m TFModel) GetResourceID() types.String {
 	}
 	return types.StringValue(c + "/" + j)
 }
-
-// GetElasticsearchConnection implements entitycore.ElasticsearchResourceModel.
-func (m TFModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }

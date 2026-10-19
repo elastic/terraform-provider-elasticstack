@@ -41,8 +41,8 @@ var (
 
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	entitycore.KibanaConnectionField
+	ID types.String `tfsdk:"id"`
 	entitycore.SpaceIDField
 	RuleID   types.String `tfsdk:"rule_id"`
 	Name     types.String `tfsdk:"name"`
@@ -594,7 +594,6 @@ func (d Data) GetID() types.String { return d.ID }
 func (d Data) GetResourceID() types.String {
 	return clients.ResourceIDFromComposite(d.ID, d.RuleID)
 }
-func (d Data) GetKibanaConnection() types.List { return d.KibanaConnection }
 
 var _ entitycore.KibanaResourceModel = Data{}
 

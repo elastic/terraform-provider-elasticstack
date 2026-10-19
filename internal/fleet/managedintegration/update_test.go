@@ -306,15 +306,17 @@ func TestOnlyCreateOnlyFlagsChanged_FieldCoverage(t *testing.T) {
 	// server-Computed -- never Optional -- so they can never be what a user's
 	// config actually changed; see onlyCreateOnlyFlagsChanged's doc comment
 	// for why comparing them was the original bug this exclusion fixes).
-	// ResourceTimeoutsField (the embedded field itself) and Timeouts (its one
-	// promoted field) are both listed since reflect.VisibleFields below
-	// includes promoted fields.
+	// ResourceTimeoutsField/KibanaConnectionField (the embedded fields
+	// themselves) and Timeouts/KibanaConnection (their one promoted field
+	// each) are all listed since reflect.VisibleFields below includes
+	// promoted fields.
 	excluded := map[string]bool{
 		"CreateDatasetTemplates": true,
 		"Force":                  true,
 		"ForceDelete":            true,
 		"SkipTopologyCheck":      true,
 		"KibanaConnection":       true,
+		"KibanaConnectionField":  true, // embedded entitycore.KibanaConnectionField
 		"ResourceTimeoutsField":  true, // embedded entitycore.ResourceTimeoutsField
 		"Timeouts":               true, // ResourceTimeoutsField's one promoted field
 		"CreatedAt":              true,

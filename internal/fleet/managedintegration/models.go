@@ -59,8 +59,8 @@ const minVersionUserFacing = "9.5.0"
 // policyshape.VarsJSONValue) -- no local type duplication.
 type managedIntegrationModel struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.KibanaConnectionField
 	ID                               types.String              `tfsdk:"id"`
-	KibanaConnection                 types.List                `tfsdk:"kibana_connection"`
 	PolicyID                         types.String              `tfsdk:"policy_id"`
 	Name                             types.String              `tfsdk:"name"`
 	Description                      types.String              `tfsdk:"description"`
@@ -115,8 +115,6 @@ const defaultSpaceID = "default"
 func (m managedIntegrationModel) GetSpaceID() types.String {
 	return fleet.SpaceIDFromSetOrDefault(m.SpaceIDs, defaultSpaceID)
 }
-
-func (m managedIntegrationModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 // GetVersionRequirements enforces the minimum Kibana version for the Fleet
 // managed_integrations API (GA, added in Kibana 9.5.0). See

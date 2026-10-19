@@ -44,10 +44,10 @@ const nameKey = "name"
 // tfModel represents the Terraform state model for this resource.
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String `tfsdk:"id"`
-	IndexTemplate           types.String `tfsdk:"index_template"`
-	LifecycleName           types.String `tfsdk:"lifecycle_name"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
+	entitycore.ElasticsearchConnectionField
+	ID            types.String `tfsdk:"id"`
+	IndexTemplate types.String `tfsdk:"index_template"`
+	LifecycleName types.String `tfsdk:"lifecycle_name"`
 }
 
 // getComponentTemplateName returns the name of the @custom component template.
@@ -65,9 +65,6 @@ func (m tfModel) GetResourceID() types.String {
 	}
 	return types.StringValue(m.IndexTemplate.ValueString() + "@custom")
 }
-
-// GetElasticsearchConnection returns the Elasticsearch connection configuration.
-func (m tfModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements] and enforces
 // the ES >= 8.2.0 minimum required by the Put Component Template API used by this resource.

@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -61,8 +62,8 @@ type integrationPolicyInputStreamModelV2 struct {
 // V2→V3 state upgrader can decode prior state. It differs from the live model
 // only by the presence of the now-removed `enabled` attribute.
 type integrationPolicyModelV2 struct {
+	entitycore.KibanaConnectionField
 	ID                 types.String  `tfsdk:"id"`
-	KibanaConnection   types.List    `tfsdk:"kibana_connection"`
 	PolicyID           types.String  `tfsdk:"policy_id"`
 	Name               types.String  `tfsdk:"name"`
 	Namespace          types.String  `tfsdk:"namespace"`

@@ -519,9 +519,9 @@ type dataViewsRuntimefieldmapScript = struct {
 
 type dataViewModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	entitycore.KibanaConnectionField
 	entitycore.SpaceIDField
+	ID       types.String `tfsdk:"id"`
 	Override types.Bool   `tfsdk:"override"`
 	DataView types.Object `tfsdk:"data_view"` // > innerModel
 }
@@ -531,7 +531,6 @@ func (model dataViewModel) GetResourceID() types.String {
 	viewID, _ := model.getViewIDAndSpaceID()
 	return types.StringValue(viewID)
 }
-func (model dataViewModel) GetKibanaConnection() types.List { return model.KibanaConnection }
 
 var _ entitycore.KibanaResourceModel = dataViewModel{}
 

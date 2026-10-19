@@ -52,15 +52,14 @@ type OptionsModel struct {
 	HidePanelBorders types.Bool `tfsdk:"hide_panel_borders"`
 }
 
-func (m DashboardModel) GetID() types.String             { return m.ID }
-func (m DashboardModel) GetResourceID() types.String     { return m.DashboardID }
-func (m DashboardModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m DashboardModel) GetID() types.String         { return m.ID }
+func (m DashboardModel) GetResourceID() types.String { return m.DashboardID }
 
 type DashboardModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	entitycore.KibanaConnectionField
 	entitycore.SpaceIDField
+	ID              types.String          `tfsdk:"id"`
 	DashboardID     types.String          `tfsdk:"dashboard_id"`
 	Title           types.String          `tfsdk:"title"`
 	Description     types.String          `tfsdk:"description"`

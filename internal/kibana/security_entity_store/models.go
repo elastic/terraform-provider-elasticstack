@@ -46,8 +46,8 @@ type logExtractionModel struct {
 
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
+	entitycore.KibanaConnectionField
+	ID types.String `tfsdk:"id"`
 	entitycore.SpaceIDField
 	EntityTypes           types.Set       `tfsdk:"entity_types"`
 	AllowEntityTypeShrink types.Bool      `tfsdk:"allow_entity_type_shrink"`
@@ -60,9 +60,8 @@ type tfModel struct {
 var _ entitycore.KibanaResourceModel = tfModel{}
 var _ entitycore.WithVersionRequirements = (*tfModel)(nil)
 
-func (model tfModel) GetID() types.String             { return model.ID }
-func (model tfModel) GetKibanaConnection() types.List { return model.KibanaConnection }
-func (model tfModel) GetResourceID() types.String     { return types.StringValue(resourceID) }
+func (model tfModel) GetID() types.String         { return model.ID }
+func (model tfModel) GetResourceID() types.String { return types.StringValue(resourceID) }
 
 func (*tfModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return entitycore.SingleVersionRequirement(

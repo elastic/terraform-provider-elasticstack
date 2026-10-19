@@ -29,11 +29,11 @@ import (
 // dynamicsettings.Model, matching indexparent.GetDynamicSettingAttributes().
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.ElasticsearchConnectionField
 	ID    types.String `tfsdk:"id"`
 	Index types.String `tfsdk:"index"`
 	dynamicsettings.Model
-	SettingsJSON            jsontypes.Normalized `tfsdk:"settings_json"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
+	SettingsJSON jsontypes.Normalized `tfsdk:"settings_json"`
 }
 
 // GetID satisfies [entitycore.ElasticsearchResourceModel].
@@ -42,6 +42,3 @@ func (model tfModel) GetID() types.String { return model.ID }
 // GetResourceID satisfies [entitycore.ElasticsearchResourceModel], returning the
 // target concrete index name used as the write identity.
 func (model tfModel) GetResourceID() types.String { return model.Index }
-
-// GetElasticsearchConnection satisfies [entitycore.ElasticsearchResourceModel].
-func (model tfModel) GetElasticsearchConnection() types.List { return model.ElasticsearchConnection }

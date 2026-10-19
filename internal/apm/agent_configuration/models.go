@@ -20,13 +20,14 @@ package agentconfiguration
 import (
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // AgentConfiguration holds the agent configuration.
 type AgentConfiguration struct {
-	KibanaConnection   types.List   `tfsdk:"kibana_connection"`
+	entitycore.KibanaConnectionField
 	ID                 types.String `tfsdk:"id"`
 	ServiceName        types.String `tfsdk:"service_name"`
 	ServiceEnvironment types.String `tfsdk:"service_environment"`

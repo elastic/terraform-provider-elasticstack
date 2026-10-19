@@ -36,17 +36,16 @@ import (
 
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String `tfsdk:"id"`
-	Name                    types.String `tfsdk:"name"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
-	WriteIndex              types.Object `tfsdk:"write_index"`
-	ReadIndices             types.Set    `tfsdk:"read_indices"`
-	desiredEmptyAfterWrite  bool
+	entitycore.ElasticsearchConnectionField
+	ID                     types.String `tfsdk:"id"`
+	Name                   types.String `tfsdk:"name"`
+	WriteIndex             types.Object `tfsdk:"write_index"`
+	ReadIndices            types.Set    `tfsdk:"read_indices"`
+	desiredEmptyAfterWrite bool
 }
 
-func (model tfModel) GetID() types.String                    { return model.ID }
-func (model tfModel) GetResourceID() types.String            { return model.Name }
-func (model tfModel) GetElasticsearchConnection() types.List { return model.ElasticsearchConnection }
+func (model tfModel) GetID() types.String         { return model.ID }
+func (model tfModel) GetResourceID() types.String { return model.Name }
 
 func (model *tfModel) Validate(ctx context.Context) diag.Diagnostics {
 	// Validate that write_index doesn't appear in read_indices.

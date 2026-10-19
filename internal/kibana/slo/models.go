@@ -50,10 +50,8 @@ var (
 
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
-
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-
+	entitycore.KibanaConnectionField
+	ID          types.String `tfsdk:"id"`
 	SloID       types.String `tfsdk:"slo_id"`
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
@@ -84,10 +82,6 @@ func (m tfModel) GetID() types.String {
 
 func (m tfModel) GetResourceID() types.String {
 	return clients.ResourceIDFromComposite(m.ID, m.ID)
-}
-
-func (m tfModel) GetKibanaConnection() types.List {
-	return m.KibanaConnection
 }
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
