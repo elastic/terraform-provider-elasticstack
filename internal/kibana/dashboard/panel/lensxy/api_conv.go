@@ -252,9 +252,9 @@ func xyDecorationsReadFromStyling(m *models.XYDecorationsModel, s *kbapi.KibanaH
 	}
 	if s.Points != nil && s.Points.Visibility != nil {
 		switch *s.Points.Visibility {
-		case kbapi.KibanaHTTPAPIsVisXyStylingPointsVisibilityHidden:
+		case kbapi.Hidden:
 			m.PointVisibility = types.StringValue("never")
-		case kbapi.KibanaHTTPAPIsVisXyStylingPointsVisibilityVisible:
+		case kbapi.Visible:
 			m.PointVisibility = types.StringValue("always")
 		default:
 			m.PointVisibility = types.StringValue("auto")
@@ -313,13 +313,13 @@ func xyDecorationsWriteToStyling(m *models.XYDecorationsModel, s *kbapi.KibanaHT
 		}
 		switch m.PointVisibility.ValueString() {
 		case "never":
-			v := kbapi.KibanaHTTPAPIsVisXyStylingPointsVisibilityHidden
+			v := kbapi.Hidden
 			s.Points.Visibility = &v
 		case "always":
-			v := kbapi.KibanaHTTPAPIsVisXyStylingPointsVisibilityVisible
+			v := kbapi.Visible
 			s.Points.Visibility = &v
 		default:
-			v := kbapi.KibanaHTTPAPIsVisXyStylingPointsVisibilityAuto
+			v := kbapi.Auto
 			s.Points.Visibility = &v
 		}
 	}
