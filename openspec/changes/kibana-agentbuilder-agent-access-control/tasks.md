@@ -69,5 +69,5 @@
 
 - [x] 13.1 Run `make build` and `make check-lint`
 - [x] 13.2 Run `make check-openspec`
-- [ ] 13.3 Run the new/updated acceptance tests from task 11 against a Kibana ≥ 9.5.0 (per `dev-docs/high-level/testing.md`), plus the version-gating negative test against a < 9.5.0 stack if one is available
-- [ ] 13.4 Self-review with the `requirements-verification` skill against this change's delta spec
+- [x] 13.3 (PASSED on 9.5.5; the < 9.5.0 gating test skipped because no older stack was available) Run the new/updated acceptance tests from task 11 against a Kibana ≥ 9.5.0 (per `dev-docs/high-level/testing.md`), plus the version-gating negative test against a < 9.5.0 stack if one is available
+- [x] 13.4 (manual review against the delta spec: all scenarios covered by unit/acceptance tests except the older-stack read-clears-carried-value and no-read-back-for-404 scenarios, which are covered by code structure only) Self-review with the `requirements-verification` skill against this change's delta spec
