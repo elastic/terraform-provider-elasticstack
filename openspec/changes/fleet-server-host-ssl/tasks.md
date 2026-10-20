@@ -37,27 +37,27 @@
 
 ## 6. Acceptance tests
 
-- [ ] 6.1 Add `TestAccResourceFleetServerHost_SSL` to `internal/fleet/serverhost/acc_test.go`, version-skipped below the Task 1.7-confirmed floor via `versionutils.SkipIfUnsupported`, modeled on `internal/fleet/agentdownloadsource/acc_test.go`'s SSL tests
-- [ ] 6.2 Step `with_ssl`: create with `certificate`, `key`, `certificate_authorities`, and `client_auth` set; assert round-trip via `TestCheckResourceAttr`; assert `ssl.key` is a sensitive value via `plancheck.ExpectSensitiveValue(..., tfjsonpath.New("ssl").AtMapKey("key"))`
-- [ ] 6.3 Step `with_ssl_updated`: change all four fields to different values; assert round-trip and no-diff-after-apply
-- [ ] 6.4 Step `clear_ssl`: remove `ssl` entirely; assert the outcome matches the Task 1 probe decision — either `TestCheckNoResourceAttr(..., "ssl")` after an in-place update, or that the step triggers resource replacement; additionally confirm via a subsequent read that Kibana itself no longer reports `ssl` as set
-- [ ] 6.5 Per-child removal: four separate transitions from a fully-populated `ssl` to one with a single child dropped (`drop_key`, `drop_cas`, `drop_cert`, `drop_client_auth`); assert in-place update or `RequiresReplace` per the Task 1 probe decision for each child
-- [ ] 6.6 Explicit `ssl = {}` step: assert `terraform plan`/`apply` fails with the object-level validator error
-- [ ] 6.7 Validator-rejection cases, each asserted separately: `certificate = ""`, `key = ""`, `certificate_authorities = []`, a nonempty CA list containing one empty-string element, and an invalid `client_auth` value
-- [ ] 6.8 CA-list boundary: exactly 10 entries accepted; 11 entries rejected
-- [ ] 6.9 Import: confirm `ssl` round-trips through the resource's existing composite/plain import ID handling, applying the Task 1.5 probe decision for `key`
-- [ ] 6.10 Version-gating cases, explicit rather than skip-only: (a) successful `ssl` create/update on a stack at or above the Task 1.7-confirmed floor; (b) applying an `ssl`-configured create or update against a stack below the floor produces the attribute-specific `GetVersionRequirements` error before any Fleet mutation request; (c) a config that omits `ssl` entirely still applies successfully below the floor, confirming the gate is per-attribute and not resource-wide
-- [ ] 6.11 Upgrade compatibility: verify that an unchanged configuration omitting `ssl` produces no `ssl` diff after provider upgrade when the existing host has no server-side `ssl`; separately seed a host with pre-existing server-side `ssl` and verify that the unchanged configuration surfaces the removal/replacement plan, confirming the documented requirement to add the existing settings to configuration to adopt them
-- [ ] 6.12 Seed a host whose `ssl` object contains non-null `agent_*`/`es_*` fields, attempt a supported-SSL update that would replace the object, and verify the provider returns an actionable diagnostic without sending a mutation or changing the seeded values
-- [ ] 6.13 Apply and refresh a configuration with `ssl` set but `client_auth` omitted; assert no inconsistent-result error and no subsequent diff. If the Task 1.9 probe observes a default, also assert the value is represented using the selected plan-consistent schema strategy while the initial request omitted it
+- [x] 6.1 Add `TestAccResourceFleetServerHost_SSL` to `internal/fleet/serverhost/acc_test.go`, version-skipped below the Task 1.7-confirmed floor via `versionutils.SkipIfUnsupported`, modeled on `internal/fleet/agentdownloadsource/acc_test.go`'s SSL tests
+- [x] 6.2 Step `with_ssl`: create with `certificate`, `key`, `certificate_authorities`, and `client_auth` set; assert round-trip via `TestCheckResourceAttr`; assert `ssl.key` is a sensitive value via `plancheck.ExpectSensitiveValue(..., tfjsonpath.New("ssl").AtMapKey("key"))`
+- [x] 6.3 Step `with_ssl_updated`: change all four fields to different values; assert round-trip and no-diff-after-apply
+- [x] 6.4 Step `clear_ssl`: remove `ssl` entirely; assert the outcome matches the Task 1 probe decision — either `TestCheckNoResourceAttr(..., "ssl")` after an in-place update, or that the step triggers resource replacement; additionally confirm via a subsequent read that Kibana itself no longer reports `ssl` as set
+- [x] 6.5 Per-child removal: four separate transitions from a fully-populated `ssl` to one with a single child dropped (`drop_key`, `drop_cas`, `drop_cert`, `drop_client_auth`); assert in-place update or `RequiresReplace` per the Task 1 probe decision for each child
+- [x] 6.6 Explicit `ssl = {}` step: assert `terraform plan`/`apply` fails with the object-level validator error
+- [x] 6.7 Validator-rejection cases, each asserted separately: `certificate = ""`, `key = ""`, `certificate_authorities = []`, a nonempty CA list containing one empty-string element, and an invalid `client_auth` value
+- [x] 6.8 CA-list boundary: exactly 10 entries accepted; 11 entries rejected
+- [x] 6.9 Import: confirm `ssl` round-trips through the resource's existing composite/plain import ID handling, applying the Task 1.5 probe decision for `key`
+- [x] 6.10 Version-gating cases, explicit rather than skip-only: (a) successful `ssl` create/update on a stack at or above the Task 1.7-confirmed floor; (b) applying an `ssl`-configured create or update against a stack below the floor produces the attribute-specific `GetVersionRequirements` error before any Fleet mutation request; (c) a config that omits `ssl` entirely still applies successfully below the floor, confirming the gate is per-attribute and not resource-wide (Cases (b) and (c) require a stack below 9.1.0; only 9.5.5 was available, so they are implemented in `TestAccResourceFleetServerHost_SSLRejectedBelowMinimumVersion` and skip on newer stacks. Below-floor gating is covered by unit tests of `GetVersionRequirements`.)
+- [x] 6.11 Upgrade compatibility: verify that an unchanged configuration omitting `ssl` produces no `ssl` diff after provider upgrade when the existing host has no server-side `ssl`; separately seed a host with pre-existing server-side `ssl` and verify that the unchanged configuration surfaces the removal/replacement plan, confirming the documented requirement to add the existing settings to configuration to adopt them
+- [x] 6.12 Seed a host whose `ssl` object contains non-null `agent_*`/`es_*` fields, attempt a supported-SSL update that would replace the object, and verify the provider returns an actionable diagnostic without sending a mutation or changing the seeded values
+- [x] 6.13 Apply and refresh a configuration with `ssl` set but `client_auth` omitted; assert no inconsistent-result error and no subsequent diff. If the Task 1.9 probe observes a default, also assert the value is represented using the selected plan-consistent schema strategy while the initial request omitted it
 
 ## 7. Docs and examples
 
-- [ ] 7.1 Update `examples/resources/elasticstack_fleet_server_host/resource.tf` to show the `ssl` block
-- [ ] 7.2 Regenerate `docs/resources/fleet_server_host.md` via the existing `make` docs target
-- [ ] 7.3 Add a CHANGELOG entry following the repo's existing format
-- [ ] 7.4 Document in the resource's generated docs that changing SSL settings on an enrolled Fleet Server host can disconnect connected Elastic Agents and may require re-enrollment
-- [ ] 7.5 Document the required configuration migration for hosts with pre-existing server-side `ssl`: add the existing SSL settings to configuration when upgrading the provider
+- [x] 7.1 Update `examples/resources/elasticstack_fleet_server_host/resource.tf` to show the `ssl` block
+- [x] 7.2 Regenerate `docs/resources/fleet_server_host.md` via the existing `make` docs target
+- [x] 7.3 Add a CHANGELOG entry following the repo's existing format
+- [x] 7.4 Document in the resource's generated docs that changing SSL settings on an enrolled Fleet Server host can disconnect connected Elastic Agents and may require re-enrollment
+- [x] 7.5 Document the required configuration migration for hosts with pre-existing server-side `ssl`: add the existing SSL settings to configuration when upgrading the provider
 
 ## 8. Validation and cleanup
 

@@ -28,6 +28,14 @@ resource "elasticstack_fleet_server_host" "test_host" {
     "https://fleet-server:8220"
   ]
   proxy_id = elasticstack_fleet_proxy.example.proxy_id
+
+  # Requires Elastic Stack 9.1.0 or later.
+  ssl = {
+    certificate             = file("${path.module}/fleet-server.crt")
+    key                     = file("${path.module}/fleet-server.key")
+    certificate_authorities = [file("${path.module}/agent-ca.crt")]
+    client_auth             = "required"
+  }
 }
 ```
 
@@ -46,6 +54,7 @@ resource "elasticstack_fleet_server_host" "test_host" {
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `proxy_id` (String) The ID of the Fleet proxy to use for this Fleet server host. Must not be empty; omit the attribute to use no proxy.
 - `space_ids` (Set of String) The Kibana space IDs where this server host is available. When set, the server host will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.
+- `ssl` (Attributes) TLS configuration Fleet Server presents to Elastic Agents. Requires Elastic Stack 9.1.0 or later. Changing SSL settings on a Fleet Server host that is already enrolled can disconnect connected Elastic Agents and may require them to be re-enrolled. Kibana replaces the whole `ssl` object on update and this resource reads any `ssl` already stored on a host, so when upgrading the provider add the existing SSL settings of such a host to your configuration; otherwise Terraform plans to remove them. The `agent_*` and `es_*` SSL fields are not managed by this resource, and updating `ssl` on a host that stores any of them is rejected so they are not erased. (see [below for nested schema](#nestedatt--ssl))
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
@@ -64,6 +73,17 @@ Optional:
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.
+
+
+<a id="nestedatt--ssl"></a>
+### Nested Schema for `ssl`
+
+Optional:
+
+- `certificate` (String) The TLS certificate Fleet Server presents to Elastic Agents.
+- `certificate_authorities` (List of String) Certificate authorities used to validate Elastic Agent client certificates. Accepts 1-10 entries.
+- `client_auth` (String) Whether Fleet Server requests client certificates from Elastic Agents. Valid values are `none`, `optional`, and `required`.
+- `key` (String, Sensitive) The private key for the Fleet Server TLS certificate.
 
 
 <a id="nestedatt--timeouts"></a>
