@@ -866,7 +866,7 @@ func seedServerHostSSL(t *testing.T, suffix, sslJSON string) func() {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, diags := fleet.UpdateFleetServerHost(context.Background(), client.GetFleetClient(), "server-host-ssl-"+suffix, "", body)
+		diags := fleet.PutFleetServerHost(context.Background(), client.GetFleetClient(), "server-host-ssl-"+suffix, "", body)
 		if diags.HasError() {
 			t.Fatal(diagutil.FwDiagsAsError(diags))
 		}
