@@ -630,22 +630,37 @@ func accessControlTestVars(agentID string) config.Variables {
 	return config.Variables{"agent_id": config.StringVariable(agentID)}
 }
 
+// setOutOfBandAuth mirrors the acceptance-test provider auth precedence: API
+// key (KIBANA_API_KEY, then ELASTICSEARCH_API_KEY) first, then Basic auth
+// (KIBANA_* then ELASTICSEARCH_* credentials).
+func setOutOfBandAuth(req *http.Request) {
+	apiKey := os.Getenv("KIBANA_API_KEY")
+	if apiKey == "" {
+		apiKey = os.Getenv("ELASTICSEARCH_API_KEY")
+	}
+	if apiKey != "" {
+		req.Header.Set("Authorization", "ApiKey "+apiKey)
+		return
+	}
+	user, pass := os.Getenv("KIBANA_USERNAME"), os.Getenv("KIBANA_PASSWORD")
+	if user == "" {
+		user, pass = os.Getenv("ELASTICSEARCH_USERNAME"), os.Getenv("ELASTICSEARCH_PASSWORD")
+	}
+	req.SetBasicAuth(user, pass)
+}
+
 func setServerAccessMode(t *testing.T, agentID, mode string) {
 	t.Helper()
 	endpoint := os.Getenv("KIBANA_ENDPOINT")
 	if endpoint == "" {
 		t.Fatal("KIBANA_ENDPOINT must be set")
 	}
-	user, pass := os.Getenv("KIBANA_USERNAME"), os.Getenv("KIBANA_PASSWORD")
-	if user == "" {
-		user, pass = os.Getenv("ELASTICSEARCH_USERNAME"), os.Getenv("ELASTICSEARCH_PASSWORD")
-	}
 	body := fmt.Sprintf(`{"access_control":{"access_mode":%q}}`, mode)
 	req, err := http.NewRequest(http.MethodPut, strings.TrimRight(endpoint, "/")+"/api/agent_builder/agents/"+agentID, strings.NewReader(body))
 	if err != nil {
 		t.Fatal(err)
 	}
-	req.SetBasicAuth(user, pass)
+	setOutOfBandAuth(req)
 	req.Header.Set("kbn-xsrf", "true")
 	req.Header.Set("Content-Type", "application/json")
 	resp, err := http.DefaultClient.Do(req)
