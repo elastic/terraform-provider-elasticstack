@@ -21,9 +21,11 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	securityentitystore "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -300,6 +302,14 @@ func TestAccResourceKibanaSecurityEntityStore_historySnapshot(t *testing.T) {
 	})
 }
 
+// entityStoreEngineTypePattern matches the entity types the entity store
+// resource can install (see entity_types validator in schema.go). Engine
+// order in the API response is arbitrary, so assertions key off this enum
+// rather than a fixed index-to-type mapping.
+var entityStoreEngineTypePattern = regexp.MustCompile(`^(user|host|service|generic)$`)
+
+const statusDS = "data.elasticstack_kibana_security_entity_store_status.test"
+
 func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
 	skipIfUnsupported(t)
 	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
@@ -314,13 +324,26 @@ func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("default"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_status.test", "installed", "true"),
-					resource.TestMatchResourceAttr("data.elasticstack_kibana_security_entity_store_status.test", "overall_status", regexp.MustCompile(`^(running|stopped|error|installing)$`)),
-					resource.TestMatchResourceAttr("data.elasticstack_kibana_security_entity_store_status.test", "engines.#", regexp.MustCompile(`^[1-9][0-9]*$`)),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "engines.0.type"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "engines.0.status"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_status.test", "space_id", spaceID),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "status_json"),
+					resource.TestCheckResourceAttr(statusDS, "installed", "true"),
+					resource.TestCheckResourceAttr(statusDS, "overall_status", "running"),
+					resource.TestMatchResourceAttr(statusDS, "engines.#", regexp.MustCompile(`^[1-9][0-9]*$`)),
+					resource.TestMatchResourceAttr(statusDS, "engines.0.type", entityStoreEngineTypePattern),
+					resource.TestCheckResourceAttrSet(statusDS, "engines.0.status"),
+					// A freshly installed engine with no explicit log_extraction
+					// config reports a fixed set of server-side defaults before any
+					// data has been processed; index_pattern is empty until then.
+					resource.TestCheckResourceAttr(statusDS, "engines.0.index_pattern", ""),
+					resource.TestCheckResourceAttr(statusDS, "engines.0.field_history_length", "10"),
+					resource.TestCheckResourceAttr(statusDS, "engines.0.delay", "1m"),
+					resource.TestCheckResourceAttr(statusDS, "engines.0.frequency", "1m"),
+					resource.TestCheckResourceAttr(statusDS, "engines.0.lookback_period", "3h"),
+					resource.TestCheckNoResourceAttr(statusDS, "engines.0.error_action"),
+					resource.TestCheckNoResourceAttr(statusDS, "engines.0.error_message"),
+					checkEnginesHaveDistinctTypes(statusDS),
+					resource.TestCheckNoResourceAttr(statusDS, "include_components"),
+					resource.TestCheckNoResourceAttr(statusDS, "engines.0.components.#"),
+					resource.TestCheckResourceAttr(statusDS, "space_id", spaceID),
+					resource.TestCheckResourceAttrSet(statusDS, "status_json"),
 				),
 			},
 			{
@@ -328,15 +351,100 @@ func TestAccDataSourceKibanaSecurityEntityStoreStatus_basic(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_components"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_status.test", "installed", "true"),
-					resource.TestMatchResourceAttr("data.elasticstack_kibana_security_entity_store_status.test", "overall_status", regexp.MustCompile(`^(running|stopped|error|installing)$`)),
-					resource.TestMatchResourceAttr("data.elasticstack_kibana_security_entity_store_status.test", "engines.#", regexp.MustCompile(`^[1-9][0-9]*$`)),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "engines.0.type"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "engines.0.status"),
-					resource.TestCheckResourceAttr("data.elasticstack_kibana_security_entity_store_status.test", "space_id", spaceID),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "engines.0.components.#"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "engines.0.components.0.id"),
-					resource.TestCheckResourceAttrSet("data.elasticstack_kibana_security_entity_store_status.test", "status_json"),
+					resource.TestCheckResourceAttr(statusDS, "installed", "true"),
+					resource.TestCheckResourceAttr(statusDS, "overall_status", "running"),
+					resource.TestMatchResourceAttr(statusDS, "engines.#", regexp.MustCompile(`^[1-9][0-9]*$`)),
+					resource.TestMatchResourceAttr(statusDS, "engines.0.type", entityStoreEngineTypePattern),
+					resource.TestCheckResourceAttrSet(statusDS, "engines.0.status"),
+					checkEnginesHaveDistinctTypes(statusDS),
+					resource.TestCheckResourceAttr(statusDS, "include_components", "true"),
+					resource.TestMatchResourceAttr(statusDS, "engines.0.components.#", regexp.MustCompile(`^[1-9][0-9]*$`)),
+					resource.TestCheckResourceAttrSet(statusDS, "engines.0.components.0.id"),
+					resource.TestCheckResourceAttrSet(statusDS, "engines.0.components.0.installed"),
+					resource.TestCheckResourceAttrSet(statusDS, "engines.0.components.0.resource"),
+					resource.TestCheckResourceAttr(statusDS, "space_id", spaceID),
+					resource.TestCheckResourceAttrSet(statusDS, "status_json"),
+				),
+			},
+		},
+	})
+}
+
+// checkEnginesHaveDistinctTypes asserts that when at least two engines are
+// present, their types differ. It guards against a regression where every
+// engine reported the same type (e.g. a copy/flatten bug), which a per-index
+// enum match alone would not catch.
+func checkEnginesHaveDistinctTypes(resName string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resName]
+		if !ok || rs == nil || rs.Primary == nil {
+			return fmt.Errorf("resource %s not found in state", resName)
+		}
+		countStr, ok := rs.Primary.Attributes["engines.#"]
+		if !ok {
+			return fmt.Errorf("resource %s has no engines.# attribute", resName)
+		}
+		count, err := strconv.Atoi(countStr)
+		if err != nil {
+			return fmt.Errorf("resource %s has non-numeric engines.# attribute %q: %w", resName, countStr, err)
+		}
+		if count < 2 {
+			return nil
+		}
+		type0 := rs.Primary.Attributes["engines.0.type"]
+		type1 := rs.Primary.Attributes["engines.1.type"]
+		if type0 == type1 {
+			return fmt.Errorf("expected engines.0.type (%q) and engines.1.type (%q) to differ across %d engines", type0, type1, count)
+		}
+		return nil
+	}
+}
+
+// TestAccDataSourceKibanaSecurityEntityStoreStatus_defaultSpace exercises the
+// space_id optional-unset resolution path: with space_id omitted on both the
+// resource and the data source, both should resolve to the Kibana default
+// space rather than erroring or defaulting to an empty string.
+func TestAccDataSourceKibanaSecurityEntityStoreStatus_defaultSpace(t *testing.T) {
+	skipIfUnsupported(t)
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, clients.DefaultSpaceID) })
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("default_space"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(statusDS, "space_id", clients.DefaultSpaceID),
+					resource.TestCheckResourceAttr(statusDS, "installed", "true"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccDataSourceKibanaSecurityEntityStoreStatus_notInstalled reads the
+// status data source for a space where the entity store resource was never
+// created, confirming the not-yet-installed scenario resolves to
+// installed = false / overall_status = not_installed instead of erroring.
+func TestAccDataSourceKibanaSecurityEntityStoreStatus_notInstalled(t *testing.T) {
+	skipIfUnsupported(t)
+	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	vars := config.Variables{"space_id": config.StringVariable(spaceID)}
+	t.Cleanup(func() { acctest.CleanupEntityStore(t, spaceID) })
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("not_installed"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(statusDS, "installed", "false"),
+					resource.TestCheckResourceAttr(statusDS, "overall_status", "not_installed"),
+					resource.TestCheckResourceAttr(statusDS, "engines.#", "0"),
+					resource.TestCheckResourceAttr(statusDS, "space_id", spaceID),
 				),
 			},
 		},
