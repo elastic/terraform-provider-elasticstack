@@ -36,6 +36,7 @@ import (
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
+	"github.com/hashicorp/terraform-plugin-testing/statecheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
@@ -614,6 +615,9 @@ func TestAccResourceFleetServerHost_SSL(t *testing.T) {
 						plancheck.ExpectSensitiveValue(sslTestResourceName, tfjsonpath.New("ssl").AtMapKey("key")),
 					},
 				},
+				ConfigStateChecks: []statecheck.StateCheck{
+					statecheck.ExpectSensitiveValue(sslTestResourceName, tfjsonpath.New("ssl").AtMapKey("key")),
+				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(sslTestResourceName, "ssl.certificate", "PEM-CERT"),
 					resource.TestCheckResourceAttr(sslTestResourceName, "ssl.key", "PEM-KEY"),
@@ -638,6 +642,26 @@ func TestAccResourceFleetServerHost_SSL(t *testing.T) {
 					resource.TestCheckResourceAttr(sslTestResourceName, "ssl.certificate_authorities.#", "3"),
 					resource.TestCheckResourceAttr(sslTestResourceName, "ssl.certificate_authorities.2", "PEM-CA-5"),
 					resource.TestCheckResourceAttr(sslTestResourceName, "ssl.client_auth", "optional"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_ssl_shrunk"),
+				ConfigVariables:          sslTestVariables(suffix),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(sslTestResourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(sslTestResourceName, "ssl.certificate_authorities.#", "1"),
+					resource.TestCheckResourceAttr(sslTestResourceName, "ssl.certificate_authorities.0", "PEM-CA-3"),
+					checkServerHostSSLOnServer(func(host *kbapi.ServerHost) error {
+						if host.Ssl == nil || host.Ssl.CertificateAuthorities == nil || len(*host.Ssl.CertificateAuthorities) != 1 {
+							return fmt.Errorf("expected a single certificate authority on the server, got %+v", host.Ssl)
+						}
+						return nil
+					}),
 				),
 			},
 			{
@@ -931,6 +955,21 @@ func TestAccResourceFleetServerHost_SSLDeferredFields(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_ssl"),
+				ConfigVariables:          sslTestVariables(suffix),
+				ExpectError:              regexp.MustCompile(`(?s)Cannot update ssl without erasing unmanaged fields.*agent_certificate, es_key`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_ssl_renamed"),
+				ConfigVariables:          sslTestVariables(suffix),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(sslTestResourceName, "name", "SSL Server Host Renamed "+suffix),
+					checkDeferredFieldsIntact,
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_ssl"),
 				ConfigVariables:          sslTestVariables(suffix),
 				Check:                    checkDeferredFieldsIntact,
@@ -968,6 +1007,84 @@ func TestAccResourceFleetServerHost_SSLRejectedBelowMinimumVersion(t *testing.T)
 				ConfigVariables:          sslTestVariables(suffix),
 				Check:                    resource.TestCheckNoResourceAttr(sslTestResourceName, "ssl"),
 			},
+		},
+	})
+}
+
+func TestAccResourceFleetServerHost_SSLAddToExisting(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHostSSL, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandString(8)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetServerHostDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_ssl"),
+				ConfigVariables:          sslTestVariables(suffix),
+				Check:                    resource.TestCheckNoResourceAttr(sslTestResourceName, "ssl"),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_ssl"),
+				ConfigVariables:          sslTestVariables(suffix),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(sslTestResourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(sslTestResourceName, "ssl.certificate", "PEM-CERT"),
+					resource.TestCheckResourceAttr(sslTestResourceName, "ssl.key", "PEM-KEY"),
+					resource.TestCheckResourceAttr(sslTestResourceName, "ssl.client_auth", "required"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceFleetServerHost_SSLClientAuth(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHostSSL, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandString(8)
+
+	step := func(clientAuth string, planOnly bool) resource.TestStep {
+		step := resource.TestStep{
+			ProtoV6ProviderFactories: acctest.Providers,
+			ConfigDirectory:          acctest.NamedTestCaseDirectory("client_auth"),
+			ConfigVariables: config.Variables{
+				"suffix":      config.StringVariable(suffix),
+				"client_auth": config.StringVariable(clientAuth),
+			},
+		}
+		if planOnly {
+			step.PlanOnly = true
+			return step
+		}
+		step.Check = resource.ComposeTestCheckFunc(
+			resource.TestCheckResourceAttr(sslTestResourceName, "ssl.client_auth", clientAuth),
+			checkServerHostSSLOnServer(func(host *kbapi.ServerHost) error {
+				if host.Ssl == nil || host.Ssl.ClientAuth == nil || string(*host.Ssl.ClientAuth) != clientAuth {
+					return fmt.Errorf("expected client_auth %q on the server, got %+v", clientAuth, host.Ssl)
+				}
+				return nil
+			}),
+		)
+		return step
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetServerHostDestroy,
+		Steps: []resource.TestStep{
+			step("none", false),
+			step("none", true),
+			step("required", false),
+			step("none", false),
+			step("optional", false),
+			step("optional", true),
 		},
 	})
 }
