@@ -161,7 +161,8 @@ func TestReadAgentWith_missingAgentSkipsAccessControl(t *testing.T) {
 
 func TestReadAgentWith_supportedStackPopulatesMode(t *testing.T) {
 	calls := &readCalls{}
-	got, found, diags := readAgentWith(context.Background(), testReader(&models.Agent{ID: "a", Name: "n"}, true, &models.AgentAccessControl{AccessMode: "private"}, nil, calls), "default", baseAgentModel())
+	reader := testReader(&models.Agent{ID: "a", Name: "n"}, true, &models.AgentAccessControl{AccessMode: "private"}, nil, calls)
+	got, found, diags := readAgentWith(context.Background(), reader, "default", baseAgentModel())
 	require.False(t, diags.HasError())
 	require.True(t, found)
 	require.Equal(t, accessControlObject(t, "private"), got.AccessControl)
