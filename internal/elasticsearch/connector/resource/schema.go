@@ -38,6 +38,9 @@ func schemaFactory(_ context.Context) schema.Schema {
 			"id": schema.StringAttribute{
 				MarkdownDescription: "Composite identifier in the form `<cluster_uuid>/<connector_id>`.",
 				Computed:            true,
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"connector_id": schema.StringAttribute{
 				MarkdownDescription: "Unique connector identifier. When omitted, Elasticsearch auto-generates an ID on create.",
