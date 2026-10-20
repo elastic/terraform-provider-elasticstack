@@ -31,7 +31,13 @@ import (
 )
 
 func createAgent(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[agentModel]) (entitycore.KibanaWriteResult[agentModel], diag.Diagnostics) {
-	supportsSkillIDs, diags := client.EnforceMinVersion(ctx, agentbuilder.MinExtendedAPIVersion)
+	diags := enforceAccessControlVersion(ctx, client, sendsAccessControl(req.Plan.AccessControl))
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[agentModel]{}, diags
+	}
+
+	supportsSkillIDs, d := client.EnforceMinVersion(ctx, agentbuilder.MinExtendedAPIVersion)
+	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}

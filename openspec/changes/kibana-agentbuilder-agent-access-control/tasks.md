@@ -1,55 +1,55 @@
 ## 1. Prep
 
-- [ ] 1.1 Probe a live 9.4.x Kibana cluster (if available) to confirm whether the main `GET /api/agent_builder/agents/{id}` returns `access_control`; record the result in design.md "Open questions" and revisit the 9.5.0 gate decision if it reliably does
-- [ ] 1.2 Confirm against a live cluster what `access_mode` a newly created agent gets when `access_control` is omitted entirely; record the actual value for use in acceptance test assertions (see design.md default-mode discrepancy)
+- [x] 1.1 (NOT verifiable: only a 9.5.5 stack was reachable; recorded in design.md) Probe a live 9.4.x Kibana cluster (if available) to confirm whether the main `GET /api/agent_builder/agents/{id}` returns `access_control`; record the result in design.md "Open questions" and revisit the 9.5.0 gate decision if it reliably does
+- [x] 1.2 (verified on 9.5.5: default is `public`) Confirm against a live cluster what `access_mode` a newly created agent gets when `access_control` is omitted entirely; record the actual value for use in acceptance test assertions (see design.md default-mode discrepancy)
 
 ## 2. Version constants
 
-- [ ] 2.1 Add `MinAccessControlAPIVersion = semver.Must(semver.NewVersion("9.5.0"))` to `internal/kibana/agentbuilder/versions.go`, extending the existing rollout-timeline doc comment with a `9.5.0` entry for access control
+- [x] 2.1 Add `MinAccessControlAPIVersion = semver.Must(semver.NewVersion("9.5.0"))` to `internal/kibana/agentbuilder/versions.go`, extending the existing rollout-timeline doc comment with a `9.5.0` entry for access control
 
 ## 3. Models
 
-- [ ] 3.1 Add `AccessControl *AgentAccessControl` (`json:"access_control,omitempty"`) to `models.Agent` in `internal/models/agent_builder.go`
-- [ ] 3.2 Add `type AgentAccessControl struct { AccessMode string \`json:"access_mode"\` }` to the same file
-- [ ] 3.3 Add a model type for the dedicated sub-resource `GET` response if its JSON shape differs from `AgentAccessControl` (confirm against `kbapi.GetAgentBuilderAgentsIdAccessControlResponse`); reuse `AgentAccessControl` if the shape matches
+- [x] 3.1 Add `AccessControl *AgentAccessControl` (`json:"access_control,omitempty"`) to `models.Agent` in `internal/models/agent_builder.go`
+- [x] 3.2 Add `type AgentAccessControl struct { AccessMode string \`json:"access_mode"\` }` to the same file
+- [x] 3.3 Add a model type for the dedicated sub-resource `GET` response if its JSON shape differs from `AgentAccessControl` (confirm against `kbapi.GetAgentBuilderAgentsIdAccessControlResponse`); reuse `AgentAccessControl` if the shape matches
 
 ## 4. Client wrapper
 
-- [ ] 4.1 Add `GetAgentAccessControl(ctx context.Context, client *Client, spaceID, agentID string) (*models.AgentAccessControl, diag.Diagnostics)` to `internal/clients/kibanaoapi/agentbuilder_agent.go`, wrapping `client.API.GetAgentBuilderAgentsIdAccessControlWithResponse` with `kibanautil.SpaceAwarePathRequestEditor(spaceID)`, following `GetAgent`'s structure exactly (including its `HandleGetRawResponse[...]` 404 handling)
+- [x] 4.1 Add `GetAgentAccessControl(ctx context.Context, client *Client, spaceID, agentID string) (*models.AgentAccessControl, diag.Diagnostics)` to `internal/clients/kibanaoapi/agentbuilder_agent.go`, wrapping `client.API.GetAgentBuilderAgentsIdAccessControlWithResponse` with `kibanautil.SpaceAwarePathRequestEditor(spaceID)`, following `GetAgent`'s structure exactly (including its `HandleGetRawResponse[...]` 404 handling)
 
 ## 5. Schema
 
-- [ ] 5.1 Add `attrAccessControl = "access_control"` (or inline literal, matching this file's existing `attrX` constant convention) to `internal/kibana/agentbuilderagent/schema.go`
-- [ ] 5.2 Add the `access_control` `schema.SingleNestedAttribute` to `getResourceSchema`: `Optional: true, Computed: true`, `PlanModifiers: []planmodifier.Object{objectplanmodifier.UseStateForUnknown()}`, nested `Attributes: map[string]schema.Attribute{"access_mode": schema.StringAttribute{Required: true, Validators: []validator.String{stringvalidator.OneOf("public", "shared", "private")}}}`
-- [ ] 5.3 Add a `MarkdownDescription` documenting the enum values, the 9.5.0 minimum version, and the relinquish-not-reset removal semantics
+- [x] 5.1 Add `attrAccessControl = "access_control"` (or inline literal, matching this file's existing `attrX` constant convention) to `internal/kibana/agentbuilderagent/schema.go`
+- [x] 5.2 Add the `access_control` `schema.SingleNestedAttribute` to `getResourceSchema`: `Optional: true, Computed: true`, `PlanModifiers: []planmodifier.Object{objectplanmodifier.UseStateForUnknown()}`, nested `Attributes: map[string]schema.Attribute{"access_mode": schema.StringAttribute{Required: true, Validators: []validator.String{stringvalidator.OneOf("public", "shared", "private")}}}`
+- [x] 5.3 Add a `MarkdownDescription` documenting the enum values, the 9.5.0 minimum version, and the relinquish-not-reset removal semantics
 
 ## 6. Model struct + population
 
-- [ ] 6.1 Add an `AccessControl types.Object \`tfsdk:"access_control"\`` field (or a typed nested struct per this package's existing conventions — check whether other nested attributes in this resource use `types.Object` directly or a generated nested model type) to `agentModel` (resource-only; not `agentBaseModel`, since this change is resource-only per design.md Non-Goals)
-- [ ] 6.2 Implement a small nested model type (e.g. `agentAccessControlModel{ AccessMode types.String }`) and conversion helpers `accessControlToObjectValue(ctx, *models.AgentAccessControl) (types.Object, diag.Diagnostics)` and the reverse accessor, following the pattern already used for other nested/object fields in this codebase (see `internal/kibana/dashboard/models_access_control.go` for the closest shape, adapting for the required-field and resource-only-attribute differences noted in design.md Decision 1)
-- [ ] 6.3 Implement `populateAccessControlFromAPI` on `agentModel` taking the sub-resource response (or nil) and setting `model.AccessControl` to null when nil/unsupported, or to the converted object when present
+- [x] 6.1 Add an `AccessControl types.Object \`tfsdk:"access_control"\`` field (or a typed nested struct per this package's existing conventions — check whether other nested attributes in this resource use `types.Object` directly or a generated nested model type) to `agentModel` (resource-only; not `agentBaseModel`, since this change is resource-only per design.md Non-Goals)
+- [x] 6.2 Implement a small nested model type (e.g. `agentAccessControlModel{ AccessMode types.String }`) and conversion helpers `accessControlToObjectValue(ctx, *models.AgentAccessControl) (types.Object, diag.Diagnostics)` and the reverse accessor, following the pattern already used for other nested/object fields in this codebase (see `internal/kibana/dashboard/models_access_control.go` for the closest shape, adapting for the required-field and resource-only-attribute differences noted in design.md Decision 1)
+- [x] 6.3 Implement `populateAccessControlFromAPI` on `agentModel` taking the sub-resource response (or nil) and setting `model.AccessControl` to null when nil/unsupported, or to the converted object when present
 
 ## 7. Write-specific version requirement
 
-- [ ] 7.1 Keep the existing embedded `agentVersionGate` as the lifecycle-wide 9.3.0 requirement; do not add the 9.5.0 requirement to `GetVersionRequirements`, which is checked for refresh and deletion as well as writes
-- [ ] 7.2 Enforce `agentbuilder.MinAccessControlAPIVersion` immediately before create/update writes that send `access_control` (create based on the known, non-null plan value; update based on the known, non-null config value); return a version diagnostic before the write API call when below 9.5.0
-- [ ] 7.3 Verify `agentDataSourceModel` and its `GetVersionRequirements` remain unaffected, since the data source does not gain `access_control` in this change
+- [x] 7.1 Keep the existing embedded `agentVersionGate` as the lifecycle-wide 9.3.0 requirement; do not add the 9.5.0 requirement to `GetVersionRequirements`, which is checked for refresh and deletion as well as writes
+- [x] 7.2 Enforce `agentbuilder.MinAccessControlAPIVersion` immediately before create/update writes that send `access_control` (create based on the known, non-null plan value; update based on the known, non-null config value); return a version diagnostic before the write API call when below 9.5.0
+- [x] 7.3 Verify `agentDataSourceModel` and its `GetVersionRequirements` remain unaffected, since the data source does not gain `access_control` in this change
 
 ## 8. Create path
 
-- [ ] 8.1 In `toAPICreateModel` (`internal/kibana/agentbuilderagent/models.go`), when `typeutils.IsKnown(model.AccessControl) && !model.AccessControl.IsNull()`, decode `access_mode` from the nested object and set `body.AccessControl = &struct{ AccessMode ... }{AccessMode: kbapi.PostAgentBuilderAgentsJSONBodyAccessControlAccessMode(mode)}`; omit otherwise
+- [x] 8.1 In `toAPICreateModel` (`internal/kibana/agentbuilderagent/models.go`), when `typeutils.IsKnown(model.AccessControl) && !model.AccessControl.IsNull()`, decode `access_mode` from the nested object and set `body.AccessControl = &struct{ AccessMode ... }{AccessMode: kbapi.PostAgentBuilderAgentsJSONBodyAccessControlAccessMode(mode)}`; omit otherwise
 
 ## 9. Update path
 
-- [ ] 9.1 Change `toAPIUpdateModel`'s signature to accept a `sendAccessControl bool` (alongside the existing `supportsSkillIDs bool`), following design.md Decision 3
-- [ ] 9.2 In `updateAgent` (`internal/kibana/agentbuilderagent/update.go`), compute `sendAccessControl := typeutils.IsKnown(req.Config.AccessControl) && !req.Config.AccessControl.IsNull()` from `req.Config`, and thread it into the `toAPIUpdateModel` closure the same way `supportsSkillIDs` is threaded today
-- [ ] 9.3 In `toAPIUpdateModel`, when `sendAccessControl` is true, decode `access_mode` from the plan's `AccessControl` and set `body.AccessControl`; when false, leave `body.AccessControl` nil regardless of what the plan carries forward
+- [x] 9.1 Change `toAPIUpdateModel`'s signature to accept a `sendAccessControl bool` (alongside the existing `supportsSkillIDs bool`), following design.md Decision 3
+- [x] 9.2 In `updateAgent` (`internal/kibana/agentbuilderagent/update.go`), compute `sendAccessControl := typeutils.IsKnown(req.Config.AccessControl) && !req.Config.AccessControl.IsNull()` from `req.Config`, and thread it into the `toAPIUpdateModel` closure the same way `supportsSkillIDs` is threaded today
+- [x] 9.3 In `toAPIUpdateModel`, when `sendAccessControl` is true, decode `access_mode` from the plan's `AccessControl` and set `body.AccessControl`; when false, leave `body.AccessControl` nil regardless of what the plan carries forward
 
 ## 10. Resource read callback (refresh + post-write)
 
-- [ ] 10.1 Add read-back only to the resource callback in `read.go`, registered by the resource in `resource.go`; the shared envelope reuses this callback for refresh and post-write reads, so do not change `readAgentDataSource` or add a duplicate GET
-- [ ] 10.2 Add a shared helper (e.g. `populateAccessControl(ctx, client, spaceID, agentID string, model *agentModel) diag.Diagnostics`) that: calls `client.EnforceMinVersion(ctx, agentbuilder.MinAccessControlAPIVersion)`; on unsupported-version, sets `model.AccessControl` to a null object and returns no error; on supported, calls the new `kibanaoapi.GetAgentAccessControl` wrapper and populates the field; on API error, surfaces diagnostics
-- [ ] 10.3 Wire the helper into that resource callback after its successful main GET, ensuring existing 404-removes-from-state handling returns before the helper; unsupported-version handling must clear any carried-forward value and continue without error
+- [x] 10.1 Add read-back only to the resource callback in `read.go`, registered by the resource in `resource.go`; the shared envelope reuses this callback for refresh and post-write reads, so do not change `readAgentDataSource` or add a duplicate GET
+- [x] 10.2 Add a shared helper (e.g. `populateAccessControl(ctx, client, spaceID, agentID string, model *agentModel) diag.Diagnostics`) that: calls `client.EnforceMinVersion(ctx, agentbuilder.MinAccessControlAPIVersion)`; on unsupported-version, sets `model.AccessControl` to a null object and returns no error; on supported, calls the new `kibanaoapi.GetAgentAccessControl` wrapper and populates the field; on API error, surfaces diagnostics
+- [x] 10.3 Wire the helper into that resource callback after its successful main GET, ensuring existing 404-removes-from-state handling returns before the helper; unsupported-version handling must clear any carried-forward value and continue without error
 
 ## 11. Acceptance tests
 

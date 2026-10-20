@@ -80,7 +80,8 @@ type agentBaseModel struct {
 type agentModel struct {
 	entitycore.ResourceTimeoutsField
 	agentBaseModel
-	Tools types.Set `tfsdk:"tools"` // []string
+	Tools         types.Set    `tfsdk:"tools"` // []string
+	AccessControl types.Object `tfsdk:"access_control"`
 }
 
 type agentDataSourceModel struct {
@@ -177,6 +178,14 @@ func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs b
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
 
+	if sendsAccessControl(model.AccessControl) {
+		mode, d := model.accessMode(ctx)
+		diags.Append(d...)
+		body.AccessControl = &struct {
+			AccessMode kbapi.PostAgentBuilderAgentsJSONBodyAccessControlAccessMode `json:"access_mode"`
+		}{AccessMode: kbapi.PostAgentBuilderAgentsJSONBodyAccessControlAccessMode(mode)}
+	}
+
 	if supportsSkillIDs {
 		skillIDs := typeutils.SetTypeAs[string](ctx, model.SkillIDs, path.Empty(), &diags)
 		if len(skillIDs) > 0 {
@@ -192,7 +201,7 @@ func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs b
 	return body, diags
 }
 
-func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs bool) (kbapi.PutAgentBuilderAgentsIdJSONRequestBody, diag.Diagnostics) {
+func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs, sendAccessControl bool) (kbapi.PutAgentBuilderAgentsIdJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	name := model.Name.ValueString()
@@ -260,6 +269,14 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 		Instructions: instructions,
 		Tools:        &tools,
 		SkillIds:     skillIDsPtr,
+	}
+
+	if sendAccessControl {
+		mode, d := model.accessMode(ctx)
+		diags.Append(d...)
+		body.AccessControl = &struct {
+			AccessMode kbapi.PutAgentBuilderAgentsIdJSONBodyAccessControlAccessMode `json:"access_mode"`
+		}{AccessMode: kbapi.PutAgentBuilderAgentsIdJSONBodyAccessControlAccessMode(mode)}
 	}
 
 	labels := typeutils.SetTypeAs[string](ctx, model.Labels, path.Empty(), &diags)

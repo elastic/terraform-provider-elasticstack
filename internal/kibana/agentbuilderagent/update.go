@@ -30,14 +30,21 @@ import (
 )
 
 func updateAgent(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[agentModel]) (entitycore.KibanaWriteResult[agentModel], diag.Diagnostics) {
-	supportsSkillIDs, diags := client.EnforceMinVersion(ctx, agentbuilder.MinExtendedAPIVersion)
+	sendAccessControl := sendsAccessControl(req.Config.AccessControl)
+	diags := enforceAccessControlVersion(ctx, client, sendAccessControl)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[agentModel]{}, diags
+	}
+
+	supportsSkillIDs, d := client.EnforceMinVersion(ctx, agentbuilder.MinExtendedAPIVersion)
+	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}
 
 	return entitycore.SimpleKibanaUpdate[agentModel, kbapi.PutAgentBuilderAgentsIdJSONRequestBody, models.Agent](
 		func(plan agentModel, ctx context.Context, _ string) (kbapi.PutAgentBuilderAgentsIdJSONRequestBody, diag.Diagnostics) {
-			return plan.toAPIUpdateModel(ctx, supportsSkillIDs)
+			return plan.toAPIUpdateModel(ctx, supportsSkillIDs, sendAccessControl)
 		},
 		kibanaoapi.UpdateAgent,
 		(*agentModel).setWriteSpaceID,

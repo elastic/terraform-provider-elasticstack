@@ -23,6 +23,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -66,11 +67,13 @@ func getResourceSchema(_ context.Context) schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				MarkdownDescription: "Hex color code for the agent avatar (e.g., `#BFDBFF`).",
+				PlanModifiers:       avatarPlanModifiers(),
 			},
 			attrAvatarSymbol: schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				MarkdownDescription: "Symbol or initials for the agent avatar (e.g., `SI`).",
+				PlanModifiers:       avatarPlanModifiers(),
 			},
 			attrLabels: schema.SetAttribute{
 				ElementType:         types.StringType,
@@ -86,6 +89,26 @@ func getResourceSchema(_ context.Context) schema.Schema {
 				ElementType:         types.StringType,
 				Optional:            true,
 				MarkdownDescription: "Set of skill IDs to assign to the agent. Requires Elastic Stack 9.4.0 or later.",
+			},
+			attrAccessControl: schema.SingleNestedAttribute{
+				Optional: true,
+				Computed: true,
+				MarkdownDescription: "Access control for the agent. Requires Elastic Stack 9.5.0 or later when set. " +
+					"`access_mode` is one of `public`, `shared`, or `private`. When omitted, the server-assigned mode is " +
+					"read back and not managed by Terraform; removing the block from configuration relinquishes management " +
+					"of the mode (the server keeps its current mode) rather than resetting it.",
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.UseStateForUnknown(),
+				},
+				Attributes: map[string]schema.Attribute{
+					attrAccessMode: schema.StringAttribute{
+						Required:            true,
+						MarkdownDescription: "The access mode: `public`, `shared`, or `private`.",
+						Validators: []validator.String{
+							stringvalidator.OneOf("public", "shared", "private"),
+						},
+					},
+				},
 			},
 			"instructions": schema.StringAttribute{
 				Optional:            true,
