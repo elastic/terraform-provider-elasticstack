@@ -97,3 +97,8 @@ Probed against a live Elastic Stack 9.5.5 (Kibana and Elasticsearch at the defau
 - `GET /agents/{id}/access_control` returns `{"access_control": {"access_mode": ..., "entries": []}, "permissions": {...}}`, so the access-control object is wrapped one level deep and needs its own response model (`AgentAccessControlResponse`).
 - `PUT /agents/{id}` with `access_control.access_mode = "shared"` updates the mode and the sub-resource GET reflects it.
 - **Not verified:** whether a 9.4.x server's main `GET` returns `access_control`. No 9.4.x cluster was available (only 9.5.5), so the 9.5.0 gate decision is unchanged and the first Open Question remains open. The "blocking" default-mode question is resolved for 9.5.x only (`public`); Serverless was not probed.
+
+## Implementation notes
+
+- `avatar_color` / `avatar_symbol` (Optional+Computed, previously without plan modifiers) gained a small `useStateForUnknownIncludingNull` plan modifier. Adding the computed `access_control` object made the framework mark these null computed attributes unknown on every plan after apply (non-empty plan on omitted `access_control`), because Terraform proposes a null `access_control` against a non-null prior value. The modifier carries the prior (including null) state value forward.
+- The resource had no `read.go`; a dedicated `readAgent` callback was added (replacing `SimpleKibanaRead`) to perform the main GET followed by the gated access-control GET.

@@ -49,12 +49,12 @@ func (model agentModel) accessMode(ctx context.Context) (string, diag.Diagnostic
 	return ac.AccessMode.ValueString(), diags
 }
 
-func (model *agentModel) populateAccessControl(data *models.AgentAccessControl) diag.Diagnostics {
+func (model *agentModel) populateAccessControl(ctx context.Context, data *models.AgentAccessControl) diag.Diagnostics {
 	if data == nil {
 		model.AccessControl = types.ObjectNull(accessControlAttrTypes())
 		return nil
 	}
-	obj, diags := types.ObjectValueFrom(context.Background(), accessControlAttrTypes(), accessControlModel{
+	obj, diags := types.ObjectValueFrom(ctx, accessControlAttrTypes(), accessControlModel{
 		AccessMode: types.StringValue(data.AccessMode),
 	})
 	model.AccessControl = obj

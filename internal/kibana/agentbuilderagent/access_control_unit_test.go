@@ -40,13 +40,15 @@ func accessControlObject(t *testing.T, mode string) types.Object {
 func nullAccessControl() types.Object { return types.ObjectNull(accessControlAttrTypes()) }
 
 func baseAgentModel() agentModel {
-	m := agentModel{}
-	m.Name = types.StringValue("n")
-	m.AgentID = types.StringValue("a")
-	m.Tools = types.SetNull(types.StringType)
-	m.Labels = types.SetNull(types.StringType)
-	m.SkillIDs = types.SetNull(types.StringType)
-	return m
+	return agentModel{
+		agentBaseModel: agentBaseModel{ //nolint:modernize // promoted fields cannot be set in a composite literal
+			AgentID:  types.StringValue("a"),
+			Name:     types.StringValue("n"),
+			Labels:   types.SetNull(types.StringType),
+			SkillIDs: types.SetNull(types.StringType),
+		},
+		Tools: types.SetNull(types.StringType),
+	}
 }
 
 func marshal(t *testing.T, v any) map[string]any {
@@ -104,11 +106,11 @@ func TestPopulateAccessControl(t *testing.T) {
 	m := baseAgentModel()
 	m.AccessControl = accessControlObject(t, "shared")
 
-	diags := m.populateAccessControl(&models.AgentAccessControl{AccessMode: "private"})
+	diags := m.populateAccessControl(context.Background(), &models.AgentAccessControl{AccessMode: "private"})
 	require.False(t, diags.HasError())
 	require.Equal(t, accessControlObject(t, "private"), m.AccessControl)
 
-	diags = m.populateAccessControl(nil)
+	diags = m.populateAccessControl(context.Background(), nil)
 	require.False(t, diags.HasError())
 	require.True(t, m.AccessControl.IsNull())
 }

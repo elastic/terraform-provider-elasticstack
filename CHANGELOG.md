@@ -58,6 +58,7 @@ query = {
 
 ### Changes
 
+- Add `access_control` to `elasticstack_kibana_agentbuilder_agent` (requires Elastic Stack 9.5.0+ when set). ([#5377](https://github.com/elastic/terraform-provider-elasticstack/issues/5377))
 - Fixes three latent bugs in the maintenance window resource (import decode failure, import `space_id` resolution, and scope removal producing an inconsistent plan) that were exposed while closing the 5 documented schema-coverage test gaps. ([#5188](https://github.com/elastic/terraform-provider-elasticstack/pull/5188))
 - Preserve known-empty tags list on elasticstack_kibana_dashboard read-back so `tags = []` no longer errors with "was cty.ListValEmpty(cty.String), but now null". ([#5146](https://github.com/elastic/terraform-provider-elasticstack/pull/5146))
 - Read Kibana alerting rule execution status from a data source. ([#5145](https://github.com/elastic/terraform-provider-elasticstack/pull/5145))

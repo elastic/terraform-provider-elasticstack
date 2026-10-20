@@ -53,21 +53,21 @@
 
 ## 11. Acceptance tests
 
-- [ ] 11.1 Add `minKibanaAgentBuilderAccessControlAPIVersion = agentbuilder.MinAccessControlAPIVersion` to the version-constant block at the top of `internal/kibana/agentbuilderagent/acc_test.go`, alongside `minKibanaAgentBuilderAPIVersion`/`minKibanaAgentBuilderWorkflowAPIVersion`
-- [ ] 11.2 Add `TestAccResourceAgentBuilderAgentAccessControl`, gated with `versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAccessControlAPIVersion, versionutils.FlavorAny)`, covering: (a) create with `access_control` omitted — assert the live cluster's actual default (per task 1.2, not a hardcoded literal) and an empty second `terraform plan`; (b) create with `access_mode = "private"`, then update to `"shared"`, then to `"public"`; (c) `ImportState` + `ImportStateVerify: true`; (d) remove `access_control` while changing another mutable attribute to force an update — assert the plan/state still contain the prior mode and inspect the resulting `PUT` body to confirm `access_control` is absent, then assert state reports the server mode and a following empty-plan check; (e) `ExpectError` for an invalid enum value and for `access_control = {}` (missing required `access_mode`)
-- [ ] 11.3 Add configured-mode drift coverage: after create with an explicitly configured mode, change the server mode out-of-band via a direct API call, then assert `terraform plan` reports a diff to restore the configured mode. Separately cover unmanaged refresh: with `access_control` omitted or management relinquished, refresh adopts the server mode and a subsequent plan does not propose a corrective update.
-- [ ] 11.4 Add a write-gating negative test restricted to a stack below 9.5.0 (skip-gated to not run on 9.5.0+) asserting that create/update with configured `access_control` surfaces a clear version-requirement error before any write request and does not call the access-control sub-resource; add an older-stack lifecycle regression with a carried-forward mode to verify refresh clears it without error and deletion proceeds. Also add a separate compatibility check that agents still apply successfully with `access_control` omitted regardless of stack version.
-- [ ] 11.5 Add the corresponding `testdata`/`ConfigDirectory` fixtures (`create_access_control`, `update_access_control`, `update_no_access_control`, etc.) following this test file's existing `acctest.NamedTestCaseDirectory(...)` convention
+- [x] 11.1 Add `minKibanaAgentBuilderAccessControlAPIVersion = agentbuilder.MinAccessControlAPIVersion` to the version-constant block at the top of `internal/kibana/agentbuilderagent/acc_test.go`, alongside `minKibanaAgentBuilderAPIVersion`/`minKibanaAgentBuilderWorkflowAPIVersion`
+- [x] 11.2 Add `TestAccResourceAgentBuilderAgentAccessControl`, gated with `versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAccessControlAPIVersion, versionutils.FlavorAny)`, covering: (a) create with `access_control` omitted — assert the live cluster's actual default (per task 1.2, not a hardcoded literal) and an empty second `terraform plan`; (b) create with `access_mode = "private"`, then update to `"shared"`, then to `"public"`; (c) `ImportState` + `ImportStateVerify: true`; (d) remove `access_control` while changing another mutable attribute to force an update — assert the plan/state still contain the prior mode and inspect the resulting `PUT` body to confirm `access_control` is absent, then assert state reports the server mode and a following empty-plan check; (e) `ExpectError` for an invalid enum value and for `access_control = {}` (missing required `access_mode`)
+- [x] 11.3 Add configured-mode drift coverage: after create with an explicitly configured mode, change the server mode out-of-band via a direct API call, then assert `terraform plan` reports a diff to restore the configured mode. Separately cover unmanaged refresh: with `access_control` omitted or management relinquished, refresh adopts the server mode and a subsequent plan does not propose a corrective update.
+- [x] 11.4 (PARTIAL: the older-stack carried-forward-mode regression could not be exercised; only a 9.5.5 stack was available and the gating tests skip on it) Add a write-gating negative test restricted to a stack below 9.5.0 (skip-gated to not run on 9.5.0+) asserting that create/update with configured `access_control` surfaces a clear version-requirement error before any write request and does not call the access-control sub-resource; add an older-stack lifecycle regression with a carried-forward mode to verify refresh clears it without error and deletion proceeds. Also add a separate compatibility check that agents still apply successfully with `access_control` omitted regardless of stack version.
+- [x] 11.5 Add the corresponding `testdata`/`ConfigDirectory` fixtures (`create_access_control`, `update_access_control`, `update_no_access_control`, etc.) following this test file's existing `acctest.NamedTestCaseDirectory(...)` convention
 
 ## 12. Documentation and examples
 
-- [ ] 12.1 Regenerate `docs/resources/kibana_agentbuilder_agent.md` via the repo's existing docs-generation `make` target once the schema `MarkdownDescription`s are final
-- [ ] 12.2 Add an `access_control` example to `examples/resources/elasticstack_kibana_agentbuilder_agent/resource.tf`
-- [ ] 12.3 Add a CHANGELOG entry following the repo's existing format
+- [x] 12.1 Regenerate `docs/resources/kibana_agentbuilder_agent.md` via the repo's existing docs-generation `make` target once the schema `MarkdownDescription`s are final
+- [x] 12.2 Add an `access_control` example to `examples/resources/elasticstack_kibana_agentbuilder_agent/resource.tf`
+- [x] 12.3 Add a CHANGELOG entry following the repo's existing format
 
 ## 13. Validation
 
-- [ ] 13.1 Run `make build` and `make check-lint`
-- [ ] 13.2 Run `make check-openspec`
+- [x] 13.1 Run `make build` and `make check-lint`
+- [x] 13.2 Run `make check-openspec`
 - [ ] 13.3 Run the new/updated acceptance tests from task 11 against a Kibana ≥ 9.5.0 (per `dev-docs/high-level/testing.md`), plus the version-gating negative test against a < 9.5.0 stack if one is available
 - [ ] 13.4 Self-review with the `requirements-verification` skill against this change's delta spec

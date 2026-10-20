@@ -44,7 +44,7 @@ func readAgent(ctx context.Context, client *clients.KibanaScopedClient, resource
 		return prior, false, diags
 	}
 	if !supported {
-		diags.Append(prior.populateAccessControl(nil)...)
+		diags.Append(prior.populateAccessControl(ctx, nil)...)
 		return prior, true, diags
 	}
 
@@ -53,6 +53,6 @@ func readAgent(ctx context.Context, client *clients.KibanaScopedClient, resource
 	if diags.HasError() {
 		return prior, false, diags
 	}
-	diags.Append(prior.populateAccessControl(accessControl)...)
+	diags.Append(prior.populateAccessControl(ctx, accessControl)...)
 	return prior, true, diags
 }
