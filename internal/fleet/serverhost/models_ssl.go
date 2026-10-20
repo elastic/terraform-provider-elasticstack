@@ -114,7 +114,7 @@ func sslToObjectValue(
 	var diags diag.Diagnostics
 	sslModel := serverHostSslModel{
 		Values:     sslcore.Hydrate(ctx, certificate, certificateAuthorities, key, path.Root("ssl").AtName("certificate_authorities"), &diags),
-		ClientAuth: typeutils.StringishPointerValue(clientAuth),
+		ClientAuth: typeutils.NonEmptyStringishPointerValue(clientAuth),
 	}
 
 	if sslModel.AllNil() && sslModel.ClientAuth.IsNull() {
