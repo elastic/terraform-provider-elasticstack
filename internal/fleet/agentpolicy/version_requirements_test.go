@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -31,7 +32,7 @@ func TestAgentPolicyVersionRequirements(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	advancedSettings, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), advancedSettingsModel{
+	advancedSettings, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), agentpolicyshape.AdvancedSettingsModel{
 		LoggingLevel:                           types.StringValue("debug"),
 		MonitoringRuntimeExperimental:          types.StringValue("process"),
 		FeaturesDisablePolicyChangeAcksEnabled: types.BoolValue(false),
@@ -94,7 +95,7 @@ func TestAgentPolicyVersionRequirementsAgentFeaturesUnset(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	advancedSettings, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), advancedSettingsModel{
+	advancedSettings, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), agentpolicyshape.AdvancedSettingsModel{
 		LoggingLevel: types.StringValue("debug"),
 	})
 	require.False(t, diags.HasError())

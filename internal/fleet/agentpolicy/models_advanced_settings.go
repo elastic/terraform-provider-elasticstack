@@ -19,10 +19,9 @@ package agentpolicy
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -30,23 +29,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
-
-type advancedSettingsModel struct {
-	LoggingLevel                  types.String         `tfsdk:"logging_level"`
-	LoggingToFiles                types.Bool           `tfsdk:"logging_to_files"`
-	LoggingFilesInterval          customtypes.Duration `tfsdk:"logging_files_interval"`
-	LoggingFilesKeepfiles         types.Int32          `tfsdk:"logging_files_keepfiles"`
-	LoggingFilesRotateeverybytes  types.Int64          `tfsdk:"logging_files_rotateeverybytes"`
-	LoggingMetricsPeriod          customtypes.Duration `tfsdk:"logging_metrics_period"`
-	GoMaxProcs                    types.Int32          `tfsdk:"go_max_procs"`
-	DownloadTimeout               customtypes.Duration `tfsdk:"download_timeout"`
-	DownloadTargetDirectory       types.String         `tfsdk:"download_target_directory"`
-	MonitoringRuntimeExperimental types.String         `tfsdk:"monitoring_runtime_experimental"`
-
-	FeaturesDisablePolicyChangeAcksEnabled types.Bool                      `tfsdk:"features_disable_policy_change_acks_enabled"`
-	FeaturesIncludeTagsInEventsEnabled     types.Bool                      `tfsdk:"features_include_tags_in_events_enabled"`
-	Internal                               customtypes.NormalizedYamlValue `tfsdk:"internal"`
-}
 
 // advancedSettingsAttrTypes returns attribute types for advanced_settings pulled from the schema
 func advancedSettingsAttrTypes() map[string]attr.Type {
@@ -71,39 +53,10 @@ type advancedSettingsAPIValues = struct {
 
 // populateAdvancedSettingsFromAPI populates the advanced settings from API response
 func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPolicyResponse) diag.Diagnostics {
-	if data.AdvancedSettings == nil {
+	settings, ok, diags := agentpolicyshape.PopulateAdvancedSettings(data)
+	if !ok {
 		model.AdvancedSettings = types.ObjectNull(advancedSettingsAttrTypes())
-		return nil
-	}
-
-	settings := advancedSettingsModel{
-		LoggingLevel:                  typeutils.StringFromAny(data.AdvancedSettings.AgentLoggingLevel),
-		LoggingToFiles:                typeutils.BoolFromAny(data.AdvancedSettings.AgentLoggingToFiles),
-		LoggingFilesInterval:          customtypes.NewDurationFromAny(data.AdvancedSettings.AgentLoggingFilesInterval),
-		LoggingFilesKeepfiles:         typeutils.Int32FromAnyFloat64(data.AdvancedSettings.AgentLoggingFilesKeepfiles),
-		LoggingFilesRotateeverybytes:  typeutils.Int64FromAnyFloat64(data.AdvancedSettings.AgentLoggingFilesRotateeverybytes),
-		LoggingMetricsPeriod:          customtypes.NewDurationFromAny(data.AdvancedSettings.AgentLoggingMetricsPeriod),
-		GoMaxProcs:                    typeutils.Int32FromAnyFloat64(data.AdvancedSettings.AgentLimitsGoMaxProcs),
-		DownloadTimeout:               customtypes.NewDurationFromAny(data.AdvancedSettings.AgentDownloadTimeout),
-		DownloadTargetDirectory:       typeutils.StringFromAny(data.AdvancedSettings.AgentDownloadTargetDirectory),
-		MonitoringRuntimeExperimental: typeutils.StringFromAny(data.AdvancedSettings.AgentMonitoringRuntimeExperimental),
-
-		FeaturesDisablePolicyChangeAcksEnabled: typeutils.BoolFromAny(data.AdvancedSettings.AgentFeaturesDisablePolicyChangeAcksEnabled),
-		FeaturesIncludeTagsInEventsEnabled:     typeutils.BoolFromAny(data.AdvancedSettings.AgentFeaturesIncludeTagsInEventsEnabled),
-		Internal:                               customtypes.NewNormalizedYamlNull(),
-	}
-	var diags diag.Diagnostics
-	switch internal := data.AdvancedSettings.AgentInternal.(type) {
-	case nil:
-	case string:
-		settings.Internal = customtypes.NewNormalizedYamlValue(internal)
-	default:
-		// Kibana may return structured YAML as a JSON object; JSON is valid YAML.
-		if encoded, err := json.Marshal(internal); err == nil {
-			settings.Internal = customtypes.NewNormalizedYamlValue(string(encoded))
-		} else {
-			diags.AddWarning("Unable to read advanced_settings.internal", err.Error())
-		}
+		return diags
 	}
 
 	obj, objDiags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), settings)
@@ -112,7 +65,7 @@ func (model *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Conte
 		return diags
 	}
 	model.AdvancedSettings = obj
-	return nil
+	return diags
 }
 
 // convertAdvancedSettingsToAPI converts the advanced settings config to API format
@@ -121,7 +74,7 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 		return nil, nil
 	}
 
-	var settings advancedSettingsModel
+	var settings agentpolicyshape.AdvancedSettingsModel
 	diags := model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return nil, diags

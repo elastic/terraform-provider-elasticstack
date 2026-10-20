@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
@@ -29,15 +30,13 @@ import (
 func TestConvertHTTPMonitoringEndpointToAPI(t *testing.T) {
 	ctx := context.Background()
 
-	// Helper to create types.Object from httpMonitoringEndpointModel
-	createHTTPEndpointObject := func(m httpMonitoringEndpointModel) types.Object {
+	createHTTPEndpointObject := func(m agentpolicyshape.HTTPMonitoringEndpointModel) types.Object {
 		obj, _ := types.ObjectValueFrom(ctx, httpMonitoringEndpointAttrTypes(), m)
 		return obj
 	}
 
-	// Helper to create types.Object from advancedMonitoringOptionsModel
 	createAmoObject := func(httpEndpoint types.Object) types.Object {
-		amo := advancedMonitoringOptionsModel{
+		amo := agentpolicyshape.AdvancedMonitoringOptionsModel{
 			HTTPMonitoringEndpoint: httpEndpoint,
 			Diagnostics:            types.ObjectNull(diagnosticsAttrTypes()),
 		}
@@ -64,7 +63,7 @@ func TestConvertHTTPMonitoringEndpointToAPI(t *testing.T) {
 		},
 		{
 			name: "default values are sent (allows reset to defaults)",
-			amo: createAmoObject(createHTTPEndpointObject(httpMonitoringEndpointModel{
+			amo: createAmoObject(createHTTPEndpointObject(agentpolicyshape.HTTPMonitoringEndpointModel{
 				Enabled:       types.BoolValue(false),
 				Host:          types.StringValue("localhost"),
 				Port:          types.Int32Value(6791),
@@ -77,7 +76,7 @@ func TestConvertHTTPMonitoringEndpointToAPI(t *testing.T) {
 		},
 		{
 			name: "enabled http endpoint returns values",
-			amo: createAmoObject(createHTTPEndpointObject(httpMonitoringEndpointModel{
+			amo: createAmoObject(createHTTPEndpointObject(agentpolicyshape.HTTPMonitoringEndpointModel{
 				Enabled:       types.BoolValue(true),
 				Host:          types.StringValue("localhost"),
 				Port:          types.Int32Value(6791),
@@ -90,7 +89,7 @@ func TestConvertHTTPMonitoringEndpointToAPI(t *testing.T) {
 		},
 		{
 			name: "custom port returns values",
-			amo: createAmoObject(createHTTPEndpointObject(httpMonitoringEndpointModel{
+			amo: createAmoObject(createHTTPEndpointObject(agentpolicyshape.HTTPMonitoringEndpointModel{
 				Enabled:       types.BoolValue(false),
 				Host:          types.StringValue("localhost"),
 				Port:          types.Int32Value(8080),
@@ -103,7 +102,7 @@ func TestConvertHTTPMonitoringEndpointToAPI(t *testing.T) {
 		},
 		{
 			name: "pprof enabled returns values",
-			amo: createAmoObject(createHTTPEndpointObject(httpMonitoringEndpointModel{
+			amo: createAmoObject(createHTTPEndpointObject(agentpolicyshape.HTTPMonitoringEndpointModel{
 				Enabled:       types.BoolValue(true),
 				Host:          types.StringValue("localhost"),
 				Port:          types.Int32Value(6791),
@@ -142,21 +141,18 @@ func TestConvertHTTPMonitoringEndpointToAPI(t *testing.T) {
 func TestConvertDiagnosticsToAPI(t *testing.T) {
 	ctx := context.Background()
 
-	// Helper to create types.Object from rateLimitsModel
-	createRateLimitsObject := func(m rateLimitsModel) types.Object {
+	createRateLimitsObject := func(m agentpolicyshape.RateLimitsModel) types.Object {
 		obj, _ := types.ObjectValueFrom(ctx, rateLimitsAttrTypes(), m)
 		return obj
 	}
 
-	// Helper to create types.Object from fileUploaderModel
-	createFileUploaderObject := func(m fileUploaderModel) types.Object {
+	createFileUploaderObject := func(m agentpolicyshape.FileUploaderModel) types.Object {
 		obj, _ := types.ObjectValueFrom(ctx, fileUploaderAttrTypes(), m)
 		return obj
 	}
 
-	// Helper to create types.Object from diagnosticsModel
 	createDiagnosticsObject := func(rateLimits, fileUploader types.Object) types.Object {
-		diag := diagnosticsModel{
+		diag := agentpolicyshape.DiagnosticsModel{
 			RateLimits:   rateLimits,
 			FileUploader: fileUploader,
 		}
@@ -164,9 +160,8 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 		return obj
 	}
 
-	// Helper to create types.Object from advancedMonitoringOptionsModel
 	createAmoObject := func(diagnostics types.Object) types.Object {
-		amo := advancedMonitoringOptionsModel{
+		amo := agentpolicyshape.AdvancedMonitoringOptionsModel{
 			HTTPMonitoringEndpoint: types.ObjectNull(httpMonitoringEndpointAttrTypes()),
 			Diagnostics:            diagnostics,
 		}
@@ -194,7 +189,7 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 		{
 			name: "default rate limits values are sent (allows reset to defaults)",
 			amo: createAmoObject(createDiagnosticsObject(
-				createRateLimitsObject(rateLimitsModel{
+				createRateLimitsObject(agentpolicyshape.RateLimitsModel{
 					Interval: customtypes.NewDurationValue("1m"),
 					Burst:    types.Int32Value(1),
 				}),
@@ -207,7 +202,7 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 			name: "default uploader values are sent (allows reset to defaults)",
 			amo: createAmoObject(createDiagnosticsObject(
 				types.ObjectNull(rateLimitsAttrTypes()),
-				createFileUploaderObject(fileUploaderModel{
+				createFileUploaderObject(agentpolicyshape.FileUploaderModel{
 					InitDuration:    customtypes.NewDurationValue("1s"),
 					BackoffDuration: customtypes.NewDurationValue("1m"),
 					MaxRetries:      types.Int32Value(10),
@@ -219,7 +214,7 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 		{
 			name: "custom rate limits interval returns values",
 			amo: createAmoObject(createDiagnosticsObject(
-				createRateLimitsObject(rateLimitsModel{
+				createRateLimitsObject(agentpolicyshape.RateLimitsModel{
 					Interval: customtypes.NewDurationValue("2m"),
 					Burst:    types.Int32Value(1),
 				}),
@@ -231,7 +226,7 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 		{
 			name: "custom rate limits burst returns values",
 			amo: createAmoObject(createDiagnosticsObject(
-				createRateLimitsObject(rateLimitsModel{
+				createRateLimitsObject(agentpolicyshape.RateLimitsModel{
 					Interval: customtypes.NewDurationValue("1m"),
 					Burst:    types.Int32Value(5),
 				}),
@@ -244,7 +239,7 @@ func TestConvertDiagnosticsToAPI(t *testing.T) {
 			name: "custom uploader max_retries returns values",
 			amo: createAmoObject(createDiagnosticsObject(
 				types.ObjectNull(rateLimitsAttrTypes()),
-				createFileUploaderObject(fileUploaderModel{
+				createFileUploaderObject(agentpolicyshape.FileUploaderModel{
 					InitDuration:    customtypes.NewDurationValue("1s"),
 					BackoffDuration: customtypes.NewDurationValue("1m"),
 					MaxRetries:      types.Int32Value(20),

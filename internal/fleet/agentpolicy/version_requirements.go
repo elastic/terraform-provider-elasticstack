@@ -22,6 +22,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -108,7 +109,7 @@ func (model agentPolicyModel) GetVersionRequirements(ctx context.Context) ([]ent
 		return reqs, nil
 	}
 
-	var settings advancedSettingsModel
+	var settings agentpolicyshape.AdvancedSettingsModel
 	diags := model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return nil, diags
