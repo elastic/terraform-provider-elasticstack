@@ -24,12 +24,20 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+)
+
+const (
+	sslCertificateAttr            = "certificate"
+	sslKeyAttr                    = "key"
+	sslCertificateAuthoritiesAttr = "certificate_authorities"
+	sslClientAuthAttr             = "client_auth"
 )
 
 func getSchema(_ context.Context) schema.Schema {
@@ -80,7 +88,55 @@ func getSchema(_ context.Context) schema.Schema {
 					stringvalidator.LengthAtLeast(1),
 				},
 			},
+			"ssl": schema.SingleNestedAttribute{
+				Description: sslDescription,
+				Optional:    true,
+				Validators: []validator.Object{
+					sslAtLeastOneSubattrValidator{},
+				},
+				Attributes: map[string]schema.Attribute{
+					sslCertificateAttr: schema.StringAttribute{
+						Description: "The TLS certificate Fleet Server presents to Elastic Agents.",
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.LengthAtLeast(1),
+						},
+					},
+					sslKeyAttr: schema.StringAttribute{
+						Description: "The private key for the Fleet Server TLS certificate.",
+						Optional:    true,
+						Sensitive:   true,
+						Validators: []validator.String{
+							stringvalidator.LengthAtLeast(1),
+						},
+					},
+					sslCertificateAuthoritiesAttr: schema.ListAttribute{
+						Description: "Certificate authorities used to validate Elastic Agent client certificates. Accepts 1-10 entries.",
+						Optional:    true,
+						ElementType: types.StringType,
+						Validators: []validator.List{
+							listvalidator.SizeAtLeast(1),
+							listvalidator.SizeAtMost(10),
+							listvalidator.ValueStringsAre(stringvalidator.LengthAtLeast(1)),
+						},
+					},
+					sslClientAuthAttr: schema.StringAttribute{
+						Description: "Whether Fleet Server requests client certificates from Elastic Agents. Valid values are `none`, `optional`, and `required`.",
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("none", "optional", "required"),
+						},
+					},
+				},
+			},
 			"space_ids": kbschema.SpaceIDsAttribute(spaceIDsDescription),
 		},
 	}
+}
+
+var sslAttrTypes = map[string]attr.Type{
+	sslCertificateAttr:            types.StringType,
+	sslKeyAttr:                    types.StringType,
+	sslCertificateAuthoritiesAttr: types.ListType{ElemType: types.StringType},
+	sslClientAuthAttr:             types.StringType,
 }

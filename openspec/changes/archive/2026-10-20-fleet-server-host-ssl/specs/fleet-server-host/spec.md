@@ -41,13 +41,12 @@ The resource SHALL expose an optional `ssl` single-nested-object attribute with 
 - **THEN** the provider SHALL omit `client_auth` from the request body's `ssl` object rather than sending a provider-chosen default
 - **AND** an apply followed by refresh SHALL complete without an inconsistent-result error or a subsequent diff while configuration continues to omit `client_auth`
 
-#### Scenario: client_auth default returned by Kibana remains plan-consistent
+#### Scenario: client_auth is Optional-only because Kibana returns no default
 
-- **GIVEN** a pre-implementation create probe confirms Kibana returns a non-null `client_auth` when it is omitted
+- **GIVEN** Kibana returns no `client_auth` when it is omitted on create
 - **WHEN** the practitioner applies configuration that omits `client_auth` and then refreshes
-- **THEN** the provider SHALL represent the returned value using a plan-consistent schema and hydration strategy
-- **AND** the provider SHALL NOT send a computed/defaulted value in place of the omitted field in the initial create request
-- **AND** the apply and refresh SHALL produce no inconsistent-result error or subsequent diff
+- **THEN** state SHALL contain a null `ssl.client_auth`
+- **AND** the schema SHALL NOT mark `client_auth` as computed
 
 ### Requirement: No provider-enforced ssl default or pairing constraint
 
@@ -138,7 +137,7 @@ The provider SHALL document that users upgrading with an existing server-side `s
 
 ### Requirement: Protect deferred SSL fields on update
 
-The provider SHALL NOT overwrite non-null `agent_*` or `es_*` fields already stored in a host's `ssl` object when those fields are not exposed by the Terraform schema. Before a PUT that would replace the `ssl` object, the provider SHALL either preserve these fields or reject the update with an actionable diagnostic before sending the mutation.
+The provider SHALL NOT overwrite non-null `agent_*` or `es_*` fields (including empty strings and empty lists) already stored in a host's `ssl` object when those fields are not exposed by the Terraform schema. The provider SHALL send `ssl` on an update only when the planned `ssl` differs from the prior state; an update that leaves `ssl` unchanged SHALL omit it, which Kibana treats as leaving the stored object untouched. Before a PUT that sends `ssl` (including one that removes `ssl`), the provider SHALL read the host and, when it stores non-null `agent_*` or `es_*` fields, reject the update with an actionable diagnostic before sending the mutation. The check and the PUT are separate requests and are not atomic.
 
 #### Scenario: Update cannot erase pre-existing unexposed SSL fields
 
@@ -148,47 +147,57 @@ The provider SHALL NOT overwrite non-null `agent_*` or `es_*` fields already sto
 - **AND** the server-side `agent_*` and `es_*` values SHALL remain unchanged
 - **AND** an acceptance test SHALL seed these fields and verify no mutating request is sent
 
-### Requirement: ssl removal consistency with PUT semantics
+#### Scenario: Removing ssl is blocked on a host with unexposed SSL fields
 
-Implementation SHALL independently probe omission, `{}`, and explicit JSON `ssl: null` against fresh populated hosts before choosing removal behavior. It SHALL use a supported in-place clearing form or force replacement if none work.
+- **GIVEN** a host's stored `ssl` object contains one or more non-null `agent_*` or `es_*` fields
+- **WHEN** the practitioner removes `ssl` from configuration and applies
+- **THEN** the provider SHALL return the same diagnostic before sending the PUT
 
-#### Scenario: In-place removal when the API honors it
+#### Scenario: Unrelated update on a host with unexposed SSL fields
 
-- **GIVEN** the pre-implementation probe determines that at least one of omitting `ssl`, sending `ssl = {}`, or sending explicit JSON `ssl: null` from the PUT body clears it server-side
-- **WHEN** the practitioner removes `ssl` (or that child) from configuration and applies
-- **THEN** the provider SHALL perform an in-place update, and a subsequent read SHALL show the removed value as null
-- **AND** when explicit JSON null is the clearing form, the serialized PUT body SHALL contain `"ssl": null`
+- **GIVEN** a host's stored `ssl` object contains non-null `agent_*` or `es_*` fields and `ssl` is unchanged in configuration
+- **WHEN** the practitioner changes another attribute such as `name` and applies
+- **THEN** the update SHALL succeed without sending `ssl`, and the `agent_*` and `es_*` values SHALL remain unchanged
 
-#### Scenario: Forced replacement when the API cannot honor in-place removal
+### Requirement: ssl removal and replacement semantics
 
-- **GIVEN** the pre-implementation probe determines that omitting `ssl`, sending `ssl = {}`, and sending explicit JSON `ssl: null` all fail to clear a previously-set `ssl`, or that omitting a specific child does not clear that child
-- **WHEN** the practitioner removes `ssl` (or that child) from configuration and applies
-- **THEN** Terraform SHALL plan a replace operation for the resource
+Probing Kibana 9.5.5 showed that a PUT omitting `ssl` leaves the stored object unchanged, that `ssl: {}` and explicit `ssl: null` both clear it, and that a PUT replaces the whole stored object. The provider SHALL therefore remove `ssl` in place by sending an empty `ssl` object, and SHALL NOT force resource replacement for any `ssl` removal.
 
-### Requirement: Explicit-null SSL clearing request
+#### Scenario: Removing ssl clears it in place
 
-If explicit JSON `ssl: null` is the only probed form that clears the object, implementation SHALL use a request path that serializes `"ssl": null`. A nil generated `Ssl` pointer that serializes by omission does not meet this requirement.
+- **GIVEN** the prior state has `ssl` and the configuration omits it
+- **WHEN** the practitioner applies
+- **THEN** the provider SHALL perform an in-place update whose PUT body contains `"ssl": {}`
+- **AND** a subsequent read SHALL show `ssl` as null and Kibana SHALL no longer report any supported `ssl` field
 
-#### Scenario: Explicit-null clearing payload is serialized
+#### Scenario: ssl absent from both plan and prior state is not sent
 
-- **GIVEN** the pre-implementation probe determines explicit JSON null is the only in-place clearing form
-- **WHEN** the provider sends the clearing PUT
-- **THEN** the serialized request body SHALL contain `"ssl": null`
-- **AND** a serialized-payload assertion SHALL verify the explicit null
+- **GIVEN** neither the plan nor the prior state has `ssl`
+- **WHEN** the practitioner updates another attribute
+- **THEN** the PUT body SHALL omit `ssl`
 
-### Requirement: ssl.key hydration on read is probe-determined
+#### Scenario: Dropping one child is an in-place update
 
-The provider's handling of `ssl.key` when populating state after create, update, and refresh SHALL depend on whether the Fleet API echoes the configured `key` value back verbatim on `GET`/`POST`/`PUT` responses, or redacts/omits it (as determined by a pre-implementation probe against a live Kibana instance).
+- **GIVEN** the prior state has `certificate`, `key`, `certificate_authorities`, and `client_auth`
+- **WHEN** the practitioner removes exactly one of them from configuration and applies
+- **THEN** the provider SHALL perform an in-place update sending the remaining children
+- **AND** the removed child SHALL be null in state and absent on the server
 
-#### Scenario: API echoes key verbatim
+### Requirement: Update tolerates Kibana's string-encoded ssl response
 
-- **GIVEN** the pre-implementation probe determines the Fleet API returns `ssl.key` unredacted
-- **WHEN** the provider populates state after create, update, or refresh
-- **THEN** `ssl.key` SHALL be hydrated from the API response, consistent with `certificate` and `certificate_authorities`
+Kibana returns the `ssl` object of a PUT response as a JSON-encoded string rather than an object. The provider SHALL NOT depend on parsing the PUT response body and SHALL build state from a read after the update; a host that cannot be found on that read SHALL be reported as an error.
 
-#### Scenario: API redacts or omits key
+#### Scenario: Update succeeds when the PUT response encodes ssl as a string
 
-- **GIVEN** the pre-implementation probe determines the Fleet API redacts or omits `ssl.key` on response bodies
-- **WHEN** the provider populates state after create, update, or refresh
-- **THEN** the provider SHALL preserve the applied plan's `ssl.key` value (or the prior state's value on refresh) instead of overwriting it with the redacted/absent API response
-- **AND** on import without a configured `key` in state, `ssl.key` SHALL be null regardless of the API response
+- **GIVEN** Kibana answers a PUT with `"ssl":"{...}"` as a string
+- **WHEN** the practitioner updates a host with `ssl` configured
+- **THEN** the update SHALL succeed and state SHALL reflect the values read back from Kibana
+
+### Requirement: ssl.key is hydrated verbatim
+
+Kibana echoes `ssl.key` unredacted on create, update, and read responses (probed on 9.5.5), so the provider SHALL hydrate `ssl.key` from the API response after create, update, refresh, and import.
+
+#### Scenario: key is read back from the API
+
+- **WHEN** the provider populates state after create, update, refresh, or import
+- **THEN** `ssl.key` SHALL equal the value returned by Kibana

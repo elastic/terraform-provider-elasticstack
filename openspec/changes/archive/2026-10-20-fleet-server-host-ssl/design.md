@@ -48,9 +48,9 @@ Considered: a fully bespoke schema for `fleet_server_host`'s `ssl` ignoring the 
 
 ### Decision 2: `client_auth` has no provider-side default; omitted fields sent as absent
 
-Probe create with `client_auth` omitted and inspect the response. If Kibana does not return a default, keep `client_auth` Optional-only and hydrate it as null. If Kibana returns a default, model `client_auth` as Optional+Computed so the response value can be represented without Terraform's inconsistent-result error. In either branch, an omitted configured value must be omitted from the initial request; for the defaulting branch, unknown/computed plan values must not be sent as an explicit client-chosen value.
+Kibana returns no `client_auth` default (probe 1.9), so `client_auth` is Optional-only and hydrated as null when absent. An omitted value is omitted from the request.
 
-**Why:** The OAS declares no default for `client_auth` on this endpoint, so the provider must establish the actual response behavior before selecting the schema/hydration branch. Elastic's cited defaulting behavior ("required if CAs configured else none") comes from standalone Elastic Agent's `server.ssl.*` runtime documentation, not from this Kibana API's documented contract.
+**Why:** The OAS declares no default for `client_auth` on this endpoint and the probe confirmed Kibana applies none. Elastic's cited defaulting behavior ("required if CAs configured else none") comes from standalone Elastic Agent's `server.ssl.*` runtime documentation, not from this Kibana API's contract.
 
 ### Decision 3: Attribute-scoped version gate at 9.1.0, added via a new `GetVersionRequirements` on `serverHostModel`
 
@@ -72,35 +72,58 @@ func (m serverHostModel) GetVersionRequirements(_ context.Context) ([]entitycore
 
 **Why:** Matches `agentdownloadsource/models.go`'s existing pattern exactly (`GetVersionRequirements` returning per-attribute requirements only when that attribute is configured). Because `serverHostModel` has no resource-wide version floor today, this is a pure addition with no risk of affecting existing `ssl`-free configurations on any stack version — the new method returns an empty slice when `ssl` is unset.
 
-The 9.1.0 floor comes from the Kibana release notes entry "Adds SSL options to Fleet Server host settings" (kibana#208091) cited in the research driving this change; it is not independently re-verified against `generated/kbapi`'s pinned OAS changelog in this proposal. **Confirming or adjusting this exact version is an implementation-time task**, resolved by the version-boundary acceptance tests in tasks.md, not a design-time blocker.
+The 9.1.0 floor comes from the Kibana release notes entry "Adds SSL options to Fleet Server host settings" (kibana#208091). It is unverified: only a 9.5.5 stack was probed, so below-floor behavior is covered by unit tests of `GetVersionRequirements` only.
 
-### Decision 4: Removal/clear semantics and `key` read-back are resolved by acceptance testing, not assumed
+### Decision 4: Removal semantics, `key` read-back, and deferred fields (resolved by probes)
 
-Two behaviors are genuinely unknown for this specific endpoint until exercised against a live Kibana:
+1. **Removal:** a PUT omitting `ssl` leaves the stored object unchanged, while `ssl: {}` and explicit `ssl: null` both clear it, and a PUT replaces the whole object. Removing `ssl` therefore sends `ssl: {}` in place (no replacement, no explicit-null request path); dropping one child sends the remaining children in place.
+2. **`key` read-back:** Kibana echoes `ssl.key` verbatim on create, update, and read, so `populateFromAPI` hydrates it from the response with no preservation logic.
+3. **`client_auth`:** no server default, so it is Optional-only (Decision 2).
+4. **Deferred fields:** hosts can store non-null `agent_*`/`es_*` fields and a PUT drops them, so an update that sends `ssl` is rejected before mutation when the host stores any (Decision 5).
 
-1. **Does `PUT .../fleet_server_hosts/{itemId}` clear a previously-set `ssl` when sent an omitted field, an explicit empty object, or explicit JSON `null`?** `agentdownloadsource`'s own spec (`openspec/specs/fleet-agent-download-source/spec.md`, "ssl removal consistency with PUT semantics") documents that its answer for *its* endpoint came from a pre-implementation probe, and explicitly calls out that the behavior does not generalize. Probe each payload independently against a fresh populated host. If explicit JSON `null` is the only clearing form that works, use a request path that serializes `"ssl": null` explicitly; a nil generated `Ssl` pointer is insufficient because its `omitempty` tag omits the field. Assert the serialized payload. Use a clearing payload shown to work, or force replacement only if all three forms fail.
-2. **Is `ssl.key` redacted on `GET`, like `agentdownloadsource`'s secret-backed key?** If so, `internal/entitycore/generic_resource_write.go`'s read-after-write lifecycle would otherwise overwrite a practitioner-configured `key` with a redacted value on every create/update/refresh, not just on import. If redaction is observed, `models.go`'s `populateFromAPI` must preserve the configured key from prior state/plan instead of hydrating it from the (redacted) response — the same `preserveRedactedSecret`-style precedent `agentdownloadsource` uses at `read.go:235`.
-3. **Does Kibana return a `client_auth` default when omitted?** Resolve with the create probe before choosing Optional-only versus Optional+Computed. The apply/refresh acceptance test must prove the chosen branch is plan-consistent and produces no subsequent diff when configuration continues to omit `client_auth`.
-4. **Can a host contain non-null deferred `agent_*`/`es_*` fields?** Seed such a host and verify an update that would replace `ssl` is rejected before mutation with an actionable diagnostic, leaving those values intact. This protects existing configurations without expanding the Terraform schema.
-
-**Why defer to testing rather than design-time assumption:** The OAS has no description field documenting either behavior for this path, and the one documented precedent in this repo (`agentdownloadsource`) is explicit that its answer is endpoint-specific, not a general Fleet API behavior. Choosing wrong here would either silently fail to clear TLS config server-side while Terraform shows it removed, or silently corrupt a practitioner's configured key on every apply. Both are concretely testable and must be resolved before this ships, per the acceptance tests in tasks.md.
+See "Probe results" for the evidence.
 
 ## Risks / Trade-offs
 
 | Risk | Mitigation |
 |---|---|
-| Removing `ssl` from config doesn't actually clear it server-side (PUT semantics unknown) | Acceptance tests independently probe omission, `{}`, and explicit JSON `null` before the clearing strategy is finalized; forced replacement is the fallback if all fail (Decision 4). |
-| `ssl.key` is redacted on read, silently stomping a configured key on every create/update/refresh | Acceptance test asserts round-trip stability of `key` across create→refresh and create→update; hydration logic preserves the configured value if redaction is observed (Decision 4). |
-| Kibana returns a `client_auth` default that differs from the omitted plan value | Probe the create response; use Optional+Computed for the returned value and verify apply/refresh has no inconsistent result or subsequent diff (Decision 2). |
+| Removing `ssl` from config doesn't clear it server-side | Resolved: Kibana ignores an omitted `ssl` but clears on `ssl: {}`, which the provider sends on removal; covered by `_SSL` and `_SSLChildRemoval` acceptance tests. |
+| `ssl.key` is redacted on read, stomping a configured key | Resolved: Kibana echoes the key verbatim, so it is hydrated from the response; round-trip and import are asserted in acceptance tests. |
+| Kibana returns a `client_auth` default that differs from the omitted plan value | Resolved: no default is returned; `client_auth` is Optional-only and `_SSLClientAuthOmitted` asserts no diff. |
 | Updating the supported SSL fields erases existing deferred `agent_*`/`es_*` values | Inspect the current stored object before a replacing PUT and return an actionable diagnostic without mutation when deferred values are present; verify with a seeded-host acceptance test. |
 | 9.1.0 floor is wrong (not independently confirmed against this repo's pinned OAS changelog) | Explicit version-boundary acceptance tests (below-floor error, at-floor success, `ssl`-omitted-below-floor success) catch a wrong floor during implementation rather than after release. |
 | Changing TLS settings on an enrolled Fleet Server host can disconnect connected Elastic Agents in real deployments | Documented in the resource's generated docs; out of scope for the Terraform acceptance test itself, which only asserts API/state, not live agent connectivity. |
 
+### Decision 5: Raw PUT plus follow-up GET, and a pre-update guard read
+
+Kibana returns `ssl` in a PUT response as a JSON-encoded string, which the generated typed response cannot decode. `UpdateFleetServerHost` therefore issues the raw PUT, ignores the body, and reads the host back (a missing host after the PUT is an error); `PutFleetServerHost` is the exported PUT-only form used by delete when it clears the default flag. Because a PUT replaces the whole stored `ssl` object and Kibana ignores an omitted `ssl` (probe 1.2), `ssl` is sent only when the planned value differs from prior state, and the deferred-field guard (a GET before the PUT) runs only in that case, including removals. The guard and the PUT are not atomic, so a concurrent writer adding `agent_*`/`es_*` fields between them could still be overwritten; this race is accepted.
+
 ## Open questions
 
-- Does Kibana's `fleet_server_hosts` PUT actually clear a previously-set `ssl` value when sent an omitted field, an explicit empty object, or explicit JSON `null`? The OAS doesn't document this for this path, and `agentdownloadsource`'s precedent is for a different endpoint. Non-blocking — each form is tested against a fresh populated host; implementation uses a form that clears or a forced-replacement plan modifier if none do.
-- Does Kibana enforce a `client_auth` default or a `certificate`+`key` pairing requirement server-side for this specific endpoint (the OAS declares neither, and the cited defaults come from standalone-Agent runtime docs, not this API)? Non-blocking — the provider does not invent a constraint the API doesn't declare; relevant only to user-facing documentation/examples.
-- Does Kibana return a `client_auth` default when it is omitted from create? Non-blocking — the pre-implementation probe selects the plan-consistent schema/hydration branch in Decision 2.
-- What is the minimum Kibana/Fleet Server version to gate the new `ssl` attribute on — 9.1.0 is the best available evidence (when the field was added per Kibana release notes) but not independently confirmed against the `kibana-openapi-spec` changelog pinned in this repo. Non-blocking — implement with 9.1.0 as the `GetVersionRequirements` floor and confirm/adjust via the explicit version-boundary acceptance tests in tasks.md.
-- Is `ssl.key` returned on GET, or redacted like `agentdownloadsource`'s secret-backed key? This affects create/update/refresh hydration, not just import — a redacted key would need a conditional preservation policy in `models.go`, not only an import-time fix. Non-blocking — resolved by the acceptance test's import/refresh assertions during implementation.
-- Are the `agent_*`/`es_*` sub-fields in scope for this change or a separate follow-up issue? Resolved for this change: out of scope (see Non-Goals); tracked as a follow-up.
+All open questions are resolved by the "Probe results" section: `ssl` removal is sent as `ssl: {}` in place, `client_auth` is Optional-only with no server default, and `ssl.key` is hydrated verbatim. The `agent_*`/`es_*` fields are out of scope (tracked as a follow-up). The only unresolved item is the 9.1.0 minimum version, which is unverified (only 9.5.5 was probed; below-floor behavior is covered by unit tests only).
+
+## Probe results (Task 1, live Kibana 9.5.5)
+
+Run with `curl` against `POST/PUT/GET/DELETE /api/fleet/fleet_server_hosts` on a Kibana 9.5.5 stack. All probe hosts were deleted afterwards.
+
+| Probe | Result |
+|---|---|
+| 1.1 create with all four `ssl` fields | Accepted; create response and subsequent GET return all four fields. |
+| 1.2 PUT omitting `ssl` | `ssl` persists unchanged (omission does NOT clear). |
+| 1.3 PUT `"ssl": {}` | Clears: GET returns `"ssl": {}` (all supported fields absent; hydrates to null). |
+| 1.4 PUT `"ssl": null` | Clears: GET no longer returns `ssl`. |
+| 1.5 PUT replacing `ssl` with one child omitted (each of `certificate`, `key`, `certificate_authorities`, `client_auth`) | Each omitted child is cleared in place; retained children persist. PUT replaces the whole `ssl` object. |
+| 1.6 `key` on create/GET | Echoed verbatim on create and GET (no redaction, no `secrets.ssl` on this stack). |
+| 1.7 minimum version | 9.5.5 accepts non-null `ssl`. Lower bound cannot be exercised (only 9.5.5 is available) and the pinned OAS carries no changelog; 9.1.0 (kibana#208091) is retained as the unverified floor. |
+| 1.9 `client_auth` omitted | No server default: create response and GET omit `client_auth`. |
+| extra: deferred fields | `agent_*`/`es_*` fields can be seeded via the API and are returned on GET. A PUT with only supported fields replaces the object and silently drops them, confirming the protection requirement. |
+| extra: PUT response shape | The PUT response returns `ssl` as a JSON-encoded string (e.g. `"ssl":"{}"`) instead of an object, so the generated client cannot decode the update response when `ssl` is present. GET and POST return an object. |
+
+### Decisions driven by the probes
+
+- **Decision 3/4 removal**: in-place. Because `{}` and explicit `null` both clear, the provider sends an empty `ssl` object (`{}`, serializable through the generated struct pointer) when `ssl` is removed from configuration and the prior state had `ssl`. Explicit JSON null serialization (Task 2.5) and `RequiresReplace` plan modifiers (Task 3.4) are not needed. Child removal is in place because the PUT replaces the entire object. When neither plan nor prior state has `ssl`, `ssl` is omitted from the PUT.
+- **Key hydration**: the key is echoed verbatim, so `populateFromAPI` hydrates `ssl.key` from the response with no preservation logic.
+- **client_auth**: no server default, so `client_auth` is Optional-only and omitted from requests when null.
+- **Version floor**: 9.1.0 retained; below-floor behavior is covered by unit tests of `GetVersionRequirements` only.
+- **Deferred-field protection**: before any PUT that sends `ssl`, the provider reads the host and returns an error diagnostic when it holds non-null `agent_*`/`es_*` fields.
+- **Update response**: the update client path must tolerate the string-encoded `ssl` in the PUT response; the resource state is built from a follow-up read.

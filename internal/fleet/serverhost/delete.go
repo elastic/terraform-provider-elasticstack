@@ -36,7 +36,7 @@ func deleteServerHost(ctx context.Context, client *clients.KibanaScopedClient, r
 	// that `terraform destroy` succeeds without manual intervention.
 	if model.Default.ValueBool() {
 		isDefault := false
-		_, d := fleet.UpdateFleetServerHost(ctx, fleetClient, resourceID, spaceID, kbapi.PutFleetFleetServerHostsItemidJSONRequestBody{
+		d := fleet.PutFleetServerHost(ctx, fleetClient, resourceID, spaceID, kbapi.PutFleetFleetServerHostsItemidJSONRequestBody{
 			IsDefault: &isDefault,
 		})
 		diags.Append(d...)
