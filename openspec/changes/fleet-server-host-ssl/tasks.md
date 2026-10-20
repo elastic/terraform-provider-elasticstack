@@ -61,8 +61,8 @@
 
 ## 8. Validation and cleanup
 
-- [ ] 8.1 Run `make build` and `make check-lint` — fix any issues
-- [ ] 8.2 Run `make check-openspec` — confirm the change validates
-- [ ] 8.3 Run targeted acceptance tests against a real Kibana at or above the Task 1.7-confirmed floor (per `dev-docs/high-level/testing.md`)
-- [ ] 8.4 Run the full unit test suite for `internal/fleet/serverhost`
-- [ ] 8.5 Self-review with the `requirements-verification` skill against this change's specs
+- [x] 8.1 Run `make build` and `make check-lint` — fix any issues
+- [x] 8.2 Run `make check-openspec` — confirm the change validates
+- [x] 8.3 Run targeted acceptance tests against a real Kibana at or above the Task 1.7-confirmed floor (per `dev-docs/high-level/testing.md`)
+- [x] 8.4 Run the full unit test suite for `internal/fleet/serverhost`
+- [x] 8.5 Self-review with the `requirements-verification` skill against this change's specs

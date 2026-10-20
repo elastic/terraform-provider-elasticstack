@@ -13,6 +13,6 @@ resource "elasticstack_fleet_server_host" "test" {
   hosts   = ["https://fleet-server:8220"]
 
   ssl = {
-    certificate             = "PEM-CERT"
+    certificate = "PEM-CERT"
   }
 }
