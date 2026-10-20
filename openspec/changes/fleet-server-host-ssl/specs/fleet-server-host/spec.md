@@ -137,7 +137,7 @@ The provider SHALL document that users upgrading with an existing server-side `s
 
 ### Requirement: Protect deferred SSL fields on update
 
-The provider SHALL NOT overwrite non-null `agent_*` or `es_*` fields already stored in a host's `ssl` object when those fields are not exposed by the Terraform schema. The provider SHALL send `ssl` on an update only when the planned `ssl` differs from the prior state; an update that leaves `ssl` unchanged SHALL omit it, which Kibana treats as leaving the stored object untouched. Before a PUT that sends `ssl` (including one that removes `ssl`), the provider SHALL read the host and, when it stores non-null `agent_*` or `es_*` fields, reject the update with an actionable diagnostic before sending the mutation. The check and the PUT are separate requests and are not atomic.
+The provider SHALL NOT overwrite non-null `agent_*` or `es_*` fields (including empty strings and empty lists) already stored in a host's `ssl` object when those fields are not exposed by the Terraform schema. The provider SHALL send `ssl` on an update only when the planned `ssl` differs from the prior state; an update that leaves `ssl` unchanged SHALL omit it, which Kibana treats as leaving the stored object untouched. Before a PUT that sends `ssl` (including one that removes `ssl`), the provider SHALL read the host and, when it stores non-null `agent_*` or `es_*` fields, reject the update with an actionable diagnostic before sending the mutation. The check and the PUT are separate requests and are not atomic.
 
 #### Scenario: Update cannot erase pre-existing unexposed SSL fields
 

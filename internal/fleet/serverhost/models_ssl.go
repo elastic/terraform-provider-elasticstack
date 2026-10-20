@@ -127,6 +127,7 @@ func sslToObjectValue(
 }
 
 // deferredSSLFields lists the agent_* and es_* ssl fields stored on a host.
+// A field counts as present whenever it is non-null, even if empty.
 // They are not exposed in the schema and are erased by a PUT that replaces ssl.
 // Fleet-managed secret references under secrets.ssl are out of scope and are not
 // inspected.
@@ -141,12 +142,12 @@ func deferredSSLFields(host *kbapi.ServerHost) []string {
 		name  string
 		isSet bool
 	}{
-		{"agent_certificate", typeutils.Deref(ssl.AgentCertificate) != ""},
-		{"agent_certificate_authorities", len(typeutils.Deref(ssl.AgentCertificateAuthorities)) > 0},
-		{"agent_key", typeutils.Deref(ssl.AgentKey) != ""},
-		{"es_certificate", typeutils.Deref(ssl.EsCertificate) != ""},
-		{"es_certificate_authorities", len(typeutils.Deref(ssl.EsCertificateAuthorities)) > 0},
-		{"es_key", typeutils.Deref(ssl.EsKey) != ""},
+		{"agent_certificate", ssl.AgentCertificate != nil},
+		{"agent_certificate_authorities", ssl.AgentCertificateAuthorities != nil},
+		{"agent_key", ssl.AgentKey != nil},
+		{"es_certificate", ssl.EsCertificate != nil},
+		{"es_certificate_authorities", ssl.EsCertificateAuthorities != nil},
+		{"es_key", ssl.EsKey != nil},
 	} {
 		if f.isSet {
 			fields = append(fields, f.name)

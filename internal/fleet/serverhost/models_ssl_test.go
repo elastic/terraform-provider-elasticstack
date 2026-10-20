@@ -245,7 +245,7 @@ func TestDeferredSSLFields(t *testing.T) {
 		{name: "nil ssl"},
 		{name: "supported fields only", ssl: `{"certificate":"c","key":"k"}`},
 		{name: "agent and es fields", ssl: `{"agent_key":"k","es_certificate_authorities":["ca"]}`, want: []string{"agent_key", "es_certificate_authorities"}},
-		{name: "empty values are ignored", ssl: `{"agent_certificate":"","agent_certificate_authorities":[]}`},
+		{name: "empty non-null values are protected", ssl: `{"agent_certificate":"","agent_certificate_authorities":[]}`, want: []string{"agent_certificate", "agent_certificate_authorities"}},
 	}
 
 	for _, tc := range tests {
