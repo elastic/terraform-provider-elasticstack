@@ -1936,6 +1936,16 @@
           "./scripts/changelog/internal/section"
         ]
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/section.ValidateChangelogSection",
+      "package": "github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/section",
+      "attemptedAt": "2026-10-20T03:24:50.309363559Z",
+      "reason": "build_failed",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
