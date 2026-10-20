@@ -38857,6 +38857,15 @@ type KibanaHTTPAPIsAlertingRuleExecutionsResponse struct {
 	Page    int                                   `json:"page"`
 	PerPage int                                   `json:"per_page"`
 
+	// SearchMatches Match counts for the active search. Omitted when no search was provided.
+	SearchMatches *struct {
+		// IsTruncated True when more than 500 rules matched the search. Only the executions of the first 500 matching rules are returned, so the results are incomplete. Narrow the search to see the rest.
+		IsTruncated bool `json:"is_truncated"`
+
+		// Rules Rules matching the search. This count is an estimate: results above 10,000 may be reported as 10,000.
+		Rules float32 `json:"rules"`
+	} `json:"search_matches,omitempty"`
+
 	// Total The number of rule executions matching the query. This count is an estimate: results above 10,000 may be reported as 10,000.
 	Total int `json:"total"`
 }
@@ -82500,6 +82509,9 @@ type GetAlertingV2ExecutionHistoryActionPoliciesParamsOutcomes string
 type GetAlertingV2ExecutionHistoryRulesParams struct {
 	// RuleIds Rule id filter.
 	RuleIds *[]string `form:"rule_ids,omitempty" json:"rule_ids,omitempty"`
+
+	// Search Free-text search. Matches rule name, description or rule ID (case-insensitive). Combined with rule_ids using AND.
+	Search *string `form:"search,omitempty" json:"search,omitempty"`
 
 	// Outcomes Outcome filter.
 	Outcomes *[]GetAlertingV2ExecutionHistoryRulesParamsOutcomes `form:"outcomes,omitempty" json:"outcomes,omitempty"`
@@ -205084,6 +205096,18 @@ func NewGetAlertingV2ExecutionHistoryRulesRequest(server string, params *GetAler
 		if params.RuleIds != nil {
 
 			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "rule_ids", *params.RuleIds, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Search != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "search", *params.Search, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
 				return nil, err
 			} else {
 				for _, qp := range strings.Split(queryFrag, "&") {
