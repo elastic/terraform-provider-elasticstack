@@ -178,7 +178,7 @@ func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs b
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
 
-	if sendsAccessControl(model.AccessControl) {
+	if typeutils.IsKnown(model.AccessControl) {
 		mode, d := model.accessMode(ctx)
 		diags.Append(d...)
 		body.AccessControl = &struct {

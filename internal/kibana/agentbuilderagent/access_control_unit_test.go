@@ -25,6 +25,7 @@ import (
 	"errors"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -100,9 +101,9 @@ func TestToAPIUpdateModel_accessControl(t *testing.T) {
 }
 
 func TestConfigSendsAccessControl(t *testing.T) {
-	require.True(t, sendsAccessControl(accessControlObject(t, "public")))
-	require.False(t, sendsAccessControl(nullAccessControl()))
-	require.False(t, sendsAccessControl(types.ObjectUnknown(accessControlAttrTypes())))
+	require.True(t, typeutils.IsKnown(accessControlObject(t, "public")))
+	require.False(t, typeutils.IsKnown(nullAccessControl()))
+	require.False(t, typeutils.IsKnown(types.ObjectUnknown(accessControlAttrTypes())))
 }
 
 func TestPopulateAccessControl(t *testing.T) {

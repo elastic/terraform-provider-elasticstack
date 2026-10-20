@@ -39,10 +39,6 @@ func accessControlAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{attrAccessMode: types.StringType}
 }
 
-func sendsAccessControl(obj types.Object) bool {
-	return !obj.IsNull() && !obj.IsUnknown()
-}
-
 func (model agentModel) accessMode(ctx context.Context) (string, diag.Diagnostics) {
 	var ac accessControlModel
 	diags := model.AccessControl.As(ctx, &ac, basetypes.ObjectAsOptions{})

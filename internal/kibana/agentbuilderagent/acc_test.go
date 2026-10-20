@@ -833,7 +833,7 @@ func TestAccResourceAgentBuilderAgentAccessControlDrift(t *testing.T) {
 }
 
 func TestAccResourceAgentBuilderAgentAccessControlOlderStack(t *testing.T) {
-	versionutils.SkipIfUnsupportedConstraints(t, mustConstraints(t, ">= 9.3.0, < 9.5.0"), versionutils.FlavorStateful)
+	versionutils.SkipIfUnsupportedConstraints(t, version.MustConstraints(version.NewConstraint(">= 9.3.0, < 9.5.0")), versionutils.FlavorStateful)
 
 	agentID := "test-agent-aco-" + uuid.New().String()[:8]
 	vars := accessControlTestVars(agentID)
@@ -855,13 +855,4 @@ func TestAccResourceAgentBuilderAgentAccessControlOlderStack(t *testing.T) {
 			},
 		},
 	})
-}
-
-func mustConstraints(t *testing.T, s string) version.Constraints {
-	t.Helper()
-	c, err := version.NewConstraint(s)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return c
 }

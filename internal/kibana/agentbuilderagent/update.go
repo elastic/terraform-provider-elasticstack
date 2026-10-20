@@ -36,7 +36,7 @@ func updateAgent(ctx context.Context, client *clients.KibanaScopedClient, req en
 	// Avatar fields are Optional+Computed with UseStateForUnknown, so the plan
 	// carries the prior value when config omits them; only send configured values.
 	send := updateSendFlags{
-		AccessControl: sendsAccessControl(req.Config.AccessControl),
+		AccessControl: typeutils.IsKnown(req.Config.AccessControl),
 		AvatarColor:   typeutils.IsKnown(req.Config.AvatarColor),
 		AvatarSymbol:  typeutils.IsKnown(req.Config.AvatarSymbol),
 	}

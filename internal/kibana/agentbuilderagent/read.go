@@ -76,11 +76,12 @@ func readAgentWith(ctx context.Context, r agentReader, spaceID string, prior age
 
 	accessControl, d := r.getAgentAccessControl(ctx)
 	diags.Append(d...)
-	if !diags.HasError() && accessControl == nil {
+	if diags.HasError() {
+		return prior, false, diags
+	}
+	if accessControl == nil {
 		diags.AddError("Agent access control not found",
 			"The agent exists but its access-control sub-resource returned HTTP 404.")
-	}
-	if diags.HasError() {
 		return prior, false, diags
 	}
 	diags.Append(prior.populateAccessControl(ctx, accessControl)...)

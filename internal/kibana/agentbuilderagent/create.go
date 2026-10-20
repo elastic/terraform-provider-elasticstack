@@ -26,12 +26,13 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createAgent(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[agentModel]) (entitycore.KibanaWriteResult[agentModel], diag.Diagnostics) {
-	diags := enforceAccessControlVersion(ctx, client, sendsAccessControl(req.Plan.AccessControl))
+	diags := enforceAccessControlVersion(ctx, client, typeutils.IsKnown(req.Plan.AccessControl))
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}
