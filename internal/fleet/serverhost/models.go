@@ -80,7 +80,7 @@ func (m *serverHostModel) populateFromAPI(ctx context.Context, data *kbapi.Serve
 	m.ProxyID = typeutils.NonEmptyStringishPointerValue(data.ProxyId)
 
 	if data.Ssl == nil {
-		m.Ssl = types.ObjectNull(getSslAttrTypes(ctx))
+		m.Ssl = types.ObjectNull(sslAttrTypes)
 	} else {
 		var d diag.Diagnostics
 		m.Ssl, d = sslToObjectValue(ctx, data.Ssl.Certificate, data.Ssl.CertificateAuthorities, data.Ssl.Key, data.Ssl.ClientAuth)

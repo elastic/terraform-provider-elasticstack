@@ -18,7 +18,6 @@
 package serverhost
 
 import (
-	"context"
 	"encoding/json"
 	"testing"
 
@@ -41,7 +40,7 @@ func sslObjectValue(t *testing.T, certificate, key, clientAuth *string, cas []st
 		casValue = types.ListValueMust(types.StringType, elems)
 	}
 
-	obj, diags := types.ObjectValue(getSslAttrTypes(context.Background()), map[string]attr.Value{
+	obj, diags := types.ObjectValue(sslAttrTypes, map[string]attr.Value{
 		"certificate":             types.StringPointerValue(certificate),
 		"key":                     types.StringPointerValue(key),
 		"certificate_authorities": casValue,
@@ -95,7 +94,7 @@ func TestToAPICreateModel_Ssl(t *testing.T) {
 	t.Run("null ssl is not sent", func(t *testing.T) {
 		t.Parallel()
 
-		body, diags := baseSSLModel(types.ObjectNull(getSslAttrTypes(context.Background()))).toAPICreateModel(t.Context())
+		body, diags := baseSSLModel(types.ObjectNull(sslAttrTypes)).toAPICreateModel(t.Context())
 		require.False(t, diags.HasError())
 		assert.Nil(t, body.Ssl)
 	})
@@ -113,7 +112,7 @@ func sslJSON(t *testing.T, raw []byte) json.RawMessage {
 func TestToAPIUpdateModel_Ssl(t *testing.T) {
 	t.Parallel()
 
-	nullSSL := types.ObjectNull(getSslAttrTypes(context.Background()))
+	nullSSL := types.ObjectNull(sslAttrTypes)
 	populated := sslObjectValue(t, new("cert"), new("key"), new("optional"), []string{"ca1"})
 
 	t.Run("planned ssl is sent", func(t *testing.T) {
@@ -172,7 +171,7 @@ func TestToAPIUpdateModel_Ssl(t *testing.T) {
 func TestPopulateFromAPI_Ssl(t *testing.T) {
 	t.Parallel()
 
-	nullSSL := types.ObjectNull(getSslAttrTypes(context.Background()))
+	nullSSL := types.ObjectNull(sslAttrTypes)
 
 	tests := []struct {
 		name string

@@ -50,22 +50,8 @@ func updateServerHost(ctx context.Context, client *clients.KibanaScopedClient, r
 	}
 
 	if body.Ssl != nil {
-		current, d := fleet.GetFleetServerHost(ctx, fleetClient, hostID, spaceID)
-		diags.Append(d...)
+		diags.Append(checkNoDeferredSSLFields(ctx, fleetClient, hostID, spaceID)...)
 		if diags.HasError() {
-			return entitycore.KibanaWriteResult[serverHostModel]{}, diags
-		}
-		if fields := deferredSSLFields(current); len(fields) > 0 {
-			diags.AddAttributeError(
-				path.Root("ssl"),
-				"Cannot update ssl without erasing unmanaged fields",
-				fmt.Sprintf(
-					"The Fleet server host stores ssl fields that this resource does not manage (%s). "+
-						"Updating ssl replaces the whole ssl object and would erase them, so the update was not sent. "+
-						"Remove these fields from the host outside of Terraform before changing ssl.",
-					strings.Join(fields, ", "),
-				),
-			)
 			return entitycore.KibanaWriteResult[serverHostModel]{}, diags
 		}
 	}
@@ -83,4 +69,27 @@ func updateServerHost(ctx context.Context, client *clients.KibanaScopedClient, r
 	}
 
 	return entitycore.KibanaWriteResult[serverHostModel]{Model: req.Plan}, diags
+}
+
+// checkNoDeferredSSLFields rejects an ssl update when the stored host holds
+// agent_*/es_* ssl fields, because the PUT replaces the whole ssl object.
+func checkNoDeferredSSLFields(ctx context.Context, fleetClient *fleet.Client, hostID, spaceID string) (diags diag.Diagnostics) {
+	current, d := fleet.GetFleetServerHost(ctx, fleetClient, hostID, spaceID)
+	diags.Append(d...)
+	if diags.HasError() {
+		return diags
+	}
+	if fields := deferredSSLFields(current); len(fields) > 0 {
+		diags.AddAttributeError(
+			path.Root("ssl"),
+			"Cannot update ssl without erasing unmanaged fields",
+			fmt.Sprintf(
+				"The Fleet server host stores ssl fields that this resource does not manage (%s). "+
+					"Updating ssl replaces the whole ssl object and would erase them, so the update was not sent. "+
+					"Remove these fields from the host outside of Terraform before changing ssl.",
+				strings.Join(fields, ", "),
+			),
+		)
+	}
+	return diags
 }

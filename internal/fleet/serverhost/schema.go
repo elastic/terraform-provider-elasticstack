@@ -134,11 +134,9 @@ func getSchema(_ context.Context) schema.Schema {
 	}
 }
 
-func getSslAttrTypes(_ context.Context) map[string]attr.Type {
-	return map[string]attr.Type{
-		sslCertificateAttr:            types.StringType,
-		sslKeyAttr:                    types.StringType,
-		sslCertificateAuthoritiesAttr: types.ListType{ElemType: types.StringType},
-		sslClientAuthAttr:             types.StringType,
-	}
+var sslAttrTypes = map[string]attr.Type{
+	sslCertificateAttr:            types.StringType,
+	sslKeyAttr:                    types.StringType,
+	sslCertificateAuthoritiesAttr: types.ListType{ElemType: types.StringType},
+	sslClientAuthAttr:             types.StringType,
 }

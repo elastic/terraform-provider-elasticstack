@@ -118,10 +118,10 @@ func sslToObjectValue(
 	}
 
 	if sslModel.AllNil() && sslModel.ClientAuth.IsNull() {
-		return types.ObjectNull(getSslAttrTypes(ctx)), diags
+		return types.ObjectNull(sslAttrTypes), diags
 	}
 
-	obj, d := types.ObjectValueFrom(ctx, getSslAttrTypes(ctx), sslModel)
+	obj, d := types.ObjectValueFrom(ctx, sslAttrTypes, sslModel)
 	diags.Append(d...)
 	return obj, diags
 }

@@ -44,7 +44,7 @@ func TestSchemaSsl(t *testing.T) {
 	require.False(t, sslAttr.Computed)
 	require.Equal(t, []validator.Object{sslAtLeastOneSubattrValidator{}}, sslAttr.Validators)
 	require.Len(t, sslAttr.Attributes, 4)
-	require.Equal(t, getSslAttrTypes(context.Background()), sslAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
+	require.Equal(t, sslAttrTypes, sslAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	cert, ok := sslAttr.Attributes["certificate"].(schema.StringAttribute)
 	require.True(t, ok)
@@ -78,7 +78,7 @@ func TestSchemaSsl(t *testing.T) {
 func TestSslAtLeastOneSubattrValidator(t *testing.T) {
 	t.Parallel()
 
-	attrTypes := getSslAttrTypes(context.Background())
+	attrTypes := sslAttrTypes
 	nullAttrs := func() map[string]attr.Value {
 		return map[string]attr.Value{
 			"certificate":             types.StringNull(),
@@ -143,9 +143,9 @@ func TestGetVersionRequirements_Ssl(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
-	nullSSL := types.ObjectNull(getSslAttrTypes(ctx))
+	nullSSL := types.ObjectNull(sslAttrTypes)
 	configured := sslObjectValue(t, new("cert"), nil, nil, nil)
-	unknownSSL := types.ObjectUnknown(getSslAttrTypes(ctx))
+	unknownSSL := types.ObjectUnknown(sslAttrTypes)
 
 	tests := []struct {
 		name     string
