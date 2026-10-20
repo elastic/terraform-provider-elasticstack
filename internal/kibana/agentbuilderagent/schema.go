@@ -67,13 +67,13 @@ func getResourceSchema(_ context.Context) schema.Schema {
 				Optional:            true,
 				Computed:            true,
 				MarkdownDescription: "Hex color code for the agent avatar (e.g., `#BFDBFF`).",
-				PlanModifiers:       avatarPlanModifiers(),
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			attrAvatarSymbol: schema.StringAttribute{
 				Optional:            true,
 				Computed:            true,
 				MarkdownDescription: "Symbol or initials for the agent avatar (e.g., `SI`).",
-				PlanModifiers:       avatarPlanModifiers(),
+				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			attrLabels: schema.SetAttribute{
 				ElementType:         types.StringType,

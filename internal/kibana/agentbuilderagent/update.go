@@ -30,6 +30,8 @@ import (
 )
 
 func updateAgent(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[agentModel]) (entitycore.KibanaWriteResult[agentModel], diag.Diagnostics) {
+	// Whether to send is decided from config; the mode itself is read from the
+	// plan, which equals config whenever config is non-null.
 	sendAccessControl := sendsAccessControl(req.Config.AccessControl)
 	diags := enforceAccessControlVersion(ctx, client, sendAccessControl)
 	if diags.HasError() {

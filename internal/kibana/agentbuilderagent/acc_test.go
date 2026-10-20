@@ -419,6 +419,39 @@ func TestAccResourceAgentBuilderAgentAvatar(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_avatar"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				},
+				ResourceName: testResourceID,
+				ImportState:  true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[testResourceID].Primary.ID, nil
+				},
+				ImportStateVerify: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit_avatar"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "name", "Avatar Test Agent Renamed"),
+					resource.TestCheckResourceAttr(testResourceID, "avatar_color", "#BFDBFF"),
+					resource.TestCheckResourceAttr(testResourceID, "avatar_symbol", "TA"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit_avatar"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				},
+				PlanOnly: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_avatar"),
 				ConfigVariables: config.Variables{
 					"agent_id": config.StringVariable(agentID),
@@ -430,7 +463,7 @@ func TestAccResourceAgentBuilderAgentAvatar(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_no_avatar"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("clear_avatar"),
 				ConfigVariables: config.Variables{
 					"agent_id": config.StringVariable(agentID),
 				},
@@ -672,13 +705,33 @@ func TestAccResourceAgentBuilderAgentAccessControl(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_shared"),
 				ConfigVariables:          vars,
-				Check:                    mode("shared"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					mode("shared"),
+					resource.TestCheckNoResourceAttr(testResourceID, "avatar_color"),
+					resource.TestCheckNoResourceAttr(testResourceID, "avatar_symbol"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_shared"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_public"),
 				ConfigVariables:          vars,
-				Check:                    mode("public"),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					mode("public"),
+					resource.TestCheckNoResourceAttr(testResourceID, "avatar_color"),
+					resource.TestCheckNoResourceAttr(testResourceID, "avatar_symbol"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_public"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -702,6 +755,8 @@ func TestAccResourceAgentBuilderAgentAccessControl(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(testResourceID, "name", "Access Control Agent Renamed"),
 					mode("private"),
+					resource.TestCheckNoResourceAttr(testResourceID, "avatar_color"),
+					resource.TestCheckNoResourceAttr(testResourceID, "avatar_symbol"),
 				),
 			},
 			{

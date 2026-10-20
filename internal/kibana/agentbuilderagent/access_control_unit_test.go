@@ -22,8 +22,11 @@ import (
 	"encoding/json"
 	"testing"
 
+	"errors"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -119,4 +122,66 @@ func TestAgentAccessControlResponse_decode(t *testing.T) {
 	var r models.AgentAccessControlResponse
 	require.NoError(t, json.Unmarshal([]byte(`{"access_control":{"access_mode":"shared","entries":[]},"permissions":{}}`), &r))
 	require.Equal(t, "shared", r.AccessControl.AccessMode)
+}
+
+type readCalls struct{ accessControl int }
+
+func testReader(agent *models.Agent, supported bool, ac *models.AgentAccessControl, acDiags diag.Diagnostics, calls *readCalls) agentReader {
+	return agentReader{
+		getAgent: func(context.Context) (*models.Agent, diag.Diagnostics) { return agent, nil },
+		supportsAccessControl: func(context.Context) (bool, diag.Diagnostics) {
+			return supported, nil
+		},
+		getAgentAccessControl: func(context.Context) (*models.AgentAccessControl, diag.Diagnostics) {
+			calls.accessControl++
+			return ac, acDiags
+		},
+	}
+}
+
+func TestReadAgentWith_olderStackClearsCarriedForwardMode(t *testing.T) {
+	calls := &readCalls{}
+	prior := baseAgentModel()
+	prior.AccessControl = accessControlObject(t, "shared")
+
+	got, found, diags := readAgentWith(context.Background(), testReader(&models.Agent{ID: "a", Name: "n"}, false, nil, nil, calls), "default", prior)
+	require.False(t, diags.HasError())
+	require.True(t, found)
+	require.True(t, got.AccessControl.IsNull())
+	require.Zero(t, calls.accessControl)
+}
+
+func TestReadAgentWith_missingAgentSkipsAccessControl(t *testing.T) {
+	calls := &readCalls{}
+	_, found, diags := readAgentWith(context.Background(), testReader(nil, true, nil, nil, calls), "default", baseAgentModel())
+	require.False(t, diags.HasError())
+	require.False(t, found)
+	require.Zero(t, calls.accessControl)
+}
+
+func TestReadAgentWith_supportedStackPopulatesMode(t *testing.T) {
+	calls := &readCalls{}
+	got, found, diags := readAgentWith(context.Background(), testReader(&models.Agent{ID: "a", Name: "n"}, true, &models.AgentAccessControl{AccessMode: "private"}, nil, calls), "default", baseAgentModel())
+	require.False(t, diags.HasError())
+	require.True(t, found)
+	require.Equal(t, accessControlObject(t, "private"), got.AccessControl)
+	require.Equal(t, 1, calls.accessControl)
+}
+
+func TestReadAgentWith_accessControlFailuresAreErrors(t *testing.T) {
+	forbidden := diag.Diagnostics{diag.NewErrorDiagnostic("forbidden", errors.New("403").Error())}
+	for name, tc := range map[string]struct {
+		ac    *models.AgentAccessControl
+		diags diag.Diagnostics
+	}{
+		"403":                {diags: forbidden},
+		"404 after main GET": {},
+	} {
+		t.Run(name, func(t *testing.T) {
+			calls := &readCalls{}
+			_, found, diags := readAgentWith(context.Background(), testReader(&models.Agent{ID: "a", Name: "n"}, true, tc.ac, tc.diags, calls), "default", baseAgentModel())
+			require.True(t, diags.HasError())
+			require.False(t, found)
+		})
+	}
 }

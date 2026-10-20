@@ -18,14 +18,13 @@
 package models
 
 type Agent struct {
-	ID            string              `json:"id"`
-	Name          string              `json:"name"`
-	Description   *string             `json:"description,omitempty"`
-	AvatarColor   *string             `json:"avatar_color,omitempty"`
-	AvatarSymbol  *string             `json:"avatar_symbol,omitempty"`
-	Labels        []string            `json:"labels,omitempty"`
-	Configuration AgentConfiguration  `json:"configuration"`
-	AccessControl *AgentAccessControl `json:"access_control,omitempty"`
+	ID            string             `json:"id"`
+	Name          string             `json:"name"`
+	Description   *string            `json:"description,omitempty"`
+	AvatarColor   *string            `json:"avatar_color,omitempty"`
+	AvatarSymbol  *string            `json:"avatar_symbol,omitempty"`
+	Labels        []string           `json:"labels,omitempty"`
+	Configuration AgentConfiguration `json:"configuration"`
 }
 
 type AgentAccessControl struct {

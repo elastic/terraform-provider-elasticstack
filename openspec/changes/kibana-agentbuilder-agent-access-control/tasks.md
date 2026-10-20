@@ -9,7 +9,7 @@
 
 ## 3. Models
 
-- [x] 3.1 Add `AccessControl *AgentAccessControl` (`json:"access_control,omitempty"`) to `models.Agent` in `internal/models/agent_builder.go`
+- [x] 3.1 (superseded: field not added, unused; read-back uses the sub-resource only) Add `AccessControl *AgentAccessControl` (`json:"access_control,omitempty"`) to `models.Agent` in `internal/models/agent_builder.go`
 - [x] 3.2 Add `type AgentAccessControl struct { AccessMode string \`json:"access_mode"\` }` to the same file
 - [x] 3.3 Add a model type for the dedicated sub-resource `GET` response if its JSON shape differs from `AgentAccessControl` (confirm against `kbapi.GetAgentBuilderAgentsIdAccessControlResponse`); reuse `AgentAccessControl` if the shape matches
 

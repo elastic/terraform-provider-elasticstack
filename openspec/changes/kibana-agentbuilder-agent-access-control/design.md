@@ -100,5 +100,7 @@ Probed against a live Elastic Stack 9.5.5 (Kibana and Elasticsearch at the defau
 
 ## Implementation notes
 
-- `avatar_color` / `avatar_symbol` (Optional+Computed, previously without plan modifiers) gained a small `useStateForUnknownIncludingNull` plan modifier. Adding the computed `access_control` object made the framework mark these null computed attributes unknown on every plan after apply (non-empty plan on omitted `access_control`), because Terraform proposes a null `access_control` against a non-null prior value. The modifier carries the prior (including null) state value forward.
 - The resource had no `read.go`; a dedicated `readAgent` callback was added (replacing `SimpleKibanaRead`) to perform the main GET followed by the gated access-control GET.
+- A review suspected a custom avatar plan modifier was needed; the stock `stringplanmodifier.UseStateForUnknown()` on `avatar_color` / `avatar_symbol` is sufficient (verified against 9.5.5: without any modifier the framework marked these null computed attributes unknown after `access_control` was added; with the stock modifier the plans are empty). The stock modifier is therefore used.
+- Read-back failure policy: the dedicated sub-resource is the mandated source (Decision 4). Once the main GET succeeds, any failure of the sub-resource GET (403, 5xx, or a 404) is surfaced as an error and fails refresh, rather than nulling `access_control` (which would hide drift and plan a spurious change). A 403 is not covered by a live test; it is unit tested via an injected reader (`readAgentWith`).
+- `models.Agent` deliberately has no `access_control` field (task 3.1): state is populated only from the sub-resource.
