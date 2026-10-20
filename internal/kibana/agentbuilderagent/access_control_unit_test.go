@@ -90,11 +90,11 @@ func TestToAPIUpdateModel_accessControl(t *testing.T) {
 	m := baseAgentModel()
 	m.AccessControl = accessControlObject(t, "shared")
 
-	body, diags := m.toAPIUpdateModel(context.Background(), true, true)
+	body, diags := m.toAPIUpdateModel(context.Background(), true, updateSendFlags{AccessControl: true})
 	require.False(t, diags.HasError())
 	require.Equal(t, map[string]any{"access_mode": "shared"}, marshal(t, body)["access_control"])
 
-	body, diags = m.toAPIUpdateModel(context.Background(), true, false)
+	body, diags = m.toAPIUpdateModel(context.Background(), true, updateSendFlags{})
 	require.False(t, diags.HasError())
 	require.NotContains(t, marshal(t, body), "access_control")
 }

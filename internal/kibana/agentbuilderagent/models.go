@@ -201,7 +201,15 @@ func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs b
 	return body, diags
 }
 
-func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs, sendAccessControl bool) (kbapi.PutAgentBuilderAgentsIdJSONRequestBody, diag.Diagnostics) {
+// updateSendFlags carries decisions that depend on configuration (not the plan,
+// which carries prior-state values forward for Optional+Computed attributes).
+type updateSendFlags struct {
+	AccessControl bool
+	AvatarColor   bool
+	AvatarSymbol  bool
+}
+
+func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs bool, send updateSendFlags) (kbapi.PutAgentBuilderAgentsIdJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	name := model.Name.ValueString()
@@ -212,10 +220,10 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs, 
 	if typeutils.IsKnown(model.Description) {
 		body.Description = model.Description.ValueStringPointer()
 	}
-	if typeutils.IsKnown(model.AvatarColor) {
+	if send.AvatarColor && typeutils.IsKnown(model.AvatarColor) {
 		body.AvatarColor = model.AvatarColor.ValueStringPointer()
 	}
-	if typeutils.IsKnown(model.AvatarSymbol) {
+	if send.AvatarSymbol && typeutils.IsKnown(model.AvatarSymbol) {
 		body.AvatarSymbol = model.AvatarSymbol.ValueStringPointer()
 	}
 
@@ -271,7 +279,7 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs, 
 		SkillIds:     skillIDsPtr,
 	}
 
-	if sendAccessControl {
+	if send.AccessControl {
 		mode, d := model.accessMode(ctx)
 		diags.Append(d...)
 		body.AccessControl = &struct {
