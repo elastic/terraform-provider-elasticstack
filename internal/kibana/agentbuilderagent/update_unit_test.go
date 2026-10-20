@@ -119,6 +119,6 @@ func TestUpdateAgent_avatarSentWhenConfigured(t *testing.T) {
 	config.AvatarSymbol = types.StringValue("TA")
 
 	body := runUpdateAgent(t, plan, config)
-	require.Equal(t, "", body["avatar_color"])
+	require.Empty(t, body["avatar_color"])
 	require.Equal(t, "TA", body["avatar_symbol"])
 }
