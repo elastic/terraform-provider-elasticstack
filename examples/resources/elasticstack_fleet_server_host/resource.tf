@@ -17,9 +17,9 @@ resource "elasticstack_fleet_server_host" "test_host" {
 
   # Requires Elastic Stack 9.1.0 or later.
   ssl = {
-    certificate             = file("${path.module}/fleet-server.crt")
-    key                     = file("${path.module}/fleet-server.key")
-    certificate_authorities = [file("${path.module}/agent-ca.crt")]
+    certificate             = "-----BEGIN CERTIFICATE-----\n..."
+    key                     = "-----BEGIN PRIVATE KEY-----\n..."
+    certificate_authorities = ["-----BEGIN CERTIFICATE-----\n..."]
     client_auth             = "required"
   }
 }
