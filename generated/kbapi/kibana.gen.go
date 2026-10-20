@@ -2025,6 +2025,24 @@ func (e KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcome) Valid() bool {
 	}
 }
 
+// Defines values for KibanaHTTPAPIsAlertingPutRuleKind.
+const (
+	KibanaHTTPAPIsAlertingPutRuleKindAlert  KibanaHTTPAPIsAlertingPutRuleKind = "alert"
+	KibanaHTTPAPIsAlertingPutRuleKindSignal KibanaHTTPAPIsAlertingPutRuleKind = "signal"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingPutRuleKind enum.
+func (e KibanaHTTPAPIsAlertingPutRuleKind) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsAlertingPutRuleKindAlert:
+		return true
+	case KibanaHTTPAPIsAlertingPutRuleKindSignal:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KibanaHTTPAPIsAlertingRuleExecutionOutcome.
 const (
 	KibanaHTTPAPIsAlertingRuleExecutionOutcomeFailure KibanaHTTPAPIsAlertingRuleExecutionOutcome = "failure"
@@ -4517,19 +4535,19 @@ func (e KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Type) Vali
 
 // Defines values for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode.
 const (
-	Aggregated KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode = "aggregated"
-	Documents  KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode = "documents"
-	Patterns   KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode = "patterns"
+	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewModeAggregated KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode = "aggregated"
+	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewModeDocuments  KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode = "documents"
+	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewModePatterns   KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode = "patterns"
 )
 
 // Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode enum.
 func (e KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode) Valid() bool {
 	switch e {
-	case Aggregated:
+	case KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewModeAggregated:
 		return true
-	case Documents:
+	case KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewModeDocuments:
 		return true
-	case Patterns:
+	case KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewModePatterns:
 		return true
 	default:
 		return false
@@ -4745,16 +4763,16 @@ func (e KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortDi
 
 // Defines values for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField.
 const (
-	Alphabetically KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField = "alphabetically"
-	Recency        KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField = "recency"
+	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortFieldAlphabetically KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField = "alphabetically"
+	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortFieldRecency        KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField = "recency"
 )
 
 // Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField enum.
 func (e KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField) Valid() bool {
 	switch e {
-	case Alphabetically:
+	case KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortFieldAlphabetically:
 		return true
-	case Recency:
+	case KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortFieldRecency:
 		return true
 	default:
 		return false
@@ -4778,25 +4796,25 @@ func (e KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HeaderRowH
 
 // Defines values for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile.
 const (
-	P50 KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile = "p50"
-	P75 KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile = "p75"
-	P90 KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile = "p90"
-	P95 KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile = "p95"
-	P99 KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile = "p99"
+	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentileP50 KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile = "p50"
+	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentileP75 KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile = "p75"
+	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentileP90 KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile = "p90"
+	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentileP95 KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile = "p95"
+	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentileP99 KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile = "p99"
 )
 
 // Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile enum.
 func (e KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile) Valid() bool {
 	switch e {
-	case P50:
+	case KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentileP50:
 		return true
-	case P75:
+	case KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentileP75:
 		return true
-	case P90:
+	case KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentileP90:
 		return true
-	case P95:
+	case KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentileP95:
 		return true
-	case P99:
+	case KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentileP99:
 		return true
 	default:
 		return false
@@ -5565,6 +5583,612 @@ func (e KibanaHTTPAPIsKbnDataViewSpecSchemaType) Valid() bool {
 	}
 }
 
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelType.
+const (
+	EsqlControl KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelType = "esql_control"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelType enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelType) Valid() bool {
+	switch e {
+	case EsqlControl:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidth.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidthLarge  KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidth = "large"
+	KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidthMedium KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidth = "medium"
+	KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidthSmall  KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidth = "small"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidth enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidth) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidthLarge:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidthMedium:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidthSmall:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalAuto KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval = "auto"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalD    KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval = "d"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalH    KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval = "h"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalM    KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval = "m"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalM1   KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval = "M"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalMs   KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval = "ms"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalS    KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval = "s"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalW    KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval = "w"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalY    KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval = "y"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalAuto:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalD:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalH:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalM:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalM1:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalMs:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalS:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalW:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartIntervalY:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Density.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DensityCompact  KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Density = "compact"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DensityExpanded KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Density = "expanded"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DensityNormal   KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Density = "normal"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Density enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Density) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DensityCompact:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DensityExpanded:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DensityNormal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DocumentsDisplayMode.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DocumentsDisplayModeJson  KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DocumentsDisplayMode = "json"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DocumentsDisplayModeTable KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DocumentsDisplayMode = "table"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DocumentsDisplayMode enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DocumentsDisplayMode) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DocumentsDisplayModeJson:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DocumentsDisplayModeTable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1Auto KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1 = "auto"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1 enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1Auto:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1Auto KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1 = "auto"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1 enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1Auto:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs0SortDirection.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0SortDirectionAsc  KibanaHTTPAPIsKbnDiscoverSessionDataTabs0SortDirection = "asc"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0SortDirectionDesc KibanaHTTPAPIsKbnDiscoverSessionDataTabs0SortDirection = "desc"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs0SortDirection enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs0SortDirection) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0SortDirectionAsc:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0SortDirectionDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Type.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0TypeDefault KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Type = "default"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Type enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Type) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0TypeDefault:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewMode.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewModeAggregated KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewMode = "aggregated"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewModeDocuments  KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewMode = "documents"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewModePatterns   KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewMode = "patterns"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewMode enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewMode) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewModeAggregated:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewModeDocuments:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewModePatterns:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionType.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionTypeHistogramForDataView KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionType = "histogramForDataView"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionTypeHistogramForESQL     KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionType = "histogramForESQL"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionTypeLensSuggestion       KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionType = "lensSuggestion"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionType enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionType) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionTypeHistogramForDataView:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionTypeHistogramForESQL:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionTypeLensSuggestion:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Density.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DensityCompact  KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Density = "compact"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DensityExpanded KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Density = "expanded"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DensityNormal   KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Density = "normal"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Density enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Density) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DensityCompact:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DensityExpanded:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DensityNormal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DocumentsDisplayMode.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DocumentsDisplayModeJson  KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DocumentsDisplayMode = "json"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DocumentsDisplayModeTable KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DocumentsDisplayMode = "table"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DocumentsDisplayMode enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DocumentsDisplayMode) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DocumentsDisplayModeJson:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DocumentsDisplayModeTable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1Auto KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1 = "auto"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1 enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1Auto:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1Auto KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1 = "auto"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1 enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1Auto:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs1SortDirection.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs1SortDirectionAsc  KibanaHTTPAPIsKbnDiscoverSessionDataTabs1SortDirection = "asc"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs1SortDirectionDesc KibanaHTTPAPIsKbnDiscoverSessionDataTabs1SortDirection = "desc"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs1SortDirection enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs1SortDirection) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs1SortDirectionAsc:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs1SortDirectionDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Type.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs1TypeDefault KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Type = "default"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Type enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Type) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs1TypeDefault:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionType.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionTypeHistogramForDataView KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionType = "histogramForDataView"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionTypeHistogramForESQL     KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionType = "histogramForESQL"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionTypeLensSuggestion       KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionType = "lensSuggestion"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionType enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionType) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionTypeHistogramForDataView:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionTypeHistogramForESQL:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionTypeLensSuggestion:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregation.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregationAvg KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregation = "avg"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregationMax KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregation = "max"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregationMin KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregation = "min"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregationSum KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregation = "sum"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregation enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregation) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregationAvg:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregationMax:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregationMin:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregationSum:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Density.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DensityCompact  KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Density = "compact"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DensityExpanded KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Density = "expanded"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DensityNormal   KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Density = "normal"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Density enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Density) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DensityCompact:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DensityExpanded:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DensityNormal:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DocumentsDisplayMode.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DocumentsDisplayModeJson  KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DocumentsDisplayMode = "json"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DocumentsDisplayModeTable KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DocumentsDisplayMode = "table"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DocumentsDisplayMode enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DocumentsDisplayMode) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DocumentsDisplayModeJson:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DocumentsDisplayModeTable:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregation.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregationAvg KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregation = "avg"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregationMax KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregation = "max"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregationMin KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregation = "min"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregationSum KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregation = "sum"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregation enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregation) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregationAvg:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregationMax:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregationMin:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregationSum:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortDirection.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortDirectionAsc  KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortDirection = "asc"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortDirectionDesc KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortDirection = "desc"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortDirection enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortDirection) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortDirectionAsc:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortDirectionDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortField.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortFieldAlphabetically KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortField = "alphabetically"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortFieldRecency        KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortField = "recency"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortField enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortField) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortFieldAlphabetically:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortFieldRecency:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1Auto KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1 = "auto"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1 enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1Auto:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentileP50 KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile = "p50"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentileP75 KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile = "p75"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentileP90 KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile = "p90"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentileP95 KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile = "p95"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentileP99 KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile = "p99"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentileP50:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentileP75:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentileP90:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentileP95:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentileP99:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1Auto KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1 = "auto"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1 enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1Auto:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs2SortDirection.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2SortDirectionAsc  KibanaHTTPAPIsKbnDiscoverSessionDataTabs2SortDirection = "asc"
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2SortDirectionDesc KibanaHTTPAPIsKbnDiscoverSessionDataTabs2SortDirection = "desc"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs2SortDirection enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2SortDirection) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2SortDirectionAsc:
+		return true
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2SortDirectionDesc:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Type.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2TypeMetrics KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Type = "metrics"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Type enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Type) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2TypeMetrics:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs2VisContextSuggestionType.
+const (
+	HistogramForDataView KibanaHTTPAPIsKbnDiscoverSessionDataTabs2VisContextSuggestionType = "histogramForDataView"
+	HistogramForESQL     KibanaHTTPAPIsKbnDiscoverSessionDataTabs2VisContextSuggestionType = "histogramForESQL"
+	LensSuggestion       KibanaHTTPAPIsKbnDiscoverSessionDataTabs2VisContextSuggestionType = "lensSuggestion"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs2VisContextSuggestionType enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2VisContextSuggestionType) Valid() bool {
+	switch e {
+	case HistogramForDataView:
+		return true
+	case HistogramForESQL:
+		return true
+	case LensSuggestion:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarningType.
+const (
+	DroppedItem KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarningType = "dropped_item"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarningType enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarningType) Valid() bool {
+	switch e {
+	case DroppedItem:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarningType.
+const (
+	DroppedProperty KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarningType = "dropped_property"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarningType enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarningType) Valid() bool {
+	switch e {
+	case DroppedProperty:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode.
 const (
 	KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaModeAbsolute KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode = "absolute"
@@ -6150,6 +6774,21 @@ func (e KibanaHTTPAPIsKbnRuntimeFieldType) Valid() bool {
 	case KibanaHTTPAPIsKbnRuntimeFieldTypeKeyword:
 		return true
 	case KibanaHTTPAPIsKbnRuntimeFieldTypeLong:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchemaType.
+const (
+	KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchemaTypeComposite KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchemaType = "composite"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchemaType enum.
+func (e KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchemaType) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchemaTypeComposite:
 		return true
 	default:
 		return false
@@ -8012,13 +8651,13 @@ func (e KibanaHTTPAPIsObservabilityRulesCustomThresholdCreateRuleBodyAlertingPar
 
 // Defines values for KibanaHTTPAPIsObservabilityRulesCustomThresholdCreateRuleBodyAlertingParamsSearchConfigurationIndex1RuntimeFieldMap1Type.
 const (
-	Composite KibanaHTTPAPIsObservabilityRulesCustomThresholdCreateRuleBodyAlertingParamsSearchConfigurationIndex1RuntimeFieldMap1Type = "composite"
+	KibanaHTTPAPIsObservabilityRulesCustomThresholdCreateRuleBodyAlertingParamsSearchConfigurationIndex1RuntimeFieldMap1TypeComposite KibanaHTTPAPIsObservabilityRulesCustomThresholdCreateRuleBodyAlertingParamsSearchConfigurationIndex1RuntimeFieldMap1Type = "composite"
 )
 
 // Valid indicates whether the value is a known member of the KibanaHTTPAPIsObservabilityRulesCustomThresholdCreateRuleBodyAlertingParamsSearchConfigurationIndex1RuntimeFieldMap1Type enum.
 func (e KibanaHTTPAPIsObservabilityRulesCustomThresholdCreateRuleBodyAlertingParamsSearchConfigurationIndex1RuntimeFieldMap1Type) Valid() bool {
 	switch e {
-	case Composite:
+	case KibanaHTTPAPIsObservabilityRulesCustomThresholdCreateRuleBodyAlertingParamsSearchConfigurationIndex1RuntimeFieldMap1TypeComposite:
 		return true
 	default:
 		return false
@@ -16088,19 +16727,19 @@ func (e KibanaHTTPAPIsVisXyStylingAreasFill) Valid() bool {
 
 // Defines values for KibanaHTTPAPIsVisXyStylingPointsVisibility.
 const (
-	KibanaHTTPAPIsVisXyStylingPointsVisibilityAuto    KibanaHTTPAPIsVisXyStylingPointsVisibility = "auto"
-	KibanaHTTPAPIsVisXyStylingPointsVisibilityHidden  KibanaHTTPAPIsVisXyStylingPointsVisibility = "hidden"
-	KibanaHTTPAPIsVisXyStylingPointsVisibilityVisible KibanaHTTPAPIsVisXyStylingPointsVisibility = "visible"
+	Auto    KibanaHTTPAPIsVisXyStylingPointsVisibility = "auto"
+	Hidden  KibanaHTTPAPIsVisXyStylingPointsVisibility = "hidden"
+	Visible KibanaHTTPAPIsVisXyStylingPointsVisibility = "visible"
 )
 
 // Valid indicates whether the value is a known member of the KibanaHTTPAPIsVisXyStylingPointsVisibility enum.
 func (e KibanaHTTPAPIsVisXyStylingPointsVisibility) Valid() bool {
 	switch e {
-	case KibanaHTTPAPIsVisXyStylingPointsVisibilityAuto:
+	case Auto:
 		return true
-	case KibanaHTTPAPIsVisXyStylingPointsVisibilityHidden:
+	case Hidden:
 		return true
-	case KibanaHTTPAPIsVisXyStylingPointsVisibilityVisible:
+	case Visible:
 		return true
 	default:
 		return false
@@ -20712,17 +21351,15 @@ func (e SecurityEntityAnalyticsAPIWatchlistEntityUnassignResponseItemStatus) Val
 	}
 }
 
-// Defines values for SecurityExceptionsAPIBlocklistHashOrPathEntryField.
+// Defines values for SecurityExceptionsAPIBlocklistHashEntryField.
 const (
-	FileHashMd5      SecurityExceptionsAPIBlocklistHashOrPathEntryField = "file.hash.md5"
-	FileHashSha1     SecurityExceptionsAPIBlocklistHashOrPathEntryField = "file.hash.sha1"
-	FileHashSha256   SecurityExceptionsAPIBlocklistHashOrPathEntryField = "file.hash.sha256"
-	FilePath         SecurityExceptionsAPIBlocklistHashOrPathEntryField = "file.path"
-	FilePathCaseless SecurityExceptionsAPIBlocklistHashOrPathEntryField = "file.path.caseless"
+	FileHashMd5    SecurityExceptionsAPIBlocklistHashEntryField = "file.hash.md5"
+	FileHashSha1   SecurityExceptionsAPIBlocklistHashEntryField = "file.hash.sha1"
+	FileHashSha256 SecurityExceptionsAPIBlocklistHashEntryField = "file.hash.sha256"
 )
 
-// Valid indicates whether the value is a known member of the SecurityExceptionsAPIBlocklistHashOrPathEntryField enum.
-func (e SecurityExceptionsAPIBlocklistHashOrPathEntryField) Valid() bool {
+// Valid indicates whether the value is a known member of the SecurityExceptionsAPIBlocklistHashEntryField enum.
+func (e SecurityExceptionsAPIBlocklistHashEntryField) Valid() bool {
 	switch e {
 	case FileHashMd5:
 		return true
@@ -20730,39 +21367,35 @@ func (e SecurityExceptionsAPIBlocklistHashOrPathEntryField) Valid() bool {
 		return true
 	case FileHashSha256:
 		return true
-	case FilePath:
-		return true
-	case FilePathCaseless:
+	default:
+		return false
+	}
+}
+
+// Defines values for SecurityExceptionsAPIBlocklistHashEntryOperator.
+const (
+	SecurityExceptionsAPIBlocklistHashEntryOperatorIncluded SecurityExceptionsAPIBlocklistHashEntryOperator = "included"
+)
+
+// Valid indicates whether the value is a known member of the SecurityExceptionsAPIBlocklistHashEntryOperator enum.
+func (e SecurityExceptionsAPIBlocklistHashEntryOperator) Valid() bool {
+	switch e {
+	case SecurityExceptionsAPIBlocklistHashEntryOperatorIncluded:
 		return true
 	default:
 		return false
 	}
 }
 
-// Defines values for SecurityExceptionsAPIBlocklistHashOrPathEntryOperator.
+// Defines values for SecurityExceptionsAPIBlocklistHashEntryType.
 const (
-	SecurityExceptionsAPIBlocklistHashOrPathEntryOperatorIncluded SecurityExceptionsAPIBlocklistHashOrPathEntryOperator = "included"
+	SecurityExceptionsAPIBlocklistHashEntryTypeMatchAny SecurityExceptionsAPIBlocklistHashEntryType = "match_any"
 )
 
-// Valid indicates whether the value is a known member of the SecurityExceptionsAPIBlocklistHashOrPathEntryOperator enum.
-func (e SecurityExceptionsAPIBlocklistHashOrPathEntryOperator) Valid() bool {
+// Valid indicates whether the value is a known member of the SecurityExceptionsAPIBlocklistHashEntryType enum.
+func (e SecurityExceptionsAPIBlocklistHashEntryType) Valid() bool {
 	switch e {
-	case SecurityExceptionsAPIBlocklistHashOrPathEntryOperatorIncluded:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for SecurityExceptionsAPIBlocklistHashOrPathEntryType.
-const (
-	SecurityExceptionsAPIBlocklistHashOrPathEntryTypeMatchAny SecurityExceptionsAPIBlocklistHashOrPathEntryType = "match_any"
-)
-
-// Valid indicates whether the value is a known member of the SecurityExceptionsAPIBlocklistHashOrPathEntryType enum.
-func (e SecurityExceptionsAPIBlocklistHashOrPathEntryType) Valid() bool {
-	switch e {
-	case SecurityExceptionsAPIBlocklistHashOrPathEntryTypeMatchAny:
+	case SecurityExceptionsAPIBlocklistHashEntryTypeMatchAny:
 		return true
 	default:
 		return false
@@ -20823,6 +21456,114 @@ const (
 func (e SecurityExceptionsAPIBlocklistMacPropertiesOsTypes) Valid() bool {
 	switch e {
 	case SecurityExceptionsAPIBlocklistMacPropertiesOsTypesMacos:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryField.
+const (
+	SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryFieldFileName         SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryField = "file.name"
+	SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryFieldFileNameCaseless SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryField = "file.name.caseless"
+	SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryFieldFilePath         SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryField = "file.path"
+	SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryFieldFilePathCaseless SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryField = "file.path.caseless"
+)
+
+// Valid indicates whether the value is a known member of the SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryField enum.
+func (e SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryField) Valid() bool {
+	switch e {
+	case SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryFieldFileName:
+		return true
+	case SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryFieldFileNameCaseless:
+		return true
+	case SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryFieldFilePath:
+		return true
+	case SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryFieldFilePathCaseless:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryOperator.
+const (
+	SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryOperatorIncluded SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryOperator = "included"
+)
+
+// Valid indicates whether the value is a known member of the SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryOperator enum.
+func (e SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryOperator) Valid() bool {
+	switch e {
+	case SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryOperatorIncluded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryType.
+const (
+	SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryTypeMatchAny SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryType = "match_any"
+)
+
+// Valid indicates whether the value is a known member of the SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryType enum.
+func (e SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryType) Valid() bool {
+	switch e {
+	case SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryTypeMatchAny:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryField.
+const (
+	SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryFieldFileName         SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryField = "file.name"
+	SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryFieldFileNameCaseless SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryField = "file.name.caseless"
+	SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryFieldFilePath         SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryField = "file.path"
+	SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryFieldFilePathCaseless SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryField = "file.path.caseless"
+)
+
+// Valid indicates whether the value is a known member of the SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryField enum.
+func (e SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryField) Valid() bool {
+	switch e {
+	case SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryFieldFileName:
+		return true
+	case SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryFieldFileNameCaseless:
+		return true
+	case SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryFieldFilePath:
+		return true
+	case SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryFieldFilePathCaseless:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryOperator.
+const (
+	SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryOperatorIncluded SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryOperator = "included"
+)
+
+// Valid indicates whether the value is a known member of the SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryOperator enum.
+func (e SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryOperator) Valid() bool {
+	switch e {
+	case SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryOperatorIncluded:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryType.
+const (
+	SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryTypeWildcard SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryType = "wildcard"
+)
+
+// Valid indicates whether the value is a known member of the SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryType enum.
+func (e SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryType) Valid() bool {
+	switch e {
+	case SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryTypeWildcard:
 		return true
 	default:
 		return false
@@ -23840,16 +24581,16 @@ func (e SecurityTimelineAPITimelineStatus) Valid() bool {
 
 // Defines values for SecurityTimelineAPITimelineType.
 const (
-	SecurityTimelineAPITimelineTypeDefault  SecurityTimelineAPITimelineType = "default"
-	SecurityTimelineAPITimelineTypeTemplate SecurityTimelineAPITimelineType = "template"
+	Default  SecurityTimelineAPITimelineType = "default"
+	Template SecurityTimelineAPITimelineType = "template"
 )
 
 // Valid indicates whether the value is a known member of the SecurityTimelineAPITimelineType enum.
 func (e SecurityTimelineAPITimelineType) Valid() bool {
 	switch e {
-	case SecurityTimelineAPITimelineTypeDefault:
+	case Default:
 		return true
-	case SecurityTimelineAPITimelineTypeTemplate:
+	case Template:
 		return true
 	default:
 		return false
@@ -26282,16 +27023,16 @@ func (e SetCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsType) Val
 
 // Defines values for UpdateCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsType.
 const (
-	Text   UpdateCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsType = "text"
-	Toggle UpdateCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsType = "toggle"
+	UpdateCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsTypeText   UpdateCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsType = "text"
+	UpdateCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsTypeToggle UpdateCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsType = "toggle"
 )
 
 // Valid indicates whether the value is a known member of the UpdateCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsType enum.
 func (e UpdateCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsType) Valid() bool {
 	switch e {
-	case Text:
+	case UpdateCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsTypeText:
 		return true
-	case Toggle:
+	case UpdateCaseConfigurationDefaultSpace200JSONResponseBodyCustomFieldsTypeToggle:
 		return true
 	default:
 		return false
@@ -26993,13 +27734,13 @@ func (e GetContextEngineAiIndexAiindexid200JSONResponseBodyTracesType) Valid() b
 
 // Defines values for PutContextEngineAiIndexAiindexidJSONBodyAutomationsType.
 const (
-	Workflow PutContextEngineAiIndexAiindexidJSONBodyAutomationsType = "workflow"
+	PutContextEngineAiIndexAiindexidJSONBodyAutomationsTypeWorkflow PutContextEngineAiIndexAiindexidJSONBodyAutomationsType = "workflow"
 )
 
 // Valid indicates whether the value is a known member of the PutContextEngineAiIndexAiindexidJSONBodyAutomationsType enum.
 func (e PutContextEngineAiIndexAiindexidJSONBodyAutomationsType) Valid() bool {
 	switch e {
-	case Workflow:
+	case PutContextEngineAiIndexAiindexidJSONBodyAutomationsTypeWorkflow:
 		return true
 	default:
 		return false
@@ -29807,25 +30548,25 @@ func (e GetFleetEpmDataStreamsParamsSortOrder) Valid() bool {
 
 // Defines values for GetFleetEpmPackagesInstalledParamsDataStreamType.
 const (
-	Logs       GetFleetEpmPackagesInstalledParamsDataStreamType = "logs"
-	Metrics    GetFleetEpmPackagesInstalledParamsDataStreamType = "metrics"
-	Profiles   GetFleetEpmPackagesInstalledParamsDataStreamType = "profiles"
-	Synthetics GetFleetEpmPackagesInstalledParamsDataStreamType = "synthetics"
-	Traces     GetFleetEpmPackagesInstalledParamsDataStreamType = "traces"
+	GetFleetEpmPackagesInstalledParamsDataStreamTypeLogs       GetFleetEpmPackagesInstalledParamsDataStreamType = "logs"
+	GetFleetEpmPackagesInstalledParamsDataStreamTypeMetrics    GetFleetEpmPackagesInstalledParamsDataStreamType = "metrics"
+	GetFleetEpmPackagesInstalledParamsDataStreamTypeProfiles   GetFleetEpmPackagesInstalledParamsDataStreamType = "profiles"
+	GetFleetEpmPackagesInstalledParamsDataStreamTypeSynthetics GetFleetEpmPackagesInstalledParamsDataStreamType = "synthetics"
+	GetFleetEpmPackagesInstalledParamsDataStreamTypeTraces     GetFleetEpmPackagesInstalledParamsDataStreamType = "traces"
 )
 
 // Valid indicates whether the value is a known member of the GetFleetEpmPackagesInstalledParamsDataStreamType enum.
 func (e GetFleetEpmPackagesInstalledParamsDataStreamType) Valid() bool {
 	switch e {
-	case Logs:
+	case GetFleetEpmPackagesInstalledParamsDataStreamTypeLogs:
 		return true
-	case Metrics:
+	case GetFleetEpmPackagesInstalledParamsDataStreamTypeMetrics:
 		return true
-	case Profiles:
+	case GetFleetEpmPackagesInstalledParamsDataStreamTypeProfiles:
 		return true
-	case Synthetics:
+	case GetFleetEpmPackagesInstalledParamsDataStreamTypeSynthetics:
 		return true
-	case Traces:
+	case GetFleetEpmPackagesInstalledParamsDataStreamTypeTraces:
 		return true
 	default:
 		return false
@@ -31919,25 +32660,25 @@ func (e PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRelationshipsReso
 
 // Defines values for PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel.
 const (
-	PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelCritical PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Critical"
-	PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelHigh     PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "High"
-	PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelLow      PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Low"
-	PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelModerate PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Moderate"
-	PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelUnknown  PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Unknown"
+	Critical PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Critical"
+	High     PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "High"
+	Low      PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Low"
+	Moderate PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Moderate"
+	Unknown  PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel = "Unknown"
 )
 
 // Valid indicates whether the value is a known member of the PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel enum.
 func (e PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevel) Valid() bool {
 	switch e {
-	case PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelCritical:
+	case Critical:
 		return true
-	case PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelHigh:
+	case High:
 		return true
-	case PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelLow:
+	case Low:
 		return true
-	case PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelModerate:
+	case Moderate:
 		return true
-	case PutSecurityEntityStoreEntitiesEntitytypeJSONBody3EntityRiskCalculatedLevelUnknown:
+	case Unknown:
 		return true
 	default:
 		return false
@@ -37164,20 +37905,20 @@ type KibanaHTTPAPIsWiredStreamUpsertRequestStreamIngestWiredRoutingStatus string
 // KibanaHTTPAPIsWiredStreamUpsertRequestStreamType defines model for KibanaHTTPAPIsWiredStreamUpsertRequest.Stream.Type.
 type KibanaHTTPAPIsWiredStreamUpsertRequestStreamType string
 
-// KibanaHTTPAPIsZodV456Schema0 defines model for Kibana_HTTP_APIs__zod_v4_56___schema0.
-type KibanaHTTPAPIsZodV456Schema0 struct {
+// KibanaHTTPAPIsZodV463Schema0 defines model for Kibana_HTTP_APIs__zod_v4_63___schema0.
+type KibanaHTTPAPIsZodV463Schema0 struct {
 	union json.RawMessage
 }
 
-// KibanaHTTPAPIsZodV456Schema00 defines model for .
-type KibanaHTTPAPIsZodV456Schema00 struct {
+// KibanaHTTPAPIsZodV463Schema00 defines model for .
+type KibanaHTTPAPIsZodV463Schema00 struct {
 	Objects struct {
 		All map[string]interface{} `json:"all"`
 	} `json:"objects"`
 }
 
-// KibanaHTTPAPIsZodV456Schema01 defines model for .
-type KibanaHTTPAPIsZodV456Schema01 struct {
+// KibanaHTTPAPIsZodV463Schema01 defines model for .
+type KibanaHTTPAPIsZodV463Schema01 struct {
 	Objects struct {
 		Mappings bool `json:"mappings"`
 		Routing  []struct {
@@ -38010,6 +38751,45 @@ type KibanaHTTPAPIsAlertingPutActionPolicy struct {
 	Name     string                                      `json:"name"`
 	Throttle *KibanaHTTPAPIsAlertingActionPolicyThrottle `json:"throttle,omitempty"`
 }
+
+// KibanaHTTPAPIsAlertingPutRule defines model for Kibana_HTTP_APIs_alerting_put_rule.
+type KibanaHTTPAPIsAlertingPutRule struct {
+	// Artifacts Optional objects attached to the rule, such as a runbook or a dashboard. Each item has `id`, `type`, and `data`. The shape of `data` depends on `type`. For example, a `runbook` uses `content` and a `dashboard` uses `dashboard_id`. Known types are validated against that shape. Unknown types are stored when `id`, `type`, and `data` are present. An empty array is rejected: omit `artifacts` on create, or send `null` on PATCH to clear.
+	Artifacts *[]KibanaHTTPAPIsAlertingRuleArtifact `json:"artifacts,omitempty"`
+
+	// Enabled Whether the rule is enabled. On create, defaults to `true` when omitted. On replace, omitting this field preserves the existing enabled state.
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// Grouping Grouping configuration.
+	Grouping *KibanaHTTPAPIsAlertingRuleGrouping `json:"grouping,omitempty"`
+
+	// Kind Whether the rule creates alerts (`alert`) or only stores matching events (`signal`).
+	Kind KibanaHTTPAPIsAlertingPutRuleKind `json:"kind"`
+
+	// Metadata Rule metadata.
+	Metadata KibanaHTTPAPIsAlertingRuleMetadata `json:"metadata"`
+
+	// NoData What the rule does when a group has no data. Required when `kind` is `alert`. Not allowed when `kind` is `signal`. Any strategy other than `ignore` requires either `query.breach` or `no_data.query`, so that a group with no data can be told apart from one that stopped breaching.
+	NoData *KibanaHTTPAPIsAlertingRuleNoData `json:"no_data,omitempty"`
+
+	// Query ES|QL query the rule evaluates. `base` is required. `breach` is an optional clause appended to it.
+	Query KibanaHTTPAPIsAlertingRuleQuery `json:"query"`
+
+	// Recovery When an alert recovers. Required when `kind` is `alert`. Not allowed when `kind` is `signal`.
+	Recovery *KibanaHTTPAPIsAlertingRuleRecovery `json:"recovery,omitempty"`
+
+	// Schedule Execution schedule configuration.
+	Schedule KibanaHTTPAPIsAlertingRuleSchedule `json:"schedule"`
+
+	// StateTransition Specifies how many consecutive matches, or how long a condition must hold, before an alert becomes `active` or `inactive`. Allowed only when `kind` is `alert`.
+	StateTransition *KibanaHTTPAPIsAlertingRuleStateTransition `json:"state_transition,omitempty"`
+
+	// TimeField Document field Kibana uses with `schedule.lookback` to time-filter `query.base`.
+	TimeField *string `json:"time_field,omitempty"`
+}
+
+// KibanaHTTPAPIsAlertingPutRuleKind Whether the rule creates alerts (`alert`) or only stores matching events (`signal`).
+type KibanaHTTPAPIsAlertingPutRuleKind string
 
 // KibanaHTTPAPIsAlertingRuleArtifact defines model for Kibana_HTTP_APIs_alerting_rule_artifact.
 type KibanaHTTPAPIsAlertingRuleArtifact struct {
@@ -39582,6 +40362,9 @@ type KibanaHTTPAPIsConnectorResponse struct {
 	// IsDeprecated Indicates whether the connector is deprecated.
 	IsDeprecated bool `json:"is_deprecated"`
 
+	// IsInboundEventsEnabled Indicates whether this connector can receive inbound events. Always true for inbound-only connectors. For connectors that also send actions, true after inbound events have been turned on.
+	IsInboundEventsEnabled *bool `json:"is_inbound_events_enabled,omitempty"`
+
 	// IsMissingSecrets Indicates whether the connector is missing secrets.
 	IsMissingSecrets *bool `json:"is_missing_secrets,omitempty"`
 
@@ -39615,6 +40398,9 @@ type KibanaHTTPAPIsConnectorResponseWithReferencesCount struct {
 
 	// IsDeprecated Indicates whether the connector is deprecated.
 	IsDeprecated bool `json:"is_deprecated"`
+
+	// IsInboundEventsEnabled Indicates whether this connector can receive inbound events. Always true for inbound-only connectors. For connectors that also send actions, true after inbound events have been turned on.
+	IsInboundEventsEnabled *bool `json:"is_inbound_events_enabled,omitempty"`
 
 	// IsMissingSecrets Indicates whether the connector is missing secrets.
 	IsMissingSecrets *bool `json:"is_missing_secrets,omitempty"`
@@ -42167,6 +42953,27 @@ type KibanaHTTPAPIsIndexThresholdCreateRuleBodyAlertingParamsThresholdComparator
 // KibanaHTTPAPIsIndexThresholdCreateRuleBodyAlertingRuleTypeId defines model for KibanaHTTPAPIsIndexThresholdCreateRuleBodyAlerting.RuleTypeId.
 type KibanaHTTPAPIsIndexThresholdCreateRuleBodyAlertingRuleTypeId string
 
+// KibanaHTTPAPIsIngestEventsAckResponse Connector HTTP 200 ack. JSON or a plain-text body. No event is emitted.
+type KibanaHTTPAPIsIngestEventsAckResponse struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsIngestEventsAckResponse0 Plain-text HTTP ack body.
+type KibanaHTTPAPIsIngestEventsAckResponse0 = string
+
+// KibanaHTTPAPIsIngestEventsAckResponse1 Connector HTTP 200 JSON ack. `.inboundWebhook` and Slack handshake is `{ challenge }`.
+type KibanaHTTPAPIsIngestEventsAckResponse1 struct {
+	// Challenge When present, echo of a top-level request `challenge` (inbound webhook handshake). No event is emitted.
+	Challenge            *string                `json:"challenge,omitempty"`
+	AdditionalProperties map[string]interface{} `json:"-"`
+}
+
+// KibanaHTTPAPIsIngestEventsResponse defines model for Kibana_HTTP_APIs_ingest_events_response.
+type KibanaHTTPAPIsIngestEventsResponse struct {
+	// Ok Indicates the ingress request was accepted for processing.
+	Ok bool `json:"ok"`
+}
+
 // KibanaHTTPAPIsInstallKibanaAssetsRequest defines model for Kibana_HTTP_APIs_install_kibana_assets_request.
 type KibanaHTTPAPIsInstallKibanaAssetsRequest struct {
 	Force *bool `json:"force,omitempty"`
@@ -43249,7 +44056,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0DrilldownsType str
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0 defines model for .
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0 struct {
-	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the `defaultColumns` advanced setting or the referenced saved object.
+	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the `defaultColumns` advanced setting.
 	ColumnOrder *[]string `json:"column_order,omitempty"`
 
 	// ColumnSettings Per-column settings keyed by field name, such as width. Keys should correspond to entries in `column_order` when both are set.
@@ -43257,12 +44064,14 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0 struct {
 		// Width Optional width of the column in pixels.
 		Width *float32 `json:"width,omitempty"`
 	} `json:"column_settings,omitempty"`
+
+	// DataSource The data view used by the tab, specified by reference or defined inline.
 	DataSource KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_DataSource `json:"data_source"`
 
 	// DefaultRenderedNodes The number of nodes each JSON cell renders by default in the JSON document view.
 	DefaultRenderedNodes *float32 `json:"default_rendered_nodes,omitempty"`
 
-	// Density The table row spacing. If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
+	// Density The table row spacing. If omitted, Kibana determines the density from its current settings, such as the user preference.
 	Density *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Density `json:"density,omitempty"`
 
 	// DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
@@ -43271,7 +44080,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0 struct {
 	// Filters List of filters to apply to the data in the tab.
 	Filters *[]KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema `json:"filters,omitempty"`
 
-	// HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
+	// HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Kibana determines the height from its current settings, such as the user preference.
 	HeaderRowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight `json:"header_row_height,omitempty"`
 
 	// HideNulls When `true`, fields with null values are hidden in the JSON document view.
@@ -43283,7 +44092,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0 struct {
 	// RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
 	RowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_RowHeight `json:"row_height,omitempty"`
 
-	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the `discover:sampleRowsPerPage` advanced setting. Has no effect on ES|QL tabs since Kibana 8.16.
+	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the `discover:sampleRowsPerPage` advanced setting. Has no effect on ES|QL tabs.
 	RowsPerPage *float32 `json:"rows_per_page,omitempty"`
 
 	// SampleSize The number of documents to sample for the data table. If omitted, defaults to the `discover:sampleSize` advanced setting.
@@ -43308,12 +44117,12 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0 struct {
 	WrapLines *bool `json:"wrap_lines,omitempty"`
 }
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_DataSource defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.0.Tabs.0.DataSource.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_DataSource The data view used by the tab, specified by reference or defined inline.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_DataSource struct {
 	union json.RawMessage
 }
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Density The table row spacing. If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Density The table row spacing. If omitted, Kibana determines the density from its current settings, such as the user preference.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0Density string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
@@ -43325,7 +44134,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeig
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight1 defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.0.Tabs.0.HeaderRowHeight.1.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0HeaderRowHeight1 string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Kibana determines the height from its current settings, such as the user preference.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_HeaderRowHeight struct {
 	union json.RawMessage
 }
@@ -43352,7 +44161,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0ViewMode stri
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1 ES|QL (Elasticsearch Query Language) data source.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1 struct {
-	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the `defaultColumns` advanced setting or the referenced saved object.
+	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the `defaultColumns` advanced setting.
 	ColumnOrder *[]string `json:"column_order,omitempty"`
 
 	// ColumnSettings Per-column settings keyed by field name, such as width. Keys should correspond to entries in `column_order` when both are set.
@@ -43367,13 +44176,13 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1 struct {
 	// DefaultRenderedNodes The number of nodes each JSON cell renders by default in the JSON document view.
 	DefaultRenderedNodes *float32 `json:"default_rendered_nodes,omitempty"`
 
-	// Density The table row spacing. If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
+	// Density The table row spacing. If omitted, Kibana determines the density from its current settings, such as the user preference.
 	Density *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Density `json:"density,omitempty"`
 
 	// DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
 	DocumentsDisplayMode *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1DocumentsDisplayMode `json:"documents_display_mode,omitempty"`
 
-	// HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
+	// HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Kibana determines the height from its current settings, such as the user preference.
 	HeaderRowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_HeaderRowHeight `json:"header_row_height,omitempty"`
 
 	// HideNulls When `true`, fields with null values are hidden in the JSON document view.
@@ -43382,7 +44191,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1 struct {
 	// RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
 	RowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_RowHeight `json:"row_height,omitempty"`
 
-	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the `discover:sampleRowsPerPage` advanced setting. Has no effect on ES|QL tabs since Kibana 8.16.
+	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the `discover:sampleRowsPerPage` advanced setting. Has no effect on ES|QL tabs.
 	RowsPerPage *float32 `json:"rows_per_page,omitempty"`
 
 	// SampleSize The number of documents to sample for the data table. If omitted, defaults to the `discover:sampleSize` advanced setting.
@@ -43404,7 +44213,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1 struct {
 	WrapLines *bool `json:"wrap_lines,omitempty"`
 }
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Density The table row spacing. If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Density The table row spacing. If omitted, Kibana determines the density from its current settings, such as the user preference.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Density string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
@@ -43416,7 +44225,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeig
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight1 defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.0.Tabs.1.HeaderRowHeight.1.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1HeaderRowHeight1 string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Kibana determines the height from its current settings, such as the user preference.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_1_HeaderRowHeight struct {
 	union json.RawMessage
 }
@@ -43440,7 +44249,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1Type string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2 An ES|QL tab with saved metrics grid settings. The dashboard panel stores these settings and restores them in Discover. The panel does not render the metrics grid.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2 struct {
-	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the `defaultColumns` advanced setting or the referenced saved object.
+	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the `defaultColumns` advanced setting.
 	ColumnOrder *[]string `json:"column_order,omitempty"`
 
 	// ColumnSettings Per-column settings keyed by field name, such as width. Keys should correspond to entries in `column_order` when both are set.
@@ -43458,7 +44267,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2 struct {
 	// DefaultRenderedNodes The number of nodes each JSON cell renders by default in the JSON document view.
 	DefaultRenderedNodes *float32 `json:"default_rendered_nodes,omitempty"`
 
-	// Density The table row spacing. If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
+	// Density The table row spacing. If omitted, Kibana determines the density from its current settings, such as the user preference.
 	Density *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2Density `json:"density,omitempty"`
 
 	// Dimensions Fields used to group metrics in the metrics grid.
@@ -43476,7 +44285,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2 struct {
 	// GridSortField Criterion used to order metrics in the metrics grid. `recency` orders by the metrics the viewing user explored most recently in their own browser. If omitted, metrics are ordered alphabetically.
 	GridSortField *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2GridSortField `json:"grid_sort_field,omitempty"`
 
-	// HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
+	// HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Kibana determines the height from its current settings, such as the user preference.
 	HeaderRowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_HeaderRowHeight `json:"header_row_height,omitempty"`
 
 	// HideNulls When `true`, fields with null values are hidden in the JSON document view.
@@ -43488,7 +44297,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2 struct {
 	// RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
 	RowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_RowHeight `json:"row_height,omitempty"`
 
-	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the `discover:sampleRowsPerPage` advanced setting. Has no effect on ES|QL tabs since Kibana 8.16.
+	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the `discover:sampleRowsPerPage` advanced setting. Has no effect on ES|QL tabs.
 	RowsPerPage *float32 `json:"rows_per_page,omitempty"`
 
 	// SampleSize The number of documents to sample for the data table. If omitted, defaults to the `discover:sampleSize` advanced setting.
@@ -43516,7 +44325,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2 struct {
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2CounterAggregation Aggregation applied to counter metric fields.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2CounterAggregation string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2Density The table row spacing. If omitted, Discover or the embedding application determines the density from its current settings, such as the user preference.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2Density The table row spacing. If omitted, Kibana determines the density from its current settings, such as the user preference.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2Density string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
@@ -43537,7 +44346,7 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HeaderRowHeig
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HeaderRowHeight1 defines model for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession.Config.0.Tabs.2.HeaderRowHeight.1.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HeaderRowHeight1 string
 
-// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Discover or the embedding application determines the height from its current settings, such as the user preference.
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Kibana determines the height from its current settings, such as the user preference.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_HeaderRowHeight struct {
 	union json.RawMessage
 }
@@ -44488,7 +45297,9 @@ type KibanaHTTPAPIsKbnDataViewSpecSchema struct {
 	AllowHiddenIndices *bool `json:"allow_hidden_indices,omitempty"`
 
 	// FieldFilters Field filters can be used to exclude one or more fields when fetching a document. They may contain wildcards, such as `user*` which filters fields starting with 'user'.
-	FieldFilters  *KibanaHTTPAPIsKbnFieldFiltersSchema            `json:"field_filters,omitempty"`
+	FieldFilters *KibanaHTTPAPIsKbnFieldFiltersSchema `json:"field_filters,omitempty"`
+
+	// FieldSettings Settings for individual fields, keyed by field name. To change how Kibana displays a field from the backing indices, set its label, description, or format. To define a runtime field, use the runtime field name and set `type`.
 	FieldSettings *map[string]KibanaHTTPAPIsKbnFieldSettingsEntry `json:"field_settings,omitempty"`
 
 	// IndexPattern The index pattern (Elasticsearch index expression) to use as the data source. Example: "my-index-*".
@@ -44504,6 +45315,531 @@ type KibanaHTTPAPIsKbnDataViewSpecSchema struct {
 
 // KibanaHTTPAPIsKbnDataViewSpecSchemaType defines model for KibanaHTTPAPIsKbnDataViewSpecSchema.Type.
 type KibanaHTTPAPIsKbnDataViewSpecSchemaType string
+
+// KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel An ES|QL variable control whose selected value is injected into Discover ES|QL queries using the `?variable_name` syntax.
+type KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel struct {
+	// Config The ES|QL control settings, including its variable, available options, and selected values.
+	Config KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config `json:"config"`
+
+	// Grow When `true`, the control expands to fill any available horizontal space.
+	Grow *bool `json:"grow,omitempty"`
+
+	// Id The unique ID of the control.
+	Id   string                                                  `json:"id"`
+	Type KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelType `json:"type"`
+
+	// Width The minimum width of the control.
+	Width *KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidth `json:"width,omitempty"`
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config The ES|QL control settings, including its variable, available options, and selected values.
+type KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelType defines model for KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel.Type.
+type KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelType string
+
+// KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidth The minimum width of the control.
+type KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanelWidth string
+
+// KibanaHTTPAPIsKbnDiscoverSessionData Configuration data for a Discover session.
+type KibanaHTTPAPIsKbnDiscoverSessionData struct {
+	// Description A short description of the Discover session.
+	Description *string `json:"description,omitempty"`
+
+	// Tabs Ordered list of tabs in the Discover session. Each tab requires a stable, unique ID, which other saved objects and links can reference.
+	Tabs []KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item `json:"tabs"`
+
+	// Tags Tag IDs to associate with this Discover session.
+	Tags *[]string `json:"tags,omitempty"`
+
+	// Title The title of the Discover session.
+	Title string `json:"title"`
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs0 defines model for .
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs0 struct {
+	// BreakdownField Field name used to split chart data into series.
+	BreakdownField *string `json:"breakdown_field,omitempty"`
+
+	// ChartInterval Time interval for the chart histogram on this tab.
+	ChartInterval *KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval `json:"chart_interval,omitempty"`
+
+	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the `defaultColumns` advanced setting.
+	ColumnOrder *[]string `json:"column_order,omitempty"`
+
+	// ColumnSettings Per-column settings keyed by field name, such as width. Keys should correspond to entries in `column_order` when both are set.
+	ColumnSettings *map[string]struct {
+		// Width Optional width of the column in pixels.
+		Width *float32 `json:"width,omitempty"`
+	} `json:"column_settings,omitempty"`
+
+	// ControlPanels The ES|QL controls of the tab.
+	ControlPanels *[]KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel `json:"control_panels,omitempty"`
+
+	// DataSource The data view used by the tab, specified by reference or defined inline.
+	DataSource KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource `json:"data_source"`
+
+	// DefaultRenderedNodes The number of nodes each JSON cell renders by default in the JSON document view.
+	DefaultRenderedNodes *float32 `json:"default_rendered_nodes,omitempty"`
+
+	// Density The table row spacing. If omitted, Kibana determines the density from its current settings, such as the user preference.
+	Density *KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Density `json:"density,omitempty"`
+
+	// DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
+	DocumentsDisplayMode *KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DocumentsDisplayMode `json:"documents_display_mode,omitempty"`
+
+	// Filters List of filters to apply to the data in the tab.
+	Filters *[]KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema `json:"filters,omitempty"`
+
+	// HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Kibana determines the height from its current settings, such as the user preference.
+	HeaderRowHeight *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight `json:"header_row_height,omitempty"`
+
+	// HideAggregatedPreview Applies to the field statistics view. When `true`, hides the distribution preview shown for each field. If omitted, previews are shown.
+	HideAggregatedPreview *bool `json:"hide_aggregated_preview,omitempty"`
+
+	// HideChart When `true`, the chart is hidden.
+	HideChart *bool `json:"hide_chart,omitempty"`
+
+	// HideNulls When `true`, fields with null values are hidden in the JSON document view.
+	HideNulls *bool `json:"hide_nulls,omitempty"`
+
+	// HideTable When `true`, the data table is hidden.
+	HideTable *bool `json:"hide_table,omitempty"`
+
+	// Id A unique identifier. Must contain only lowercase letters, numbers, hyphens, and underscores.
+	Id string `json:"id"`
+
+	// Label The label of the tab.
+	Label string `json:"label"`
+
+	// Query A search query consisting of an expression and its language. Supports KQL and Lucene syntax.
+	Query *KibanaHTTPAPIsKbnAsCodeQuery `json:"query,omitempty"`
+
+	// RefreshInterval Specifies the auto-refresh interval for the object.
+	RefreshInterval *KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema `json:"refresh_interval,omitempty"`
+
+	// RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
+	RowHeight *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight `json:"row_height,omitempty"`
+
+	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the `discover:sampleRowsPerPage` advanced setting. Has no effect on ES|QL tabs.
+	RowsPerPage *float32 `json:"rows_per_page,omitempty"`
+
+	// SampleSize The number of documents to sample for the data table. If omitted, defaults to the `discover:sampleSize` advanced setting.
+	SampleSize *float32 `json:"sample_size,omitempty"`
+
+	// Sort Sort configuration for the data table (field and direction).
+	Sort *[]struct {
+		// Direction The sort direction: `asc` for ascending or `desc` for descending.
+		Direction KibanaHTTPAPIsKbnDiscoverSessionDataTabs0SortDirection `json:"direction"`
+
+		// Name The name of the field to sort by.
+		Name string `json:"name"`
+	} `json:"sort,omitempty"`
+
+	// TimeRange Specifies the time range for a query.
+	TimeRange *KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema `json:"time_range,omitempty"`
+
+	// Type The tab type. `default` tabs have no type-specific settings.
+	Type *KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Type `json:"type,omitempty"`
+
+	// ViewMode The Discover view mode: `documents` (search hits), `patterns` (pattern analysis), or `aggregated` (field statistics).
+	ViewMode *KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewMode `json:"view_mode,omitempty"`
+
+	// VisContext The saved chart configuration. Discover reuses it when compatible with the tab’s current settings and query results; otherwise, it rebuilds the chart.
+	VisContext *struct {
+		// Attributes Lens visualization attributes used to render the Discover chart.
+		Attributes map[string]interface{} `json:"attributes"`
+
+		// SuggestionType Chart suggestion type used by Discover to generate this histogram configuration.
+		SuggestionType KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionType `json:"suggestion_type"`
+	} `json:"vis_context,omitempty"`
+
+	// WrapLines When `true`, long values wrap in the JSON document view. When `false`, they are truncated to a single line.
+	WrapLines *bool `json:"wrap_lines,omitempty"`
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval Time interval for the chart histogram on this tab.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ChartInterval string
+
+// KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource The data view used by the tab, specified by reference or defined inline.
+type KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Density The table row spacing. If omitted, Kibana determines the density from its current settings, such as the user preference.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Density string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs0DocumentsDisplayMode string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0 defines model for .
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0 = float32
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1 defines model for KibanaHTTPAPIsKbnDiscoverSessionData.Tabs.0.HeaderRowHeight.1.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1 string
+
+// KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Kibana determines the height from its current settings, such as the user preference.
+type KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0 defines model for .
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0 = float32
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1 defines model for KibanaHTTPAPIsKbnDiscoverSessionData.Tabs.0.RowHeight.1.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1 string
+
+// KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
+type KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs0SortDirection The sort direction: `asc` for ascending or `desc` for descending.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs0SortDirection string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Type The tab type. `default` tabs have no type-specific settings.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs0Type string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewMode The Discover view mode: `documents` (search hits), `patterns` (pattern analysis), or `aggregated` (field statistics).
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs0ViewMode string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionType Chart suggestion type used by Discover to generate this histogram configuration.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs0VisContextSuggestionType string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs1 defines model for .
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs1 struct {
+	// BreakdownField Field name used to split chart data into series.
+	BreakdownField *string `json:"breakdown_field,omitempty"`
+
+	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the `defaultColumns` advanced setting.
+	ColumnOrder *[]string `json:"column_order,omitempty"`
+
+	// ColumnSettings Per-column settings keyed by field name, such as width. Keys should correspond to entries in `column_order` when both are set.
+	ColumnSettings *map[string]struct {
+		// Width Optional width of the column in pixels.
+		Width *float32 `json:"width,omitempty"`
+	} `json:"column_settings,omitempty"`
+
+	// ControlPanels The ES|QL controls of the tab.
+	ControlPanels *[]KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel `json:"control_panels,omitempty"`
+
+	// DataSource Uses an ES|QL query as the data source. The query is executed at render time; resulting columns are available as fields.
+	DataSource KibanaHTTPAPIsEsqlDataSource `json:"data_source"`
+
+	// DefaultRenderedNodes The number of nodes each JSON cell renders by default in the JSON document view.
+	DefaultRenderedNodes *float32 `json:"default_rendered_nodes,omitempty"`
+
+	// Density The table row spacing. If omitted, Kibana determines the density from its current settings, such as the user preference.
+	Density *KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Density `json:"density,omitempty"`
+
+	// DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
+	DocumentsDisplayMode *KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DocumentsDisplayMode `json:"documents_display_mode,omitempty"`
+
+	// EsqlApproximation When `true`, ES|QL visualizations that use `STATS` run with [approximate execution](https://www.elastic.co/docs/reference/query-languages/esql/esql-query-approximation) for faster, estimated results.
+	EsqlApproximation *bool `json:"esql_approximation,omitempty"`
+
+	// HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Kibana determines the height from its current settings, such as the user preference.
+	HeaderRowHeight *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight `json:"header_row_height,omitempty"`
+
+	// HideChart When `true`, the chart is hidden.
+	HideChart *bool `json:"hide_chart,omitempty"`
+
+	// HideNulls When `true`, fields with null values are hidden in the JSON document view.
+	HideNulls *bool `json:"hide_nulls,omitempty"`
+
+	// HideTable When `true`, the data table is hidden.
+	HideTable *bool `json:"hide_table,omitempty"`
+
+	// Id A unique identifier. Must contain only lowercase letters, numbers, hyphens, and underscores.
+	Id string `json:"id"`
+
+	// Label The label of the tab.
+	Label string `json:"label"`
+
+	// RefreshInterval Specifies the auto-refresh interval for the object.
+	RefreshInterval *KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema `json:"refresh_interval,omitempty"`
+
+	// RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
+	RowHeight *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight `json:"row_height,omitempty"`
+
+	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the `discover:sampleRowsPerPage` advanced setting. Has no effect on ES|QL tabs.
+	RowsPerPage *float32 `json:"rows_per_page,omitempty"`
+
+	// Sort Sort configuration for the data table (field and direction).
+	Sort *[]struct {
+		// Direction The sort direction: `asc` for ascending or `desc` for descending.
+		Direction KibanaHTTPAPIsKbnDiscoverSessionDataTabs1SortDirection `json:"direction"`
+
+		// Name The name of the field to sort by.
+		Name string `json:"name"`
+	} `json:"sort,omitempty"`
+
+	// TimeRange Specifies the time range for a query.
+	TimeRange *KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema `json:"time_range,omitempty"`
+
+	// Type The tab type. `default` tabs have no type-specific settings.
+	Type *KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Type `json:"type,omitempty"`
+
+	// VisContext The saved chart configuration. Discover reuses it when compatible with the tab’s current settings and query results; otherwise, it rebuilds the chart.
+	VisContext *struct {
+		// Attributes Lens visualization attributes used to render the Discover chart.
+		Attributes map[string]interface{} `json:"attributes"`
+
+		// SuggestionType Chart suggestion type used by Discover to generate this histogram configuration.
+		SuggestionType KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionType `json:"suggestion_type"`
+	} `json:"vis_context,omitempty"`
+
+	// WrapLines When `true`, long values wrap in the JSON document view. When `false`, they are truncated to a single line.
+	WrapLines *bool `json:"wrap_lines,omitempty"`
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Density The table row spacing. If omitted, Kibana determines the density from its current settings, such as the user preference.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Density string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs1DocumentsDisplayMode string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0 defines model for .
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0 = float32
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1 defines model for KibanaHTTPAPIsKbnDiscoverSessionData.Tabs.1.HeaderRowHeight.1.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1 string
+
+// KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Kibana determines the height from its current settings, such as the user preference.
+type KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0 defines model for .
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0 = float32
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1 defines model for KibanaHTTPAPIsKbnDiscoverSessionData.Tabs.1.RowHeight.1.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1 string
+
+// KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
+type KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs1SortDirection The sort direction: `asc` for ascending or `desc` for descending.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs1SortDirection string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Type The tab type. `default` tabs have no type-specific settings.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs1Type string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionType Chart suggestion type used by Discover to generate this histogram configuration.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs1VisContextSuggestionType string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2 An ES|QL tab with saved metrics grid settings.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2 struct {
+	// BreakdownField Field name used to split chart data into series.
+	BreakdownField *string `json:"breakdown_field,omitempty"`
+
+	// ColumnOrder Ordered list of field names to display in the data table. If omitted, defaults to the `defaultColumns` advanced setting.
+	ColumnOrder *[]string `json:"column_order,omitempty"`
+
+	// ColumnSettings Per-column settings keyed by field name, such as width. Keys should correspond to entries in `column_order` when both are set.
+	ColumnSettings *map[string]struct {
+		// Width Optional width of the column in pixels.
+		Width *float32 `json:"width,omitempty"`
+	} `json:"column_settings,omitempty"`
+
+	// ControlPanels The ES|QL controls of the tab.
+	ControlPanels *[]KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel `json:"control_panels,omitempty"`
+
+	// CounterAggregation Aggregation applied to counter metric fields.
+	CounterAggregation KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregation `json:"counter_aggregation"`
+
+	// DataSource Uses an ES|QL query as the data source. The query is executed at render time; resulting columns are available as fields.
+	DataSource KibanaHTTPAPIsEsqlDataSource `json:"data_source"`
+
+	// DefaultRenderedNodes The number of nodes each JSON cell renders by default in the JSON document view.
+	DefaultRenderedNodes *float32 `json:"default_rendered_nodes,omitempty"`
+
+	// Density The table row spacing. If omitted, Kibana determines the density from its current settings, such as the user preference.
+	Density *KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Density `json:"density,omitempty"`
+
+	// Dimensions Fields used to group metrics in the metrics grid.
+	Dimensions []string `json:"dimensions"`
+
+	// DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
+	DocumentsDisplayMode *KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DocumentsDisplayMode `json:"documents_display_mode,omitempty"`
+
+	// EsqlApproximation When `true`, ES|QL visualizations that use `STATS` run with [approximate execution](https://www.elastic.co/docs/reference/query-languages/esql/esql-query-approximation) for faster, estimated results.
+	EsqlApproximation *bool `json:"esql_approximation,omitempty"`
+
+	// GaugeAggregation Aggregation applied to gauge metric fields.
+	GaugeAggregation KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregation `json:"gauge_aggregation"`
+
+	// GridSortDirection Direction of the metrics grid order. If omitted, defaults to ascending.
+	GridSortDirection *KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortDirection `json:"grid_sort_direction,omitempty"`
+
+	// GridSortField Criterion used to order metrics in the metrics grid. `recency` orders by the metrics the viewing user explored most recently in their own browser. If omitted, metrics are ordered alphabetically.
+	GridSortField *KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortField `json:"grid_sort_field,omitempty"`
+
+	// HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Kibana determines the height from its current settings, such as the user preference.
+	HeaderRowHeight *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight `json:"header_row_height,omitempty"`
+
+	// HideChart When `true`, the chart is hidden.
+	HideChart *bool `json:"hide_chart,omitempty"`
+
+	// HideNulls When `true`, fields with null values are hidden in the JSON document view.
+	HideNulls *bool `json:"hide_nulls,omitempty"`
+
+	// HideTable When `true`, the data table is hidden.
+	HideTable *bool `json:"hide_table,omitempty"`
+
+	// HistogramPercentile Percentile displayed for histogram metric fields.
+	HistogramPercentile KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile `json:"histogram_percentile"`
+
+	// Id A unique identifier. Must contain only lowercase letters, numbers, hyphens, and underscores.
+	Id string `json:"id"`
+
+	// Label The label of the tab.
+	Label string `json:"label"`
+
+	// RefreshInterval Specifies the auto-refresh interval for the object.
+	RefreshInterval *KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema `json:"refresh_interval,omitempty"`
+
+	// RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
+	RowHeight *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight `json:"row_height,omitempty"`
+
+	// RowsPerPage The number of rows to display per page in the data table. If omitted, defaults to the `discover:sampleRowsPerPage` advanced setting. Has no effect on ES|QL tabs.
+	RowsPerPage *float32 `json:"rows_per_page,omitempty"`
+
+	// SearchTerm Search term used to filter metrics in the metrics grid.
+	SearchTerm string `json:"search_term"`
+
+	// Sort Sort configuration for the data table (field and direction).
+	Sort *[]struct {
+		// Direction The sort direction: `asc` for ascending or `desc` for descending.
+		Direction KibanaHTTPAPIsKbnDiscoverSessionDataTabs2SortDirection `json:"direction"`
+
+		// Name The name of the field to sort by.
+		Name string `json:"name"`
+	} `json:"sort,omitempty"`
+
+	// TimeRange Specifies the time range for a query.
+	TimeRange *KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema `json:"time_range,omitempty"`
+
+	// Type A tab with saved metrics grid settings. Requires an ES|QL data source. These settings are used only when the query supports the metrics experience.
+	Type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Type `json:"type"`
+
+	// VisContext The saved chart configuration. Discover reuses it when compatible with the tab’s current settings and query results; otherwise, it rebuilds the chart.
+	VisContext *struct {
+		// Attributes Lens visualization attributes used to render the Discover chart.
+		Attributes map[string]interface{} `json:"attributes"`
+
+		// SuggestionType Chart suggestion type used by Discover to generate this histogram configuration.
+		SuggestionType KibanaHTTPAPIsKbnDiscoverSessionDataTabs2VisContextSuggestionType `json:"suggestion_type"`
+	} `json:"vis_context,omitempty"`
+
+	// WrapLines When `true`, long values wrap in the JSON document view. When `false`, they are truncated to a single line.
+	WrapLines *bool `json:"wrap_lines,omitempty"`
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregation Aggregation applied to counter metric fields.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2CounterAggregation string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Density The table row spacing. If omitted, Kibana determines the density from its current settings, such as the user preference.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Density string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DocumentsDisplayMode How documents are shown: `table` for a formatted table or `json` for a raw JSON tree.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2DocumentsDisplayMode string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregation Aggregation applied to gauge metric fields.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GaugeAggregation string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortDirection Direction of the metrics grid order. If omitted, defaults to ascending.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortDirection string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortField Criterion used to order metrics in the metrics grid. `recency` orders by the metrics the viewing user explored most recently in their own browser. If omitted, metrics are ordered alphabetically.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2GridSortField string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0 defines model for .
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0 = float32
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1 defines model for KibanaHTTPAPIsKbnDiscoverSessionData.Tabs.2.HeaderRowHeight.1.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1 string
+
+// KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight The table header row height, as a number of lines, or `auto` to size it based on content. If omitted, Kibana determines the height from its current settings, such as the user preference.
+type KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile Percentile displayed for histogram metric fields.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0 defines model for .
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0 = float32
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1 defines model for KibanaHTTPAPIsKbnDiscoverSessionData.Tabs.2.RowHeight.1.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1 string
+
+// KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
+type KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2SortDirection The sort direction: `asc` for ascending or `desc` for descending.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2SortDirection string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Type A tab with saved metrics grid settings. Requires an ES|QL data source. These settings are used only when the query supports the metrics experience.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2Type string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2VisContextSuggestionType Chart suggestion type used by Discover to generate this histogram configuration.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2VisContextSuggestionType string
+
+// KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item A Discover tab definition. `data_source.type` identifies the data source; `type` identifies the tab type. The tab type describes the saved settings and does not change how Discover displays the tab. Default tabs support data views and ES|QL; metrics tabs support only ES|QL.
+type KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning An item in a tab that was excluded from the response because it failed validation.
+type KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning struct {
+	// ItemConfig The original configuration of the dropped item.
+	ItemConfig *map[string]interface{} `json:"item_config,omitempty"`
+
+	// ItemId The ID of the dropped item.
+	ItemId string `json:"item_id"`
+
+	// ItemType The type identifier of the dropped item, when available.
+	ItemType *string `json:"item_type,omitempty"`
+
+	// Key The name of the property that contains the dropped item.
+	Key string `json:"key"`
+
+	// Message The reason the content was dropped.
+	Message string `json:"message"`
+
+	// TabId The ID of the tab that contains the dropped content.
+	TabId string                                                 `json:"tab_id"`
+	Type  KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarningType `json:"type"`
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarningType defines model for KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning.Type.
+type KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarningType string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning A tab property excluded from the response due to malformed data.
+type KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning struct {
+	// Key The name of the property that was dropped.
+	Key string `json:"key"`
+
+	// Message The reason the content was dropped.
+	Message string `json:"message"`
+
+	// TabId The ID of the tab that contains the dropped content.
+	TabId string                                                     `json:"tab_id"`
+	Type  KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarningType `json:"type"`
+
+	// Value The original value of the property that was dropped.
+	Value interface{} `json:"value,omitempty"`
+}
+
+// KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarningType defines model for KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning.Type.
+type KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarningType string
 
 // KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema Specifies the time range for a query.
 type KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema struct {
@@ -44884,6 +46220,21 @@ type KibanaHTTPAPIsKbnFieldSettingsEntry struct {
 	union json.RawMessage
 }
 
+// KibanaHTTPAPIsKbnFieldSettingsWithPopularity Display overrides for a field. These settings can define a custom label, description, format and popularity.
+type KibanaHTTPAPIsKbnFieldSettingsWithPopularity struct {
+	// CustomDescription Add a description to the field. It's displayed next to the field on the Discover, Lens, and Data View Management pages.
+	CustomDescription *KibanaHTTPAPIsKbnFieldCustomDescription `json:"custom_description,omitempty"`
+
+	// CustomLabel Create a label to display in place of the field name in Discover, Maps, Lens, Visualize, and TSVB. Useful for shortening a long field name. Queries and filters use the original field name.
+	CustomLabel *KibanaHTTPAPIsKbnFieldCustomLabel `json:"custom_label,omitempty"`
+
+	// Format Set your preferred format for displaying the value. Changing the format can affect the value and prevent highlighting in Discover.
+	Format *KibanaHTTPAPIsKbnFieldFormat `json:"format,omitempty"`
+
+	// Popularity Adjust the popularity to make the field appear higher or lower in the fields list. By default, Discover orders fields from most selected to least selected.
+	Popularity *KibanaHTTPAPIsKbnRuntimeFieldPopularity `json:"popularity,omitempty"`
+}
+
 // KibanaHTTPAPIsKbnIndexPatternSchema The index pattern (Elasticsearch index expression) to use as the data source. Example: "my-index-*".
 type KibanaHTTPAPIsKbnIndexPatternSchema = string
 
@@ -44945,6 +46296,9 @@ type KibanaHTTPAPIsKbnRuntimeFieldBaseSchema struct {
 	Type KibanaHTTPAPIsKbnRuntimeFieldType `json:"type"`
 }
 
+// KibanaHTTPAPIsKbnRuntimeFieldPopularity Adjust the popularity to make the field appear higher or lower in the fields list. By default, Discover orders fields from most selected to least selected.
+type KibanaHTTPAPIsKbnRuntimeFieldPopularity = float32
+
 // KibanaHTTPAPIsKbnRuntimeFieldSchema defines model for Kibana_HTTP_APIs_kbn-runtime-field-schema.
 type KibanaHTTPAPIsKbnRuntimeFieldSchema struct {
 	// CustomDescription Add a description to the field. It's displayed next to the field on the Discover, Lens, and Data View Management pages.
@@ -44968,6 +46322,86 @@ type KibanaHTTPAPIsKbnRuntimeFieldScript = string
 
 // KibanaHTTPAPIsKbnRuntimeFieldType The type of the runtime field (e.g., "keyword", "long", "date").
 type KibanaHTTPAPIsKbnRuntimeFieldType string
+
+// KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema defines model for Kibana_HTTP_APIs_kbn-saved-composite-runtime-field-schema.
+type KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema struct {
+	Fields map[string]KibanaHTTPAPIsKbnSavedRuntimeFieldBaseSchema `json:"fields"`
+
+	// Script The script that defines the runtime field. This should be a painless script that computes the field value at query time. Runtime fields without a script retrieve values from _source. If the field doesn't exist in _source, a search request returns no value.
+	Script *KibanaHTTPAPIsKbnRuntimeFieldScript                  `json:"script,omitempty"`
+	Type   KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchemaType `json:"type"`
+}
+
+// KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchemaType defines model for KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema.Type.
+type KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchemaType string
+
+// KibanaHTTPAPIsKbnSavedDataViewSpecSchema Defines an stored data source with a mandatory index pattern and optional settings like id, name, show hidden indices and field settings.
+type KibanaHTTPAPIsKbnSavedDataViewSpecSchema struct {
+	// AllowHiddenIndices When `true`, allows the data view to match hidden indices.
+	AllowHiddenIndices *bool `json:"allow_hidden_indices,omitempty"`
+
+	// FieldFilters Field filters can be used to exclude one or more fields when fetching a document. They may contain wildcards, such as `user*` which filters fields starting with 'user'.
+	FieldFilters *KibanaHTTPAPIsKbnFieldFiltersSchema `json:"field_filters,omitempty"`
+
+	// FieldSettings Settings for individual fields, keyed by field name. To change how Kibana displays a field from the backing indices, set its label, description, format, or popularity. To define a runtime field, use the runtime field name and set `type`.
+	FieldSettings *map[string]KibanaHTTPAPIsKbnSavedFieldSettingsEntry `json:"field_settings,omitempty"`
+
+	// Id Kibana provides a unique identifier for each data view, or you can create your own.
+	Id *string `json:"id,omitempty"`
+
+	// IndexPattern The index pattern (Elasticsearch index expression) to use as the data source. Example: "my-index-*".
+	IndexPattern KibanaHTTPAPIsKbnIndexPatternSchema `json:"index_pattern"`
+
+	// Name The name of the data view. Example: "Sample data view".
+	Name *string `json:"name,omitempty"`
+
+	// TimeField The name of the time field in the index. Used for time-based filtering. Example: "@timestamp".
+	TimeField *KibanaHTTPAPIsKbnTimeFieldSchema `json:"time_field,omitempty"`
+}
+
+// KibanaHTTPAPIsKbnSavedFieldSettingsEntry Display overrides for an indexed field, or a runtime field definition when `type` is set to a runtime field kind.
+type KibanaHTTPAPIsKbnSavedFieldSettingsEntry struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsKbnSavedRuntimeFieldBaseSchema defines model for Kibana_HTTP_APIs_kbn-saved-runtime-field-base-schema.
+type KibanaHTTPAPIsKbnSavedRuntimeFieldBaseSchema struct {
+	// CustomDescription Add a description to the field. It's displayed next to the field on the Discover, Lens, and Data View Management pages.
+	CustomDescription *KibanaHTTPAPIsKbnFieldCustomDescription `json:"custom_description,omitempty"`
+
+	// CustomLabel Create a label to display in place of the field name in Discover, Maps, Lens, Visualize, and TSVB. Useful for shortening a long field name. Queries and filters use the original field name.
+	CustomLabel *KibanaHTTPAPIsKbnFieldCustomLabel `json:"custom_label,omitempty"`
+
+	// Format Set your preferred format for displaying the value. Changing the format can affect the value and prevent highlighting in Discover.
+	Format *KibanaHTTPAPIsKbnFieldFormat `json:"format,omitempty"`
+
+	// Popularity Adjust the popularity to make the field appear higher or lower in the fields list. By default, Discover orders fields from most selected to least selected.
+	Popularity *KibanaHTTPAPIsKbnRuntimeFieldPopularity `json:"popularity,omitempty"`
+
+	// Type The type of the runtime field (e.g., "keyword", "long", "date").
+	Type KibanaHTTPAPIsKbnRuntimeFieldType `json:"type"`
+}
+
+// KibanaHTTPAPIsKbnSavedRuntimeFieldSchema defines model for Kibana_HTTP_APIs_kbn-saved-runtime-field-schema.
+type KibanaHTTPAPIsKbnSavedRuntimeFieldSchema struct {
+	// CustomDescription Add a description to the field. It's displayed next to the field on the Discover, Lens, and Data View Management pages.
+	CustomDescription *KibanaHTTPAPIsKbnFieldCustomDescription `json:"custom_description,omitempty"`
+
+	// CustomLabel Create a label to display in place of the field name in Discover, Maps, Lens, Visualize, and TSVB. Useful for shortening a long field name. Queries and filters use the original field name.
+	CustomLabel *KibanaHTTPAPIsKbnFieldCustomLabel `json:"custom_label,omitempty"`
+
+	// Format Set your preferred format for displaying the value. Changing the format can affect the value and prevent highlighting in Discover.
+	Format *KibanaHTTPAPIsKbnFieldFormat `json:"format,omitempty"`
+
+	// Popularity Adjust the popularity to make the field appear higher or lower in the fields list. By default, Discover orders fields from most selected to least selected.
+	Popularity *KibanaHTTPAPIsKbnRuntimeFieldPopularity `json:"popularity,omitempty"`
+
+	// Script The script that defines the runtime field. This should be a painless script that computes the field value at query time. Runtime fields without a script retrieve values from _source. If the field doesn't exist in _source, a search request returns no value.
+	Script *KibanaHTTPAPIsKbnRuntimeFieldScript `json:"script,omitempty"`
+
+	// Type The type of the runtime field (e.g., "keyword", "long", "date").
+	Type KibanaHTTPAPIsKbnRuntimeFieldType `json:"type"`
+}
 
 // KibanaHTTPAPIsKbnTagsAttributes defines model for Kibana_HTTP_APIs_kbn-tags-attributes.
 type KibanaHTTPAPIsKbnTagsAttributes struct {
@@ -47051,6 +48485,9 @@ type KibanaHTTPAPIsNewConnector struct {
 
 	// ConnectorTypeId The type of connector.
 	ConnectorTypeId string `json:"connector_type_id"`
+
+	// IsInboundEventsEnabled When true, this connector can receive inbound events. Only valid for connectors that both send and receive. Defaults to false. Generate the webhook token after create.
+	IsInboundEventsEnabled *bool `json:"is_inbound_events_enabled,omitempty"`
 
 	// Name The display name for the connector.
 	Name    string                              `json:"name"`
@@ -50644,6 +52081,9 @@ type KibanaHTTPAPIsUpdateAgentPolicyRequestBodyMonitoringEnabled string
 type KibanaHTTPAPIsUpdateConnector struct {
 	// Config The connector configuration details.
 	Config *KibanaHTTPAPIsUpdateConnector_Config `json:"config,omitempty"`
+
+	// IsInboundEventsEnabled Turn receiving inbound events on or off. Omit to keep the current setting. Only valid for connectors that both send and receive.
+	IsInboundEventsEnabled *bool `json:"is_inbound_events_enabled,omitempty"`
 
 	// Name The display name for the connector.
 	Name    string                                 `json:"name"`
@@ -71936,37 +73376,37 @@ type SecurityEntityAnalyticsAPIWatchlistObject struct {
 	UpdatedAt *time.Time `json:"updatedAt,omitempty"`
 }
 
-// SecurityExceptionsAPIBlocklistHashOrPathEntry defines model for Security_Exceptions_API_BlocklistHashOrPathEntry.
-type SecurityExceptionsAPIBlocklistHashOrPathEntry struct {
-	// Field File hash or path field
-	Field SecurityExceptionsAPIBlocklistHashOrPathEntryField `json:"field"`
+// SecurityExceptionsAPIBlocklistHashEntry defines model for Security_Exceptions_API_BlocklistHashEntry.
+type SecurityExceptionsAPIBlocklistHashEntry struct {
+	// Field File hash field
+	Field SecurityExceptionsAPIBlocklistHashEntryField `json:"field"`
 
 	// Operator Must be the value "included"
-	Operator SecurityExceptionsAPIBlocklistHashOrPathEntryOperator `json:"operator"`
+	Operator SecurityExceptionsAPIBlocklistHashEntryOperator `json:"operator"`
 
-	// Type Must be match_any for blocklists
-	Type SecurityExceptionsAPIBlocklistHashOrPathEntryType `json:"type"`
+	// Type Must be match_any for blocklist hash entries
+	Type SecurityExceptionsAPIBlocklistHashEntryType `json:"type"`
 
-	// Value Array of hash values or file paths
+	// Value Array of hash values
 	Value []string `json:"value"`
 }
 
-// SecurityExceptionsAPIBlocklistHashOrPathEntryField File hash or path field
-type SecurityExceptionsAPIBlocklistHashOrPathEntryField string
+// SecurityExceptionsAPIBlocklistHashEntryField File hash field
+type SecurityExceptionsAPIBlocklistHashEntryField string
 
-// SecurityExceptionsAPIBlocklistHashOrPathEntryOperator Must be the value "included"
-type SecurityExceptionsAPIBlocklistHashOrPathEntryOperator string
+// SecurityExceptionsAPIBlocklistHashEntryOperator Must be the value "included"
+type SecurityExceptionsAPIBlocklistHashEntryOperator string
 
-// SecurityExceptionsAPIBlocklistHashOrPathEntryType Must be match_any for blocklists
-type SecurityExceptionsAPIBlocklistHashOrPathEntryType string
+// SecurityExceptionsAPIBlocklistHashEntryType Must be match_any for blocklist hash entries
+type SecurityExceptionsAPIBlocklistHashEntryType string
 
 // SecurityExceptionsAPIBlocklistLinuxProperties Blocklist list item properties (Linux, code signature not supported).
 type SecurityExceptionsAPIBlocklistLinuxProperties struct {
 	// Entries **Validation rules:**
 	// * Hash entries: up to 3 (one for each hash type: md5, sha1, sha256)
-	// * Path entry: only 1 allowed
-	Entries *[]SecurityExceptionsAPIBlocklistHashOrPathEntry    `json:"entries,omitempty"`
-	ListId  SecurityExceptionsAPIBlocklistLinuxPropertiesListId `json:"list_id"`
+	// * Path or File Name entry: only 1 allowed
+	Entries *[]SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item `json:"entries,omitempty"`
+	ListId  SecurityExceptionsAPIBlocklistLinuxPropertiesListId           `json:"list_id"`
 
 	// OsTypes Linux-only
 	OsTypes *[]SecurityExceptionsAPIBlocklistLinuxPropertiesOsTypes `json:"os_types,omitempty"`
@@ -71975,6 +73415,11 @@ type SecurityExceptionsAPIBlocklistLinuxProperties struct {
 	// * `"policy:all"` - Global artifact (applies to all Elastic Defend policies)
 	// * `"policy:<policy_id>"` - Private artifact (applies to specific Elastic Defend policy only, where `<policy_id>` is the Elastic Defend integration policy ID)
 	Tags *SecurityExceptionsAPIEndpointArtifactTags `json:"tags,omitempty"`
+}
+
+// SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item defines model for Security_Exceptions_API_BlocklistLinuxProperties.entries.Item.
+type SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item struct {
+	union json.RawMessage
 }
 
 // SecurityExceptionsAPIBlocklistLinuxPropertiesListId defines model for SecurityExceptionsAPIBlocklistLinuxProperties.ListId.
@@ -71987,9 +73432,9 @@ type SecurityExceptionsAPIBlocklistLinuxPropertiesOsTypes string
 type SecurityExceptionsAPIBlocklistMacProperties struct {
 	// Entries **Validation rules:**
 	// * Hash entries: up to 3 (one for each hash type: md5, sha1, sha256)
-	// * Path entry: only 1 allowed
-	Entries *[]SecurityExceptionsAPIBlocklistHashOrPathEntry  `json:"entries,omitempty"`
-	ListId  SecurityExceptionsAPIBlocklistMacPropertiesListId `json:"list_id"`
+	// * Path or File Name entry: only 1 allowed
+	Entries *[]SecurityExceptionsAPIBlocklistMacProperties_Entries_Item `json:"entries,omitempty"`
+	ListId  SecurityExceptionsAPIBlocklistMacPropertiesListId           `json:"list_id"`
 
 	// OsTypes macOS-only
 	OsTypes *[]SecurityExceptionsAPIBlocklistMacPropertiesOsTypes `json:"os_types,omitempty"`
@@ -72000,11 +73445,66 @@ type SecurityExceptionsAPIBlocklistMacProperties struct {
 	Tags *SecurityExceptionsAPIEndpointArtifactTags `json:"tags,omitempty"`
 }
 
+// SecurityExceptionsAPIBlocklistMacProperties_Entries_Item defines model for Security_Exceptions_API_BlocklistMacProperties.entries.Item.
+type SecurityExceptionsAPIBlocklistMacProperties_Entries_Item struct {
+	union json.RawMessage
+}
+
 // SecurityExceptionsAPIBlocklistMacPropertiesListId defines model for SecurityExceptionsAPIBlocklistMacProperties.ListId.
 type SecurityExceptionsAPIBlocklistMacPropertiesListId string
 
 // SecurityExceptionsAPIBlocklistMacPropertiesOsTypes defines model for SecurityExceptionsAPIBlocklistMacProperties.OsTypes.
 type SecurityExceptionsAPIBlocklistMacPropertiesOsTypes string
+
+// SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry defines model for Security_Exceptions_API_BlocklistPathOrFileNameMatchAnyEntry.
+type SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry struct {
+	// Field File path or file name field (available on all OS)
+	Field SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryField `json:"field"`
+
+	// Operator Must be the value "included"
+	Operator SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryOperator `json:"operator"`
+
+	// Type Must be `match_any` ("is one of")
+	Type SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryType `json:"type"`
+
+	// Value Array of values
+	Value []string `json:"value"`
+}
+
+// SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryField File path or file name field (available on all OS)
+type SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryField string
+
+// SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryOperator Must be the value "included"
+type SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryOperator string
+
+// SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryType Must be `match_any` ("is one of")
+type SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntryType string
+
+// SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry defines model for Security_Exceptions_API_BlocklistPathOrFileNameWildcardEntry.
+type SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry struct {
+	// Field File path or file name field (available on all OS). `file.name.caseless` is used for
+	// `wildcard` (Match) entries on Windows and macOS, since both have case-insensitive filesystems.
+	Field SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryField `json:"field"`
+
+	// Operator Must be the value "included"
+	Operator SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryOperator `json:"operator"`
+
+	// Type Must be `wildcard` ("Matches", supports `*` and `?` wildcards)
+	Type SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryType `json:"type"`
+
+	// Value Single value
+	Value string `json:"value"`
+}
+
+// SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryField File path or file name field (available on all OS). `file.name.caseless` is used for
+// `wildcard` (Match) entries on Windows and macOS, since both have case-insensitive filesystems.
+type SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryField string
+
+// SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryOperator Must be the value "included"
+type SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryOperator string
+
+// SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryType Must be `wildcard` ("Matches", supports `*` and `?` wildcards)
+type SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntryType string
 
 // SecurityExceptionsAPIBlocklistWindowsCodeSignatureEntry defines model for Security_Exceptions_API_BlocklistWindowsCodeSignatureEntry.
 type SecurityExceptionsAPIBlocklistWindowsCodeSignatureEntry struct {
@@ -72058,7 +73558,7 @@ type SecurityExceptionsAPIBlocklistWindowsCodeSignatureEntryType string
 type SecurityExceptionsAPIBlocklistWindowsProperties struct {
 	// Entries **Validation rules:**
 	// * Hash entries: up to 3 (one for each hash type: md5, sha1, sha256)
-	// * Path entry: only 1 allowed
+	// * Path or File Name entry: only 1 allowed
 	// * Code signature entry: only 1 allowed
 	Entries *[]SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item `json:"entries,omitempty"`
 	ListId  SecurityExceptionsAPIBlocklistWindowsPropertiesListId           `json:"list_id"`
@@ -72125,8 +73625,8 @@ type SecurityExceptionsAPICreateExceptionListItemBlocklistLinux struct {
 
 	// Entries **Validation rules:**
 	// * Hash entries: up to 3 (one for each hash type: md5, sha1, sha256)
-	// * Path entry: only 1 allowed
-	Entries *[]SecurityExceptionsAPIBlocklistHashOrPathEntry `json:"entries,omitempty"`
+	// * Path or File Name entry: only 1 allowed
+	Entries *[]SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item `json:"entries,omitempty"`
 
 	// ExpireTime The exception item’s expiration date, in ISO format. This field is only available for regular exception items, not endpoint exceptions.
 	ExpireTime *SecurityExceptionsAPIExceptionListItemExpireTime `json:"expire_time,omitempty"`
@@ -72158,6 +73658,11 @@ type SecurityExceptionsAPICreateExceptionListItemBlocklistLinux struct {
 	Type SecurityExceptionsAPIExceptionListItemType `json:"type"`
 }
 
+// SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item defines model for Security_Exceptions_API_CreateExceptionListItemBlocklistLinux.entries.Item.
+type SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item struct {
+	union json.RawMessage
+}
+
 // SecurityExceptionsAPICreateExceptionListItemBlocklistLinuxListId defines model for SecurityExceptionsAPICreateExceptionListItemBlocklistLinux.ListId.
 type SecurityExceptionsAPICreateExceptionListItemBlocklistLinuxListId string
 
@@ -72173,8 +73678,8 @@ type SecurityExceptionsAPICreateExceptionListItemBlocklistMac struct {
 
 	// Entries **Validation rules:**
 	// * Hash entries: up to 3 (one for each hash type: md5, sha1, sha256)
-	// * Path entry: only 1 allowed
-	Entries *[]SecurityExceptionsAPIBlocklistHashOrPathEntry `json:"entries,omitempty"`
+	// * Path or File Name entry: only 1 allowed
+	Entries *[]SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item `json:"entries,omitempty"`
 
 	// ExpireTime The exception item’s expiration date, in ISO format. This field is only available for regular exception items, not endpoint exceptions.
 	ExpireTime *SecurityExceptionsAPIExceptionListItemExpireTime `json:"expire_time,omitempty"`
@@ -72206,6 +73711,11 @@ type SecurityExceptionsAPICreateExceptionListItemBlocklistMac struct {
 	Type SecurityExceptionsAPIExceptionListItemType `json:"type"`
 }
 
+// SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item defines model for Security_Exceptions_API_CreateExceptionListItemBlocklistMac.entries.Item.
+type SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item struct {
+	union json.RawMessage
+}
+
 // SecurityExceptionsAPICreateExceptionListItemBlocklistMacListId defines model for SecurityExceptionsAPICreateExceptionListItemBlocklistMac.ListId.
 type SecurityExceptionsAPICreateExceptionListItemBlocklistMacListId string
 
@@ -72221,7 +73731,7 @@ type SecurityExceptionsAPICreateExceptionListItemBlocklistWindows struct {
 
 	// Entries **Validation rules:**
 	// * Hash entries: up to 3 (one for each hash type: md5, sha1, sha256)
-	// * Path entry: only 1 allowed
+	// * Path or File Name entry: only 1 allowed
 	// * Code signature entry: only 1 allowed
 	Entries *[]SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item `json:"entries,omitempty"`
 
@@ -73804,8 +75314,8 @@ type SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux struct {
 
 	// Entries **Validation rules:**
 	// * Hash entries: up to 3 (one for each hash type: md5, sha1, sha256)
-	// * Path entry: only 1 allowed
-	Entries *[]SecurityExceptionsAPIBlocklistHashOrPathEntry `json:"entries,omitempty"`
+	// * Path or File Name entry: only 1 allowed
+	Entries *[]SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item `json:"entries,omitempty"`
 
 	// ExpireTime The exception item’s expiration date, in ISO format. This field is only available for regular exception items, not endpoint exceptions.
 	ExpireTime *SecurityExceptionsAPIExceptionListItemExpireTime `json:"expire_time,omitempty"`
@@ -73840,6 +75350,11 @@ type SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux struct {
 	Type SecurityExceptionsAPIExceptionListItemType `json:"type"`
 }
 
+// SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item defines model for Security_Exceptions_API_UpdateExceptionListItemBlocklistLinux.entries.Item.
+type SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item struct {
+	union json.RawMessage
+}
+
 // SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinuxListId defines model for SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux.ListId.
 type SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinuxListId string
 
@@ -73857,8 +75372,8 @@ type SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac struct {
 
 	// Entries **Validation rules:**
 	// * Hash entries: up to 3 (one for each hash type: md5, sha1, sha256)
-	// * Path entry: only 1 allowed
-	Entries *[]SecurityExceptionsAPIBlocklistHashOrPathEntry `json:"entries,omitempty"`
+	// * Path or File Name entry: only 1 allowed
+	Entries *[]SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item `json:"entries,omitempty"`
 
 	// ExpireTime The exception item’s expiration date, in ISO format. This field is only available for regular exception items, not endpoint exceptions.
 	ExpireTime *SecurityExceptionsAPIExceptionListItemExpireTime `json:"expire_time,omitempty"`
@@ -73893,6 +75408,11 @@ type SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac struct {
 	Type SecurityExceptionsAPIExceptionListItemType `json:"type"`
 }
 
+// SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item defines model for Security_Exceptions_API_UpdateExceptionListItemBlocklistMac.entries.Item.
+type SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item struct {
+	union json.RawMessage
+}
+
 // SecurityExceptionsAPIUpdateExceptionListItemBlocklistMacListId defines model for SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac.ListId.
 type SecurityExceptionsAPIUpdateExceptionListItemBlocklistMacListId string
 
@@ -73910,7 +75430,7 @@ type SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows struct {
 
 	// Entries **Validation rules:**
 	// * Hash entries: up to 3 (one for each hash type: md5, sha1, sha256)
-	// * Path entry: only 1 allowed
+	// * Path or File Name entry: only 1 allowed
 	// * Code signature entry: only 1 allowed
 	Entries *[]SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item `json:"entries,omitempty"`
 
@@ -79879,6 +81399,15 @@ type GetActionsConnectorTypesParams struct {
 	FeatureId *string `form:"feature_id,omitempty" json:"feature_id,omitempty"`
 }
 
+// PostActionsEventsConnectorTypeIdConnectorIdJSONBody defines parameters for PostActionsEventsConnectorTypeIdConnectorId.
+type PostActionsEventsConnectorTypeIdConnectorIdJSONBody = interface{}
+
+// PostActionsEventsConnectorTypeIdConnectorIdParams defines parameters for PostActionsEventsConnectorTypeIdConnectorId.
+type PostActionsEventsConnectorTypeIdConnectorIdParams struct {
+	// Token Connector ingest token. Prefer `Authorization: Bearer <token>`. Query `token` is only used when the Authorization header is absent.
+	Token *string `form:"token,omitempty" json:"token,omitempty"`
+}
+
 // PostAgentBuilderA2aAgentidJSONBody defines parameters for PostAgentBuilderA2aAgentid.
 type PostAgentBuilderA2aAgentidJSONBody = interface{}
 
@@ -82313,6 +83842,60 @@ type UpdateRuntimeFieldDefaultJSONBody struct {
 	RuntimeField map[string]interface{} `json:"runtimeField"`
 }
 
+// GetDataViewsV2Params defines parameters for GetDataViewsV2.
+type GetDataViewsV2Params struct {
+	// Page The page of results to return.
+	Page *float32 `form:"page,omitempty" json:"page,omitempty"`
+
+	// PerPage The number of results to return per page.
+	PerPage *float32 `form:"per_page,omitempty" json:"per_page,omitempty"`
+
+	// Query Filters results by `name` and `index_pattern` using Elasticsearch [`simple_query_string`](https://www.elastic.co/docs/reference/query-languages/query-dsl/query-dsl-simple-query-string-query) syntax.
+	Query *string `form:"query,omitempty" json:"query,omitempty"`
+}
+
+// PostDataViewsV2JSONBody defines parameters for PostDataViewsV2.
+type PostDataViewsV2JSONBody struct {
+	// AllowHiddenIndices When `true`, allows the data view to match hidden indices.
+	AllowHiddenIndices *bool `json:"allow_hidden_indices,omitempty"`
+
+	// FieldFilters Field filters can be used to exclude one or more fields when fetching a document. They may contain wildcards, such as `user*` which filters fields starting with 'user'.
+	FieldFilters *KibanaHTTPAPIsKbnFieldFiltersSchema `json:"field_filters,omitempty"`
+
+	// FieldSettings Settings for individual fields, keyed by field name. To change how Kibana displays a field from the backing indices, set its label, description, format, or popularity. To define a runtime field, use the runtime field name and set `type`.
+	FieldSettings *map[string]KibanaHTTPAPIsKbnSavedFieldSettingsEntry `json:"field_settings,omitempty"`
+
+	// IndexPattern The index pattern (Elasticsearch index expression) to use as the data source. Example: "my-index-*".
+	IndexPattern KibanaHTTPAPIsKbnIndexPatternSchema `json:"index_pattern"`
+
+	// Name The name of the data view. Example: "Sample data view".
+	Name *string `json:"name,omitempty"`
+
+	// TimeField The name of the time field in the index. Used for time-based filtering. Example: "@timestamp".
+	TimeField *KibanaHTTPAPIsKbnTimeFieldSchema `json:"time_field,omitempty"`
+}
+
+// PutDataViewsV2IdJSONBody defines parameters for PutDataViewsV2Id.
+type PutDataViewsV2IdJSONBody struct {
+	// AllowHiddenIndices When `true`, allows the data view to match hidden indices.
+	AllowHiddenIndices *bool `json:"allow_hidden_indices,omitempty"`
+
+	// FieldFilters Field filters can be used to exclude one or more fields when fetching a document. They may contain wildcards, such as `user*` which filters fields starting with 'user'.
+	FieldFilters *KibanaHTTPAPIsKbnFieldFiltersSchema `json:"field_filters,omitempty"`
+
+	// FieldSettings Settings for individual fields, keyed by field name. To change how Kibana displays a field from the backing indices, set its label, description, format, or popularity. To define a runtime field, use the runtime field name and set `type`.
+	FieldSettings *map[string]KibanaHTTPAPIsKbnSavedFieldSettingsEntry `json:"field_settings,omitempty"`
+
+	// IndexPattern The index pattern (Elasticsearch index expression) to use as the data source. Example: "my-index-*".
+	IndexPattern KibanaHTTPAPIsKbnIndexPatternSchema `json:"index_pattern"`
+
+	// Name The name of the data view. Example: "Sample data view".
+	Name *string `json:"name,omitempty"`
+
+	// TimeField The name of the time field in the index. Used for time-based filtering. Example: "@timestamp".
+	TimeField *KibanaHTTPAPIsKbnTimeFieldSchema `json:"time_field,omitempty"`
+}
+
 // SetAttacksAssignees400JSONResponseBody defines parameters for SetAttacksAssignees.
 type SetAttacksAssignees400JSONResponseBody struct {
 	union json.RawMessage
@@ -83844,6 +85427,35 @@ type SetAlertsStatus400JSONResponseBody struct {
 
 // SetAlertTags400JSONResponseBody defines parameters for SetAlertTags.
 type SetAlertTags400JSONResponseBody struct {
+	union json.RawMessage
+}
+
+// SearchDiscoverSessionsParams defines parameters for SearchDiscoverSessions.
+type SearchDiscoverSessionsParams struct {
+	// Page The page of results to return.
+	Page *float32 `form:"page,omitempty" json:"page,omitempty"`
+
+	// PerPage The number of results to return per page.
+	PerPage *float32 `form:"per_page,omitempty" json:"per_page,omitempty"`
+
+	// Query Full-text search (`simple_query_string`) over `title` and `description`. All terms must match.
+	Query *string `form:"query,omitempty" json:"query,omitempty"`
+
+	// Tags A tag ID to include. Accepts a single tag ID or multiple tag IDs. When multiple are specified, Discover sessions matching any of the tag IDs are included.
+	Tags *[]string `form:"tags,omitempty" json:"tags,omitempty"`
+
+	// ExcludedTags A tag ID to exclude. Accepts a single tag ID or multiple tag IDs. When multiple are specified, Discover sessions matching any of the tag IDs are excluded.
+	ExcludedTags *[]string `form:"excluded_tags,omitempty" json:"excluded_tags,omitempty"`
+
+	// TagNames A tag name to include. Accepts a single tag name or multiple tag names. When multiple are specified, Discover sessions matching any of the tag names are included. If the same name is shared by multiple tags, sessions matching any of those tags are included.
+	TagNames *[]string `form:"tag_names,omitempty" json:"tag_names,omitempty"`
+
+	// ExcludedTagNames A tag name to exclude. Accepts a single tag name or multiple tag names. When multiple are specified, Discover sessions matching any of the tag names are excluded. If the same name is shared by multiple tags, sessions matching any of those tags are excluded.
+	ExcludedTagNames *[]string `form:"excluded_tag_names,omitempty" json:"excluded_tag_names,omitempty"`
+}
+
+// GetDiscoverSession200JSONResponseBody_Warnings_Item defines parameters for GetDiscoverSession.
+type GetDiscoverSession200JSONResponseBody_Warnings_Item struct {
 	union json.RawMessage
 }
 
@@ -92469,7 +94081,7 @@ type PutStreamsNameQueryJSONBody struct {
 // PostStreamsNameContentExportJSONBody defines parameters for PostStreamsNameContentExport.
 type PostStreamsNameContentExportJSONBody struct {
 	Description string                       `json:"description"`
-	Include     KibanaHTTPAPIsZodV456Schema0 `json:"include"`
+	Include     KibanaHTTPAPIsZodV463Schema0 `json:"include"`
 	Name        string                       `json:"name"`
 	Version     string                       `json:"version"`
 }
@@ -93977,6 +95589,9 @@ type GetDefinitionsOpParams struct {
 // PostActionsConnectorIdExecuteJSONRequestBody defines body for PostActionsConnectorIdExecute for application/json ContentType.
 type PostActionsConnectorIdExecuteJSONRequestBody = KibanaHTTPAPIsConnectorExecuteRequest
 
+// PostActionsEventsConnectorTypeIdConnectorIdJSONRequestBody defines body for PostActionsEventsConnectorTypeIdConnectorId for application/json ContentType.
+type PostActionsEventsConnectorTypeIdConnectorIdJSONRequestBody = PostActionsEventsConnectorTypeIdConnectorIdJSONBody
+
 // PostAgentBuilderA2aAgentidJSONRequestBody defines body for PostAgentBuilderA2aAgentid for application/json ContentType.
 type PostAgentBuilderA2aAgentidJSONRequestBody = PostAgentBuilderA2aAgentidJSONBody
 
@@ -94161,7 +95776,7 @@ type PostAlertingV2RulesUpdateApiKeyByQueryJSONRequestBody = KibanaHTTPAPIsAlert
 type PatchAlertingV2RulesIdJSONRequestBody = KibanaHTTPAPIsAlertingUpdateRule
 
 // PutAlertingV2RulesIdJSONRequestBody defines body for PutAlertingV2RulesId for application/json ContentType.
-type PutAlertingV2RulesIdJSONRequestBody = KibanaHTTPAPIsAlertingNewRule
+type PutAlertingV2RulesIdJSONRequestBody = KibanaHTTPAPIsAlertingPutRule
 
 // CreateAgentKeyJSONRequestBody defines body for CreateAgentKey for application/json ContentType.
 type CreateAgentKeyJSONRequestBody = APMUIAgentKeysObject
@@ -94283,6 +95898,12 @@ type SwapDataViewsDefaultJSONRequestBody = DataViewsSwapDataViewRequestObject
 // PreviewSwapDataViewsDefaultJSONRequestBody defines body for PreviewSwapDataViewsDefault for application/json ContentType.
 type PreviewSwapDataViewsDefaultJSONRequestBody = DataViewsSwapDataViewRequestObject
 
+// PostDataViewsV2JSONRequestBody defines body for PostDataViewsV2 for application/json ContentType.
+type PostDataViewsV2JSONRequestBody PostDataViewsV2JSONBody
+
+// PutDataViewsV2IdJSONRequestBody defines body for PutDataViewsV2Id for application/json ContentType.
+type PutDataViewsV2IdJSONRequestBody PutDataViewsV2IdJSONBody
+
 // SetAttacksAssigneesJSONRequestBody defines body for SetAttacksAssignees for application/json ContentType.
 type SetAttacksAssigneesJSONRequestBody = SecurityDetectionsAPISetAttacksAssigneesByIds
 
@@ -94330,6 +95951,12 @@ type SetAlertsStatusJSONRequestBody SetAlertsStatusJSONBody
 
 // SetAlertTagsJSONRequestBody defines body for SetAlertTags for application/json ContentType.
 type SetAlertTagsJSONRequestBody = SecurityDetectionsAPISetAlertTagsBody
+
+// CreateDiscoverSessionJSONRequestBody defines body for CreateDiscoverSession for application/json ContentType.
+type CreateDiscoverSessionJSONRequestBody = KibanaHTTPAPIsKbnDiscoverSessionData
+
+// UpsertDiscoverSessionJSONRequestBody defines body for UpsertDiscoverSession for application/json ContentType.
+type UpsertDiscoverSessionJSONRequestBody = KibanaHTTPAPIsKbnDiscoverSessionData
 
 // CancelActionJSONRequestBody defines body for CancelAction for application/json ContentType.
 type CancelActionJSONRequestBody = SecurityEndpointManagementAPICancelRouteRequestBody
@@ -99098,6 +100725,74 @@ func (a KibanaHTTPAPIsGetPackageInfo_VarGroups_Item) MarshalJSON() ([]byte, erro
 	object["title"], err = json.Marshal(a.Title)
 	if err != nil {
 		return nil, fmt.Errorf("error marshaling 'title': %w", err)
+	}
+
+	for fieldName, field := range a.AdditionalProperties {
+		object[fieldName], err = json.Marshal(field)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling '%s': %w", fieldName, err)
+		}
+	}
+	return json.Marshal(object)
+}
+
+// Getter for additional properties for KibanaHTTPAPIsIngestEventsAckResponse1. Returns the specified
+// element and whether it was found
+func (a KibanaHTTPAPIsIngestEventsAckResponse1) Get(fieldName string) (value interface{}, found bool) {
+	if a.AdditionalProperties != nil {
+		value, found = a.AdditionalProperties[fieldName]
+	}
+	return
+}
+
+// Setter for additional properties for KibanaHTTPAPIsIngestEventsAckResponse1
+func (a *KibanaHTTPAPIsIngestEventsAckResponse1) Set(fieldName string, value interface{}) {
+	if a.AdditionalProperties == nil {
+		a.AdditionalProperties = make(map[string]interface{})
+	}
+	a.AdditionalProperties[fieldName] = value
+}
+
+// Override default JSON handling for KibanaHTTPAPIsIngestEventsAckResponse1 to handle AdditionalProperties
+func (a *KibanaHTTPAPIsIngestEventsAckResponse1) UnmarshalJSON(b []byte) error {
+	object := make(map[string]json.RawMessage)
+	err := json.Unmarshal(b, &object)
+	if err != nil {
+		return err
+	}
+
+	if raw, found := object["challenge"]; found {
+		err = json.Unmarshal(raw, &a.Challenge)
+		if err != nil {
+			return fmt.Errorf("error reading 'challenge': %w", err)
+		}
+		delete(object, "challenge")
+	}
+
+	if len(object) != 0 {
+		a.AdditionalProperties = make(map[string]interface{})
+		for fieldName, fieldBuf := range object {
+			var fieldVal interface{}
+			err := json.Unmarshal(fieldBuf, &fieldVal)
+			if err != nil {
+				return fmt.Errorf("error unmarshaling field %s: %w", fieldName, err)
+			}
+			a.AdditionalProperties[fieldName] = fieldVal
+		}
+	}
+	return nil
+}
+
+// Override default JSON handling for KibanaHTTPAPIsIngestEventsAckResponse1 to handle AdditionalProperties
+func (a KibanaHTTPAPIsIngestEventsAckResponse1) MarshalJSON() ([]byte, error) {
+	var err error
+	object := make(map[string]json.RawMessage)
+
+	if a.Challenge != nil {
+		object["challenge"], err = json.Marshal(a.Challenge)
+		if err != nil {
+			return nil, fmt.Errorf("error marshaling 'challenge': %w", err)
+		}
 	}
 
 	for fieldName, field := range a.AdditionalProperties {
@@ -121742,22 +123437,22 @@ func (t *KibanaHTTPAPIsWiredStreamUpsertRequest_Stream_Ingest_Settings_IndexRefr
 	return err
 }
 
-// AsKibanaHTTPAPIsZodV456Schema00 returns the union data inside the KibanaHTTPAPIsZodV456Schema0 as a KibanaHTTPAPIsZodV456Schema00
-func (t KibanaHTTPAPIsZodV456Schema0) AsKibanaHTTPAPIsZodV456Schema00() (KibanaHTTPAPIsZodV456Schema00, error) {
-	var body KibanaHTTPAPIsZodV456Schema00
+// AsKibanaHTTPAPIsZodV463Schema00 returns the union data inside the KibanaHTTPAPIsZodV463Schema0 as a KibanaHTTPAPIsZodV463Schema00
+func (t KibanaHTTPAPIsZodV463Schema0) AsKibanaHTTPAPIsZodV463Schema00() (KibanaHTTPAPIsZodV463Schema00, error) {
+	var body KibanaHTTPAPIsZodV463Schema00
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromKibanaHTTPAPIsZodV456Schema00 overwrites any union data inside the KibanaHTTPAPIsZodV456Schema0 as the provided KibanaHTTPAPIsZodV456Schema00
-func (t *KibanaHTTPAPIsZodV456Schema0) FromKibanaHTTPAPIsZodV456Schema00(v KibanaHTTPAPIsZodV456Schema00) error {
+// FromKibanaHTTPAPIsZodV463Schema00 overwrites any union data inside the KibanaHTTPAPIsZodV463Schema0 as the provided KibanaHTTPAPIsZodV463Schema00
+func (t *KibanaHTTPAPIsZodV463Schema0) FromKibanaHTTPAPIsZodV463Schema00(v KibanaHTTPAPIsZodV463Schema00) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeKibanaHTTPAPIsZodV456Schema00 performs a merge with any union data inside the KibanaHTTPAPIsZodV456Schema0, using the provided KibanaHTTPAPIsZodV456Schema00
-func (t *KibanaHTTPAPIsZodV456Schema0) MergeKibanaHTTPAPIsZodV456Schema00(v KibanaHTTPAPIsZodV456Schema00) error {
+// MergeKibanaHTTPAPIsZodV463Schema00 performs a merge with any union data inside the KibanaHTTPAPIsZodV463Schema0, using the provided KibanaHTTPAPIsZodV463Schema00
+func (t *KibanaHTTPAPIsZodV463Schema0) MergeKibanaHTTPAPIsZodV463Schema00(v KibanaHTTPAPIsZodV463Schema00) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -121768,22 +123463,22 @@ func (t *KibanaHTTPAPIsZodV456Schema0) MergeKibanaHTTPAPIsZodV456Schema00(v Kiba
 	return err
 }
 
-// AsKibanaHTTPAPIsZodV456Schema01 returns the union data inside the KibanaHTTPAPIsZodV456Schema0 as a KibanaHTTPAPIsZodV456Schema01
-func (t KibanaHTTPAPIsZodV456Schema0) AsKibanaHTTPAPIsZodV456Schema01() (KibanaHTTPAPIsZodV456Schema01, error) {
-	var body KibanaHTTPAPIsZodV456Schema01
+// AsKibanaHTTPAPIsZodV463Schema01 returns the union data inside the KibanaHTTPAPIsZodV463Schema0 as a KibanaHTTPAPIsZodV463Schema01
+func (t KibanaHTTPAPIsZodV463Schema0) AsKibanaHTTPAPIsZodV463Schema01() (KibanaHTTPAPIsZodV463Schema01, error) {
+	var body KibanaHTTPAPIsZodV463Schema01
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromKibanaHTTPAPIsZodV456Schema01 overwrites any union data inside the KibanaHTTPAPIsZodV456Schema0 as the provided KibanaHTTPAPIsZodV456Schema01
-func (t *KibanaHTTPAPIsZodV456Schema0) FromKibanaHTTPAPIsZodV456Schema01(v KibanaHTTPAPIsZodV456Schema01) error {
+// FromKibanaHTTPAPIsZodV463Schema01 overwrites any union data inside the KibanaHTTPAPIsZodV463Schema0 as the provided KibanaHTTPAPIsZodV463Schema01
+func (t *KibanaHTTPAPIsZodV463Schema0) FromKibanaHTTPAPIsZodV463Schema01(v KibanaHTTPAPIsZodV463Schema01) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeKibanaHTTPAPIsZodV456Schema01 performs a merge with any union data inside the KibanaHTTPAPIsZodV456Schema0, using the provided KibanaHTTPAPIsZodV456Schema01
-func (t *KibanaHTTPAPIsZodV456Schema0) MergeKibanaHTTPAPIsZodV456Schema01(v KibanaHTTPAPIsZodV456Schema01) error {
+// MergeKibanaHTTPAPIsZodV463Schema01 performs a merge with any union data inside the KibanaHTTPAPIsZodV463Schema0, using the provided KibanaHTTPAPIsZodV463Schema01
+func (t *KibanaHTTPAPIsZodV463Schema0) MergeKibanaHTTPAPIsZodV463Schema01(v KibanaHTTPAPIsZodV463Schema01) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -121794,12 +123489,12 @@ func (t *KibanaHTTPAPIsZodV456Schema0) MergeKibanaHTTPAPIsZodV456Schema01(v Kiba
 	return err
 }
 
-func (t KibanaHTTPAPIsZodV456Schema0) MarshalJSON() ([]byte, error) {
+func (t KibanaHTTPAPIsZodV463Schema0) MarshalJSON() ([]byte, error) {
 	b, err := t.union.MarshalJSON()
 	return b, err
 }
 
-func (t *KibanaHTTPAPIsZodV456Schema0) UnmarshalJSON(b []byte) error {
+func (t *KibanaHTTPAPIsZodV463Schema0) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -126838,6 +128533,68 @@ func (t *KibanaHTTPAPIsIndexThresholdCreateRuleBodyAlerting_Params_Index) Unmars
 	return err
 }
 
+// AsKibanaHTTPAPIsIngestEventsAckResponse0 returns the union data inside the KibanaHTTPAPIsIngestEventsAckResponse as a KibanaHTTPAPIsIngestEventsAckResponse0
+func (t KibanaHTTPAPIsIngestEventsAckResponse) AsKibanaHTTPAPIsIngestEventsAckResponse0() (KibanaHTTPAPIsIngestEventsAckResponse0, error) {
+	var body KibanaHTTPAPIsIngestEventsAckResponse0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsIngestEventsAckResponse0 overwrites any union data inside the KibanaHTTPAPIsIngestEventsAckResponse as the provided KibanaHTTPAPIsIngestEventsAckResponse0
+func (t *KibanaHTTPAPIsIngestEventsAckResponse) FromKibanaHTTPAPIsIngestEventsAckResponse0(v KibanaHTTPAPIsIngestEventsAckResponse0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsIngestEventsAckResponse0 performs a merge with any union data inside the KibanaHTTPAPIsIngestEventsAckResponse, using the provided KibanaHTTPAPIsIngestEventsAckResponse0
+func (t *KibanaHTTPAPIsIngestEventsAckResponse) MergeKibanaHTTPAPIsIngestEventsAckResponse0(v KibanaHTTPAPIsIngestEventsAckResponse0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsIngestEventsAckResponse1 returns the union data inside the KibanaHTTPAPIsIngestEventsAckResponse as a KibanaHTTPAPIsIngestEventsAckResponse1
+func (t KibanaHTTPAPIsIngestEventsAckResponse) AsKibanaHTTPAPIsIngestEventsAckResponse1() (KibanaHTTPAPIsIngestEventsAckResponse1, error) {
+	var body KibanaHTTPAPIsIngestEventsAckResponse1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsIngestEventsAckResponse1 overwrites any union data inside the KibanaHTTPAPIsIngestEventsAckResponse as the provided KibanaHTTPAPIsIngestEventsAckResponse1
+func (t *KibanaHTTPAPIsIngestEventsAckResponse) FromKibanaHTTPAPIsIngestEventsAckResponse1(v KibanaHTTPAPIsIngestEventsAckResponse1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsIngestEventsAckResponse1 performs a merge with any union data inside the KibanaHTTPAPIsIngestEventsAckResponse, using the provided KibanaHTTPAPIsIngestEventsAckResponse1
+func (t *KibanaHTTPAPIsIngestEventsAckResponse) MergeKibanaHTTPAPIsIngestEventsAckResponse1(v KibanaHTTPAPIsIngestEventsAckResponse1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsIngestEventsAckResponse) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsIngestEventsAckResponse) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsKibanaHTTPAPIsKibanaAssetReference returns the union data inside the KibanaHTTPAPIsInstallPackageResponse_Items_Item as a KibanaHTTPAPIsKibanaAssetReference
 func (t KibanaHTTPAPIsInstallPackageResponse_Items_Item) AsKibanaHTTPAPIsKibanaAssetReference() (KibanaHTTPAPIsKibanaAssetReference, error) {
 	var body KibanaHTTPAPIsKibanaAssetReference
@@ -130153,6 +131910,644 @@ func (t *KibanaHTTPAPIsKbnDashboardPanelTypeVis_Config) UnmarshalJSON(b []byte) 
 	return err
 }
 
+// AsKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config as a KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues
+func (t KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config) AsKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues() (KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues, error) {
+	var body KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config as the provided KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues
+func (t *KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config) FromKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(v KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues) error {
+	v.ControlType = "STATIC_VALUES"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config, using the provided KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues
+func (t *KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config) MergeKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues(v KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues) error {
+	v.ControlType = "STATIC_VALUES"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config as a KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery
+func (t KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config) AsKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery() (KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery, error) {
+	var body KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config as the provided KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery
+func (t *KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config) FromKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery(v KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery) error {
+	v.ControlType = "VALUES_FROM_QUERY"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config, using the provided KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery
+func (t *KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config) MergeKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery(v KibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery) error {
+	v.ControlType = "VALUES_FROM_QUERY"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"control_type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "STATIC_VALUES":
+		return t.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaStaticValues()
+	case "VALUES_FROM_QUERY":
+		return t.AsKibanaHTTPAPIsKbnControlsSchemasOptionsListEsqlControlSchemaValuesFromQuery()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsKbnDiscoverSessionApiEsqlControlPanel_Config) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDataViewReferenceSchema returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource as a KibanaHTTPAPIsKbnDataViewReferenceSchema
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource) AsKibanaHTTPAPIsKbnDataViewReferenceSchema() (KibanaHTTPAPIsKbnDataViewReferenceSchema, error) {
+	var body KibanaHTTPAPIsKbnDataViewReferenceSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDataViewReferenceSchema overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource as the provided KibanaHTTPAPIsKbnDataViewReferenceSchema
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource) FromKibanaHTTPAPIsKbnDataViewReferenceSchema(v KibanaHTTPAPIsKbnDataViewReferenceSchema) error {
+	v.Type = "data_view_reference"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDataViewReferenceSchema performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource, using the provided KibanaHTTPAPIsKbnDataViewReferenceSchema
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource) MergeKibanaHTTPAPIsKbnDataViewReferenceSchema(v KibanaHTTPAPIsKbnDataViewReferenceSchema) error {
+	v.Type = "data_view_reference"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDataViewSpecSchema returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource as a KibanaHTTPAPIsKbnDataViewSpecSchema
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource) AsKibanaHTTPAPIsKbnDataViewSpecSchema() (KibanaHTTPAPIsKbnDataViewSpecSchema, error) {
+	var body KibanaHTTPAPIsKbnDataViewSpecSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDataViewSpecSchema overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource as the provided KibanaHTTPAPIsKbnDataViewSpecSchema
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource) FromKibanaHTTPAPIsKbnDataViewSpecSchema(v KibanaHTTPAPIsKbnDataViewSpecSchema) error {
+	v.Type = "data_view_spec"
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDataViewSpecSchema performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource, using the provided KibanaHTTPAPIsKbnDataViewSpecSchema
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource) MergeKibanaHTTPAPIsKbnDataViewSpecSchema(v KibanaHTTPAPIsKbnDataViewSpecSchema) error {
+	v.Type = "data_view_spec"
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource) Discriminator() (string, error) {
+	var discriminator struct {
+		Discriminator string `json:"type"`
+	}
+	err := json.Unmarshal(t.union, &discriminator)
+	return discriminator.Discriminator, err
+}
+
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource) ValueByDiscriminator() (interface{}, error) {
+	discriminator, err := t.Discriminator()
+	if err != nil {
+		return nil, err
+	}
+	switch discriminator {
+	case "data_view_reference":
+		return t.AsKibanaHTTPAPIsKbnDataViewReferenceSchema()
+	case "data_view_spec":
+		return t.AsKibanaHTTPAPIsKbnDataViewSpecSchema()
+	default:
+		return nil, errors.New("unknown discriminator value: " + discriminator)
+	}
+}
+
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_DataSource) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs0HeaderRowHeight1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_HeaderRowHeight) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs0RowHeight1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_0_RowHeight) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs1HeaderRowHeight1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_HeaderRowHeight) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs1RowHeight1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_1_RowHeight) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HeaderRowHeight1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_RowHeight) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs0 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs0
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs0() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs0, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs0 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs0 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs0
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs0(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs1 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs1
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs1() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs1, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs1 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs1 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs1
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs1(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs2 returns the union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item as a KibanaHTTPAPIsKbnDiscoverSessionDataTabs2
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item) AsKibanaHTTPAPIsKbnDiscoverSessionDataTabs2() (KibanaHTTPAPIsKbnDiscoverSessionDataTabs2, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDataTabs2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs2 overwrites any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item as the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs2
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item) FromKibanaHTTPAPIsKbnDiscoverSessionDataTabs2(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs2 performs a merge with any union data inside the KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item, using the provided KibanaHTTPAPIsKbnDiscoverSessionDataTabs2
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item) MergeKibanaHTTPAPIsKbnDiscoverSessionDataTabs2(v KibanaHTTPAPIsKbnDiscoverSessionDataTabs2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsKibanaHTTPAPIsKbnFieldFormatBoolean returns the union data inside the KibanaHTTPAPIsKbnFieldFormat as a KibanaHTTPAPIsKbnFieldFormatBoolean
 func (t KibanaHTTPAPIsKbnFieldFormat) AsKibanaHTTPAPIsKbnFieldFormatBoolean() (KibanaHTTPAPIsKbnFieldFormatBoolean, error) {
 	var body KibanaHTTPAPIsKbnFieldFormatBoolean
@@ -130891,6 +133286,94 @@ func (t KibanaHTTPAPIsKbnFieldSettingsEntry) MarshalJSON() ([]byte, error) {
 }
 
 func (t *KibanaHTTPAPIsKbnFieldSettingsEntry) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema returns the union data inside the KibanaHTTPAPIsKbnSavedFieldSettingsEntry as a KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema
+func (t KibanaHTTPAPIsKbnSavedFieldSettingsEntry) AsKibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema() (KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema, error) {
+	var body KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema overwrites any union data inside the KibanaHTTPAPIsKbnSavedFieldSettingsEntry as the provided KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema
+func (t *KibanaHTTPAPIsKbnSavedFieldSettingsEntry) FromKibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema(v KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema performs a merge with any union data inside the KibanaHTTPAPIsKbnSavedFieldSettingsEntry, using the provided KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema
+func (t *KibanaHTTPAPIsKbnSavedFieldSettingsEntry) MergeKibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema(v KibanaHTTPAPIsKbnSavedCompositeRuntimeFieldSchema) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnSavedRuntimeFieldSchema returns the union data inside the KibanaHTTPAPIsKbnSavedFieldSettingsEntry as a KibanaHTTPAPIsKbnSavedRuntimeFieldSchema
+func (t KibanaHTTPAPIsKbnSavedFieldSettingsEntry) AsKibanaHTTPAPIsKbnSavedRuntimeFieldSchema() (KibanaHTTPAPIsKbnSavedRuntimeFieldSchema, error) {
+	var body KibanaHTTPAPIsKbnSavedRuntimeFieldSchema
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnSavedRuntimeFieldSchema overwrites any union data inside the KibanaHTTPAPIsKbnSavedFieldSettingsEntry as the provided KibanaHTTPAPIsKbnSavedRuntimeFieldSchema
+func (t *KibanaHTTPAPIsKbnSavedFieldSettingsEntry) FromKibanaHTTPAPIsKbnSavedRuntimeFieldSchema(v KibanaHTTPAPIsKbnSavedRuntimeFieldSchema) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnSavedRuntimeFieldSchema performs a merge with any union data inside the KibanaHTTPAPIsKbnSavedFieldSettingsEntry, using the provided KibanaHTTPAPIsKbnSavedRuntimeFieldSchema
+func (t *KibanaHTTPAPIsKbnSavedFieldSettingsEntry) MergeKibanaHTTPAPIsKbnSavedRuntimeFieldSchema(v KibanaHTTPAPIsKbnSavedRuntimeFieldSchema) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnFieldSettingsWithPopularity returns the union data inside the KibanaHTTPAPIsKbnSavedFieldSettingsEntry as a KibanaHTTPAPIsKbnFieldSettingsWithPopularity
+func (t KibanaHTTPAPIsKbnSavedFieldSettingsEntry) AsKibanaHTTPAPIsKbnFieldSettingsWithPopularity() (KibanaHTTPAPIsKbnFieldSettingsWithPopularity, error) {
+	var body KibanaHTTPAPIsKbnFieldSettingsWithPopularity
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnFieldSettingsWithPopularity overwrites any union data inside the KibanaHTTPAPIsKbnSavedFieldSettingsEntry as the provided KibanaHTTPAPIsKbnFieldSettingsWithPopularity
+func (t *KibanaHTTPAPIsKbnSavedFieldSettingsEntry) FromKibanaHTTPAPIsKbnFieldSettingsWithPopularity(v KibanaHTTPAPIsKbnFieldSettingsWithPopularity) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnFieldSettingsWithPopularity performs a merge with any union data inside the KibanaHTTPAPIsKbnSavedFieldSettingsEntry, using the provided KibanaHTTPAPIsKbnFieldSettingsWithPopularity
+func (t *KibanaHTTPAPIsKbnSavedFieldSettingsEntry) MergeKibanaHTTPAPIsKbnFieldSettingsWithPopularity(v KibanaHTTPAPIsKbnFieldSettingsWithPopularity) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsKbnSavedFieldSettingsEntry) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsKbnSavedFieldSettingsEntry) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
@@ -159530,6 +162013,182 @@ func (t *SecurityEntityAnalyticsAPIMatcher_Values) UnmarshalJSON(b []byte) error
 	return err
 }
 
+// AsSecurityExceptionsAPIBlocklistHashEntry returns the union data inside the SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item as a SecurityExceptionsAPIBlocklistHashEntry
+func (t SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item) AsSecurityExceptionsAPIBlocklistHashEntry() (SecurityExceptionsAPIBlocklistHashEntry, error) {
+	var body SecurityExceptionsAPIBlocklistHashEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistHashEntry overwrites any union data inside the SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item as the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item) FromSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistHashEntry performs a merge with any union data inside the SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item, using the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item) MergeSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry returns the union data inside the SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry overwrites any union data inside the SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry performs a merge with any union data inside the SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry returns the union data inside the SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry overwrites any union data inside the SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry performs a merge with any union data inside the SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityExceptionsAPIBlocklistLinuxProperties_Entries_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistHashEntry returns the union data inside the SecurityExceptionsAPIBlocklistMacProperties_Entries_Item as a SecurityExceptionsAPIBlocklistHashEntry
+func (t SecurityExceptionsAPIBlocklistMacProperties_Entries_Item) AsSecurityExceptionsAPIBlocklistHashEntry() (SecurityExceptionsAPIBlocklistHashEntry, error) {
+	var body SecurityExceptionsAPIBlocklistHashEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistHashEntry overwrites any union data inside the SecurityExceptionsAPIBlocklistMacProperties_Entries_Item as the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPIBlocklistMacProperties_Entries_Item) FromSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistHashEntry performs a merge with any union data inside the SecurityExceptionsAPIBlocklistMacProperties_Entries_Item, using the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPIBlocklistMacProperties_Entries_Item) MergeSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry returns the union data inside the SecurityExceptionsAPIBlocklistMacProperties_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t SecurityExceptionsAPIBlocklistMacProperties_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry overwrites any union data inside the SecurityExceptionsAPIBlocklistMacProperties_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPIBlocklistMacProperties_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry performs a merge with any union data inside the SecurityExceptionsAPIBlocklistMacProperties_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPIBlocklistMacProperties_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry returns the union data inside the SecurityExceptionsAPIBlocklistMacProperties_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t SecurityExceptionsAPIBlocklistMacProperties_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry overwrites any union data inside the SecurityExceptionsAPIBlocklistMacProperties_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPIBlocklistMacProperties_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry performs a merge with any union data inside the SecurityExceptionsAPIBlocklistMacProperties_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPIBlocklistMacProperties_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityExceptionsAPIBlocklistMacProperties_Entries_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityExceptionsAPIBlocklistMacProperties_Entries_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsSecurityExceptionsAPIBlocklistWindowsCodeSignatureEntryEntriesValue0 returns the union data inside the SecurityExceptionsAPIBlocklistWindowsCodeSignatureEntry_Entries_Value as a SecurityExceptionsAPIBlocklistWindowsCodeSignatureEntryEntriesValue0
 func (t SecurityExceptionsAPIBlocklistWindowsCodeSignatureEntry_Entries_Value) AsSecurityExceptionsAPIBlocklistWindowsCodeSignatureEntryEntriesValue0() (SecurityExceptionsAPIBlocklistWindowsCodeSignatureEntryEntriesValue0, error) {
 	var body SecurityExceptionsAPIBlocklistWindowsCodeSignatureEntryEntriesValue0
@@ -159592,22 +162251,74 @@ func (t *SecurityExceptionsAPIBlocklistWindowsCodeSignatureEntry_Entries_Value) 
 	return err
 }
 
-// AsSecurityExceptionsAPIBlocklistHashOrPathEntry returns the union data inside the SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item as a SecurityExceptionsAPIBlocklistHashOrPathEntry
-func (t SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item) AsSecurityExceptionsAPIBlocklistHashOrPathEntry() (SecurityExceptionsAPIBlocklistHashOrPathEntry, error) {
-	var body SecurityExceptionsAPIBlocklistHashOrPathEntry
+// AsSecurityExceptionsAPIBlocklistHashEntry returns the union data inside the SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item as a SecurityExceptionsAPIBlocklistHashEntry
+func (t SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item) AsSecurityExceptionsAPIBlocklistHashEntry() (SecurityExceptionsAPIBlocklistHashEntry, error) {
+	var body SecurityExceptionsAPIBlocklistHashEntry
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromSecurityExceptionsAPIBlocklistHashOrPathEntry overwrites any union data inside the SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item as the provided SecurityExceptionsAPIBlocklistHashOrPathEntry
-func (t *SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item) FromSecurityExceptionsAPIBlocklistHashOrPathEntry(v SecurityExceptionsAPIBlocklistHashOrPathEntry) error {
+// FromSecurityExceptionsAPIBlocklistHashEntry overwrites any union data inside the SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item as the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item) FromSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeSecurityExceptionsAPIBlocklistHashOrPathEntry performs a merge with any union data inside the SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item, using the provided SecurityExceptionsAPIBlocklistHashOrPathEntry
-func (t *SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item) MergeSecurityExceptionsAPIBlocklistHashOrPathEntry(v SecurityExceptionsAPIBlocklistHashOrPathEntry) error {
+// MergeSecurityExceptionsAPIBlocklistHashEntry performs a merge with any union data inside the SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item, using the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item) MergeSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry returns the union data inside the SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry overwrites any union data inside the SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry performs a merge with any union data inside the SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry returns the union data inside the SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry overwrites any union data inside the SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry performs a merge with any union data inside the SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPIBlocklistWindowsProperties_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -160002,22 +162713,250 @@ func (t *SecurityExceptionsAPICreateExceptionListItem) UnmarshalJSON(b []byte) e
 	return err
 }
 
-// AsSecurityExceptionsAPIBlocklistHashOrPathEntry returns the union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item as a SecurityExceptionsAPIBlocklistHashOrPathEntry
-func (t SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item) AsSecurityExceptionsAPIBlocklistHashOrPathEntry() (SecurityExceptionsAPIBlocklistHashOrPathEntry, error) {
-	var body SecurityExceptionsAPIBlocklistHashOrPathEntry
+// AsSecurityExceptionsAPIBlocklistHashEntry returns the union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item as a SecurityExceptionsAPIBlocklistHashEntry
+func (t SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item) AsSecurityExceptionsAPIBlocklistHashEntry() (SecurityExceptionsAPIBlocklistHashEntry, error) {
+	var body SecurityExceptionsAPIBlocklistHashEntry
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromSecurityExceptionsAPIBlocklistHashOrPathEntry overwrites any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item as the provided SecurityExceptionsAPIBlocklistHashOrPathEntry
-func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item) FromSecurityExceptionsAPIBlocklistHashOrPathEntry(v SecurityExceptionsAPIBlocklistHashOrPathEntry) error {
+// FromSecurityExceptionsAPIBlocklistHashEntry overwrites any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item as the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item) FromSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeSecurityExceptionsAPIBlocklistHashOrPathEntry performs a merge with any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item, using the provided SecurityExceptionsAPIBlocklistHashOrPathEntry
-func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item) MergeSecurityExceptionsAPIBlocklistHashOrPathEntry(v SecurityExceptionsAPIBlocklistHashOrPathEntry) error {
+// MergeSecurityExceptionsAPIBlocklistHashEntry performs a merge with any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item, using the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item) MergeSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry returns the union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry overwrites any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry performs a merge with any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry returns the union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry overwrites any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry performs a merge with any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistLinux_Entries_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistHashEntry returns the union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item as a SecurityExceptionsAPIBlocklistHashEntry
+func (t SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item) AsSecurityExceptionsAPIBlocklistHashEntry() (SecurityExceptionsAPIBlocklistHashEntry, error) {
+	var body SecurityExceptionsAPIBlocklistHashEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistHashEntry overwrites any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item as the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item) FromSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistHashEntry performs a merge with any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item, using the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item) MergeSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry returns the union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry overwrites any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry performs a merge with any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry returns the union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry overwrites any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry performs a merge with any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistMac_Entries_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistHashEntry returns the union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item as a SecurityExceptionsAPIBlocklistHashEntry
+func (t SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item) AsSecurityExceptionsAPIBlocklistHashEntry() (SecurityExceptionsAPIBlocklistHashEntry, error) {
+	var body SecurityExceptionsAPIBlocklistHashEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistHashEntry overwrites any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item as the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item) FromSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistHashEntry performs a merge with any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item, using the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item) MergeSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry returns the union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry overwrites any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry performs a merge with any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry returns the union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry overwrites any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry performs a merge with any union data inside the SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPICreateExceptionListItemBlocklistWindows_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -161638,22 +164577,250 @@ func (t *SecurityExceptionsAPIUpdateExceptionListItem) UnmarshalJSON(b []byte) e
 	return err
 }
 
-// AsSecurityExceptionsAPIBlocklistHashOrPathEntry returns the union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item as a SecurityExceptionsAPIBlocklistHashOrPathEntry
-func (t SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item) AsSecurityExceptionsAPIBlocklistHashOrPathEntry() (SecurityExceptionsAPIBlocklistHashOrPathEntry, error) {
-	var body SecurityExceptionsAPIBlocklistHashOrPathEntry
+// AsSecurityExceptionsAPIBlocklistHashEntry returns the union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item as a SecurityExceptionsAPIBlocklistHashEntry
+func (t SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item) AsSecurityExceptionsAPIBlocklistHashEntry() (SecurityExceptionsAPIBlocklistHashEntry, error) {
+	var body SecurityExceptionsAPIBlocklistHashEntry
 	err := json.Unmarshal(t.union, &body)
 	return body, err
 }
 
-// FromSecurityExceptionsAPIBlocklistHashOrPathEntry overwrites any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item as the provided SecurityExceptionsAPIBlocklistHashOrPathEntry
-func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item) FromSecurityExceptionsAPIBlocklistHashOrPathEntry(v SecurityExceptionsAPIBlocklistHashOrPathEntry) error {
+// FromSecurityExceptionsAPIBlocklistHashEntry overwrites any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item as the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item) FromSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
 	b, err := json.Marshal(v)
 	t.union = b
 	return err
 }
 
-// MergeSecurityExceptionsAPIBlocklistHashOrPathEntry performs a merge with any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item, using the provided SecurityExceptionsAPIBlocklistHashOrPathEntry
-func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item) MergeSecurityExceptionsAPIBlocklistHashOrPathEntry(v SecurityExceptionsAPIBlocklistHashOrPathEntry) error {
+// MergeSecurityExceptionsAPIBlocklistHashEntry performs a merge with any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item, using the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item) MergeSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry returns the union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry overwrites any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry performs a merge with any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry returns the union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry overwrites any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry performs a merge with any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistLinux_Entries_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistHashEntry returns the union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item as a SecurityExceptionsAPIBlocklistHashEntry
+func (t SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item) AsSecurityExceptionsAPIBlocklistHashEntry() (SecurityExceptionsAPIBlocklistHashEntry, error) {
+	var body SecurityExceptionsAPIBlocklistHashEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistHashEntry overwrites any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item as the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item) FromSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistHashEntry performs a merge with any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item, using the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item) MergeSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry returns the union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry overwrites any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry performs a merge with any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry returns the union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry overwrites any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry performs a merge with any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistMac_Entries_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistHashEntry returns the union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item as a SecurityExceptionsAPIBlocklistHashEntry
+func (t SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item) AsSecurityExceptionsAPIBlocklistHashEntry() (SecurityExceptionsAPIBlocklistHashEntry, error) {
+	var body SecurityExceptionsAPIBlocklistHashEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistHashEntry overwrites any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item as the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item) FromSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistHashEntry performs a merge with any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item, using the provided SecurityExceptionsAPIBlocklistHashEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item) MergeSecurityExceptionsAPIBlocklistHashEntry(v SecurityExceptionsAPIBlocklistHashEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry returns the union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry overwrites any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry performs a merge with any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameMatchAnyEntry) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry returns the union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item as a SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item) AsSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry() (SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry, error) {
+	var body SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry overwrites any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item as the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item) FromSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry performs a merge with any union data inside the SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item, using the provided SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry
+func (t *SecurityExceptionsAPIUpdateExceptionListItemBlocklistWindows_Entries_Item) MergeSecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry(v SecurityExceptionsAPIBlocklistPathOrFileNameWildcardEntry) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -171403,6 +174570,68 @@ func (t *SetAlertTags400JSONResponseBody) UnmarshalJSON(b []byte) error {
 	return err
 }
 
+// AsKibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning returns the union data inside the GetDiscoverSession200JSONResponseBody_Warnings_Item as a KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning
+func (t GetDiscoverSession200JSONResponseBody_Warnings_Item) AsKibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning() (KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning overwrites any union data inside the GetDiscoverSession200JSONResponseBody_Warnings_Item as the provided KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning
+func (t *GetDiscoverSession200JSONResponseBody_Warnings_Item) FromKibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning(v KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning performs a merge with any union data inside the GetDiscoverSession200JSONResponseBody_Warnings_Item, using the provided KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning
+func (t *GetDiscoverSession200JSONResponseBody_Warnings_Item) MergeKibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning(v KibanaHTTPAPIsKbnDiscoverSessionDroppedItemWarning) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning returns the union data inside the GetDiscoverSession200JSONResponseBody_Warnings_Item as a KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning
+func (t GetDiscoverSession200JSONResponseBody_Warnings_Item) AsKibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning() (KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning, error) {
+	var body KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning overwrites any union data inside the GetDiscoverSession200JSONResponseBody_Warnings_Item as the provided KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning
+func (t *GetDiscoverSession200JSONResponseBody_Warnings_Item) FromKibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning(v KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning performs a merge with any union data inside the GetDiscoverSession200JSONResponseBody_Warnings_Item, using the provided KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning
+func (t *GetDiscoverSession200JSONResponseBody_Warnings_Item) MergeKibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning(v KibanaHTTPAPIsKbnDiscoverSessionDroppedPropertyWarning) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t GetDiscoverSession200JSONResponseBody_Warnings_Item) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *GetDiscoverSession200JSONResponseBody_Warnings_Item) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
 // AsSecurityEndpointExceptionsAPIPlatformErrorResponse returns the union data inside the CreateEndpointList400JSONResponseBody as a SecurityEndpointExceptionsAPIPlatformErrorResponse
 func (t CreateEndpointList400JSONResponseBody) AsSecurityEndpointExceptionsAPIPlatformErrorResponse() (SecurityEndpointExceptionsAPIPlatformErrorResponse, error) {
 	var body SecurityEndpointExceptionsAPIPlatformErrorResponse
@@ -180419,6 +183648,11 @@ type ClientInterface interface {
 	// GetActionsConnectorTypes request
 	GetActionsConnectorTypes(ctx context.Context, params *GetActionsConnectorTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// PostActionsEventsConnectorTypeIdConnectorIdWithBody request with any body
+	PostActionsEventsConnectorTypeIdConnectorIdWithBody(ctx context.Context, connectorTypeId string, connectorId string, params *PostActionsEventsConnectorTypeIdConnectorIdParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostActionsEventsConnectorTypeIdConnectorId(ctx context.Context, connectorTypeId string, connectorId string, params *PostActionsEventsConnectorTypeIdConnectorIdParams, body PostActionsEventsConnectorTypeIdConnectorIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// PostAgentBuilderA2aAgentidWithBody request with any body
 	PostAgentBuilderA2aAgentidWithBody(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -181237,6 +184471,25 @@ type ClientInterface interface {
 
 	PreviewSwapDataViewsDefault(ctx context.Context, body PreviewSwapDataViewsDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetDataViewsV2 request
+	GetDataViewsV2(ctx context.Context, params *GetDataViewsV2Params, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostDataViewsV2WithBody request with any body
+	PostDataViewsV2WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostDataViewsV2(ctx context.Context, body PostDataViewsV2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteDataViewsV2Id request
+	DeleteDataViewsV2Id(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDataViewsV2Id request
+	GetDataViewsV2Id(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PutDataViewsV2IdWithBody request with any body
+	PutDataViewsV2IdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PutDataViewsV2Id(ctx context.Context, id string, body PutDataViewsV2IdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// SetAttacksAssigneesWithBody request with any body
 	SetAttacksAssigneesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -181341,6 +184594,25 @@ type ClientInterface interface {
 
 	// ReadTags request
 	ReadTags(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// SearchDiscoverSessions request
+	SearchDiscoverSessions(ctx context.Context, params *SearchDiscoverSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// CreateDiscoverSessionWithBody request with any body
+	CreateDiscoverSessionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	CreateDiscoverSession(ctx context.Context, body CreateDiscoverSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// DeleteDiscoverSession request
+	DeleteDiscoverSession(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetDiscoverSession request
+	GetDiscoverSession(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// UpsertDiscoverSessionWithBody request with any body
+	UpsertDiscoverSessionWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	UpsertDiscoverSession(ctx context.Context, id string, body UpsertDiscoverSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// RotateEncryptionKey request
 	RotateEncryptionKey(ctx context.Context, params *RotateEncryptionKeyParams, reqEditors ...RequestEditorFn) (*http.Response, error)
@@ -183434,6 +186706,30 @@ func (c *Client) PostActionsConnectorIdExecute(ctx context.Context, id string, b
 
 func (c *Client) GetActionsConnectorTypes(ctx context.Context, params *GetActionsConnectorTypesParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetActionsConnectorTypesRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostActionsEventsConnectorTypeIdConnectorIdWithBody(ctx context.Context, connectorTypeId string, connectorId string, params *PostActionsEventsConnectorTypeIdConnectorIdParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostActionsEventsConnectorTypeIdConnectorIdRequestWithBody(c.Server, connectorTypeId, connectorId, params, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostActionsEventsConnectorTypeIdConnectorId(ctx context.Context, connectorTypeId string, connectorId string, params *PostActionsEventsConnectorTypeIdConnectorIdParams, body PostActionsEventsConnectorTypeIdConnectorIdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostActionsEventsConnectorTypeIdConnectorIdRequest(c.Server, connectorTypeId, connectorId, params, body)
 	if err != nil {
 		return nil, err
 	}
@@ -187116,6 +190412,90 @@ func (c *Client) PreviewSwapDataViewsDefault(ctx context.Context, body PreviewSw
 	return c.Client.Do(req)
 }
 
+func (c *Client) GetDataViewsV2(ctx context.Context, params *GetDataViewsV2Params, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDataViewsV2Request(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostDataViewsV2WithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostDataViewsV2RequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostDataViewsV2(ctx context.Context, body PostDataViewsV2JSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostDataViewsV2Request(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteDataViewsV2Id(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteDataViewsV2IdRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDataViewsV2Id(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDataViewsV2IdRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PutDataViewsV2IdWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutDataViewsV2IdRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PutDataViewsV2Id(ctx context.Context, id string, body PutDataViewsV2IdJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPutDataViewsV2IdRequest(c.Server, id, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
 func (c *Client) SetAttacksAssigneesWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewSetAttacksAssigneesRequestWithBody(c.Server, contentType, body)
 	if err != nil {
@@ -187586,6 +190966,90 @@ func (c *Client) SetAlertTags(ctx context.Context, body SetAlertTagsJSONRequestB
 
 func (c *Client) ReadTags(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewReadTagsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) SearchDiscoverSessions(ctx context.Context, params *SearchDiscoverSessionsParams, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewSearchDiscoverSessionsRequest(c.Server, params)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateDiscoverSessionWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDiscoverSessionRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) CreateDiscoverSession(ctx context.Context, body CreateDiscoverSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewCreateDiscoverSessionRequest(c.Server, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) DeleteDiscoverSession(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewDeleteDiscoverSessionRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetDiscoverSession(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetDiscoverSessionRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertDiscoverSessionWithBody(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertDiscoverSessionRequestWithBody(c.Server, id, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) UpsertDiscoverSession(ctx context.Context, id string, body UpsertDiscoverSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewUpsertDiscoverSessionRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
 	}
@@ -196916,6 +200380,87 @@ func NewGetActionsConnectorTypesRequest(server string, params *GetActionsConnect
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewPostActionsEventsConnectorTypeIdConnectorIdRequest calls the generic PostActionsEventsConnectorTypeIdConnectorId builder with application/json body
+func NewPostActionsEventsConnectorTypeIdConnectorIdRequest(server string, connectorTypeId string, connectorId string, params *PostActionsEventsConnectorTypeIdConnectorIdParams, body PostActionsEventsConnectorTypeIdConnectorIdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostActionsEventsConnectorTypeIdConnectorIdRequestWithBody(server, connectorTypeId, connectorId, params, "application/json", bodyReader)
+}
+
+// NewPostActionsEventsConnectorTypeIdConnectorIdRequestWithBody generates requests for PostActionsEventsConnectorTypeIdConnectorId with any type of body
+func NewPostActionsEventsConnectorTypeIdConnectorIdRequestWithBody(server string, connectorTypeId string, connectorId string, params *PostActionsEventsConnectorTypeIdConnectorIdParams, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "connector_type_id", connectorTypeId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	var pathParam1 string
+
+	pathParam1, err = runtime.StyleParamWithOptions("simple", false, "connector_id", connectorId, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/actions/events/%s/%s", pathParam0, pathParam1)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Token != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "token", *params.Token, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -207598,6 +211143,239 @@ func NewPreviewSwapDataViewsDefaultRequestWithBody(server string, contentType st
 	return req, nil
 }
 
+// NewGetDataViewsV2Request generates requests for GetDataViewsV2
+func NewGetDataViewsV2Request(server string, params *GetDataViewsV2Params) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/data_views/v2")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PerPage != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "per_page", *params.PerPage, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Query != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "query", *params.Query, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostDataViewsV2Request calls the generic PostDataViewsV2 builder with application/json body
+func NewPostDataViewsV2Request(server string, body PostDataViewsV2JSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostDataViewsV2RequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostDataViewsV2RequestWithBody generates requests for PostDataViewsV2 with any type of body
+func NewPostDataViewsV2RequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/data_views/v2")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteDataViewsV2IdRequest generates requests for DeleteDataViewsV2Id
+func NewDeleteDataViewsV2IdRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/data_views/v2/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetDataViewsV2IdRequest generates requests for GetDataViewsV2Id
+func NewGetDataViewsV2IdRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/data_views/v2/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPutDataViewsV2IdRequest calls the generic PutDataViewsV2Id builder with application/json body
+func NewPutDataViewsV2IdRequest(server string, id string, body PutDataViewsV2IdJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPutDataViewsV2IdRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewPutDataViewsV2IdRequestWithBody generates requests for PutDataViewsV2Id with any type of body
+func NewPutDataViewsV2IdRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/data_views/v2/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewSetAttacksAssigneesRequest calls the generic SetAttacksAssignees builder with application/json body
 func NewSetAttacksAssigneesRequest(server string, body SetAttacksAssigneesJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
@@ -208787,6 +212565,287 @@ func NewReadTagsRequest(server string) (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return req, nil
+}
+
+// NewSearchDiscoverSessionsRequest generates requests for SearchDiscoverSessions
+func NewSearchDiscoverSessionsRequest(server string, params *SearchDiscoverSessionsParams) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/discover_sessions")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if params != nil {
+		// queryValues collects non-styled parameters (passthrough, JSON)
+		// that are safe to round-trip through url.Values.Encode().
+		queryValues := queryURL.Query()
+		// rawQueryFragments collects pre-encoded query fragments from
+		// styled parameters, preserving literal commas as delimiters
+		// per the OpenAPI spec (e.g. "color=blue,black,brown").
+		var rawQueryFragments []string
+
+		if params.Page != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "page", *params.Page, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.PerPage != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "per_page", *params.PerPage, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "number", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Query != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "query", *params.Query, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.Tags != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tags", *params.Tags, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ExcludedTags != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "excluded_tags", *params.ExcludedTags, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.TagNames != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "tag_names", *params.TagNames, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if params.ExcludedTagNames != nil {
+
+			if queryFrag, err := runtime.StyleParamWithOptions("form", true, "excluded_tag_names", *params.ExcludedTagNames, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationQuery, Type: "array", Format: ""}); err != nil {
+				return nil, err
+			} else {
+				for _, qp := range strings.Split(queryFrag, "&") {
+					rawQueryFragments = append(rawQueryFragments, qp)
+				}
+			}
+
+		}
+
+		if encoded := queryValues.Encode(); encoded != "" {
+			rawQueryFragments = append(rawQueryFragments, encoded)
+		}
+		queryURL.RawQuery = strings.Join(rawQueryFragments, "&")
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewCreateDiscoverSessionRequest calls the generic CreateDiscoverSession builder with application/json body
+func NewCreateDiscoverSessionRequest(server string, body CreateDiscoverSessionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewCreateDiscoverSessionRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewCreateDiscoverSessionRequestWithBody generates requests for CreateDiscoverSession with any type of body
+func NewCreateDiscoverSessionRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/discover_sessions")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
+// NewDeleteDiscoverSessionRequest generates requests for DeleteDiscoverSession
+func NewDeleteDiscoverSessionRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/discover_sessions/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodDelete, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewGetDiscoverSessionRequest generates requests for GetDiscoverSession
+func NewGetDiscoverSessionRequest(server string, id string) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/discover_sessions/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewUpsertDiscoverSessionRequest calls the generic UpsertDiscoverSession builder with application/json body
+func NewUpsertDiscoverSessionRequest(server string, id string, body UpsertDiscoverSessionJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewUpsertDiscoverSessionRequestWithBody(server, id, "application/json", bodyReader)
+}
+
+// NewUpsertDiscoverSessionRequestWithBody generates requests for UpsertDiscoverSession with any type of body
+func NewUpsertDiscoverSessionRequestWithBody(server string, id string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithOptions("simple", false, "id", id, runtime.StyleParamOptions{ParamLocation: runtime.ParamLocationPath, Type: "string", Format: ""})
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/discover_sessions/%s", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPut, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
 
 	return req, nil
 }
@@ -236619,6 +240678,11 @@ type ClientWithResponsesInterface interface {
 	// GetActionsConnectorTypesWithResponse request
 	GetActionsConnectorTypesWithResponse(ctx context.Context, params *GetActionsConnectorTypesParams, reqEditors ...RequestEditorFn) (*GetActionsConnectorTypesResponse, error)
 
+	// PostActionsEventsConnectorTypeIdConnectorIdWithBodyWithResponse request with any body
+	PostActionsEventsConnectorTypeIdConnectorIdWithBodyWithResponse(ctx context.Context, connectorTypeId string, connectorId string, params *PostActionsEventsConnectorTypeIdConnectorIdParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostActionsEventsConnectorTypeIdConnectorIdResponse, error)
+
+	PostActionsEventsConnectorTypeIdConnectorIdWithResponse(ctx context.Context, connectorTypeId string, connectorId string, params *PostActionsEventsConnectorTypeIdConnectorIdParams, body PostActionsEventsConnectorTypeIdConnectorIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PostActionsEventsConnectorTypeIdConnectorIdResponse, error)
+
 	// PostAgentBuilderA2aAgentidWithBodyWithResponse request with any body
 	PostAgentBuilderA2aAgentidWithBodyWithResponse(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAgentBuilderA2aAgentidResponse, error)
 
@@ -237437,6 +241501,25 @@ type ClientWithResponsesInterface interface {
 
 	PreviewSwapDataViewsDefaultWithResponse(ctx context.Context, body PreviewSwapDataViewsDefaultJSONRequestBody, reqEditors ...RequestEditorFn) (*PreviewSwapDataViewsDefaultResponse, error)
 
+	// GetDataViewsV2WithResponse request
+	GetDataViewsV2WithResponse(ctx context.Context, params *GetDataViewsV2Params, reqEditors ...RequestEditorFn) (*GetDataViewsV2Response, error)
+
+	// PostDataViewsV2WithBodyWithResponse request with any body
+	PostDataViewsV2WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostDataViewsV2Response, error)
+
+	PostDataViewsV2WithResponse(ctx context.Context, body PostDataViewsV2JSONRequestBody, reqEditors ...RequestEditorFn) (*PostDataViewsV2Response, error)
+
+	// DeleteDataViewsV2IdWithResponse request
+	DeleteDataViewsV2IdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteDataViewsV2IdResponse, error)
+
+	// GetDataViewsV2IdWithResponse request
+	GetDataViewsV2IdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetDataViewsV2IdResponse, error)
+
+	// PutDataViewsV2IdWithBodyWithResponse request with any body
+	PutDataViewsV2IdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutDataViewsV2IdResponse, error)
+
+	PutDataViewsV2IdWithResponse(ctx context.Context, id string, body PutDataViewsV2IdJSONRequestBody, reqEditors ...RequestEditorFn) (*PutDataViewsV2IdResponse, error)
+
 	// SetAttacksAssigneesWithBodyWithResponse request with any body
 	SetAttacksAssigneesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAttacksAssigneesResponse, error)
 
@@ -237541,6 +241624,25 @@ type ClientWithResponsesInterface interface {
 
 	// ReadTagsWithResponse request
 	ReadTagsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*ReadTagsResponse, error)
+
+	// SearchDiscoverSessionsWithResponse request
+	SearchDiscoverSessionsWithResponse(ctx context.Context, params *SearchDiscoverSessionsParams, reqEditors ...RequestEditorFn) (*SearchDiscoverSessionsResponse, error)
+
+	// CreateDiscoverSessionWithBodyWithResponse request with any body
+	CreateDiscoverSessionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDiscoverSessionResponse, error)
+
+	CreateDiscoverSessionWithResponse(ctx context.Context, body CreateDiscoverSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDiscoverSessionResponse, error)
+
+	// DeleteDiscoverSessionWithResponse request
+	DeleteDiscoverSessionWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteDiscoverSessionResponse, error)
+
+	// GetDiscoverSessionWithResponse request
+	GetDiscoverSessionWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetDiscoverSessionResponse, error)
+
+	// UpsertDiscoverSessionWithBodyWithResponse request with any body
+	UpsertDiscoverSessionWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDiscoverSessionResponse, error)
+
+	UpsertDiscoverSessionWithResponse(ctx context.Context, id string, body UpsertDiscoverSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDiscoverSessionResponse, error)
 
 	// RotateEncryptionKeyWithResponse request
 	RotateEncryptionKeyWithResponse(ctx context.Context, params *RotateEncryptionKeyParams, reqEditors ...RequestEditorFn) (*RotateEncryptionKeyResponse, error)
@@ -239713,6 +243815,37 @@ func (r GetActionsConnectorTypesResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r GetActionsConnectorTypesResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PostActionsEventsConnectorTypeIdConnectorIdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *KibanaHTTPAPIsIngestEventsAckResponse
+	JSON202      *KibanaHTTPAPIsIngestEventsResponse
+}
+
+// Status returns HTTPResponse.Status
+func (r PostActionsEventsConnectorTypeIdConnectorIdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostActionsEventsConnectorTypeIdConnectorIdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PostActionsEventsConnectorTypeIdConnectorIdResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -247343,6 +251476,339 @@ func (r PreviewSwapDataViewsDefaultResponse) ContentType() string {
 	return ""
 }
 
+type GetDataViewsV2Response struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Data []struct {
+			Data struct {
+				// IndexPattern The index pattern (Elasticsearch index expression) to use as the data source. Example: "my-index-*".
+				IndexPattern KibanaHTTPAPIsKbnIndexPatternSchema `json:"index_pattern"`
+
+				// Name The name of the data view. Example: "Sample data view".
+				Name *string `json:"name,omitempty"`
+
+				// TimeField The name of the time field in the index. Used for time-based filtering. Example: "@timestamp".
+				TimeField *KibanaHTTPAPIsKbnTimeFieldSchema `json:"time_field,omitempty"`
+			} `json:"data"`
+
+			// Id The ID of the data view.
+			Id   string `json:"id"`
+			Meta struct {
+				// CreatedAt Timestamp when the object was created (ISO 8601).
+				CreatedAt *string `json:"created_at,omitempty"`
+
+				// CreatedBy User profile ID of the user who created the object.
+				CreatedBy *string `json:"created_by,omitempty"`
+
+				// Managed When `true`, the object is managed by Kibana and cannot be edited by users.
+				Managed *bool `json:"managed,omitempty"`
+
+				// Owner Identifier of the plugin or team that owns this object.
+				Owner *string `json:"owner,omitempty"`
+
+				// Spaces The IDs of the spaces where the data view is available.
+				Spaces *[]string `json:"spaces,omitempty"`
+
+				// UpdatedAt Timestamp when the object was last updated (ISO 8601).
+				UpdatedAt *string `json:"updated_at,omitempty"`
+
+				// UpdatedBy User profile ID of the user who last updated the object.
+				UpdatedBy *string `json:"updated_by,omitempty"`
+
+				// Version Internal version identifier for optimistic concurrency control.
+				Version *string `json:"version,omitempty"`
+			} `json:"meta"`
+		} `json:"data"`
+		Meta struct {
+			// Page The returned page of results.
+			Page *float32 `json:"page,omitempty"`
+
+			// PerPage The number of results returned per page.
+			PerPage *float32 `json:"per_page,omitempty"`
+
+			// Total The total number of results matching the query.
+			Total float32 `json:"total"`
+		} `json:"meta"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDataViewsV2Response) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDataViewsV2Response) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetDataViewsV2Response) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PostDataViewsV2Response struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *struct {
+		// Data Defines an stored data source with a mandatory index pattern and optional settings like id, name, show hidden indices and field settings.
+		Data KibanaHTTPAPIsKbnSavedDataViewSpecSchema `json:"data"`
+
+		// Id The ID of the data view.
+		Id string `json:"id"`
+
+		// Meta Metadata about the data view.
+		Meta struct {
+			// CreatedAt Timestamp when the object was created (ISO 8601).
+			CreatedAt *string `json:"created_at,omitempty"`
+
+			// CreatedBy User profile ID of the user who created the object.
+			CreatedBy *string `json:"created_by,omitempty"`
+
+			// Managed When `true`, the object is managed by Kibana and cannot be edited by users.
+			Managed *bool `json:"managed,omitempty"`
+
+			// Owner Identifier of the plugin or team that owns this object.
+			Owner *string `json:"owner,omitempty"`
+
+			// Spaces The IDs of the spaces where the data view is available.
+			Spaces *[]string `json:"spaces,omitempty"`
+
+			// UpdatedAt Timestamp when the object was last updated (ISO 8601).
+			UpdatedAt *string `json:"updated_at,omitempty"`
+
+			// UpdatedBy User profile ID of the user who last updated the object.
+			UpdatedBy *string `json:"updated_by,omitempty"`
+
+			// Version Internal version identifier for optimistic concurrency control.
+			Version *string `json:"version,omitempty"`
+		} `json:"meta"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostDataViewsV2Response) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostDataViewsV2Response) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PostDataViewsV2Response) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteDataViewsV2IdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteDataViewsV2IdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteDataViewsV2IdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteDataViewsV2IdResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetDataViewsV2IdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Data Defines an stored data source with a mandatory index pattern and optional settings like id, name, show hidden indices and field settings.
+		Data KibanaHTTPAPIsKbnSavedDataViewSpecSchema `json:"data"`
+
+		// Id The ID of the data view.
+		Id string `json:"id"`
+
+		// Meta Metadata about the data view.
+		Meta struct {
+			// CreatedAt Timestamp when the object was created (ISO 8601).
+			CreatedAt *string `json:"created_at,omitempty"`
+
+			// CreatedBy User profile ID of the user who created the object.
+			CreatedBy *string `json:"created_by,omitempty"`
+
+			// Managed When `true`, the object is managed by Kibana and cannot be edited by users.
+			Managed *bool `json:"managed,omitempty"`
+
+			// Owner Identifier of the plugin or team that owns this object.
+			Owner *string `json:"owner,omitempty"`
+
+			// Spaces The IDs of the spaces where the data view is available.
+			Spaces *[]string `json:"spaces,omitempty"`
+
+			// UpdatedAt Timestamp when the object was last updated (ISO 8601).
+			UpdatedAt *string `json:"updated_at,omitempty"`
+
+			// UpdatedBy User profile ID of the user who last updated the object.
+			UpdatedBy *string `json:"updated_by,omitempty"`
+
+			// Version Internal version identifier for optimistic concurrency control.
+			Version *string `json:"version,omitempty"`
+		} `json:"meta"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDataViewsV2IdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDataViewsV2IdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetDataViewsV2IdResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PutDataViewsV2IdResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Data Defines an stored data source with a mandatory index pattern and optional settings like id, name, show hidden indices and field settings.
+		Data KibanaHTTPAPIsKbnSavedDataViewSpecSchema `json:"data"`
+
+		// Id The ID of the data view.
+		Id string `json:"id"`
+
+		// Meta Metadata about the data view.
+		Meta struct {
+			// CreatedAt Timestamp when the object was created (ISO 8601).
+			CreatedAt *string `json:"created_at,omitempty"`
+
+			// CreatedBy User profile ID of the user who created the object.
+			CreatedBy *string `json:"created_by,omitempty"`
+
+			// Managed When `true`, the object is managed by Kibana and cannot be edited by users.
+			Managed *bool `json:"managed,omitempty"`
+
+			// Owner Identifier of the plugin or team that owns this object.
+			Owner *string `json:"owner,omitempty"`
+
+			// Spaces The IDs of the spaces where the data view is available.
+			Spaces *[]string `json:"spaces,omitempty"`
+
+			// UpdatedAt Timestamp when the object was last updated (ISO 8601).
+			UpdatedAt *string `json:"updated_at,omitempty"`
+
+			// UpdatedBy User profile ID of the user who last updated the object.
+			UpdatedBy *string `json:"updated_by,omitempty"`
+
+			// Version Internal version identifier for optimistic concurrency control.
+			Version *string `json:"version,omitempty"`
+		} `json:"meta"`
+	}
+	JSON201 *struct {
+		// Data Defines an stored data source with a mandatory index pattern and optional settings like id, name, show hidden indices and field settings.
+		Data KibanaHTTPAPIsKbnSavedDataViewSpecSchema `json:"data"`
+
+		// Id The ID of the data view.
+		Id string `json:"id"`
+
+		// Meta Metadata about the data view.
+		Meta struct {
+			// CreatedAt Timestamp when the object was created (ISO 8601).
+			CreatedAt *string `json:"created_at,omitempty"`
+
+			// CreatedBy User profile ID of the user who created the object.
+			CreatedBy *string `json:"created_by,omitempty"`
+
+			// Managed When `true`, the object is managed by Kibana and cannot be edited by users.
+			Managed *bool `json:"managed,omitempty"`
+
+			// Owner Identifier of the plugin or team that owns this object.
+			Owner *string `json:"owner,omitempty"`
+
+			// Spaces The IDs of the spaces where the data view is available.
+			Spaces *[]string `json:"spaces,omitempty"`
+
+			// UpdatedAt Timestamp when the object was last updated (ISO 8601).
+			UpdatedAt *string `json:"updated_at,omitempty"`
+
+			// UpdatedBy User profile ID of the user who last updated the object.
+			UpdatedBy *string `json:"updated_by,omitempty"`
+
+			// Version Internal version identifier for optimistic concurrency control.
+			Version *string `json:"version,omitempty"`
+		} `json:"meta"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r PutDataViewsV2IdResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PutDataViewsV2IdResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PutDataViewsV2IdResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type SetAttacksAssigneesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -248230,6 +252696,215 @@ func (r ReadTagsResponse) StatusCode() int {
 
 // ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
 func (r ReadTagsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type SearchDiscoverSessionsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Data List of matching Discover sessions (summaries, not the full session state).
+		Data []struct {
+			Data struct {
+				// Description Discover session description.
+				Description *string `json:"description,omitempty"`
+
+				// Tags Tag IDs associated with this Discover session.
+				Tags *[]string `json:"tags,omitempty"`
+
+				// Title Discover session title.
+				Title string `json:"title"`
+			} `json:"data"`
+
+			// Id The Discover session ID.
+			Id   string                      `json:"id"`
+			Meta KibanaHTTPAPIsKbnAsCodeMeta `json:"meta"`
+		} `json:"data"`
+		Meta struct {
+			// Page The returned page of results.
+			Page *float32 `json:"page,omitempty"`
+
+			// PerPage The number of results returned per page.
+			PerPage *float32 `json:"per_page,omitempty"`
+
+			// Total The total number of results matching the query.
+			Total float32 `json:"total"`
+		} `json:"meta"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r SearchDiscoverSessionsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r SearchDiscoverSessionsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r SearchDiscoverSessionsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type CreateDiscoverSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON201      *struct {
+		// Data Configuration data for a Discover session.
+		Data KibanaHTTPAPIsKbnDiscoverSessionData `json:"data"`
+
+		// Id The Discover session ID.
+		Id   string                      `json:"id"`
+		Meta KibanaHTTPAPIsKbnAsCodeMeta `json:"meta"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r CreateDiscoverSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r CreateDiscoverSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r CreateDiscoverSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type DeleteDiscoverSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+}
+
+// Status returns HTTPResponse.Status
+func (r DeleteDiscoverSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r DeleteDiscoverSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r DeleteDiscoverSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type GetDiscoverSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Data Configuration data for a Discover session.
+		Data KibanaHTTPAPIsKbnDiscoverSessionData `json:"data"`
+
+		// Id The Discover session ID.
+		Id   string                      `json:"id"`
+		Meta KibanaHTTPAPIsKbnAsCodeMeta `json:"meta"`
+
+		// Warnings Warnings about content omitted from the API response due to conversion or validation errors. The saved session is not modified.
+		Warnings *[]GetDiscoverSession200JSONResponseBody_Warnings_Item `json:"warnings,omitempty"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetDiscoverSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetDiscoverSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetDiscoverSessionResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type UpsertDiscoverSessionResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		// Data Configuration data for a Discover session.
+		Data KibanaHTTPAPIsKbnDiscoverSessionData `json:"data"`
+
+		// Id The Discover session ID.
+		Id   string                      `json:"id"`
+		Meta KibanaHTTPAPIsKbnAsCodeMeta `json:"meta"`
+	}
+	JSON201 *struct {
+		// Data Configuration data for a Discover session.
+		Data KibanaHTTPAPIsKbnDiscoverSessionData `json:"data"`
+
+		// Id The Discover session ID.
+		Id   string                      `json:"id"`
+		Meta KibanaHTTPAPIsKbnAsCodeMeta `json:"meta"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r UpsertDiscoverSessionResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r UpsertDiscoverSessionResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r UpsertDiscoverSessionResponse) ContentType() string {
 	if r.HTTPResponse != nil {
 		return r.HTTPResponse.Header.Get("Content-Type")
 	}
@@ -267433,6 +272108,23 @@ func (c *ClientWithResponses) GetActionsConnectorTypesWithResponse(ctx context.C
 	return ParseGetActionsConnectorTypesResponse(rsp)
 }
 
+// PostActionsEventsConnectorTypeIdConnectorIdWithBodyWithResponse request with arbitrary body returning *PostActionsEventsConnectorTypeIdConnectorIdResponse
+func (c *ClientWithResponses) PostActionsEventsConnectorTypeIdConnectorIdWithBodyWithResponse(ctx context.Context, connectorTypeId string, connectorId string, params *PostActionsEventsConnectorTypeIdConnectorIdParams, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostActionsEventsConnectorTypeIdConnectorIdResponse, error) {
+	rsp, err := c.PostActionsEventsConnectorTypeIdConnectorIdWithBody(ctx, connectorTypeId, connectorId, params, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostActionsEventsConnectorTypeIdConnectorIdResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostActionsEventsConnectorTypeIdConnectorIdWithResponse(ctx context.Context, connectorTypeId string, connectorId string, params *PostActionsEventsConnectorTypeIdConnectorIdParams, body PostActionsEventsConnectorTypeIdConnectorIdJSONRequestBody, reqEditors ...RequestEditorFn) (*PostActionsEventsConnectorTypeIdConnectorIdResponse, error) {
+	rsp, err := c.PostActionsEventsConnectorTypeIdConnectorId(ctx, connectorTypeId, connectorId, params, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostActionsEventsConnectorTypeIdConnectorIdResponse(rsp)
+}
+
 // PostAgentBuilderA2aAgentidWithBodyWithResponse request with arbitrary body returning *PostAgentBuilderA2aAgentidResponse
 func (c *ClientWithResponses) PostAgentBuilderA2aAgentidWithBodyWithResponse(ctx context.Context, agentId string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostAgentBuilderA2aAgentidResponse, error) {
 	rsp, err := c.PostAgentBuilderA2aAgentidWithBody(ctx, agentId, contentType, body, reqEditors...)
@@ -270087,6 +274779,67 @@ func (c *ClientWithResponses) PreviewSwapDataViewsDefaultWithResponse(ctx contex
 	return ParsePreviewSwapDataViewsDefaultResponse(rsp)
 }
 
+// GetDataViewsV2WithResponse request returning *GetDataViewsV2Response
+func (c *ClientWithResponses) GetDataViewsV2WithResponse(ctx context.Context, params *GetDataViewsV2Params, reqEditors ...RequestEditorFn) (*GetDataViewsV2Response, error) {
+	rsp, err := c.GetDataViewsV2(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDataViewsV2Response(rsp)
+}
+
+// PostDataViewsV2WithBodyWithResponse request with arbitrary body returning *PostDataViewsV2Response
+func (c *ClientWithResponses) PostDataViewsV2WithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostDataViewsV2Response, error) {
+	rsp, err := c.PostDataViewsV2WithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostDataViewsV2Response(rsp)
+}
+
+func (c *ClientWithResponses) PostDataViewsV2WithResponse(ctx context.Context, body PostDataViewsV2JSONRequestBody, reqEditors ...RequestEditorFn) (*PostDataViewsV2Response, error) {
+	rsp, err := c.PostDataViewsV2(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostDataViewsV2Response(rsp)
+}
+
+// DeleteDataViewsV2IdWithResponse request returning *DeleteDataViewsV2IdResponse
+func (c *ClientWithResponses) DeleteDataViewsV2IdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteDataViewsV2IdResponse, error) {
+	rsp, err := c.DeleteDataViewsV2Id(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteDataViewsV2IdResponse(rsp)
+}
+
+// GetDataViewsV2IdWithResponse request returning *GetDataViewsV2IdResponse
+func (c *ClientWithResponses) GetDataViewsV2IdWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetDataViewsV2IdResponse, error) {
+	rsp, err := c.GetDataViewsV2Id(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDataViewsV2IdResponse(rsp)
+}
+
+// PutDataViewsV2IdWithBodyWithResponse request with arbitrary body returning *PutDataViewsV2IdResponse
+func (c *ClientWithResponses) PutDataViewsV2IdWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PutDataViewsV2IdResponse, error) {
+	rsp, err := c.PutDataViewsV2IdWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutDataViewsV2IdResponse(rsp)
+}
+
+func (c *ClientWithResponses) PutDataViewsV2IdWithResponse(ctx context.Context, id string, body PutDataViewsV2IdJSONRequestBody, reqEditors ...RequestEditorFn) (*PutDataViewsV2IdResponse, error) {
+	rsp, err := c.PutDataViewsV2Id(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePutDataViewsV2IdResponse(rsp)
+}
+
 // SetAttacksAssigneesWithBodyWithResponse request with arbitrary body returning *SetAttacksAssigneesResponse
 func (c *ClientWithResponses) SetAttacksAssigneesWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*SetAttacksAssigneesResponse, error) {
 	rsp, err := c.SetAttacksAssigneesWithBody(ctx, contentType, body, reqEditors...)
@@ -270430,6 +275183,67 @@ func (c *ClientWithResponses) ReadTagsWithResponse(ctx context.Context, reqEdito
 		return nil, err
 	}
 	return ParseReadTagsResponse(rsp)
+}
+
+// SearchDiscoverSessionsWithResponse request returning *SearchDiscoverSessionsResponse
+func (c *ClientWithResponses) SearchDiscoverSessionsWithResponse(ctx context.Context, params *SearchDiscoverSessionsParams, reqEditors ...RequestEditorFn) (*SearchDiscoverSessionsResponse, error) {
+	rsp, err := c.SearchDiscoverSessions(ctx, params, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseSearchDiscoverSessionsResponse(rsp)
+}
+
+// CreateDiscoverSessionWithBodyWithResponse request with arbitrary body returning *CreateDiscoverSessionResponse
+func (c *ClientWithResponses) CreateDiscoverSessionWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*CreateDiscoverSessionResponse, error) {
+	rsp, err := c.CreateDiscoverSessionWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateDiscoverSessionResponse(rsp)
+}
+
+func (c *ClientWithResponses) CreateDiscoverSessionWithResponse(ctx context.Context, body CreateDiscoverSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*CreateDiscoverSessionResponse, error) {
+	rsp, err := c.CreateDiscoverSession(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseCreateDiscoverSessionResponse(rsp)
+}
+
+// DeleteDiscoverSessionWithResponse request returning *DeleteDiscoverSessionResponse
+func (c *ClientWithResponses) DeleteDiscoverSessionWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*DeleteDiscoverSessionResponse, error) {
+	rsp, err := c.DeleteDiscoverSession(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseDeleteDiscoverSessionResponse(rsp)
+}
+
+// GetDiscoverSessionWithResponse request returning *GetDiscoverSessionResponse
+func (c *ClientWithResponses) GetDiscoverSessionWithResponse(ctx context.Context, id string, reqEditors ...RequestEditorFn) (*GetDiscoverSessionResponse, error) {
+	rsp, err := c.GetDiscoverSession(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetDiscoverSessionResponse(rsp)
+}
+
+// UpsertDiscoverSessionWithBodyWithResponse request with arbitrary body returning *UpsertDiscoverSessionResponse
+func (c *ClientWithResponses) UpsertDiscoverSessionWithBodyWithResponse(ctx context.Context, id string, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpsertDiscoverSessionResponse, error) {
+	rsp, err := c.UpsertDiscoverSessionWithBody(ctx, id, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertDiscoverSessionResponse(rsp)
+}
+
+func (c *ClientWithResponses) UpsertDiscoverSessionWithResponse(ctx context.Context, id string, body UpsertDiscoverSessionJSONRequestBody, reqEditors ...RequestEditorFn) (*UpsertDiscoverSessionResponse, error) {
+	rsp, err := c.UpsertDiscoverSession(ctx, id, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseUpsertDiscoverSessionResponse(rsp)
 }
 
 // RotateEncryptionKeyWithResponse request returning *RotateEncryptionKeyResponse
@@ -277085,6 +281899,39 @@ func ParseGetActionsConnectorTypesResponse(rsp *http.Response) (*GetActionsConne
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostActionsEventsConnectorTypeIdConnectorIdResponse parses an HTTP response from a PostActionsEventsConnectorTypeIdConnectorIdWithResponse call
+func ParsePostActionsEventsConnectorTypeIdConnectorIdResponse(rsp *http.Response) (*PostActionsEventsConnectorTypeIdConnectorIdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostActionsEventsConnectorTypeIdConnectorIdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest KibanaHTTPAPIsIngestEventsAckResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 202:
+		var dest KibanaHTTPAPIsIngestEventsResponse
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON202 = &dest
 
 	}
 
@@ -285985,6 +290832,316 @@ func ParsePreviewSwapDataViewsDefaultResponse(rsp *http.Response) (*PreviewSwapD
 	return response, nil
 }
 
+// ParseGetDataViewsV2Response parses an HTTP response from a GetDataViewsV2WithResponse call
+func ParseGetDataViewsV2Response(rsp *http.Response) (*GetDataViewsV2Response, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDataViewsV2Response{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Data []struct {
+				Data struct {
+					// IndexPattern The index pattern (Elasticsearch index expression) to use as the data source. Example: "my-index-*".
+					IndexPattern KibanaHTTPAPIsKbnIndexPatternSchema `json:"index_pattern"`
+
+					// Name The name of the data view. Example: "Sample data view".
+					Name *string `json:"name,omitempty"`
+
+					// TimeField The name of the time field in the index. Used for time-based filtering. Example: "@timestamp".
+					TimeField *KibanaHTTPAPIsKbnTimeFieldSchema `json:"time_field,omitempty"`
+				} `json:"data"`
+
+				// Id The ID of the data view.
+				Id   string `json:"id"`
+				Meta struct {
+					// CreatedAt Timestamp when the object was created (ISO 8601).
+					CreatedAt *string `json:"created_at,omitempty"`
+
+					// CreatedBy User profile ID of the user who created the object.
+					CreatedBy *string `json:"created_by,omitempty"`
+
+					// Managed When `true`, the object is managed by Kibana and cannot be edited by users.
+					Managed *bool `json:"managed,omitempty"`
+
+					// Owner Identifier of the plugin or team that owns this object.
+					Owner *string `json:"owner,omitempty"`
+
+					// Spaces The IDs of the spaces where the data view is available.
+					Spaces *[]string `json:"spaces,omitempty"`
+
+					// UpdatedAt Timestamp when the object was last updated (ISO 8601).
+					UpdatedAt *string `json:"updated_at,omitempty"`
+
+					// UpdatedBy User profile ID of the user who last updated the object.
+					UpdatedBy *string `json:"updated_by,omitempty"`
+
+					// Version Internal version identifier for optimistic concurrency control.
+					Version *string `json:"version,omitempty"`
+				} `json:"meta"`
+			} `json:"data"`
+			Meta struct {
+				// Page The returned page of results.
+				Page *float32 `json:"page,omitempty"`
+
+				// PerPage The number of results returned per page.
+				PerPage *float32 `json:"per_page,omitempty"`
+
+				// Total The total number of results matching the query.
+				Total float32 `json:"total"`
+			} `json:"meta"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostDataViewsV2Response parses an HTTP response from a PostDataViewsV2WithResponse call
+func ParsePostDataViewsV2Response(rsp *http.Response) (*PostDataViewsV2Response, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostDataViewsV2Response{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest struct {
+			// Data Defines an stored data source with a mandatory index pattern and optional settings like id, name, show hidden indices and field settings.
+			Data KibanaHTTPAPIsKbnSavedDataViewSpecSchema `json:"data"`
+
+			// Id The ID of the data view.
+			Id string `json:"id"`
+
+			// Meta Metadata about the data view.
+			Meta struct {
+				// CreatedAt Timestamp when the object was created (ISO 8601).
+				CreatedAt *string `json:"created_at,omitempty"`
+
+				// CreatedBy User profile ID of the user who created the object.
+				CreatedBy *string `json:"created_by,omitempty"`
+
+				// Managed When `true`, the object is managed by Kibana and cannot be edited by users.
+				Managed *bool `json:"managed,omitempty"`
+
+				// Owner Identifier of the plugin or team that owns this object.
+				Owner *string `json:"owner,omitempty"`
+
+				// Spaces The IDs of the spaces where the data view is available.
+				Spaces *[]string `json:"spaces,omitempty"`
+
+				// UpdatedAt Timestamp when the object was last updated (ISO 8601).
+				UpdatedAt *string `json:"updated_at,omitempty"`
+
+				// UpdatedBy User profile ID of the user who last updated the object.
+				UpdatedBy *string `json:"updated_by,omitempty"`
+
+				// Version Internal version identifier for optimistic concurrency control.
+				Version *string `json:"version,omitempty"`
+			} `json:"meta"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteDataViewsV2IdResponse parses an HTTP response from a DeleteDataViewsV2IdWithResponse call
+func ParseDeleteDataViewsV2IdResponse(rsp *http.Response) (*DeleteDataViewsV2IdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteDataViewsV2IdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetDataViewsV2IdResponse parses an HTTP response from a GetDataViewsV2IdWithResponse call
+func ParseGetDataViewsV2IdResponse(rsp *http.Response) (*GetDataViewsV2IdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDataViewsV2IdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Data Defines an stored data source with a mandatory index pattern and optional settings like id, name, show hidden indices and field settings.
+			Data KibanaHTTPAPIsKbnSavedDataViewSpecSchema `json:"data"`
+
+			// Id The ID of the data view.
+			Id string `json:"id"`
+
+			// Meta Metadata about the data view.
+			Meta struct {
+				// CreatedAt Timestamp when the object was created (ISO 8601).
+				CreatedAt *string `json:"created_at,omitempty"`
+
+				// CreatedBy User profile ID of the user who created the object.
+				CreatedBy *string `json:"created_by,omitempty"`
+
+				// Managed When `true`, the object is managed by Kibana and cannot be edited by users.
+				Managed *bool `json:"managed,omitempty"`
+
+				// Owner Identifier of the plugin or team that owns this object.
+				Owner *string `json:"owner,omitempty"`
+
+				// Spaces The IDs of the spaces where the data view is available.
+				Spaces *[]string `json:"spaces,omitempty"`
+
+				// UpdatedAt Timestamp when the object was last updated (ISO 8601).
+				UpdatedAt *string `json:"updated_at,omitempty"`
+
+				// UpdatedBy User profile ID of the user who last updated the object.
+				UpdatedBy *string `json:"updated_by,omitempty"`
+
+				// Version Internal version identifier for optimistic concurrency control.
+				Version *string `json:"version,omitempty"`
+			} `json:"meta"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePutDataViewsV2IdResponse parses an HTTP response from a PutDataViewsV2IdWithResponse call
+func ParsePutDataViewsV2IdResponse(rsp *http.Response) (*PutDataViewsV2IdResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PutDataViewsV2IdResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Data Defines an stored data source with a mandatory index pattern and optional settings like id, name, show hidden indices and field settings.
+			Data KibanaHTTPAPIsKbnSavedDataViewSpecSchema `json:"data"`
+
+			// Id The ID of the data view.
+			Id string `json:"id"`
+
+			// Meta Metadata about the data view.
+			Meta struct {
+				// CreatedAt Timestamp when the object was created (ISO 8601).
+				CreatedAt *string `json:"created_at,omitempty"`
+
+				// CreatedBy User profile ID of the user who created the object.
+				CreatedBy *string `json:"created_by,omitempty"`
+
+				// Managed When `true`, the object is managed by Kibana and cannot be edited by users.
+				Managed *bool `json:"managed,omitempty"`
+
+				// Owner Identifier of the plugin or team that owns this object.
+				Owner *string `json:"owner,omitempty"`
+
+				// Spaces The IDs of the spaces where the data view is available.
+				Spaces *[]string `json:"spaces,omitempty"`
+
+				// UpdatedAt Timestamp when the object was last updated (ISO 8601).
+				UpdatedAt *string `json:"updated_at,omitempty"`
+
+				// UpdatedBy User profile ID of the user who last updated the object.
+				UpdatedBy *string `json:"updated_by,omitempty"`
+
+				// Version Internal version identifier for optimistic concurrency control.
+				Version *string `json:"version,omitempty"`
+			} `json:"meta"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest struct {
+			// Data Defines an stored data source with a mandatory index pattern and optional settings like id, name, show hidden indices and field settings.
+			Data KibanaHTTPAPIsKbnSavedDataViewSpecSchema `json:"data"`
+
+			// Id The ID of the data view.
+			Id string `json:"id"`
+
+			// Meta Metadata about the data view.
+			Meta struct {
+				// CreatedAt Timestamp when the object was created (ISO 8601).
+				CreatedAt *string `json:"created_at,omitempty"`
+
+				// CreatedBy User profile ID of the user who created the object.
+				CreatedBy *string `json:"created_by,omitempty"`
+
+				// Managed When `true`, the object is managed by Kibana and cannot be edited by users.
+				Managed *bool `json:"managed,omitempty"`
+
+				// Owner Identifier of the plugin or team that owns this object.
+				Owner *string `json:"owner,omitempty"`
+
+				// Spaces The IDs of the spaces where the data view is available.
+				Spaces *[]string `json:"spaces,omitempty"`
+
+				// UpdatedAt Timestamp when the object was last updated (ISO 8601).
+				UpdatedAt *string `json:"updated_at,omitempty"`
+
+				// UpdatedBy User profile ID of the user who last updated the object.
+				UpdatedBy *string `json:"updated_by,omitempty"`
+
+				// Version Internal version identifier for optimistic concurrency control.
+				Version *string `json:"version,omitempty"`
+			} `json:"meta"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
 // ParseSetAttacksAssigneesResponse parses an HTTP response from a SetAttacksAssigneesWithResponse call
 func ParseSetAttacksAssigneesResponse(rsp *http.Response) (*SetAttacksAssigneesResponse, error) {
 	bodyBytes, err := io.ReadAll(rsp.Body)
@@ -287111,6 +292268,192 @@ func ParseReadTagsResponse(rsp *http.Response) (*ReadTagsResponse, error) {
 			return nil, err
 		}
 		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseSearchDiscoverSessionsResponse parses an HTTP response from a SearchDiscoverSessionsWithResponse call
+func ParseSearchDiscoverSessionsResponse(rsp *http.Response) (*SearchDiscoverSessionsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &SearchDiscoverSessionsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Data List of matching Discover sessions (summaries, not the full session state).
+			Data []struct {
+				Data struct {
+					// Description Discover session description.
+					Description *string `json:"description,omitempty"`
+
+					// Tags Tag IDs associated with this Discover session.
+					Tags *[]string `json:"tags,omitempty"`
+
+					// Title Discover session title.
+					Title string `json:"title"`
+				} `json:"data"`
+
+				// Id The Discover session ID.
+				Id   string                      `json:"id"`
+				Meta KibanaHTTPAPIsKbnAsCodeMeta `json:"meta"`
+			} `json:"data"`
+			Meta struct {
+				// Page The returned page of results.
+				Page *float32 `json:"page,omitempty"`
+
+				// PerPage The number of results returned per page.
+				PerPage *float32 `json:"per_page,omitempty"`
+
+				// Total The total number of results matching the query.
+				Total float32 `json:"total"`
+			} `json:"meta"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseCreateDiscoverSessionResponse parses an HTTP response from a CreateDiscoverSessionWithResponse call
+func ParseCreateDiscoverSessionResponse(rsp *http.Response) (*CreateDiscoverSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &CreateDiscoverSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest struct {
+			// Data Configuration data for a Discover session.
+			Data KibanaHTTPAPIsKbnDiscoverSessionData `json:"data"`
+
+			// Id The Discover session ID.
+			Id   string                      `json:"id"`
+			Meta KibanaHTTPAPIsKbnAsCodeMeta `json:"meta"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseDeleteDiscoverSessionResponse parses an HTTP response from a DeleteDiscoverSessionWithResponse call
+func ParseDeleteDiscoverSessionResponse(rsp *http.Response) (*DeleteDiscoverSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &DeleteDiscoverSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	return response, nil
+}
+
+// ParseGetDiscoverSessionResponse parses an HTTP response from a GetDiscoverSessionWithResponse call
+func ParseGetDiscoverSessionResponse(rsp *http.Response) (*GetDiscoverSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetDiscoverSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Data Configuration data for a Discover session.
+			Data KibanaHTTPAPIsKbnDiscoverSessionData `json:"data"`
+
+			// Id The Discover session ID.
+			Id   string                      `json:"id"`
+			Meta KibanaHTTPAPIsKbnAsCodeMeta `json:"meta"`
+
+			// Warnings Warnings about content omitted from the API response due to conversion or validation errors. The saved session is not modified.
+			Warnings *[]GetDiscoverSession200JSONResponseBody_Warnings_Item `json:"warnings,omitempty"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseUpsertDiscoverSessionResponse parses an HTTP response from a UpsertDiscoverSessionWithResponse call
+func ParseUpsertDiscoverSessionResponse(rsp *http.Response) (*UpsertDiscoverSessionResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &UpsertDiscoverSessionResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			// Data Configuration data for a Discover session.
+			Data KibanaHTTPAPIsKbnDiscoverSessionData `json:"data"`
+
+			// Id The Discover session ID.
+			Id   string                      `json:"id"`
+			Meta KibanaHTTPAPIsKbnAsCodeMeta `json:"meta"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 201:
+		var dest struct {
+			// Data Configuration data for a Discover session.
+			Data KibanaHTTPAPIsKbnDiscoverSessionData `json:"data"`
+
+			// Id The Discover session ID.
+			Id   string                      `json:"id"`
+			Meta KibanaHTTPAPIsKbnAsCodeMeta `json:"meta"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON201 = &dest
 
 	}
 
