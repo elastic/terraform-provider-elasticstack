@@ -27,6 +27,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type RelatedIntegrationModel struct {
+	Package     types.String `tfsdk:"package"`
+	Version     types.String `tfsdk:"version"`
+	Integration types.String `tfsdk:"integration"`
+}
+
 // Helper function to process related integrations configuration for all rule types
 func (d Data) relatedIntegrationsToAPI(ctx context.Context) (*kbapi.SecurityDetectionsAPIRelatedIntegrationArray, diag.Diagnostics) {
 	var diags diag.Diagnostics

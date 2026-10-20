@@ -33,6 +33,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+type AlertSuppressionModel struct {
+	GroupBy               types.List           `tfsdk:"group_by"`
+	Duration              customtypes.Duration `tfsdk:"duration"`
+	MissingFieldsStrategy types.String         `tfsdk:"missing_fields_strategy"`
+}
+
 // Helper function to convert alert suppression from TF data to API type
 func (d Data) alertSuppressionToAPI(ctx context.Context, diags *diag.Diagnostics) *kbapi.SecurityDetectionsAPIAlertSuppression {
 	if !typeutils.IsKnown(d.AlertSuppression) {

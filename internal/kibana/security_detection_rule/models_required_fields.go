@@ -27,6 +27,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type RequiredFieldModel struct {
+	Name types.String `tfsdk:"name"`
+	Type types.String `tfsdk:"type"`
+	Ecs  types.Bool   `tfsdk:"ecs"`
+}
+
 // Helper function to process required fields configuration for all rule types
 func (d Data) requiredFieldsToAPI(ctx context.Context) (*[]kbapi.SecurityDetectionsAPIRequiredFieldInput, diag.Diagnostics) {
 	var diags diag.Diagnostics

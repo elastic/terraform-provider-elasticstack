@@ -27,6 +27,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type ExceptionsListModel struct {
+	ID            types.String `tfsdk:"id"`
+	ListID        types.String `tfsdk:"list_id"`
+	NamespaceType types.String `tfsdk:"namespace_type"`
+	Type          types.String `tfsdk:"type"`
+}
+
 // Helper function to process exceptions list configuration for all rule types
 func (d Data) exceptionsListToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRuleExceptionList, diag.Diagnostics) {
 	var diags diag.Diagnostics
