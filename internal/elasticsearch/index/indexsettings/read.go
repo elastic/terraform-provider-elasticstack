@@ -28,7 +28,6 @@ import (
 	esttypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
-	indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -153,19 +152,19 @@ func readDeclaredTypedSettings(ctx context.Context, state *tfModel, flat map[str
 	stateValue := reflect.ValueOf(state).Elem()
 
 	for attribute, settingKey := range dynamicSettingKeyByAttribute {
-		current, found := indexparent.GetFieldValueByTagValue(stateValue, modelType, attribute)
+		current, found := typeutils.GetFieldValueByTagValue(stateValue, modelType, attribute)
 		if !found || !typeutils.IsKnown(current) {
 			continue
 		}
 
 		raw, ok := flat[settingKey]
 		if !ok {
-			indexparent.SetFieldValueByTagValue(reflect.ValueOf(state), modelType, attribute, typeutils.NullValueForType(current.Type(ctx)))
+			typeutils.SetFieldValueByTagValue(reflect.ValueOf(state), modelType, attribute, typeutils.NullValueForType(current.Type(ctx)))
 			continue
 		}
 
 		if value, ok := flatSettingAsTypedValue(ctx, current, raw); ok {
-			indexparent.SetFieldValueByTagValue(reflect.ValueOf(state), modelType, attribute, value)
+			typeutils.SetFieldValueByTagValue(reflect.ValueOf(state), modelType, attribute, value)
 		}
 	}
 }
@@ -184,13 +183,13 @@ func hydrateDynamicTypedSettings(ctx context.Context, state *tfModel, flat map[s
 			continue
 		}
 
-		current, found := indexparent.GetFieldValueByTagValue(stateValue, modelType, attribute)
+		current, found := typeutils.GetFieldValueByTagValue(stateValue, modelType, attribute)
 		if !found {
 			continue
 		}
 
 		if value, ok := flatSettingAsTypedValue(ctx, current, raw); ok {
-			indexparent.SetFieldValueByTagValue(reflect.ValueOf(state), modelType, attribute, value)
+			typeutils.SetFieldValueByTagValue(reflect.ValueOf(state), modelType, attribute, value)
 		}
 	}
 }

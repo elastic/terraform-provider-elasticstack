@@ -300,9 +300,9 @@ func setSettingsFromAPI(ctx context.Context, model *indexTfModel, apiModel estyp
 }
 
 func (model indexTfModel) getFieldValueByTagValue(tagName string, t reflect.Type) (attr.Value, bool) {
-	return indexparent.GetFieldValueByTagValue(reflect.ValueOf(model), t, tagName)
+	return typeutils.GetFieldValueByTagValue(reflect.ValueOf(model), t, tagName)
 }
 
 func (model *indexTfModel) setFieldValueByTagValue(tagName string, t reflect.Type, value attr.Value) bool {
-	return indexparent.SetFieldValueByTagValue(reflect.ValueOf(model), t, tagName, value)
+	return typeutils.SetFieldValueByTagValue(reflect.ValueOf(model), t, tagName, value)
 }

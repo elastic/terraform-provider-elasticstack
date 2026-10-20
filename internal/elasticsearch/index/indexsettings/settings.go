@@ -78,7 +78,7 @@ func declaredSettingsPayload(model tfModel) (map[string]any, diag.Diagnostics) {
 	payload := map[string]any{}
 
 	for attribute, settingKey := range dynamicSettingKeyByAttribute {
-		value, found := indexparent.GetFieldValueByTagValue(reflect.ValueOf(model), reflect.TypeFor[tfModel](), attribute)
+		value, found := typeutils.GetFieldValueByTagValue(reflect.ValueOf(model), reflect.TypeFor[tfModel](), attribute)
 		if !found || !typeutils.IsKnown(value) {
 			continue
 		}
