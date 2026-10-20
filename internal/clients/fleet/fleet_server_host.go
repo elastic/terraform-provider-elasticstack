@@ -19,6 +19,8 @@ package fleet
 
 import (
 	"context"
+	"io"
+	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
@@ -51,16 +53,32 @@ func CreateFleetServerHost(ctx context.Context, client *Client, spaceID string, 
 }
 
 // UpdateFleetServerHost updates an existing fleet server host.
+//
+// Kibana returns the ssl object of an update response as a JSON-encoded string,
+// which the generated typed response cannot decode, so the update response body
+// is not parsed and the host is read back instead.
 func UpdateFleetServerHost(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
-	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.ServerHost, int, diag.Diagnostics) {
-		resp, err := client.API.PutFleetFleetServerHostsItemidWithResponse(ctx, id, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	_, diags := kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (struct{}, int, diag.Diagnostics) {
+		resp, err := client.API.PutFleetFleetServerHostsItemid(ctx, id, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
-			return nil, 0, diagutil.FrameworkDiagFromError(err)
+			return struct{}{}, 0, diagutil.FrameworkDiagFromError(err)
 		}
+		defer resp.Body.Close()
 
-		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
-		return result, resp.StatusCode(), diags
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return struct{}{}, resp.StatusCode, diagutil.FrameworkDiagFromError(err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return struct{}{}, resp.StatusCode, diagutil.ReportUnknownHTTPError(resp.StatusCode, body)
+		}
+		return struct{}{}, resp.StatusCode, nil
 	})
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	return GetFleetServerHost(ctx, client, id, spaceID)
 }
 
 // DeleteFleetServerHost deletes an existing fleet server host.

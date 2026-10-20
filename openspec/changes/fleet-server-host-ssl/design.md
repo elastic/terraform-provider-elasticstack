@@ -104,3 +104,29 @@ Two behaviors are genuinely unknown for this specific endpoint until exercised a
 - What is the minimum Kibana/Fleet Server version to gate the new `ssl` attribute on — 9.1.0 is the best available evidence (when the field was added per Kibana release notes) but not independently confirmed against the `kibana-openapi-spec` changelog pinned in this repo. Non-blocking — implement with 9.1.0 as the `GetVersionRequirements` floor and confirm/adjust via the explicit version-boundary acceptance tests in tasks.md.
 - Is `ssl.key` returned on GET, or redacted like `agentdownloadsource`'s secret-backed key? This affects create/update/refresh hydration, not just import — a redacted key would need a conditional preservation policy in `models.go`, not only an import-time fix. Non-blocking — resolved by the acceptance test's import/refresh assertions during implementation.
 - Are the `agent_*`/`es_*` sub-fields in scope for this change or a separate follow-up issue? Resolved for this change: out of scope (see Non-Goals); tracked as a follow-up.
+
+## Probe results (Task 1, live Kibana 9.5.5)
+
+Run with `curl` against `POST/PUT/GET/DELETE /api/fleet/fleet_server_hosts` on a Kibana 9.5.5 stack. All probe hosts were deleted afterwards.
+
+| Probe | Result |
+|---|---|
+| 1.1 create with all four `ssl` fields | Accepted; create response and subsequent GET return all four fields. |
+| 1.2 PUT omitting `ssl` | `ssl` persists unchanged (omission does NOT clear). |
+| 1.3 PUT `"ssl": {}` | Clears: GET returns `"ssl": {}` (all supported fields absent; hydrates to null). |
+| 1.4 PUT `"ssl": null` | Clears: GET no longer returns `ssl`. |
+| 1.5 PUT replacing `ssl` with one child omitted (each of `certificate`, `key`, `certificate_authorities`, `client_auth`) | Each omitted child is cleared in place; retained children persist. PUT replaces the whole `ssl` object. |
+| 1.6 `key` on create/GET | Echoed verbatim on create and GET (no redaction, no `secrets.ssl` on this stack). |
+| 1.7 minimum version | 9.5.5 accepts non-null `ssl`. Lower bound cannot be exercised (only 9.5.5 is available) and the pinned OAS carries no changelog; 9.1.0 (kibana#208091) is retained as the unverified floor. |
+| 1.9 `client_auth` omitted | No server default: create response and GET omit `client_auth`. |
+| extra: deferred fields | `agent_*`/`es_*` fields can be seeded via the API and are returned on GET. A PUT with only supported fields replaces the object and silently drops them, confirming the protection requirement. |
+| extra: PUT response shape | The PUT response returns `ssl` as a JSON-encoded string (e.g. `"ssl":"{}"`) instead of an object, so the generated client cannot decode the update response when `ssl` is present. GET and POST return an object. |
+
+### Decisions driven by the probes
+
+- **Decision 3/4 removal**: in-place. Because `{}` and explicit `null` both clear, the provider sends an empty `ssl` object (`{}`, serializable through the generated struct pointer) when `ssl` is removed from configuration and the prior state had `ssl`. Explicit JSON null serialization (Task 2.5) and `RequiresReplace` plan modifiers (Task 3.4) are not needed. Child removal is in place because the PUT replaces the entire object. When neither plan nor prior state has `ssl`, `ssl` is omitted from the PUT.
+- **Key hydration**: the key is echoed verbatim, so `populateFromAPI` hydrates `ssl.key` from the response with no preservation logic.
+- **client_auth**: no server default, so `client_auth` is Optional-only and omitted from requests when null.
+- **Version floor**: 9.1.0 retained; below-floor behavior is covered by unit tests of `GetVersionRequirements` only.
+- **Deferred-field protection**: before any PUT that sends `ssl`, the provider reads the host and returns an error diagnostic when it holds non-null `agent_*`/`es_*` fields.
+- **Update response**: the update client path must tolerate the string-encoded `ssl` in the PUT response; the resource state is built from a follow-up read.

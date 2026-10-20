@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
@@ -80,7 +81,52 @@ func getSchema(_ context.Context) schema.Schema {
 					stringvalidator.LengthAtLeast(1),
 				},
 			},
+			"ssl": schema.SingleNestedAttribute{
+				Description: sslDescription,
+				Optional:    true,
+				Validators: []validator.Object{
+					sslAtLeastOneSubattrValidator{},
+				},
+				Attributes: map[string]schema.Attribute{
+					"certificate": schema.StringAttribute{
+						Description: "The TLS certificate Fleet Server presents to Elastic Agents.",
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.LengthAtLeast(1),
+						},
+					},
+					"key": schema.StringAttribute{
+						Description: "The private key for the Fleet Server TLS certificate.",
+						Optional:    true,
+						Sensitive:   true,
+						Validators: []validator.String{
+							stringvalidator.LengthAtLeast(1),
+						},
+					},
+					"certificate_authorities": schema.ListAttribute{
+						Description: "Certificate authorities used to validate Elastic Agent client certificates. Accepts 1-10 entries.",
+						Optional:    true,
+						ElementType: types.StringType,
+						Validators: []validator.List{
+							listvalidator.SizeAtLeast(1),
+							listvalidator.SizeAtMost(10),
+							listvalidator.ValueStringsAre(stringvalidator.LengthAtLeast(1)),
+						},
+					},
+					"client_auth": schema.StringAttribute{
+						Description: "Whether Fleet Server requests client certificates from Elastic Agents. Valid values are `none`, `optional`, and `required`.",
+						Optional:    true,
+						Validators: []validator.String{
+							stringvalidator.OneOf("none", "optional", "required"),
+						},
+					},
+				},
+			},
 			"space_ids": kbschema.SpaceIDsAttribute(spaceIDsDescription),
 		},
 	}
+}
+
+func getSslAttrTypes(ctx context.Context) map[string]attr.Type {
+	return getSchema(ctx).Attributes["ssl"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
 }

@@ -19,11 +19,14 @@ package serverhost
 
 import (
 	"context"
+	"fmt"
+	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
 func updateServerHost(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[serverHostModel]) (entitycore.KibanaWriteResult[serverHostModel], diag.Diagnostics) {
@@ -44,6 +47,27 @@ func updateServerHost(ctx context.Context, client *clients.KibanaScopedClient, r
 	spaceID := req.SpaceID
 	if req.Prior != nil {
 		spaceID = req.Prior.GetSpaceID().ValueString()
+	}
+
+	if body.Ssl != nil {
+		current, d := fleet.GetFleetServerHost(ctx, fleetClient, hostID, spaceID)
+		diags.Append(d...)
+		if diags.HasError() {
+			return entitycore.KibanaWriteResult[serverHostModel]{}, diags
+		}
+		if fields := deferredSSLFields(current); len(fields) > 0 {
+			diags.AddAttributeError(
+				path.Root("ssl"),
+				"Cannot update ssl without erasing unmanaged fields",
+				fmt.Sprintf(
+					"The Fleet server host stores ssl fields that this resource does not manage (%s). "+
+						"Updating ssl replaces the whole ssl object and would erase them, so the update was not sent. "+
+						"Remove these fields from the host outside of Terraform before changing ssl.",
+					strings.Join(fields, ", "),
+				),
+			)
+			return entitycore.KibanaWriteResult[serverHostModel]{}, diags
+		}
 	}
 
 	host, d := fleet.UpdateFleetServerHost(ctx, fleetClient, hostID, spaceID, body)
