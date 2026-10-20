@@ -46,6 +46,9 @@ var (
 	minVersionFleetServerHostSpaces = version.Must(version.NewVersion("9.1.0"))
 	minVersionFleetServerHostProxy  = version.Must(version.NewVersion("8.7.1"))
 	minVersionFleetServerHostSSL    = version.Must(version.NewVersion("9.1.0"))
+	// minVersionFleetServerHostSSLDeferred is the first stack whose server host ssl schema accepts the
+	// agent_* and es_* fields that the deferred-fields test seeds directly (9.1.10 and 9.2.8 reject them).
+	minVersionFleetServerHostSSLDeferred = version.Must(version.NewVersion("9.3.0"))
 )
 
 //go:embed testdata/TestAccResourceFleetServerHostFromSDK/create/main.tf
@@ -921,7 +924,7 @@ func TestAccResourceFleetServerHost_SSLUpgrade(t *testing.T) {
 // TestAccResourceFleetServerHost_SSLDeferredFields verifies that an update that would replace ssl is
 // rejected, without mutating the host, when the host stores agent_* or es_* ssl fields.
 func TestAccResourceFleetServerHost_SSLDeferredFields(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minVersionFleetServerHostSSL, versionutils.FlavorAny)
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHostSSLDeferred, versionutils.FlavorAny)
 
 	suffix := sdkacctest.RandString(8)
 	checkDeferredFieldsIntact := checkServerHostSSLOnServer(func(host *kbapi.ServerHost) error {
