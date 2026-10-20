@@ -33,6 +33,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+const (
+	sslCertificateAttr            = "certificate"
+	sslKeyAttr                    = "key"
+	sslCertificateAuthoritiesAttr = "certificate_authorities"
+	sslClientAuthAttr             = "client_auth"
+)
+
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		Description: "Creates a new Fleet Server Host.",
@@ -88,14 +95,14 @@ func getSchema(_ context.Context) schema.Schema {
 					sslAtLeastOneSubattrValidator{},
 				},
 				Attributes: map[string]schema.Attribute{
-					"certificate": schema.StringAttribute{
+					sslCertificateAttr: schema.StringAttribute{
 						Description: "The TLS certificate Fleet Server presents to Elastic Agents.",
 						Optional:    true,
 						Validators: []validator.String{
 							stringvalidator.LengthAtLeast(1),
 						},
 					},
-					"key": schema.StringAttribute{
+					sslKeyAttr: schema.StringAttribute{
 						Description: "The private key for the Fleet Server TLS certificate.",
 						Optional:    true,
 						Sensitive:   true,
@@ -103,7 +110,7 @@ func getSchema(_ context.Context) schema.Schema {
 							stringvalidator.LengthAtLeast(1),
 						},
 					},
-					"certificate_authorities": schema.ListAttribute{
+					sslCertificateAuthoritiesAttr: schema.ListAttribute{
 						Description: "Certificate authorities used to validate Elastic Agent client certificates. Accepts 1-10 entries.",
 						Optional:    true,
 						ElementType: types.StringType,
@@ -113,7 +120,7 @@ func getSchema(_ context.Context) schema.Schema {
 							listvalidator.ValueStringsAre(stringvalidator.LengthAtLeast(1)),
 						},
 					},
-					"client_auth": schema.StringAttribute{
+					sslClientAuthAttr: schema.StringAttribute{
 						Description: "Whether Fleet Server requests client certificates from Elastic Agents. Valid values are `none`, `optional`, and `required`.",
 						Optional:    true,
 						Validators: []validator.String{
@@ -129,9 +136,9 @@ func getSchema(_ context.Context) schema.Schema {
 
 func getSslAttrTypes(_ context.Context) map[string]attr.Type {
 	return map[string]attr.Type{
-		"certificate":             types.StringType,
-		"key":                     types.StringType,
-		"certificate_authorities": types.ListType{ElemType: types.StringType},
-		"client_auth":             types.StringType,
+		sslCertificateAttr:            types.StringType,
+		sslKeyAttr:                    types.StringType,
+		sslCertificateAuthoritiesAttr: types.ListType{ElemType: types.StringType},
+		sslClientAuthAttr:             types.StringType,
 	}
 }

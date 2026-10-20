@@ -27,7 +27,7 @@ const sslAtLeastOneSubattrSummary = "Empty ssl configuration"
 
 const sslAtLeastOneSubattrMessage = "At least one of certificate, key, certificate_authorities, or client_auth must be set."
 
-var sslSubattrNames = []string{"certificate", "key", "certificate_authorities", "client_auth"}
+var sslSubattrNames = []string{sslCertificateAttr, sslKeyAttr, sslCertificateAuthoritiesAttr, sslClientAuthAttr}
 
 type sslAtLeastOneSubattrValidator struct{}
 
