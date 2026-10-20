@@ -192,21 +192,8 @@ func (m *agentPolicyModel) populateAdvancedSettingsFromAPI(ctx context.Context, 
 	return diags
 }
 
-// Advanced Monitoring Options models, shared with the
-// elasticstack_fleet_agent_policy resource via agentpolicyshape. The data
-// source has no schema defaults, so API-omitted fields are always left null.
-type advancedMonitoringOptionsModel = agentpolicyshape.AdvancedMonitoringOptionsModel
-
-type httpMonitoringEndpointModel = agentpolicyshape.HTTPMonitoringEndpointModel
-
-type diagnosticsModel = agentpolicyshape.DiagnosticsModel
-
-type rateLimitsModel = agentpolicyshape.RateLimitsModel
-
-type fileUploaderModel = agentpolicyshape.FileUploaderModel
-
 func (m *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPolicyResponse) diag.Diagnostics {
-	httpEndpoint, hasHTTP := agentpolicyshape.PopulateHTTPMonitoringEndpoint(data, httpMonitoringEndpointModel{})
+	httpEndpoint, hasHTTP := agentpolicyshape.PopulateHTTPMonitoringEndpoint(data, agentpolicyshape.HTTPMonitoringEndpointModel{})
 	hasDiagnostics := agentpolicyshape.HasDiagnostics(data)
 	if !hasHTTP && !hasDiagnostics {
 		m.AdvancedMonitoringOptions = types.ObjectNull(objectAttrTypes(ctx, "advanced_monitoring_options"))
@@ -227,13 +214,13 @@ func (m *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Context
 		httpObj = types.ObjectNull(httpAttrTypes)
 	}
 
-	diagnosticsObj, diagDiags := diagnosticsFromAPI(ctx, data, hasDiagnostics)
+	diagnosticsObj, diagDiags := diagnosticsFromAPI(ctx, data)
 	diags.Append(diagDiags...)
 	if diags.HasError() {
 		return diags
 	}
 
-	obj, objDiags := types.ObjectValueFrom(ctx, objectAttrTypes(ctx, "advanced_monitoring_options"), advancedMonitoringOptionsModel{
+	obj, objDiags := types.ObjectValueFrom(ctx, objectAttrTypes(ctx, "advanced_monitoring_options"), agentpolicyshape.AdvancedMonitoringOptionsModel{
 		HTTPMonitoringEndpoint: httpObj,
 		Diagnostics:            diagnosticsObj,
 	})
@@ -245,16 +232,16 @@ func (m *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Context
 	return diags
 }
 
-func diagnosticsFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPolicyResponse, hasDiagnostics bool) (types.Object, diag.Diagnostics) {
+func diagnosticsFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPolicyResponse) (types.Object, diag.Diagnostics) {
 	attrTypes := objectAttrTypes(ctx, "advanced_monitoring_options", "diagnostics")
-	if !hasDiagnostics {
+	if !agentpolicyshape.HasDiagnostics(data) {
 		return types.ObjectNull(attrTypes), nil
 	}
 
 	rateLimitsAttrTypes := objectAttrTypes(ctx, "advanced_monitoring_options", "diagnostics", "rate_limits")
 	var rateLimitsObj types.Object
 	var diags diag.Diagnostics
-	if rateLimits, ok := agentpolicyshape.PopulateRateLimits(data, rateLimitsModel{}); ok {
+	if rateLimits, ok := agentpolicyshape.PopulateRateLimits(data, agentpolicyshape.RateLimitsModel{}); ok {
 		obj, objDiags := types.ObjectValueFrom(ctx, rateLimitsAttrTypes, rateLimits)
 		diags.Append(objDiags...)
 		if diags.HasError() {
@@ -267,7 +254,7 @@ func diagnosticsFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPoli
 
 	fileUploaderAttrTypes := objectAttrTypes(ctx, "advanced_monitoring_options", "diagnostics", "file_uploader")
 	var fileUploaderObj types.Object
-	if fileUploader, ok := agentpolicyshape.PopulateFileUploader(data, fileUploaderModel{}); ok {
+	if fileUploader, ok := agentpolicyshape.PopulateFileUploader(data, agentpolicyshape.FileUploaderModel{}); ok {
 		obj, objDiags := types.ObjectValueFrom(ctx, fileUploaderAttrTypes, fileUploader)
 		diags.Append(objDiags...)
 		if diags.HasError() {
@@ -278,7 +265,7 @@ func diagnosticsFromAPI(ctx context.Context, data *kbapi.KibanaHTTPAPIsAgentPoli
 		fileUploaderObj = types.ObjectNull(fileUploaderAttrTypes)
 	}
 
-	obj, objDiags := types.ObjectValueFrom(ctx, attrTypes, diagnosticsModel{
+	obj, objDiags := types.ObjectValueFrom(ctx, attrTypes, agentpolicyshape.DiagnosticsModel{
 		RateLimits:   rateLimitsObj,
 		FileUploader: fileUploaderObj,
 	})

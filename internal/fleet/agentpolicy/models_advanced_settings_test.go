@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -76,7 +77,7 @@ func TestPopulateAdvancedSettingsFromAPI(t *testing.T) {
 		require.False(t, diags.HasError())
 		require.False(t, model.AdvancedSettings.IsNull())
 
-		var settings advancedSettingsModel
+		var settings agentpolicyshape.AdvancedSettingsModel
 		diags = model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
 		require.False(t, diags.HasError())
 
@@ -118,7 +119,7 @@ func TestPopulateAdvancedSettingsFromAPI(t *testing.T) {
 		diags := model.populateAdvancedSettingsFromAPI(ctx, data)
 		require.False(t, diags.HasError())
 
-		var settings advancedSettingsModel
+		var settings agentpolicyshape.AdvancedSettingsModel
 		diags = model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
 		require.False(t, diags.HasError())
 
@@ -138,7 +139,7 @@ func TestPopulateAdvancedSettingsFromAPI(t *testing.T) {
 		diags := model.populateAdvancedSettingsFromAPI(ctx, &data)
 		require.False(t, diags.HasError())
 
-		var settings advancedSettingsModel
+		var settings agentpolicyshape.AdvancedSettingsModel
 		diags = model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
 		require.False(t, diags.HasError())
 
@@ -161,7 +162,7 @@ func TestPopulateAdvancedSettingsFromAPI(t *testing.T) {
 		diags := model.populateAdvancedSettingsFromAPI(ctx, &data)
 		require.False(t, diags.HasError())
 
-		var settings advancedSettingsModel
+		var settings agentpolicyshape.AdvancedSettingsModel
 		diags = model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
 		require.False(t, diags.HasError())
 
@@ -174,7 +175,7 @@ func TestPopulateAdvancedSettingsFromAPI(t *testing.T) {
 func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 	ctx := context.Background()
 
-	createAdvancedSettingsObject := func(settings advancedSettingsModel) types.Object {
+	createAdvancedSettingsObject := func(settings agentpolicyshape.AdvancedSettingsModel) types.Object {
 		obj, _ := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), settings)
 		return obj
 	}
@@ -192,7 +193,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 		},
 		{
 			name: "all null values returns nil",
-			advancedSettings: createAdvancedSettingsObject(advancedSettingsModel{
+			advancedSettings: createAdvancedSettingsObject(agentpolicyshape.AdvancedSettingsModel{
 				LoggingLevel:                  types.StringNull(),
 				LoggingToFiles:                types.BoolNull(),
 				LoggingFilesInterval:          customtypes.NewDurationNull(),
@@ -208,7 +209,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 		},
 		{
 			name: "logging_level set returns value",
-			advancedSettings: createAdvancedSettingsObject(advancedSettingsModel{
+			advancedSettings: createAdvancedSettingsObject(agentpolicyshape.AdvancedSettingsModel{
 				LoggingLevel:                  types.StringValue("debug"),
 				LoggingToFiles:                types.BoolNull(),
 				LoggingFilesInterval:          customtypes.NewDurationNull(),
@@ -228,7 +229,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 		},
 		{
 			name: "go_max_procs set returns value",
-			advancedSettings: createAdvancedSettingsObject(advancedSettingsModel{
+			advancedSettings: createAdvancedSettingsObject(agentpolicyshape.AdvancedSettingsModel{
 				LoggingLevel:                  types.StringNull(),
 				LoggingToFiles:                types.BoolNull(),
 				LoggingFilesInterval:          customtypes.NewDurationNull(),
@@ -247,7 +248,7 @@ func TestConvertAdvancedSettingsToAPI(t *testing.T) {
 		},
 		{
 			name: "multiple values set returns all values",
-			advancedSettings: createAdvancedSettingsObject(advancedSettingsModel{
+			advancedSettings: createAdvancedSettingsObject(agentpolicyshape.AdvancedSettingsModel{
 				LoggingLevel:                  types.StringValue("info"),
 				LoggingToFiles:                types.BoolValue(true),
 				LoggingFilesInterval:          customtypes.NewDurationValue("30s"),
@@ -305,7 +306,7 @@ func TestConvertAdvancedSettingsToAPIAgentFeatures(t *testing.T) {
 		SupportsFeaturesIncludeTagsInEventsEnabled:     true,
 	}
 
-	convert := func(t *testing.T, settings advancedSettingsModel, feat agentPolicyFeatures) *advancedSettingsAPIValues {
+	convert := func(t *testing.T, settings agentpolicyshape.AdvancedSettingsModel, feat agentPolicyFeatures) *advancedSettingsAPIValues {
 		t.Helper()
 		obj, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), settings)
 		require.False(t, diags.HasError())
@@ -317,14 +318,14 @@ func TestConvertAdvancedSettingsToAPIAgentFeatures(t *testing.T) {
 
 	for _, v := range []bool{true, false} {
 		t.Run("features_disable_policy_change_acks_enabled "+strconv.FormatBool(v), func(t *testing.T) {
-			got := convert(t, advancedSettingsModel{FeaturesDisablePolicyChangeAcksEnabled: types.BoolValue(v)}, allSupported)
+			got := convert(t, agentpolicyshape.AdvancedSettingsModel{FeaturesDisablePolicyChangeAcksEnabled: types.BoolValue(v)}, allSupported)
 			require.NotNil(t, got)
 			assert.Equal(t, v, got.AgentFeaturesDisablePolicyChangeAcksEnabled)
 			assert.Nil(t, got.AgentFeaturesIncludeTagsInEventsEnabled)
 			assert.Nil(t, got.AgentInternal)
 		})
 		t.Run("features_include_tags_in_events_enabled "+strconv.FormatBool(v), func(t *testing.T) {
-			got := convert(t, advancedSettingsModel{FeaturesIncludeTagsInEventsEnabled: types.BoolValue(v)}, allSupported)
+			got := convert(t, agentpolicyshape.AdvancedSettingsModel{FeaturesIncludeTagsInEventsEnabled: types.BoolValue(v)}, allSupported)
 			require.NotNil(t, got)
 			assert.Equal(t, v, got.AgentFeaturesIncludeTagsInEventsEnabled)
 			assert.Nil(t, got.AgentFeaturesDisablePolicyChangeAcksEnabled)
@@ -333,13 +334,13 @@ func TestConvertAdvancedSettingsToAPIAgentFeatures(t *testing.T) {
 	}
 
 	t.Run("internal YAML string", func(t *testing.T) {
-		got := convert(t, advancedSettingsModel{Internal: customtypes.NewNormalizedYamlValue("a:\n  b: 1\n")}, allSupported)
+		got := convert(t, agentpolicyshape.AdvancedSettingsModel{Internal: customtypes.NewNormalizedYamlValue("a:\n  b: 1\n")}, allSupported)
 		require.NotNil(t, got)
 		assert.Equal(t, "a:\n  b: 1\n", got.AgentInternal)
 	})
 
 	t.Run("unsupported stack omits keys", func(t *testing.T) {
-		got := convert(t, advancedSettingsModel{
+		got := convert(t, agentpolicyshape.AdvancedSettingsModel{
 			LoggingLevel:                           types.StringValue("info"),
 			FeaturesDisablePolicyChangeAcksEnabled: types.BoolValue(false),
 			FeaturesIncludeTagsInEventsEnabled:     types.BoolValue(false),
@@ -353,7 +354,7 @@ func TestConvertAdvancedSettingsToAPIAgentFeatures(t *testing.T) {
 	})
 
 	t.Run("only unsupported new fields set returns nil", func(t *testing.T) {
-		got := convert(t, advancedSettingsModel{
+		got := convert(t, agentpolicyshape.AdvancedSettingsModel{
 			FeaturesDisablePolicyChangeAcksEnabled: types.BoolValue(true),
 			FeaturesIncludeTagsInEventsEnabled:     types.BoolValue(true),
 			Internal:                               customtypes.NewNormalizedYamlValue("a: 1"),
@@ -362,7 +363,7 @@ func TestConvertAdvancedSettingsToAPIAgentFeatures(t *testing.T) {
 	})
 
 	t.Run("only new fields null returns nil", func(t *testing.T) {
-		assert.Nil(t, convert(t, advancedSettingsModel{}, allSupported))
+		assert.Nil(t, convert(t, agentpolicyshape.AdvancedSettingsModel{}, allSupported))
 	})
 }
 
@@ -373,7 +374,7 @@ func TestPopulateAdvancedSettingsInternalNonString(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"advanced_settings":{"agent_internal":{"agent":{"logging":{"level":"debug"}}}}}`), &data))
 
 	require.False(t, model.populateAdvancedSettingsFromAPI(ctx, &data).HasError())
-	var settings advancedSettingsModel
+	var settings agentpolicyshape.AdvancedSettingsModel
 	require.False(t, model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{}).HasError())
 	assert.JSONEq(t, `{"agent":{"logging":{"level":"debug"}}}`, settings.Internal.ValueString())
 }
@@ -385,7 +386,7 @@ func TestInternalYAMLSemanticEqualityOnRead(t *testing.T) {
 	var data kbapi.KibanaHTTPAPIsAgentPolicyResponse
 	require.NoError(t, json.Unmarshal([]byte(`{"advanced_settings":{"agent_internal":"agent:\n    monitoring:\n        http:\n            enabled: true\n    logging:\n        level: info\n"}}`), &data))
 	require.False(t, model.populateAdvancedSettingsFromAPI(ctx, &data).HasError())
-	var settings advancedSettingsModel
+	var settings agentpolicyshape.AdvancedSettingsModel
 	require.False(t, model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{}).HasError())
 
 	equal, diags := prior.StringSemanticEquals(ctx, settings.Internal)
@@ -395,7 +396,7 @@ func TestInternalYAMLSemanticEqualityOnRead(t *testing.T) {
 
 func TestToAPICreateModelEmitsAgentFeatureKeys(t *testing.T) {
 	ctx := context.Background()
-	obj, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), advancedSettingsModel{
+	obj, diags := types.ObjectValueFrom(ctx, advancedSettingsAttrTypes(), agentpolicyshape.AdvancedSettingsModel{
 		FeaturesDisablePolicyChangeAcksEnabled: types.BoolValue(false),
 		FeaturesIncludeTagsInEventsEnabled:     types.BoolValue(true),
 		Internal:                               customtypes.NewNormalizedYamlValue("a: 1\n"),

@@ -32,18 +32,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-// Advanced Monitoring Options models, shared with the
-// elasticstack_fleet_agent_policy data source via agentpolicyshape.
-type advancedMonitoringOptionsModel = agentpolicyshape.AdvancedMonitoringOptionsModel
-
-type httpMonitoringEndpointModel = agentpolicyshape.HTTPMonitoringEndpointModel
-
-type diagnosticsModel = agentpolicyshape.DiagnosticsModel
-
-type rateLimitsModel = agentpolicyshape.RateLimitsModel
-
-type fileUploaderModel = agentpolicyshape.FileUploaderModel
-
 // Default values for advanced monitoring options
 const (
 	defaultHTTPMonitoringEnabled       = false
@@ -88,8 +76,8 @@ func fileUploaderAttrTypes() map[string]attr.Type {
 // httpMonitoringEndpointDefaults returns the baseline http_monitoring_endpoint
 // values the resource reports when the Fleet API confirms the section exists
 // but omits a specific field, matching the schema's static defaults.
-func httpMonitoringEndpointDefaults() httpMonitoringEndpointModel {
-	return httpMonitoringEndpointModel{
+func httpMonitoringEndpointDefaults() agentpolicyshape.HTTPMonitoringEndpointModel {
+	return agentpolicyshape.HTTPMonitoringEndpointModel{
 		Enabled:       types.BoolValue(defaultHTTPMonitoringEnabled),
 		Host:          types.StringValue(defaultHTTPMonitoringHost),
 		Port:          types.Int32Value(defaultHTTPMonitoringPort),
@@ -101,8 +89,8 @@ func httpMonitoringEndpointDefaults() httpMonitoringEndpointModel {
 // rateLimitsDefaults returns the baseline diagnostics.rate_limits values the
 // resource reports when the Fleet API confirms diagnostics rate limiting
 // exists but omits a specific field, matching the schema's static defaults.
-func rateLimitsDefaults() rateLimitsModel {
-	return rateLimitsModel{
+func rateLimitsDefaults() agentpolicyshape.RateLimitsModel {
+	return agentpolicyshape.RateLimitsModel{
 		Interval: customtypes.NewDurationValue(defaultDiagnosticsInterval),
 		Burst:    types.Int32Value(defaultDiagnosticsBurst),
 	}
@@ -111,8 +99,8 @@ func rateLimitsDefaults() rateLimitsModel {
 // fileUploaderDefaults returns the baseline diagnostics.file_uploader values
 // the resource reports when the Fleet API confirms the file uploader exists
 // but omits a specific field, matching the schema's static defaults.
-func fileUploaderDefaults() fileUploaderModel {
-	return fileUploaderModel{
+func fileUploaderDefaults() agentpolicyshape.FileUploaderModel {
+	return agentpolicyshape.FileUploaderModel{
 		InitDuration:    customtypes.NewDurationValue(defaultDiagnosticsInitDuration),
 		BackoffDuration: customtypes.NewDurationValue(defaultDiagnosticsBackoffDuration),
 		MaxRetries:      types.Int32Value(defaultDiagnosticsMaxRetries),
@@ -169,7 +157,7 @@ func (model *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Con
 			fileUploaderObj = types.ObjectNull(fileUploaderAttrTypes())
 		}
 
-		diagModel := diagnosticsModel{
+		diagModel := agentpolicyshape.DiagnosticsModel{
 			RateLimits:   rateLimitsObj,
 			FileUploader: fileUploaderObj,
 		}
@@ -182,7 +170,7 @@ func (model *agentPolicyModel) populateAdvancedMonitoringFromAPI(ctx context.Con
 		diagnosticsObj = types.ObjectNull(diagnosticsAttrTypes())
 	}
 
-	amo := advancedMonitoringOptionsModel{
+	amo := agentpolicyshape.AdvancedMonitoringOptionsModel{
 		HTTPMonitoringEndpoint: httpEndpointObj,
 		Diagnostics:            diagnosticsObj,
 	}
@@ -212,14 +200,14 @@ func (model *agentPolicyModel) convertHTTPMonitoringEndpointToAPI(ctx context.Co
 		return nil, nil
 	}
 
-	var amo advancedMonitoringOptionsModel
+	var amo agentpolicyshape.AdvancedMonitoringOptionsModel
 	model.AdvancedMonitoringOptions.As(ctx, &amo, basetypes.ObjectAsOptions{})
 
 	if !typeutils.IsKnown(amo.HTTPMonitoringEndpoint) {
 		return nil, nil
 	}
 
-	var http httpMonitoringEndpointModel
+	var http agentpolicyshape.HTTPMonitoringEndpointModel
 	amo.HTTPMonitoringEndpoint.As(ctx, &http, basetypes.ObjectAsOptions{})
 
 	enabled := http.Enabled.ValueBool()
@@ -262,20 +250,20 @@ func (model *agentPolicyModel) convertDiagnosticsToAPI(ctx context.Context) *dia
 		return nil
 	}
 
-	var amo advancedMonitoringOptionsModel
+	var amo agentpolicyshape.AdvancedMonitoringOptionsModel
 	model.AdvancedMonitoringOptions.As(ctx, &amo, basetypes.ObjectAsOptions{})
 
 	if !typeutils.IsKnown(amo.Diagnostics) {
 		return nil
 	}
 
-	var diag diagnosticsModel
+	var diag agentpolicyshape.DiagnosticsModel
 	amo.Diagnostics.As(ctx, &diag, basetypes.ObjectAsOptions{})
 
 	result := &diagnosticsAPIResult{}
 
 	if typeutils.IsKnown(diag.RateLimits) {
-		var rateLimits rateLimitsModel
+		var rateLimits agentpolicyshape.RateLimitsModel
 		diag.RateLimits.As(ctx, &rateLimits, basetypes.ObjectAsOptions{})
 		interval := rateLimits.Interval.ValueString()
 		burst := float32(rateLimits.Burst.ValueInt32())
@@ -289,7 +277,7 @@ func (model *agentPolicyModel) convertDiagnosticsToAPI(ctx context.Context) *dia
 	}
 
 	if typeutils.IsKnown(diag.FileUploader) {
-		var fileUploader fileUploaderModel
+		var fileUploader agentpolicyshape.FileUploaderModel
 		diag.FileUploader.As(ctx, &fileUploader, basetypes.ObjectAsOptions{})
 		initDur := fileUploader.InitDuration.ValueString()
 		maxDur := fileUploader.BackoffDuration.ValueString()

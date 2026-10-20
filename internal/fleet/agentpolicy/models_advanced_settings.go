@@ -30,11 +30,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
-// advancedSettingsModel is the advanced_settings nested attribute model,
-// shared with the elasticstack_fleet_agent_policy data source via
-// agentpolicyshape.
-type advancedSettingsModel = agentpolicyshape.AdvancedSettingsModel
-
 // advancedSettingsAttrTypes returns attribute types for advanced_settings pulled from the schema
 func advancedSettingsAttrTypes() map[string]attr.Type {
 	return getSchema().Attributes["advanced_settings"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
@@ -79,7 +74,7 @@ func (model *agentPolicyModel) convertAdvancedSettingsToAPI(ctx context.Context,
 		return nil, nil
 	}
 
-	var settings advancedSettingsModel
+	var settings agentpolicyshape.AdvancedSettingsModel
 	diags := model.AdvancedSettings.As(ctx, &settings, basetypes.ObjectAsOptions{})
 	if diags.HasError() {
 		return nil, diags
