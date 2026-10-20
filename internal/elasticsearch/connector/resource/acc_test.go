@@ -310,6 +310,7 @@ func TestAccResourceContentConnector_fullEnvelope(t *testing.T) {
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "scheduling.incremental.interval", "0 30 * * * ?"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "scheduling.access_control.enabled", "false"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "scheduling.access_control.interval", "0 0 0 * * ?"),
+					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "features.document_level_security.enabled", "false"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "features.incremental_sync.enabled", "true"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "features.sync_rules.basic.enabled", "true"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "features.native_connector_api_keys.enabled", "false"),
@@ -344,10 +345,12 @@ func TestAccResourceContentConnector_update(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "service_type", "mysql"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "name", "TF acc updated"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "description", "updated description"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "language", "en"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "index_name", "content-connector-upd-"+connectorID),
+					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "is_native", "true"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "pipeline.extract_binary_content", "false"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "pipeline.reduce_whitespace", "false"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "pipeline.run_ml_inference", "true"),
@@ -355,8 +358,11 @@ func TestAccResourceContentConnector_update(t *testing.T) {
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "scheduling.full.interval", "0 15 * * * ?"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "scheduling.incremental.enabled", "true"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "scheduling.incremental.interval", "0 45 * * * ?"),
+					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "scheduling.access_control.enabled", "true"),
+					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "scheduling.access_control.interval", "0 10 * * * ?"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "features.document_level_security.enabled", "true"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "features.incremental_sync.enabled", "false"),
+					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "features.native_connector_api_keys.enabled", "true"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "features.sync_rules.basic.enabled", "false"),
 					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "features.sync_rules.advanced.enabled", "true"),
 				),
@@ -408,6 +414,27 @@ func TestAccResourceContentConnector_configurationValues_branches(t *testing.T) 
 				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 skipConnectorUnsupported(),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_values"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+			{
+				// Removing a key from configuration_values stops managing it locally
+				// but must not unset the value server-side.
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_s_branch"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(contentConnectorResourceAddr, "configuration_values.s_branch.string"),
+					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "configuration_values.n_branch.number", "42"),
+					testAccCheckConnectorConfigurationStringValue(connectorID, "s_branch", "x"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_s_branch"),
 				ConfigVariables:          vars,
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       false,
@@ -785,6 +812,140 @@ func TestAccResourceContentConnector_importSecretBaseline(t *testing.T) {
 				ConfigVariables:          secretVars,
 				PlanOnly:                 true,
 				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
+// TestAccResourceContentConnector_apiKeyID verifies api_key_id and api_key_secret_id
+// round-trip on create and the dedicated partial-update fan-out path on update.
+func TestAccResourceContentConnector_apiKeyID(t *testing.T) {
+	connectorID := sdkacctest.RandomWithPrefix("tf-acc-test-key")
+	vars := connectorIDVariables(connectorID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: testAccCheckContentConnectorDestroy(connectorID),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "api_key_id", "tf-acc-api-key-id-1"),
+					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "api_key_secret_id", "tf-acc-api-key-secret-id-1"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "api_key_id", "tf-acc-api-key-id-2"),
+					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "api_key_secret_id", "tf-acc-api-key-secret-id-2"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
+// TestAccResourceContentConnector_connectorIDGenerated verifies that omitting
+// connector_id lets Elasticsearch auto-generate an ID via the Computed path.
+func TestAccResourceContentConnector_connectorIDGenerated(t *testing.T) {
+	var generatedID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		CheckDestroy: func(s *terraform.State) error {
+			if generatedID == "" {
+				return nil
+			}
+			return testAccCheckContentConnectorDestroy(generatedID)(s)
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("generated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet(contentConnectorResourceAddr, "connector_id"),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[contentConnectorResourceAddr]
+						if !ok {
+							return fmt.Errorf("resource %s not found in state", contentConnectorResourceAddr)
+						}
+						generatedID = rs.Primary.Attributes["connector_id"]
+						if generatedID == "" {
+							return fmt.Errorf("connector_id was not generated")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("generated"),
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+		},
+	})
+}
+
+// TestAccResourceContentConnector_connectorIDReplace verifies that changing
+// connector_id triggers RequiresReplace (destroy before create).
+func TestAccResourceContentConnector_connectorIDReplace(t *testing.T) {
+	connectorID1 := sdkacctest.RandomWithPrefix("tf-acc-test-rep1")
+	connectorID2 := sdkacctest.RandomWithPrefix("tf-acc-test-rep2")
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		CheckDestroy: resource.ComposeAggregateTestCheckFunc(
+			testAccCheckContentConnectorDestroy(connectorID1),
+			testAccCheckContentConnectorDestroy(connectorID2),
+		),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          connectorIDVariables(connectorID1),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "connector_id", connectorID1),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 skipConnectorUnsupported(),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          connectorIDVariables(connectorID2),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(contentConnectorResourceAddr, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(contentConnectorResourceAddr, "connector_id", connectorID2),
+				),
 			},
 		},
 	})
