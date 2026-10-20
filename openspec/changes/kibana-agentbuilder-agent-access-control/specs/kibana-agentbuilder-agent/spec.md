@@ -41,19 +41,28 @@ The resource SHALL expose an optional, computed `access_control` single-nested a
 
 ### Requirement: access_control version gate
 
-Configuring `access_control` SHALL require Elastic Stack 9.5.0 or later. When `access_control` is known and non-null on the plan and the configured Kibana server is below 9.5.0, the provider SHALL return a version-requirement error diagnostic before performing any API operation. Omitting `access_control` SHALL be unaffected by this gate on any Elastic Stack version supported by this resource (9.3.0+).
+An agent create or update that sends `access_control` SHALL require Elastic Stack 9.5.0 or later. If the server is below 9.5.0, the provider SHALL return a version-requirement error diagnostic before the write API call. This attribute-specific requirement SHALL NOT block refresh or deletion, even if state carries a prior `access_control` value; the existing 9.3.0 lifecycle baseline continues to apply. Omitting `access_control` from a write SHALL be unaffected by this gate on any Elastic Stack version supported by this resource (9.3.0+).
 
-#### Scenario: access_control configured against an older stack
+#### Scenario: access_control sent to an older stack
 
 - **GIVEN** the Kibana server is below version 9.5.0
-- **WHEN** `access_control` is configured and any CRUD operation runs
+- **WHEN** create or update would send `access_control`
 - **THEN** the provider SHALL return a version-requirement error diagnostic naming the 9.5.0 minimum
+- **AND** the provider SHALL NOT perform the write API call
 
-#### Scenario: access_control omitted against an older stack
+#### Scenario: Refresh and deletion with carried-forward mode against an older stack
 
 - **GIVEN** the Kibana server is below version 9.5.0
-- **WHEN** `access_control` is not configured and any CRUD operation runs
-- **THEN** the provider SHALL proceed without a version-requirement error for `access_control`
+- **AND** state contains an `access_control` value from a prior operation against a supported server
+- **WHEN** refresh and deletion run
+- **THEN** refresh SHALL proceed without a version-requirement error and leave `access_control` null in state
+- **AND** deletion SHALL proceed subject only to the existing lifecycle baseline
+
+#### Scenario: access_control omitted from a write against an older stack
+
+- **GIVEN** the Kibana server is below version 9.5.0
+- **WHEN** a create or update does not send `access_control`
+- **THEN** the provider SHALL proceed without an attribute-specific version-requirement error
 
 ### Requirement: access_control create mapping
 
@@ -84,8 +93,10 @@ On update, the resource SHALL include `access_control.access_mode` in the `PUT` 
 #### Scenario: access_control removed from config on update relinquishes management
 
 - **GIVEN** an agent exists with `access_control.access_mode = "shared"` previously configured and present in state
+- **AND** another mutable attribute is changed so that an update is required
 - **WHEN** the resource is updated with `access_control` removed from configuration
 - **THEN** the `PUT` request body SHALL NOT include `access_control`
+- **AND** the plan and prior state SHALL still contain the carried-forward mode before the update
 - **AND** a subsequent read SHALL report whatever `access_mode` the server currently has, without the provider asserting a client-side reset
 
 ### Requirement: access_control read-back via dedicated endpoint
@@ -104,11 +115,20 @@ After a successful create, update, or refresh (read) of an agent — and only wh
 - **WHEN** the resource is created, updated, or refreshed
 - **THEN** `access_control` SHALL be null in state and the provider SHALL NOT call the dedicated access-control endpoint
 
-#### Scenario: Drift detected when mode changed out-of-band
+#### Scenario: Configured mode drift detected when changed out-of-band
 
-- **GIVEN** the Kibana server is 9.5.0 or later and an agent's `access_mode` was changed outside Terraform since the last apply
+- **GIVEN** the Kibana server is 9.5.0 or later and an agent has an explicitly configured `access_mode`
+- **AND** its server mode was changed outside Terraform to a different value since the last apply
 - **WHEN** `terraform plan` runs
-- **THEN** the plan SHALL show a diff on `access_control.access_mode` reflecting the server's current value
+- **THEN** the plan SHALL show a diff on `access_control.access_mode` to restore the explicitly configured value
+
+#### Scenario: Unmanaged mode adopted on refresh
+
+- **GIVEN** the Kibana server is 9.5.0 or later and `access_control` is omitted from configuration or management has been relinquished
+- **AND** the server has an `access_mode` value
+- **WHEN** refresh runs
+- **THEN** state SHALL adopt the server's current `access_mode`
+- **AND** a subsequent plan SHALL NOT propose a corrective update for that mode
 
 ### Requirement: No read-back for a missing agent
 

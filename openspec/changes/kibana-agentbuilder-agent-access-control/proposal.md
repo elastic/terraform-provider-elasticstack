@@ -7,10 +7,10 @@ This closes the `kibana-api-gap` finding for `access_control` on both the create
 ## What Changes
 
 - Add an optional, computed `access_control` single-nested attribute to the `elasticstack_kibana_agentbuilder_agent` resource schema, containing one required string attribute `access_mode` (enum `public` | `shared` | `private`).
-- Gate the entire `access_control` attribute behind Elastic Stack 9.5.0+ via a field-conditional version requirement (modeled on `internal/kibana/alertingrule/models.go`'s per-field `GetVersionRequirements` pattern): configuring `access_control` on a stack below 9.5.0 SHALL produce a version-requirement error; omitting it SHALL be unaffected on any supported stack.
+- Require Elastic Stack 9.5.0+ only for create/update operations that send `access_control`; retain the existing 9.3.0 lifecycle baseline so refresh and deletion are not blocked by a carried-forward mode. Omitting the attribute on writes is unaffected on any supported stack.
 - On create and update, send `access_control.access_mode` to the API when configured.
 - On update, omit `access_control` from the request body when it is absent from **configuration** (not just absent from a computed-carrying plan), so that removing the block from HCL relinquishes management of the mode rather than resetting it to a specific value.
-- On read, populate `access_control.access_mode` by calling the dedicated `GET /api/agent_builder/agents/{id}/access_control` sub-resource endpoint (`x-state: Generally available; added in 9.5.0`) — not the main agent `GET`, whose behavior for this field is unconfirmed on 9.4.x — gated behind the same 9.5.0 capability check already used for `MinExtendedAPIVersion` in `create.go`/`update.go`. Below 9.5.0, `access_control` is left null in state and this additional call is never attempted.
+- In the resource read callback, populate `access_control.access_mode` by calling the dedicated `GET /api/agent_builder/agents/{id}/access_control` sub-resource endpoint (`x-state: Generally available; added in 9.5.0`) — not the main agent `GET`, whose behavior for this field is unconfirmed on 9.4.x. The shared envelope reuses this callback for refresh and post-write reads; below 9.5.0, set `access_control` null in state (including any carried-forward value) and do not attempt this additional call. The data source is unchanged.
 - Add a new version constant (alongside `MinCoreAPIVersion` and `MinExtendedAPIVersion` in `internal/kibana/agentbuilder/versions.go`) for the Agent Builder access-control sub-resource API.
 - Add a thin `internal/clients/kibanaoapi` wrapper for the dedicated access-control `GET` endpoint, next to the existing `GetAgent`/`CreateAgent`/`UpdateAgent` wrappers.
 
@@ -26,7 +26,7 @@ This closes the `kibana-api-gap` finding for `access_control` on both the create
 
 ## Impact
 
-- **Modified code**: `internal/kibana/agentbuilderagent/{schema.go,models.go,create.go,update.go,read.go}` (read-after-write + refresh paths that currently call `kibanaoapi.GetAgent` need a conditional second call), `internal/clients/kibanaoapi/agentbuilder_agent.go` (new wrapper), `internal/kibana/agentbuilder/versions.go` (new version constant).
+- **Modified code**: `internal/kibana/agentbuilderagent/{schema.go,models.go,create.go,update.go,read.go}` (the resource read callback in `read.go` is reused for refresh and post-write reads), `internal/clients/kibanaoapi/agentbuilder_agent.go` (new wrapper), `internal/kibana/agentbuilder/versions.go` (new version constant).
 - **Acceptance tests**: `internal/kibana/agentbuilderagent/acc_test.go` plus new `testdata`/config fixtures for `access_control`, gated at the new minimum version via `versionutils.SkipIfUnsupported`.
 - **Docs/examples**: `docs/resources/kibana_agentbuilder_agent.md` and `examples/resources/elasticstack_kibana_agentbuilder_agent/` need regeneration/updates once implemented (not part of this proposal-only change).
 - **Backward compatibility**: additive only. Existing configurations without `access_control` are unaffected on every supported stack version; the new attribute is Optional so no existing `.tf` file needs to change.

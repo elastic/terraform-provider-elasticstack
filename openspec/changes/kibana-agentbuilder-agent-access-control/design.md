@@ -12,7 +12,7 @@ The sub-resource `PUT` also manages a separate `entries` list (individual users 
 
 **Goals:**
 - Expose `access_control.access_mode` as a schema attribute on `elasticstack_kibana_agentbuilder_agent`, settable on create and update.
-- Detect drift on the server-assigned/managed mode via read-back, so a mode changed outside Terraform (or a server default never set by the user) is visible in `terraform plan`.
+- Detect drift when an explicitly configured mode differs from the server via read-back; when the attribute is omitted or management is relinquished, refresh adopts the server's current mode without requiring a corrective update.
 - Gate the whole feature at a single, clearly documented minimum version given the main-GET read-back uncertainty on 9.4.x.
 - Treat removing `access_control` from config as relinquishing management of the mode (server keeps whatever mode it currently has), not as resetting it to a specific value.
 
@@ -34,15 +34,15 @@ access_control = {                                  # optional, computed, single
 
 Attribute-level: `access_control` is `Optional: true, Computed: true` with `objectplanmodifier.UseStateForUnknown()`. The nested `access_mode` is `Required: true` (required *within* the object, matching the API's `required: [access_mode]`) with `stringvalidator.OneOf("public", "shared", "private")`.
 
-**Why Optional+Computed (not plain Optional):** the resource needs to capture the server-assigned mode (including whatever default a cluster actually applies) when the user never configures `access_control`, and needs read-back to detect out-of-band drift. A plain `Optional` attribute without `Computed` cannot hold a server-populated value that wasn't in the user's config. This mirrors the reasoning already used for `skill_ids`/avatar fields elsewhere in this same resource, and is the documented reason the dashboard resource's `access_control.access_mode` (`internal/kibana/dashboard/schema.go`) is a weaker precedent here: that field is plain `Optional` with `RequiresReplace`, appropriate for its own API where the field isn't required-when-present and the dashboard resource doesn't read it back. This resource's `access_mode` is required-when-present and updatable in place (the API's `PUT` accepts it), so neither of the dashboard's choices transfers directly.
+**Why Optional+Computed (not plain Optional):** the resource needs to capture the server-assigned mode (including whatever default a cluster actually applies) when the user never configures `access_control`, and needs read-back to detect out-of-band changes to an explicitly configured mode. When configuration omits the attribute, refresh adopts the server's current value rather than treating it as managed drift. A plain `Optional` attribute without `Computed` cannot hold a server-populated value that wasn't in the user's config. This mirrors the reasoning already used for `skill_ids`/avatar fields elsewhere in this same resource, and is the documented reason the dashboard resource's `access_control.access_mode` (`internal/kibana/dashboard/schema.go`) is a weaker precedent here: that field is plain `Optional` with `RequiresReplace`, appropriate for its own API where the field isn't required-when-present and the dashboard resource doesn't read it back. This resource's `access_mode` is required-when-present and updatable in place (the API's `PUT` accepts it), so neither of the dashboard's choices transfers directly.
 
-### Decision 2: Version gate at 9.5.0, field-conditional, evaluated against the plan
+### Decision 2: Keep the lifecycle baseline at 9.3.0; gate writes that send the field at 9.5.0
 
 Add a new constant to `internal/kibana/agentbuilder/versions.go`, e.g. `MinAccessControlAPIVersion = semver.Must(semver.NewVersion("9.5.0"))`, documented alongside the existing `MinCoreAPIVersion` (9.3.0 — agents/tools) and `MinExtendedAPIVersion` (9.4.0 — skills/workflows/advanced config) rollout-timeline comment.
 
-`agentModel`'s version requirements are currently satisfied by the embedded `agentVersionGate` (a flat, unconditional 9.3.0 check shared with the data source via `GetVersionRequirements`). This change adds an `agentModel`-specific override of `GetVersionRequirements` (`agentModel` already satisfies `entitycore.WithVersionRequirements`; this becomes a method directly on `agentModel`, shadowing the embedded one) that: (a) always includes the existing `agentVersionGate` 9.3.0 requirement, then (b) appends the 9.5.0 `MinAccessControlAPIVersion` requirement only when `access_control` is known and non-null on the **plan** — following the exact pattern in `internal/kibana/alertingrule/models.go` (`GetVersionRequirements`, conditional appends for `AlertDelay`, `Flapping`, `Flapping.Enabled`, `Artifacts`, each gated by `typeutils.IsKnown(...) && !....IsNull()`). The data source's `GetVersionRequirements` is untouched (data source does not expose `access_control` in this change — see Non-Goals).
+Keep `agentModel`'s existing embedded `agentVersionGate` as the lifecycle-wide 9.3.0 requirement. Do not add the 9.5.0 requirement to `GetVersionRequirements`: the shared envelope checks those requirements before refresh and deletion as well as writes, and a carried-forward `access_control` value must not prevent those operations against an older server.
 
-Gating on the **plan** here is intentional and distinct from Decision 3's config-based write-omission check: a version-requirement failure should fire whenever the resulting resource state would need `access_control` set, which is what the plan reflects after Computed values are resolved. Using raw config would miss the case where a computed-but-copied prior value still implies the attribute is "set" going forward; using the plan is also the existing convention in `alertingrule`.
+Instead, check `MinAccessControlAPIVersion` immediately before a create or update that will send `access_control`: on create, when the planned value is known and non-null; on update, when the configuration value is known and non-null (Decision 3). Return a version-requirement diagnostic before the write API call if the server is older than 9.5.0. This is distinct from read-back's capability check: on an older server, refresh leaves `access_control` null and continues, and deletion remains subject only to the 9.3.0 lifecycle baseline.
 
 ### Decision 3: Update write path omits `access_control` based on config, not plan — relinquish, don't reset
 
@@ -58,12 +58,14 @@ On **create**, there is no prior server state to relinquish, so `toAPICreateMode
 
 Add `GetAgentAccessControl(ctx, client, spaceID, agentID) (*models.AgentAccessControl, diag.Diagnostics)` to `internal/clients/kibanaoapi/agentbuilder_agent.go`, next to `GetAgent`/`CreateAgent`/`UpdateAgent`/`DeleteAgent`, wrapping `client.API.GetAgentBuilderAgentsIdAccessControlWithResponse` the same way `GetAgent` wraps `GetAgentBuilderAgentsIdWithResponse`. Add a corresponding `models.AgentAccessControl{ AccessMode string }` (or reuse a shared small struct) in `internal/models/agent_builder.go`, which today has no `AccessControl` field on `models.Agent` at all.
 
-In the resource's read path (wherever `kibanaoapi.GetAgent` is currently called for refresh and for post-write reads — `read.go`, plus the `setWriteSpaceID`-based post-write read step shared by `create.go`/`update.go`), after a successful (non-404) main `GET`:
+In the resource read callback in `read.go` (registered by the resource in `resource.go` and reused by the envelope for refresh and post-write reads), after a successful (non-404) main `GET`:
 1. Call `client.EnforceMinVersion(ctx, agentbuilder.MinAccessControlAPIVersion)` (the same capability-check mechanism `create.go`/`update.go` already use for `MinExtendedAPIVersion` — not a stored version field).
-2. If the capability check fails (server below 9.5.0), leave `access_control` null in state and continue — this is not a user-facing error at read time, only at write time (Decision 2 already surfaces the error when the user attempts to configure it below 9.5.0).
+2. If the capability check fails (server below 9.5.0), set `access_control` null in state and continue, even if a prior state value was carried forward. This is not a user-facing error at read time; only a write that sends the attribute is rejected below 9.5.0 (Decision 2).
 3. If the capability check passes, call the new `GetAgentAccessControl` wrapper and populate `access_control.access_mode` from its response.
 
 The existing main-GET not-found (404 → remove from state) handling must run and return before step 1 is ever reached, so a deleted agent never triggers a second API call.
+
+Do not change `readAgentDataSource`: data-source parity is out of scope, and its model does not contain `AccessControl`. The resource callback is the single read-back integration point; the envelope reuses it for refresh and post-write reads.
 
 ### Decision 5: No sub-resource `PUT`
 
@@ -76,7 +78,7 @@ Writes always go through the main `POST`/`PUT /agents{,/{id}}` bodies' `access_c
 | Gating at 9.5.0 instead of 9.4.0 delays availability by one minor version | Deliberate given the main-GET read-back uncertainty on 9.4.x (see Context and Open Questions); revisit if a live-cluster probe confirms earlier read-back. |
 | Two API calls per read (main GET + access-control GET) on 9.5.0+ | Only on supported versions; the second call is skipped entirely below 9.5.0. No change to existing call count on versions that don't support the field. |
 | Default-mode-when-omitted discrepancy (OAS text vs. product docs) could make an acceptance test assert the wrong default | Tests must assert against the live cluster's actual response for the omitted case, not a hardcoded literal (see Non-Goals and Open Questions). |
-| `GetVersionRequirements` override on `agentModel` could drift from the data source's if someone later adds `access_control` there without copying the conditional logic | Keep the conditional check as a small, separately named helper method (not inlined) so the data source can call the same helper later if/when data-source parity is implemented. |
+| A write-specific 9.5.0 check could be applied inconsistently across create and update | Keep the check adjacent to the write operation and cover both configured writes in tests; do not place it in lifecycle-wide `GetVersionRequirements`. |
 
 ## Open questions
 
