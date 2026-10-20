@@ -96,7 +96,13 @@ Two behaviors are genuinely unknown for this specific endpoint until exercised a
 | 9.1.0 floor is wrong (not independently confirmed against this repo's pinned OAS changelog) | Explicit version-boundary acceptance tests (below-floor error, at-floor success, `ssl`-omitted-below-floor success) catch a wrong floor during implementation rather than after release. |
 | Changing TLS settings on an enrolled Fleet Server host can disconnect connected Elastic Agents in real deployments | Documented in the resource's generated docs; out of scope for the Terraform acceptance test itself, which only asserts API/state, not live agent connectivity. |
 
+### Decision 5: Raw PUT plus follow-up GET, and a pre-update guard read
+
+Kibana returns `ssl` in a PUT response as a JSON-encoded string, which the generated typed response cannot decode. `UpdateFleetServerHost` therefore issues the raw PUT, ignores the body, and reads the host back (a missing host after the PUT is an error); `PutFleetServerHost` is the exported PUT-only form used by delete when it clears the default flag. Because a PUT replaces the whole stored `ssl` object and Kibana ignores an omitted `ssl` (probe 1.2), `ssl` is sent only when the planned value differs from prior state, and the deferred-field guard (a GET before the PUT) runs only in that case, including removals. The guard and the PUT are not atomic, so a concurrent writer adding `agent_*`/`es_*` fields between them could still be overwritten; this race is accepted.
+
 ## Open questions
+
+All open questions and Decisions 3 and 4 below are resolved by the "Probe results" section at the end of this document. The 9.1.0 version floor remains unverified: only a 9.5.5 stack was probed, and below-floor behavior is covered by unit tests of `GetVersionRequirements` only.
 
 - Does Kibana's `fleet_server_hosts` PUT actually clear a previously-set `ssl` value when sent an omitted field, an explicit empty object, or explicit JSON `null`? The OAS doesn't document this for this path, and `agentdownloadsource`'s precedent is for a different endpoint. Non-blocking — each form is tested against a fresh populated host; implementation uses a form that clears or a forced-replacement plan modifier if none do.
 - Does Kibana enforce a `client_auth` default or a `certificate`+`key` pairing requirement server-side for this specific endpoint (the OAS declares neither, and the cited defaults come from standalone-Agent runtime docs, not this API)? Non-blocking — the provider does not invent a constraint the API doesn't declare; relevant only to user-facing documentation/examples.
