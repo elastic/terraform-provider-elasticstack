@@ -19,6 +19,7 @@ package fleet
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"net/http"
 
@@ -52,12 +53,14 @@ func CreateFleetServerHost(ctx context.Context, client *Client, spaceID string, 
 	})
 }
 
-// UpdateFleetServerHost updates an existing fleet server host.
+// PutFleetServerHost sends an update for an existing fleet server host without
+// reading the host back.
 //
-// Kibana returns the ssl object of an update response as a JSON-encoded string,
-// which the generated typed response cannot decode, so the update response body
-// is not parsed and the host is read back instead.
-func UpdateFleetServerHost(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
+// The raw request is used instead of the typed response wrapper because Kibana
+// returns the ssl object of a PUT response as a JSON-encoded string (for example
+// "ssl":"{}") rather than an object, which the generated response type cannot
+// decode.
+func PutFleetServerHost(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) diag.Diagnostics {
 	_, diags := kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (struct{}, int, diag.Diagnostics) {
 		resp, err := client.API.PutFleetFleetServerHostsItemid(ctx, id, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
@@ -74,11 +77,26 @@ func UpdateFleetServerHost(ctx context.Context, client *Client, id string, space
 		}
 		return struct{}{}, resp.StatusCode, nil
 	})
+	return diags
+}
+
+// UpdateFleetServerHost updates an existing fleet server host and returns the
+// host as read back after the update.
+func UpdateFleetServerHost(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
+	diags := PutFleetServerHost(ctx, client, id, spaceID, req)
 	if diags.HasError() {
 		return nil, diags
 	}
 
-	return GetFleetServerHost(ctx, client, id, spaceID)
+	host, diags := GetFleetServerHost(ctx, client, id, spaceID)
+	if diags.HasError() {
+		return nil, diags
+	}
+	if host == nil {
+		diags.AddError("Fleet server host not found after update", fmt.Sprintf("Fleet server host %q was not found when reading it back after the update.", id))
+		return nil, diags
+	}
+	return host, diags
 }
 
 // DeleteFleetServerHost deletes an existing fleet server host.

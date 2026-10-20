@@ -127,6 +127,11 @@ func getSchema(_ context.Context) schema.Schema {
 	}
 }
 
-func getSslAttrTypes(ctx context.Context) map[string]attr.Type {
-	return getSchema(ctx).Attributes["ssl"].GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+func getSslAttrTypes(_ context.Context) map[string]attr.Type {
+	return map[string]attr.Type{
+		"certificate":             types.StringType,
+		"key":                     types.StringType,
+		"certificate_authorities": types.ListType{ElemType: types.StringType},
+		"client_auth":             types.StringType,
+	}
 }

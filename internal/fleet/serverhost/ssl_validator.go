@@ -46,7 +46,7 @@ func (sslAtLeastOneSubattrValidator) ValidateObject(_ context.Context, req valid
 
 	attrs := req.ConfigValue.Attributes()
 	for _, name := range sslSubattrNames {
-		if attr, ok := attrs[name]; ok && !attr.IsNull() {
+		if value, ok := attrs[name]; ok && !value.IsNull() {
 			return
 		}
 	}

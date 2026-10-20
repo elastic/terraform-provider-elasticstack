@@ -152,6 +152,14 @@ func TestToAPIUpdateModel_Ssl(t *testing.T) {
 		assert.JSONEq(t, `{"certificate":"cert","certificate_authorities":["ca1"],"client_auth":"optional"}`, string(sslJSON(t, raw)))
 	})
 
+	t.Run("unchanged ssl is omitted", func(t *testing.T) {
+		t.Parallel()
+
+		body, diags := baseSSLModel(populated).toAPIUpdateModel(t.Context(), baseSSLModel(populated))
+		require.False(t, diags.HasError())
+		assert.Nil(t, body.Ssl)
+	})
+
 	t.Run("ssl absent in plan and prior is omitted", func(t *testing.T) {
 		t.Parallel()
 

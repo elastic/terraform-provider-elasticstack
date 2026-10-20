@@ -65,10 +65,15 @@ func objectValueToSSL(ctx context.Context, obj types.Object) (*sslAPIModel, diag
 	}, diags
 }
 
-// objectValueToSSLUpdate returns the ssl object for an update request. Kibana
-// replaces the stored object on PUT and ignores an omitted ssl field, so
-// removing ssl from configuration is sent as an empty object.
+// objectValueToSSLUpdate returns the ssl object for an update request, or nil
+// when ssl must not be sent. Kibana ignores an omitted ssl field on PUT and
+// replaces the whole stored object when one is sent, so ssl is sent only when it
+// changed. Removing ssl from configuration is sent as an empty object.
 func objectValueToSSLUpdate(ctx context.Context, plan, prior types.Object) (*sslAPIModel, diag.Diagnostics) {
+	if plan.Equal(prior) {
+		return nil, nil
+	}
+
 	ssl, diags := objectValueToSSL(ctx, plan)
 	if diags.HasError() || ssl != nil {
 		return ssl, diags
@@ -123,6 +128,8 @@ func sslToObjectValue(
 
 // deferredSSLFields lists the agent_* and es_* ssl fields stored on a host.
 // They are not exposed in the schema and are erased by a PUT that replaces ssl.
+// Fleet-managed secret references under secrets.ssl are out of scope and are not
+// inspected.
 func deferredSSLFields(host *kbapi.ServerHost) []string {
 	if host == nil || host.Ssl == nil {
 		return nil

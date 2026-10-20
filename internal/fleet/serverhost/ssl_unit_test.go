@@ -44,6 +44,7 @@ func TestSchemaSsl(t *testing.T) {
 	require.False(t, sslAttr.Computed)
 	require.Equal(t, []validator.Object{sslAtLeastOneSubattrValidator{}}, sslAttr.Validators)
 	require.Len(t, sslAttr.Attributes, 4)
+	require.Equal(t, getSslAttrTypes(context.Background()), sslAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	cert, ok := sslAttr.Attributes["certificate"].(schema.StringAttribute)
 	require.True(t, ok)
