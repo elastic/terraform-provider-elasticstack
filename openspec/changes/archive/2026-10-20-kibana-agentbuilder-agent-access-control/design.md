@@ -88,3 +88,19 @@ Writes always go through the main `POST`/`PUT /agents{,/{id}}` bodies' `access_c
 - Should the data source also expose `access_control.access_mode` for parity? Not required to close this gap.
 
 Note: the research comment's fourth open question ("write-time intent: config vs. plan for update") is resolved in Decision 3 above via code inspection of `entitycore.KibanaWriteRequest` — `req.Config` is already available to `updateAgent` with no framework change required. It is omitted from the list above since it is no longer open; see Decision 3.
+
+## Live-cluster probe results
+
+Probed against a live Elastic Stack 9.5.5 (Kibana and Elasticsearch at the default `testing.md` endpoints):
+
+- Default `access_mode` when `access_control` is omitted on create: **`public`** (matches Elastic's product docs for Stack 9.4-9.5, not the OAS description text). The create response and main `GET /agents/{id}` both include `access_control: {access_mode, entries: []}` on 9.5.5.
+- `GET /agents/{id}/access_control` returns `{"access_control": {"access_mode": ..., "entries": []}, "permissions": {...}}`, so the access-control object is wrapped one level deep and needs its own response model (`AgentAccessControlResponse`).
+- `PUT /agents/{id}` with `access_control.access_mode = "shared"` updates the mode and the sub-resource GET reflects it.
+- **Not verified:** whether a 9.4.x server's main `GET` returns `access_control`. No 9.4.x cluster was available (only 9.5.5), so the 9.5.0 gate decision is unchanged and the first Open Question remains open. The "blocking" default-mode question is resolved for 9.5.x only (`public`); Serverless was not probed.
+
+## Implementation notes
+
+- The resource had no `read.go`; a dedicated `readAgent` callback was added (replacing `SimpleKibanaRead`) to perform the main GET followed by the gated access-control GET.
+- A review suspected a custom avatar plan modifier was needed; the stock `stringplanmodifier.UseStateForUnknown()` on `avatar_color` / `avatar_symbol` is sufficient (verified against 9.5.5: without any modifier the framework marked these null computed attributes unknown after `access_control` was added; with the stock modifier the plans are empty). The stock modifier is therefore used. Because the plan carries prior avatar values forward when config omits them, `updateAgent` decides whether to send each avatar field from config (same pattern as `access_control`): null config omits the field from the PUT (preserving the server value per REQ-013), while configured values, including explicit `""`, are sent.
+- Read-back failure policy: the dedicated sub-resource is the mandated source (Decision 4). Once the main GET succeeds, any failure of the sub-resource GET (403, 5xx, or a 404) is surfaced as an error and fails refresh, rather than nulling `access_control` (which would hide drift and plan a spurious change). A 403 is not covered by a live test; it is unit tested via an injected reader (`readAgentWith`).
+- `models.Agent` deliberately has no `access_control` field (task 3.1): state is populated only from the sub-resource.

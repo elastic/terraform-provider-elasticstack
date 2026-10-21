@@ -27,6 +27,15 @@ type Agent struct {
 	Configuration AgentConfiguration `json:"configuration"`
 }
 
+type AgentAccessControl struct {
+	AccessMode string `json:"access_mode"`
+}
+
+// AgentAccessControlResponse is the body of GET /agents/{id}/access_control.
+type AgentAccessControlResponse struct {
+	AccessControl AgentAccessControl `json:"access_control"`
+}
+
 type AgentConfiguration struct {
 	Instructions *string            `json:"instructions,omitempty"`
 	Tools        []AgentToolsConfig `json:"tools,omitempty"`
