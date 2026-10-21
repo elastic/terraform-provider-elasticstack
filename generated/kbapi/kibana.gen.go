@@ -53004,8 +53004,8 @@ type KibanaHTTPAPIsVisByteFormatType string
 // KibanaHTTPAPIsVisCategoricalColorMapping Palette color assignment for specific categorical values. Unmapped values receive the unassigned color.
 type KibanaHTTPAPIsVisCategoricalColorMapping struct {
 	Mapping []struct {
-		Color  KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Color         `json:"color"`
-		Values []KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item `json:"values"`
+		Color  KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Color          `json:"color"`
+		Values []*KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item `json:"values"`
 	} `json:"mapping"`
 	Mode KibanaHTTPAPIsVisCategoricalColorMappingMode `json:"mode"`
 
@@ -53026,6 +53026,9 @@ type KibanaHTTPAPIsVisCategoricalColorMappingMappingValues0 = string
 
 // KibanaHTTPAPIsVisCategoricalColorMappingMappingValues1 defines model for .
 type KibanaHTTPAPIsVisCategoricalColorMappingMappingValues1 = float32
+
+// KibanaHTTPAPIsVisCategoricalColorMappingMappingValues2 defines model for .
+type KibanaHTTPAPIsVisCategoricalColorMappingMappingValues2 = bool
 
 // KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item defines model for KibanaHTTPAPIsVisCategoricalColorMapping.Mapping.Values.Item.
 type KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item struct {
@@ -54185,7 +54188,7 @@ type KibanaHTTPAPIsVisGaugeStyling_Shape struct {
 type KibanaHTTPAPIsVisGradientColorMapping struct {
 	Gradient *[]KibanaHTTPAPIsVisGradientColorMapping_Gradient_Item `json:"gradient,omitempty"`
 	Mapping  *[]struct {
-		Values []KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item `json:"values"`
+		Values []*KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item `json:"values"`
 	} `json:"mapping,omitempty"`
 	Mode KibanaHTTPAPIsVisGradientColorMappingMode `json:"mode"`
 
@@ -54209,6 +54212,9 @@ type KibanaHTTPAPIsVisGradientColorMappingMappingValues0 = string
 
 // KibanaHTTPAPIsVisGradientColorMappingMappingValues1 defines model for .
 type KibanaHTTPAPIsVisGradientColorMappingMappingValues1 = float32
+
+// KibanaHTTPAPIsVisGradientColorMappingMappingValues2 defines model for .
+type KibanaHTTPAPIsVisGradientColorMappingMappingValues2 = bool
 
 // KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item defines model for KibanaHTTPAPIsVisGradientColorMapping.Mapping.Values.Item.
 type KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item struct {
@@ -55691,7 +55697,7 @@ type KibanaHTTPAPIsVisMovingAverageOperation struct {
 // KibanaHTTPAPIsVisMovingAverageOperationOperation defines model for KibanaHTTPAPIsVisMovingAverageOperation.Operation.
 type KibanaHTTPAPIsVisMovingAverageOperationOperation string
 
-// KibanaHTTPAPIsVisMultiFieldKey defines model for Kibana_HTTP_APIs_visMultiFieldKey.
+// KibanaHTTPAPIsVisMultiFieldKey Composite key from a multi-terms bucket.
 type KibanaHTTPAPIsVisMultiFieldKey struct {
 	Keys []string                           `json:"keys"`
 	Type KibanaHTTPAPIsVisMultiFieldKeyType `json:"type"`
@@ -55699,6 +55705,20 @@ type KibanaHTTPAPIsVisMultiFieldKey struct {
 
 // KibanaHTTPAPIsVisMultiFieldKeyType defines model for KibanaHTTPAPIsVisMultiFieldKey.Type.
 type KibanaHTTPAPIsVisMultiFieldKeyType string
+
+// KibanaHTTPAPIsVisMultiValueCell Values of a multi-value cell.
+type KibanaHTTPAPIsVisMultiValueCell struct {
+	union json.RawMessage
+}
+
+// KibanaHTTPAPIsVisMultiValueCell0 defines model for .
+type KibanaHTTPAPIsVisMultiValueCell0 = []string
+
+// KibanaHTTPAPIsVisMultiValueCell1 defines model for .
+type KibanaHTTPAPIsVisMultiValueCell1 = []float32
+
+// KibanaHTTPAPIsVisMultiValueCell2 defines model for .
+type KibanaHTTPAPIsVisMultiValueCell2 = []bool
 
 // KibanaHTTPAPIsVisNoColor Explicitly disables coloring
 type KibanaHTTPAPIsVisNoColor struct {
@@ -56121,15 +56141,15 @@ type KibanaHTTPAPIsVisPieStylingDonutHole string
 // KibanaHTTPAPIsVisPieStylingLabelsPosition Slice label position: `inside` or `outside`.
 type KibanaHTTPAPIsVisPieStylingLabelsPosition string
 
-// KibanaHTTPAPIsVisRangeKey defines model for Kibana_HTTP_APIs_visRangeKey.
+// KibanaHTTPAPIsVisRangeKey Identifies a range bucket. Omit either bound for an open end.
 type KibanaHTTPAPIsVisRangeKey struct {
-	From   KibanaHTTPAPIsVisRangeKey_From `json:"from"`
+	From   *KibanaHTTPAPIsVisRangeKey_From `json:"from,omitempty"`
 	Ranges []struct {
-		From  KibanaHTTPAPIsVisRangeKey_Ranges_From `json:"from"`
-		Label string                                `json:"label"`
-		To    KibanaHTTPAPIsVisRangeKey_Ranges_To   `json:"to"`
+		From  *KibanaHTTPAPIsVisRangeKey_Ranges_From `json:"from,omitempty"`
+		Label string                                 `json:"label"`
+		To    *KibanaHTTPAPIsVisRangeKey_Ranges_To   `json:"to,omitempty"`
 	} `json:"ranges"`
-	To   KibanaHTTPAPIsVisRangeKey_To  `json:"to"`
+	To   *KibanaHTTPAPIsVisRangeKey_To `json:"to,omitempty"`
 	Type KibanaHTTPAPIsVisRangeKeyType `json:"type"`
 }
 
@@ -141205,6 +141225,58 @@ func (t *KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item) MergeKiba
 	return err
 }
 
+// AsKibanaHTTPAPIsVisCategoricalColorMappingMappingValues2 returns the union data inside the KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item as a KibanaHTTPAPIsVisCategoricalColorMappingMappingValues2
+func (t KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item) AsKibanaHTTPAPIsVisCategoricalColorMappingMappingValues2() (KibanaHTTPAPIsVisCategoricalColorMappingMappingValues2, error) {
+	var body KibanaHTTPAPIsVisCategoricalColorMappingMappingValues2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsVisCategoricalColorMappingMappingValues2 overwrites any union data inside the KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item as the provided KibanaHTTPAPIsVisCategoricalColorMappingMappingValues2
+func (t *KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item) FromKibanaHTTPAPIsVisCategoricalColorMappingMappingValues2(v KibanaHTTPAPIsVisCategoricalColorMappingMappingValues2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsVisCategoricalColorMappingMappingValues2 performs a merge with any union data inside the KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item, using the provided KibanaHTTPAPIsVisCategoricalColorMappingMappingValues2
+func (t *KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item) MergeKibanaHTTPAPIsVisCategoricalColorMappingMappingValues2(v KibanaHTTPAPIsVisCategoricalColorMappingMappingValues2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsVisMultiValueCell returns the union data inside the KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item as a KibanaHTTPAPIsVisMultiValueCell
+func (t KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item) AsKibanaHTTPAPIsVisMultiValueCell() (KibanaHTTPAPIsVisMultiValueCell, error) {
+	var body KibanaHTTPAPIsVisMultiValueCell
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsVisMultiValueCell overwrites any union data inside the KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item as the provided KibanaHTTPAPIsVisMultiValueCell
+func (t *KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item) FromKibanaHTTPAPIsVisMultiValueCell(v KibanaHTTPAPIsVisMultiValueCell) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsVisMultiValueCell performs a merge with any union data inside the KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item, using the provided KibanaHTTPAPIsVisMultiValueCell
+func (t *KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item) MergeKibanaHTTPAPIsVisMultiValueCell(v KibanaHTTPAPIsVisMultiValueCell) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
 // AsKibanaHTTPAPIsVisRangeKey returns the union data inside the KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item as a KibanaHTTPAPIsVisRangeKey
 func (t KibanaHTTPAPIsVisCategoricalColorMapping_Mapping_Values_Item) AsKibanaHTTPAPIsVisRangeKey() (KibanaHTTPAPIsVisRangeKey, error) {
 	var body KibanaHTTPAPIsVisRangeKey
@@ -143963,6 +144035,58 @@ func (t *KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item) FromKibanaHT
 
 // MergeKibanaHTTPAPIsVisGradientColorMappingMappingValues1 performs a merge with any union data inside the KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item, using the provided KibanaHTTPAPIsVisGradientColorMappingMappingValues1
 func (t *KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item) MergeKibanaHTTPAPIsVisGradientColorMappingMappingValues1(v KibanaHTTPAPIsVisGradientColorMappingMappingValues1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsVisGradientColorMappingMappingValues2 returns the union data inside the KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item as a KibanaHTTPAPIsVisGradientColorMappingMappingValues2
+func (t KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item) AsKibanaHTTPAPIsVisGradientColorMappingMappingValues2() (KibanaHTTPAPIsVisGradientColorMappingMappingValues2, error) {
+	var body KibanaHTTPAPIsVisGradientColorMappingMappingValues2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsVisGradientColorMappingMappingValues2 overwrites any union data inside the KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item as the provided KibanaHTTPAPIsVisGradientColorMappingMappingValues2
+func (t *KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item) FromKibanaHTTPAPIsVisGradientColorMappingMappingValues2(v KibanaHTTPAPIsVisGradientColorMappingMappingValues2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsVisGradientColorMappingMappingValues2 performs a merge with any union data inside the KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item, using the provided KibanaHTTPAPIsVisGradientColorMappingMappingValues2
+func (t *KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item) MergeKibanaHTTPAPIsVisGradientColorMappingMappingValues2(v KibanaHTTPAPIsVisGradientColorMappingMappingValues2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsVisMultiValueCell returns the union data inside the KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item as a KibanaHTTPAPIsVisMultiValueCell
+func (t KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item) AsKibanaHTTPAPIsVisMultiValueCell() (KibanaHTTPAPIsVisMultiValueCell, error) {
+	var body KibanaHTTPAPIsVisMultiValueCell
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsVisMultiValueCell overwrites any union data inside the KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item as the provided KibanaHTTPAPIsVisMultiValueCell
+func (t *KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item) FromKibanaHTTPAPIsVisMultiValueCell(v KibanaHTTPAPIsVisMultiValueCell) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsVisMultiValueCell performs a merge with any union data inside the KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item, using the provided KibanaHTTPAPIsVisMultiValueCell
+func (t *KibanaHTTPAPIsVisGradientColorMapping_Mapping_Values_Item) MergeKibanaHTTPAPIsVisMultiValueCell(v KibanaHTTPAPIsVisMultiValueCell) error {
 	b, err := json.Marshal(v)
 	if err != nil {
 		return err
@@ -148055,6 +148179,94 @@ func (t KibanaHTTPAPIsVisMosaicNoESQLByValuePanel_Metric) MarshalJSON() ([]byte,
 }
 
 func (t *KibanaHTTPAPIsVisMosaicNoESQLByValuePanel_Metric) UnmarshalJSON(b []byte) error {
+	err := t.union.UnmarshalJSON(b)
+	return err
+}
+
+// AsKibanaHTTPAPIsVisMultiValueCell0 returns the union data inside the KibanaHTTPAPIsVisMultiValueCell as a KibanaHTTPAPIsVisMultiValueCell0
+func (t KibanaHTTPAPIsVisMultiValueCell) AsKibanaHTTPAPIsVisMultiValueCell0() (KibanaHTTPAPIsVisMultiValueCell0, error) {
+	var body KibanaHTTPAPIsVisMultiValueCell0
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsVisMultiValueCell0 overwrites any union data inside the KibanaHTTPAPIsVisMultiValueCell as the provided KibanaHTTPAPIsVisMultiValueCell0
+func (t *KibanaHTTPAPIsVisMultiValueCell) FromKibanaHTTPAPIsVisMultiValueCell0(v KibanaHTTPAPIsVisMultiValueCell0) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsVisMultiValueCell0 performs a merge with any union data inside the KibanaHTTPAPIsVisMultiValueCell, using the provided KibanaHTTPAPIsVisMultiValueCell0
+func (t *KibanaHTTPAPIsVisMultiValueCell) MergeKibanaHTTPAPIsVisMultiValueCell0(v KibanaHTTPAPIsVisMultiValueCell0) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsVisMultiValueCell1 returns the union data inside the KibanaHTTPAPIsVisMultiValueCell as a KibanaHTTPAPIsVisMultiValueCell1
+func (t KibanaHTTPAPIsVisMultiValueCell) AsKibanaHTTPAPIsVisMultiValueCell1() (KibanaHTTPAPIsVisMultiValueCell1, error) {
+	var body KibanaHTTPAPIsVisMultiValueCell1
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsVisMultiValueCell1 overwrites any union data inside the KibanaHTTPAPIsVisMultiValueCell as the provided KibanaHTTPAPIsVisMultiValueCell1
+func (t *KibanaHTTPAPIsVisMultiValueCell) FromKibanaHTTPAPIsVisMultiValueCell1(v KibanaHTTPAPIsVisMultiValueCell1) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsVisMultiValueCell1 performs a merge with any union data inside the KibanaHTTPAPIsVisMultiValueCell, using the provided KibanaHTTPAPIsVisMultiValueCell1
+func (t *KibanaHTTPAPIsVisMultiValueCell) MergeKibanaHTTPAPIsVisMultiValueCell1(v KibanaHTTPAPIsVisMultiValueCell1) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+// AsKibanaHTTPAPIsVisMultiValueCell2 returns the union data inside the KibanaHTTPAPIsVisMultiValueCell as a KibanaHTTPAPIsVisMultiValueCell2
+func (t KibanaHTTPAPIsVisMultiValueCell) AsKibanaHTTPAPIsVisMultiValueCell2() (KibanaHTTPAPIsVisMultiValueCell2, error) {
+	var body KibanaHTTPAPIsVisMultiValueCell2
+	err := json.Unmarshal(t.union, &body)
+	return body, err
+}
+
+// FromKibanaHTTPAPIsVisMultiValueCell2 overwrites any union data inside the KibanaHTTPAPIsVisMultiValueCell as the provided KibanaHTTPAPIsVisMultiValueCell2
+func (t *KibanaHTTPAPIsVisMultiValueCell) FromKibanaHTTPAPIsVisMultiValueCell2(v KibanaHTTPAPIsVisMultiValueCell2) error {
+	b, err := json.Marshal(v)
+	t.union = b
+	return err
+}
+
+// MergeKibanaHTTPAPIsVisMultiValueCell2 performs a merge with any union data inside the KibanaHTTPAPIsVisMultiValueCell, using the provided KibanaHTTPAPIsVisMultiValueCell2
+func (t *KibanaHTTPAPIsVisMultiValueCell) MergeKibanaHTTPAPIsVisMultiValueCell2(v KibanaHTTPAPIsVisMultiValueCell2) error {
+	b, err := json.Marshal(v)
+	if err != nil {
+		return err
+	}
+
+	merged, err := runtime.JSONMerge(t.union, b)
+	t.union = merged
+	return err
+}
+
+func (t KibanaHTTPAPIsVisMultiValueCell) MarshalJSON() ([]byte, error) {
+	b, err := t.union.MarshalJSON()
+	return b, err
+}
+
+func (t *KibanaHTTPAPIsVisMultiValueCell) UnmarshalJSON(b []byte) error {
 	err := t.union.UnmarshalJSON(b)
 	return err
 }
