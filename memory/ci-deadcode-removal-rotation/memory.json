@@ -1946,6 +1946,24 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query.getEcsMappingElemType",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/osquery_saved_query",
+      "attemptedAt": "2026-10-21T03:07:46.553846473Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/semver.ParseSemverTagsFromRaw",
+      "package": "github.com/elastic/terraform-provider-elasticstack/scripts/changelog/internal/semver",
+      "attemptedAt": "2026-10-21T03:07:46.553846624Z",
+      "reason": "invalid_candidate_references"
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/xpprovider.NewAPIClientFromFramework",
+      "package": "github.com/elastic/terraform-provider-elasticstack/xpprovider",
+      "attemptedAt": "2026-10-21T03:33:07.483189665Z",
+      "reason": "pr_created"
     }
   ]
 }
