@@ -201,6 +201,13 @@
       "date": "2026-10-18",
       "issue": "elasticstack_fleet_server_host#/paths/~1api~1fleet~1fleet_server_hosts/post/requestBody/content/application~1json/schema/properties/ssl"
     },
+    "elasticstack_kibana_action_connector#/components/schemas/Kibana_HTTP_APIs_new_connector/properties/is_inbound_events_enabled": {
+      "fingerprint": "dbde11b560cae9e2e211a41af796ccb139ad9dbdb00986470be0497722d9b316",
+      "verdict": "file",
+      "reason": "Genuine user-configurable capability (turning inbound-event receiving on/off for bidirectional connectors) that sits on a sibling top-level request field, not inside the resource's generic config JSON object, so the existing opaque config attribute cannot reach it; no code comment disclaims it, so it should be exposed.",
+      "date": "2026-10-21",
+      "issue": "elasticstack_kibana_action_connector#/components/schemas/Kibana_HTTP_APIs_new_connector/properties/is_inbound_events_enabled"
+    },
     "elasticstack_kibana_agentbuilder_agent#/paths/~1api~1agent_builder~1agents/post/requestBody/content/application~1json/schema/properties/access_control": {
       "fingerprint": "8ea54487cef94382ba5475fe3c2c7fa4704dc1ac4a2fce63f1e71fabada2bee9",
       "verdict": "file",
@@ -214,6 +221,20 @@
       "reason": "Configuration sub-fields (ai_indices, connector_ids, plugin_ids, workflow_ids, subagent_ids, enable_elastic_capabilities, approvals.auto_approved_apis) control which indices, connectors, plugins, workflows, and subagents the agent can use; none are exposed in the Terraform schema (confirmed in internal/kibana/agentbuilderagent/models.go, where the anonymous Configuration struct declares these fields but only Instructions, Tools, and SkillIds are ever populated) or covered by any opaque attribute, so this is a real, user-controllable gap.",
       "date": "2026-10-19",
       "issue": "elasticstack_kibana_agentbuilder_agent#/paths/~1api~1agent_builder~1agents/post/requestBody/content/application~1json/schema/properties/configuration"
+    },
+    "elasticstack_kibana_agentbuilder_skill#/paths/~1api~1agent_builder~1skills~1{skillId}/delete/parameters/force": {
+      "fingerprint": "cfeb58049f4b4249e90c97b2162e8e47ef0c61b46e34235221a0a588e9394377",
+      "verdict": "file",
+      "reason": "Real, user-meaningful delete-time option (cascade-remove the skill from referencing agents instead of failing with 409); the implementation's own code comment flags this as a deliberate v1 omission still pending exposure, so it is a legitimate follow-up to file.",
+      "date": "2026-10-21",
+      "issue": "elasticstack_kibana_agentbuilder_skill#/paths/~1api~1agent_builder~1skills~1{skillId}/delete/parameters/force"
+    },
+    "elasticstack_kibana_agentbuilder_tool#/paths/~1api~1agent_builder~1tools/post/requestBody/content/application~1json/schema/properties/confirmation": {
+      "fingerprint": "ff0e570df585bda2945f2d6fa38cd9b052dd1978eb2a715efd6456de27f4a7c1",
+      "verdict": "file",
+      "reason": "confirmation (askUser: always/never/once) is a real, user-controllable tool-call safety policy on create and update; it is entirely unmodeled in schema.go/models.go with no comment explaining the omission and no opaque attribute covers it, so it should be exposed.",
+      "date": "2026-10-21",
+      "issue": "elasticstack_kibana_agentbuilder_tool#/paths/~1api~1agent_builder~1tools/post/requestBody/content/application~1json/schema/properties/confirmation"
     }
   },
   "resources": {
@@ -227,6 +248,9 @@
     "elasticstack_fleet_output": "2026-10-17T05:01:07Z",
     "elasticstack_fleet_proxy": "2026-10-18T10:47:34Z",
     "elasticstack_fleet_server_host": "2026-10-18T10:47:34Z",
-    "elasticstack_kibana_agentbuilder_agent": "2026-10-19T01:48:45Z"
+    "elasticstack_kibana_action_connector": "2026-10-21T19:53:39Z",
+    "elasticstack_kibana_agentbuilder_agent": "2026-10-19T01:48:45Z",
+    "elasticstack_kibana_agentbuilder_skill": "2026-10-21T19:53:39Z",
+    "elasticstack_kibana_agentbuilder_tool": "2026-10-21T19:53:39Z"
   }
 }
