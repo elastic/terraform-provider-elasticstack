@@ -431,7 +431,7 @@ func (model tfModel) toIndexSettings(ctx context.Context) (map[string]any, diag.
 }
 
 func (model tfModel) getFieldValueByTagValue(tagName string, t reflect.Type) (attr.Value, bool) {
-	return indexparent.GetFieldValueByTagValue(reflect.ValueOf(model), t, tagName)
+	return typeutils.GetFieldValueByTagValue(reflect.ValueOf(model), t, tagName)
 }
 
 // analysisNormalizedFields returns index.analysis sub-keys mapped to model fields.

@@ -251,7 +251,7 @@ func setFlatSettingOnModel(ctx context.Context, model *tfModel, tfFieldKey strin
 }
 
 func setTFModelField(model *tfModel, tfFieldKey string, value attr.Value) {
-	indexparent.SetFieldValueByTagValue(reflect.ValueOf(model), reflect.TypeFor[tfModel](), tfFieldKey, value)
+	typeutils.SetFieldValueByTagValue(reflect.ValueOf(model), reflect.TypeFor[tfModel](), tfFieldKey, value)
 }
 
 // populateOperationalDefaults sets provider-side defaults when each field is null.

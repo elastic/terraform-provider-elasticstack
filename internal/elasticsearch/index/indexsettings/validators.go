@@ -25,7 +25,6 @@ import (
 	"sort"
 	"strings"
 
-	indexparent "github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -36,7 +35,7 @@ import (
 // paths: creation-time-only (static) keys, nested object values, explicit null
 // values, the empty object and object or null array elements are all rejected.
 // Values are scalars or arrays of scalars (including empty arrays). Keys outside
-// indexparent.AllSettingsKeys are permitted so new Elasticsearch dynamic
+// the known settings keys are permitted so new Elasticsearch dynamic
 // settings work before they are modeled as typed attributes.
 type settingsJSONValidator struct{}
 
@@ -171,7 +170,7 @@ func validateDeclaredSettings(model tfModel) diag.Diagnostics {
 
 	declaredTyped := map[string]bool{}
 	for attribute, settingKey := range dynamicSettingKeyByAttribute {
-		value, found := indexparent.GetFieldValueByTagValue(reflect.ValueOf(model), reflect.TypeFor[tfModel](), attribute)
+		value, found := typeutils.GetFieldValueByTagValue(reflect.ValueOf(model), reflect.TypeFor[tfModel](), attribute)
 		if !found || !typeutils.IsKnown(value) {
 			continue
 		}
