@@ -29,6 +29,39 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type ActionModel struct {
+	ActionTypeID types.String         `tfsdk:"action_type_id"`
+	ID           types.String         `tfsdk:"id"`
+	Params       jsontypes.Normalized `tfsdk:"params"`
+	Group        types.String         `tfsdk:"group"`
+	UUID         types.String         `tfsdk:"uuid"`
+	AlertsFilter types.Object         `tfsdk:"alerts_filter"`
+	Frequency    types.Object         `tfsdk:"frequency"`
+}
+
+type ActionAlertsFilterModel struct {
+	Query     types.Object `tfsdk:"query"`
+	Timeframe types.Object `tfsdk:"timeframe"`
+}
+
+type ActionAlertsFilterQueryModel struct {
+	Kql         types.String         `tfsdk:"kql"`
+	FiltersJSON jsontypes.Normalized `tfsdk:"filters_json"`
+}
+
+type ActionAlertsFilterTimeframeModel struct {
+	Days       types.List   `tfsdk:"days"`
+	Timezone   types.String `tfsdk:"timezone"`
+	HoursStart types.String `tfsdk:"hours_start"`
+	HoursEnd   types.String `tfsdk:"hours_end"`
+}
+
+type ActionFrequencyModel struct {
+	NotifyWhen types.String `tfsdk:"notify_when"`
+	Summary    types.Bool   `tfsdk:"summary"`
+	Throttle   types.String `tfsdk:"throttle"`
+}
+
 // Helper function to process actions configuration for all rule types
 func (d Data) actionsToAPI(ctx context.Context) ([]kbapi.SecurityDetectionsAPIRuleAction, diag.Diagnostics) {
 	var diags diag.Diagnostics

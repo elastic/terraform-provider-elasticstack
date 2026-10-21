@@ -27,6 +27,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type RiskScoreMappingModel struct {
+	Field     types.String `tfsdk:"field"`
+	Operator  types.String `tfsdk:"operator"`
+	Value     types.String `tfsdk:"value"`
+	RiskScore types.Int64  `tfsdk:"risk_score"`
+}
+
 // Helper function to process risk score mapping configuration for all rule types
 func (d Data) riskScoreMappingToAPI(ctx context.Context) (kbapi.SecurityDetectionsAPIRiskScoreMapping, diag.Diagnostics) {
 	var diags diag.Diagnostics

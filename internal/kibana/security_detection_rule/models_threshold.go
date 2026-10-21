@@ -23,7 +23,19 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+type ThresholdModel struct {
+	Field       types.List  `tfsdk:"field"`
+	Value       types.Int64 `tfsdk:"value"`
+	Cardinality types.List  `tfsdk:"cardinality"`
+}
+
+type CardinalityModel struct {
+	Field types.String `tfsdk:"field"`
+	Value types.Int64  `tfsdk:"value"`
+}
 
 type ThresholdRuleProcessor struct {
 	baseRuleProcessor[kbapi.SecurityDetectionsAPIThresholdRule]

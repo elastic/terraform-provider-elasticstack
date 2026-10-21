@@ -27,6 +27,31 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+type ThreatModel struct {
+	Framework types.String `tfsdk:"framework"`
+	Tactic    types.Object `tfsdk:"tactic"`
+	Technique types.List   `tfsdk:"technique"`
+}
+
+type ThreatTacticModel struct {
+	ID        types.String `tfsdk:"id"`
+	Name      types.String `tfsdk:"name"`
+	Reference types.String `tfsdk:"reference"`
+}
+
+type ThreatTechniqueModel struct {
+	ID           types.String `tfsdk:"id"`
+	Name         types.String `tfsdk:"name"`
+	Reference    types.String `tfsdk:"reference"`
+	Subtechnique types.List   `tfsdk:"subtechnique"`
+}
+
+type ThreatSubtechniqueModel struct {
+	ID        types.String `tfsdk:"id"`
+	Name      types.String `tfsdk:"name"`
+	Reference types.String `tfsdk:"reference"`
+}
+
 // Helper function to convert MITRE ATT&CK threat data from Terraform to API format
 func (d Data) threatToAPI(ctx context.Context) (kbapi.SecurityDetectionsAPIThreatArray, diag.Diagnostics) {
 	var diags diag.Diagnostics

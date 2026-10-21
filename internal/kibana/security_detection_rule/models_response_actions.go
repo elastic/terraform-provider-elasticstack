@@ -30,6 +30,41 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
+type ResponseActionModel struct {
+	ActionTypeID types.String `tfsdk:"action_type_id"`
+	Params       types.Object `tfsdk:"params"`
+}
+
+type ResponseActionParamsModel struct {
+	// Osquery params
+	Query        types.String `tfsdk:"query"`
+	PackID       types.String `tfsdk:"pack_id"`
+	SavedQueryID types.String `tfsdk:"saved_query_id"`
+	Timeout      types.Int64  `tfsdk:"timeout"`
+	EcsMapping   types.Map    `tfsdk:"ecs_mapping"`
+	Queries      types.List   `tfsdk:"queries"`
+
+	// Endpoint params
+	Command types.String `tfsdk:"command"`
+	Comment types.String `tfsdk:"comment"`
+	Config  types.Object `tfsdk:"config"`
+}
+
+type OsqueryQueryModel struct {
+	ID         types.String `tfsdk:"id"`
+	Query      types.String `tfsdk:"query"`
+	Platform   types.String `tfsdk:"platform"`
+	Version    types.String `tfsdk:"version"`
+	Removed    types.Bool   `tfsdk:"removed"`
+	Snapshot   types.Bool   `tfsdk:"snapshot"`
+	EcsMapping types.Map    `tfsdk:"ecs_mapping"`
+}
+
+type EndpointProcessConfigModel struct {
+	Field     types.String `tfsdk:"field"`
+	Overwrite types.Bool   `tfsdk:"overwrite"`
+}
+
 // buildOsqueryResponseAction creates an Osquery response action from the terraform model
 func (d Data) buildOsqueryResponseAction(ctx context.Context, params ResponseActionParamsModel) (kbapi.SecurityDetectionsAPIResponseAction, diag.Diagnostics) {
 	var diags diag.Diagnostics

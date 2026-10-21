@@ -27,6 +27,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
+type SeverityMappingModel struct {
+	Field    types.String `tfsdk:"field"`
+	Operator types.String `tfsdk:"operator"`
+	Value    types.String `tfsdk:"value"`
+	Severity types.String `tfsdk:"severity"`
+}
+
 // Helper function to process severity mapping configuration for all rule types
 func (d Data) severityMappingToAPI(ctx context.Context) (*kbapi.SecurityDetectionsAPISeverityMapping, diag.Diagnostics) {
 	var diags diag.Diagnostics
