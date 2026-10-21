@@ -27,7 +27,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 )
 
-func (v tfModelV0) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
+func (v tfModelV0) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var reqs []entitycore.VersionRequirement
 
 	if typeutils.IsKnown(v.Labels) {
