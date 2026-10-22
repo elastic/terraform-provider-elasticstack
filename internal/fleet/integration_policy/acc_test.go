@@ -22,7 +22,10 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -1021,4 +1024,66 @@ func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 
 	}
 	return nil
+}
+
+// kibanaFleetRequest performs a raw Fleet API call, used to simulate changes made outside Terraform.
+func kibanaFleetRequest(method, path, body string) error {
+	req, err := http.NewRequest(method, os.Getenv("KIBANA_ENDPOINT")+path, strings.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(os.Getenv("ELASTICSEARCH_USERNAME"), os.Getenv("ELASTICSEARCH_PASSWORD"))
+	req.Header.Set("kbn-xsrf", "true")
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("%s %s returned %d", method, path, resp.StatusCode)
+	}
+	return nil
+}
+
+// TestAccResourceIntegrationPolicy_outputIDSetOutsideTerraform covers output_id being set on the
+// package policy outside Terraform (e.g. in the Kibana UI) while the config leaves it unset.
+func TestAccResourceIntegrationPolicy_outputIDSetOutsideTerraform(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutputID, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	outputID := policyName + "-out"
+	vars := config.Variables{"policy_name": config.StringVariable(policyName)}
+	var packagePolicyID, agentPolicyID string
+	t.Cleanup(func() { _ = kibanaFleetRequest(http.MethodDelete, "/api/fleet/outputs/"+outputID, "") })
+
+	// Not parallel: the shared "system" package is uninstalled by other tests' destroy.
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_space"),
+				ConfigVariables:          vars,
+				Check: func(s *terraform.State) error {
+					packagePolicyID = s.RootModule().Resources["elasticstack_fleet_integration_policy.test_policy"].Primary.ID
+					agentPolicyID = s.RootModule().Resources["elasticstack_fleet_agent_policy.test_policy"].Primary.ID
+					return nil
+				},
+			},
+			{
+				// Refresh now sees output_id from the API; applying the unchanged config must not error.
+				PreConfig: func() {
+					require.NoError(t, kibanaFleetRequest(http.MethodPost, "/api/fleet/outputs",
+						fmt.Sprintf(`{"id":%q,"name":%q,"type":"elasticsearch","hosts":["http://elasticsearch:9200"]}`, outputID, outputID)))
+					require.NoError(t, kibanaFleetRequest(http.MethodPut, "/api/fleet/package_policies/"+packagePolicyID,
+						fmt.Sprintf(`{"name":%q,"namespace":"default","policy_ids":[%q],"output_id":%q}`, policyName, agentPolicyID, outputID)))
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_space"),
+				ConfigVariables:          vars,
+			},
+		},
+	})
 }

@@ -259,13 +259,19 @@ The `agent_policy_id` and `agent_policy_ids` attributes SHALL be mutually exclus
 
 ### Requirement: State mapping from API response (REQ-022)
 
-After any create, update, or read operation, the resource SHALL populate the following fields from the API response: `id`, `policy_id`, `name`, `namespace`, `description`, `integration_name`, `integration_version`, `output_id`. The resource SHALL populate `agent_policy_id` from the API response when `agent_policy_id` was the originally configured attribute, and `agent_policy_ids` from the API response when `agent_policy_ids` was the originally configured attribute. When `space_ids` is returned by the API, the resource SHALL set it from the response; when not returned and `space_ids` was not originally set, the resource SHALL set it to null. The resource SHALL NOT map the API response's `enabled` field into Terraform state — the Kibana Fleet package-policy create/update API does not accept a top-level `enabled` value, the response field is always `true`, and the attribute is no longer part of the schema.
+After any create, update, or read operation, the resource SHALL populate the following fields from the API response: `id`, `policy_id`, `name`, `namespace`, `description`, `integration_name`, `integration_version`, `output_id`. The resource SHALL populate `agent_policy_id` from the API response when `agent_policy_id` was the originally configured attribute, and `agent_policy_ids` from the API response when `agent_policy_ids` was the originally configured attribute. When `output_id` is not configured (null) and the API response contains a value, the resource SHALL keep `output_id` null in state, because the Fleet update API preserves an omitted `output_id` and the value may have been set outside Terraform; on import, `output_id` SHALL be populated from the API response. When `space_ids` is returned by the API, the resource SHALL set it from the response; when not returned and `space_ids` was not originally set, the resource SHALL set it to null. The resource SHALL NOT map the API response's `enabled` field into Terraform state — the Kibana Fleet package-policy create/update API does not accept a top-level `enabled` value, the response field is always `true`, and the attribute is no longer part of the schema.
 
 #### Scenario: agent_policy_id preserved when originally configured
 
 - GIVEN a resource created with `agent_policy_id = "policy-abc"`
 - WHEN read refreshes state
 - THEN `agent_policy_id` in state SHALL be set from the API response and `agent_policy_ids` SHALL remain unconfigured
+
+#### Scenario: output_id set outside Terraform
+
+- GIVEN `output_id` is not configured and the policy's `output_id` was set outside Terraform
+- WHEN the configuration is applied or the resource is refreshed
+- THEN `output_id` in state SHALL remain null and apply SHALL NOT fail with "Provider produced inconsistent result after apply"
 
 ### Requirement: Package info caching (REQ-023)
 

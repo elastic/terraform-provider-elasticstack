@@ -29,12 +29,9 @@ import (
 )
 
 func TestOutputIdHandling(t *testing.T) {
-	t.Run("populateFromAPI", func(t *testing.T) {
-		model := &integrationPolicyModel{}
-		outputID := "test-output-id"
-		testID := "test-id"
-		data := &kbapi.PackagePolicy{
-			Id:      testID,
+	apiPolicy := func(outputID string) *kbapi.PackagePolicy {
+		return &kbapi.PackagePolicy{
+			Id:      "test-id",
 			Name:    "test-policy",
 			Enabled: true,
 			Package: &kbapi.KibanaHTTPAPIsPackagePolicyPackage{
@@ -43,10 +40,22 @@ func TestOutputIdHandling(t *testing.T) {
 			},
 			OutputId: &outputID,
 		}
+	}
 
-		diags := model.populateFromAPI(context.Background(), nil, data)
+	t.Run("populateFromAPI", func(t *testing.T) {
+		model := &integrationPolicyModel{OutputID: types.StringValue("configured-output-id")}
+
+		diags := model.populateFromAPI(context.Background(), nil, apiPolicy("test-output-id"))
 		require.Empty(t, diags)
 		require.Equal(t, "test-output-id", model.OutputID.ValueString())
+	})
+
+	t.Run("populateFromAPI keeps unconfigured output_id null", func(t *testing.T) {
+		model := &integrationPolicyModel{OutputID: types.StringNull()}
+
+		diags := model.populateFromAPI(context.Background(), nil, apiPolicy("set-outside-terraform"))
+		require.Empty(t, diags)
+		require.True(t, model.OutputID.IsNull())
 	})
 
 	t.Run("toAPIModel", func(t *testing.T) {
