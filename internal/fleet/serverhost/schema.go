@@ -92,7 +92,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: sslDescription,
 				Optional:    true,
 				Validators: []validator.Object{
-					sslAtLeastOneSubattrValidator{},
+					sslAtLeastOneSubattrValidator(),
 				},
 				Attributes: map[string]schema.Attribute{
 					sslCertificateAttr: schema.StringAttribute{
