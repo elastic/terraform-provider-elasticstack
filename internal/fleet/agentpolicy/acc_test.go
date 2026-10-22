@@ -22,7 +22,10 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -1616,6 +1619,69 @@ func TestAccResourceAgentPolicyKibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_agent_policy.test_policy", "kibana_connection.0.endpoints.0"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_agent_policy.test_policy", "policy_id"),
 				}, acctest.KibanaConnectionAuthChecks("elasticstack_fleet_agent_policy.test_policy")...)...),
+			},
+		},
+	})
+}
+
+// fleetAPIRequest performs a raw Fleet API call, used to simulate changes made outside Terraform.
+func fleetAPIRequest(method, path, body string) error {
+	req, err := http.NewRequest(method, os.Getenv("KIBANA_ENDPOINT")+path, strings.NewReader(body))
+	if err != nil {
+		return err
+	}
+	req.SetBasicAuth(os.Getenv("ELASTICSEARCH_USERNAME"), os.Getenv("ELASTICSEARCH_PASSWORD"))
+	req.Header.Set("kbn-xsrf", "true")
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode >= 300 {
+		return fmt.Errorf("%s %s returned %d", method, path, resp.StatusCode)
+	}
+	return nil
+}
+
+// TestAccResourceAgentPolicy_outputSetOutsideTerraform covers data_output_id and monitoring_output_id
+// being set outside Terraform (e.g. in the Kibana UI) while the config leaves them unset.
+func TestAccResourceAgentPolicy_outputSetOutsideTerraform(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionAgentPolicy, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	outputID := policyName + "-out"
+	vars := config.Variables{"policy_name": config.StringVariable(policyName)}
+	var agentPolicyID string
+	t.Cleanup(func() { _ = fleetAPIRequest(http.MethodDelete, "/api/fleet/outputs/"+outputID, "") })
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: func(s *terraform.State) error {
+					agentPolicyID = s.RootModule().Resources["elasticstack_fleet_agent_policy.test_policy"].Primary.ID
+					return nil
+				},
+			},
+			{
+				PreConfig: func() {
+					if err := fleetAPIRequest(http.MethodPost, "/api/fleet/outputs",
+						fmt.Sprintf(`{"id":%q,"name":%q,"type":"elasticsearch","hosts":["http://elasticsearch:9200"]}`, outputID, outputID)); err != nil {
+						t.Fatal(err)
+					}
+					if err := fleetAPIRequest(http.MethodPut, "/api/fleet/agent_policies/"+agentPolicyID,
+						fmt.Sprintf(`{"name":"Policy %s","namespace":"default","data_output_id":%q,"monitoring_output_id":%q}`, policyName, outputID, outputID)); err != nil {
+						t.Fatal(err)
+					}
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
 			},
 		},
 	})
