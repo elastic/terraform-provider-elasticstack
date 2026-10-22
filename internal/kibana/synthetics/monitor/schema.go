@@ -1256,26 +1256,6 @@ func (v tfStatusConfigV0) toAPIAlertStatus() *kbapi.SyntheticsMonitorAlertStatus
 	}
 }
 
-func (v tfModelV0) enforceVersionConstraints(ctx context.Context, client *clients.KibanaScopedClient) diag.Diagnostics {
-	if typeutils.IsKnown(v.Labels) {
-		isSupported, diags := client.EnforceMinVersion(ctx, MinLabelsVersion)
-		if diags.HasError() {
-			return diags
-		}
-
-		if !isSupported {
-			diags.AddAttributeError(
-				path.Root("labels"),
-				"Unsupported version for `labels` attribute",
-				fmt.Sprintf("The `labels` attribute requires server version %s or higher. Either remove the `labels` attribute or upgrade your Elastic Stack installation.", MinLabelsVersion.String()),
-			)
-			return diags
-		}
-	}
-
-	return nil
-}
-
 func (v tfModelV0) GetID() types.String { return v.ID }
 
 func (v tfModelV0) GetResourceID() types.String {
