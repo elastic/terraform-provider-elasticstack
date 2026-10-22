@@ -18,11 +18,8 @@
 package xpprovider
 
 import (
-	"context"
-
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
-	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 // Package xpprovider exports needed internal types and functions used by Crossplane for instantiating, interacting and
@@ -51,10 +48,3 @@ type XPKibanaConnection = config.KibanaConnection
 
 // XPFleetConnection exports the internal type config.FleetConnection of the Terraform provider
 type XPFleetConnection = config.FleetConnection
-
-// NewAPIClientFromFramework builds a [ProviderClientFactory] from the supplied
-// framework configuration. The returned factory is the canonical entry point for
-// obtaining scoped Kibana and Elasticsearch clients.
-func NewAPIClientFromFramework(ctx context.Context, cfg Configuration, version string) (*ClientFactory, fwdiags.Diagnostics) {
-	return clients.NewProviderClientFactoryFromFramework(ctx, cfg, version)
-}
