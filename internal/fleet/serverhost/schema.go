@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/sslcore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -38,7 +39,12 @@ const (
 	sslKeyAttr                    = "key"
 	sslCertificateAuthoritiesAttr = "certificate_authorities"
 	sslClientAuthAttr             = "client_auth"
+
+	sslAtLeastOneSubattrSummary = "Empty ssl configuration"
+	sslAtLeastOneSubattrMessage = "At least one of certificate, key, certificate_authorities, or client_auth must be set."
 )
+
+var sslSubattrNames = []string{sslCertificateAttr, sslKeyAttr, sslCertificateAuthoritiesAttr, sslClientAuthAttr}
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
@@ -92,7 +98,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: sslDescription,
 				Optional:    true,
 				Validators: []validator.Object{
-					sslAtLeastOneSubattrValidator{},
+					sslcore.AtLeastOneSubattrValidator(sslSubattrNames, sslAtLeastOneSubattrSummary, sslAtLeastOneSubattrMessage),
 				},
 				Attributes: map[string]schema.Attribute{
 					sslCertificateAttr: schema.StringAttribute{
