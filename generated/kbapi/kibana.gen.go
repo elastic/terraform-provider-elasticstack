@@ -1821,6 +1821,54 @@ func (e KibanaHTTPAPIsAiopsPatternAnalysisRandomSamplerMode) Valid() bool {
 	}
 }
 
+// Defines values for KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemFailureReason.
+const (
+	LicenseNotSupported KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemFailureReason = "license_not_supported"
+	MissingApiKey       KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemFailureReason = "missing_api_key"
+	ScheduleError       KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemFailureReason = "schedule_error"
+	WorkflowDisabled    KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemFailureReason = "workflow_disabled"
+	WorkflowNotFound    KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemFailureReason = "workflow_not_found"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemFailureReason enum.
+func (e KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemFailureReason) Valid() bool {
+	switch e {
+	case LicenseNotSupported:
+		return true
+	case MissingApiKey:
+		return true
+	case ScheduleError:
+		return true
+	case WorkflowDisabled:
+		return true
+	case WorkflowNotFound:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcome.
+const (
+	KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcomeFailure   KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcome = "failure"
+	KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcomeSuccess   KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcome = "success"
+	KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcomeThrottled KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcome = "throttled"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcome enum.
+func (e KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcome) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcomeFailure:
+		return true
+	case KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcomeSuccess:
+		return true
+	case KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcomeThrottled:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KibanaHTTPAPIsAlertingActionPolicyGroupingAllMode.
 const (
 	KibanaHTTPAPIsAlertingActionPolicyGroupingAllModeAll KibanaHTTPAPIsAlertingActionPolicyGroupingAllMode = "all"
@@ -1977,54 +2025,6 @@ func (e KibanaHTTPAPIsAlertingNewRuleKind) Valid() bool {
 	}
 }
 
-// Defines values for KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemFailureReason.
-const (
-	LicenseNotSupported KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemFailureReason = "license_not_supported"
-	MissingApiKey       KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemFailureReason = "missing_api_key"
-	ScheduleError       KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemFailureReason = "schedule_error"
-	WorkflowDisabled    KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemFailureReason = "workflow_disabled"
-	WorkflowNotFound    KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemFailureReason = "workflow_not_found"
-)
-
-// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemFailureReason enum.
-func (e KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemFailureReason) Valid() bool {
-	switch e {
-	case LicenseNotSupported:
-		return true
-	case MissingApiKey:
-		return true
-	case ScheduleError:
-		return true
-	case WorkflowDisabled:
-		return true
-	case WorkflowNotFound:
-		return true
-	default:
-		return false
-	}
-}
-
-// Defines values for KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcome.
-const (
-	KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcomeFailure   KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcome = "failure"
-	KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcomeSuccess   KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcome = "success"
-	KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcomeThrottled KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcome = "throttled"
-)
-
-// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcome enum.
-func (e KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcome) Valid() bool {
-	switch e {
-	case KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcomeFailure:
-		return true
-	case KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcomeSuccess:
-		return true
-	case KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcomeThrottled:
-		return true
-	default:
-		return false
-	}
-}
-
 // Defines values for KibanaHTTPAPIsAlertingPutRuleKind.
 const (
 	KibanaHTTPAPIsAlertingPutRuleKindAlert  KibanaHTTPAPIsAlertingPutRuleKind = "alert"
@@ -2043,18 +2043,18 @@ func (e KibanaHTTPAPIsAlertingPutRuleKind) Valid() bool {
 	}
 }
 
-// Defines values for KibanaHTTPAPIsAlertingRuleExecutionOutcome.
+// Defines values for KibanaHTTPAPIsAlertingRuleExecutionHistoryItemOutcome.
 const (
-	KibanaHTTPAPIsAlertingRuleExecutionOutcomeFailure KibanaHTTPAPIsAlertingRuleExecutionOutcome = "failure"
-	KibanaHTTPAPIsAlertingRuleExecutionOutcomeSuccess KibanaHTTPAPIsAlertingRuleExecutionOutcome = "success"
+	KibanaHTTPAPIsAlertingRuleExecutionHistoryItemOutcomeFailure KibanaHTTPAPIsAlertingRuleExecutionHistoryItemOutcome = "failure"
+	KibanaHTTPAPIsAlertingRuleExecutionHistoryItemOutcomeSuccess KibanaHTTPAPIsAlertingRuleExecutionHistoryItemOutcome = "success"
 )
 
-// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingRuleExecutionOutcome enum.
-func (e KibanaHTTPAPIsAlertingRuleExecutionOutcome) Valid() bool {
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsAlertingRuleExecutionHistoryItemOutcome enum.
+func (e KibanaHTTPAPIsAlertingRuleExecutionHistoryItemOutcome) Valid() bool {
 	switch e {
-	case KibanaHTTPAPIsAlertingRuleExecutionOutcomeFailure:
+	case KibanaHTTPAPIsAlertingRuleExecutionHistoryItemOutcomeFailure:
 		return true
-	case KibanaHTTPAPIsAlertingRuleExecutionOutcomeSuccess:
+	case KibanaHTTPAPIsAlertingRuleExecutionHistoryItemOutcomeSuccess:
 		return true
 	default:
 		return false
@@ -38189,6 +38189,79 @@ type KibanaHTTPAPIsAlertingActionPolicyDestination struct {
 	union json.RawMessage
 }
 
+// KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItem defines model for Kibana_HTTP_APIs_alerting_action_policy_execution_history_item.
+type KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItem struct {
+	ActionGroupCount float32 `json:"action_group_count"`
+	AlertCount       float32 `json:"alert_count"`
+
+	// Alerts Alert IDs referenced by this event, bounded to 50. Empty when the event references no alerts. Use `alert_count` for the true total.
+	Alerts []struct {
+		Id string `json:"id"`
+	} `json:"alerts"`
+	DispatchedAt time.Time `json:"dispatched_at"`
+
+	// Error Failure details. Omitted when the dispatch did not fail.
+	Error *struct {
+		Message string `json:"message"`
+
+		// StackTrace Omitted when the source recorded no trace.
+		StackTrace *string `json:"stack_trace,omitempty"`
+	} `json:"error,omitempty"`
+	FailureReason *KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemFailureReason `json:"failure_reason,omitempty"`
+	Outcome       KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcome        `json:"outcome"`
+	Policy        struct {
+		Id string `json:"id"`
+
+		// Name Omitted when the referenced resource could not be resolved.
+		Name *string `json:"name,omitempty"`
+	} `json:"policy"`
+
+	// RuleCount Number of rules referenced by this event after search or rule-filter narrowing. Unlike `total` on a list response, this is an exact count and it can exceed `rules.length` when the embedded array is truncated to the cap.
+	RuleCount float32 `json:"rule_count"`
+
+	// Rules Rules referenced by this event, bounded to 20. When a search or rule filter narrows the match, this array is intersected with the matched subset server-side. Use `rule_count` for the full count.
+	Rules []struct {
+		Id string `json:"id"`
+
+		// Name Omitted when the referenced resource could not be resolved.
+		Name *string `json:"name,omitempty"`
+	} `json:"rules"`
+	Workflows []struct {
+		Id string `json:"id"`
+
+		// Name Omitted when the referenced resource could not be resolved.
+		Name *string `json:"name,omitempty"`
+	} `json:"workflows"`
+}
+
+// KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemFailureReason defines model for KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItem.FailureReason.
+type KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemFailureReason string
+
+// KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcome defines model for KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItem.Outcome.
+type KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItemOutcome string
+
+// KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryResponse defines model for Kibana_HTTP_APIs_alerting_action_policy_execution_history_response.
+type KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryResponse struct {
+	Items   []KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryItem `json:"items"`
+	Page    int                                                      `json:"page"`
+	PerPage int                                                      `json:"per_page"`
+
+	// SearchMatches Per-type match counts for the active search. Omitted when no search was provided. When is_truncated is true the server ID filter was capped and the result may be truncated.
+	SearchMatches *struct {
+		// IsTruncated True when the server filter cap was reached and results may be truncated.
+		IsTruncated bool `json:"is_truncated"`
+
+		// PolicyCount The number of action policies matching the search. This count is an estimate: results above 10,000 may be reported as 10,000.
+		PolicyCount int `json:"policy_count"`
+
+		// RuleCount The number of rules matching the search. This count is an estimate: results above 10,000 may be reported as 10,000.
+		RuleCount int `json:"rule_count"`
+	} `json:"search_matches,omitempty"`
+
+	// Total The number of action policy events matching the query. This count is an estimate: results above 10,000 may be reported as 10,000.
+	Total int `json:"total"`
+}
+
 // KibanaHTTPAPIsAlertingActionPolicyGrouping defines model for Kibana_HTTP_APIs_alerting_action_policy_grouping.
 type KibanaHTTPAPIsAlertingActionPolicyGrouping struct {
 	union json.RawMessage
@@ -38370,7 +38443,7 @@ type KibanaHTTPAPIsAlertingBulkAssignAlertsRequest struct {
 
 // KibanaHTTPAPIsAlertingBulkByIdsRequest defines model for Kibana_HTTP_APIs_alerting_bulk_by_ids_request.
 type KibanaHTTPAPIsAlertingBulkByIdsRequest struct {
-	// Ids Explicit list of IDs to operate on.
+	// Ids Explicit list of IDs to operate on. Each id can appear at most once.
 	Ids []string `json:"ids"`
 }
 
@@ -38391,6 +38464,26 @@ type KibanaHTTPAPIsAlertingBulkByQueryRequest struct {
 
 // KibanaHTTPAPIsAlertingBulkByQueryRequestMatchAll When true, targets every resource. Requires an explicit opt-in. Omitted by default.
 type KibanaHTTPAPIsAlertingBulkByQueryRequestMatchAll bool
+
+// KibanaHTTPAPIsAlertingBulkCreateError defines model for Kibana_HTTP_APIs_alerting_bulk_create_error.
+type KibanaHTTPAPIsAlertingBulkCreateError struct {
+	Error struct {
+		// Code Stable error code you can branch on, for example `INVALID_SCHEDULE` or `RULE_ALREADY_EXISTS`.
+		Code string `json:"code"`
+
+		// Details Optional structured context whose keys depend on `code`. Identifier keys such as `rule_id`, `action_policy_id` and `group_hash` are stable, permanent public identifiers. On a 400 request-validation error, `details.source` (`params`, `query`, or `body`) names the failing part and is the only guaranteed key. The sibling `details.errors` may change. Do not branch on it.
+		Details *map[string]interface{} `json:"details,omitempty"`
+
+		// Message A readable explanation of the error. The wording can change without notice. Do not parse this field.
+		Message string `json:"message"`
+	} `json:"error"`
+
+	// Id The client-supplied `id` of the failed item. Omitted when the item had none.
+	Id *string `json:"id,omitempty"`
+
+	// Index Zero-based position of the failed item in the request `items`.
+	Index int `json:"index"`
+}
 
 // KibanaHTTPAPIsAlertingBulkCreateRuleItem defines model for Kibana_HTTP_APIs_alerting_bulk_create_rule_item.
 type KibanaHTTPAPIsAlertingBulkCreateRuleItem struct {
@@ -38442,22 +38535,8 @@ type KibanaHTTPAPIsAlertingBulkCreateRulesRequest struct {
 
 // KibanaHTTPAPIsAlertingBulkCreateRulesResponse defines model for Kibana_HTTP_APIs_alerting_bulk_create_rules_response.
 type KibanaHTTPAPIsAlertingBulkCreateRulesResponse struct {
-	// Errors Errors for rules that could not be created. Each entry includes the rule `id` and the error. Empty when every requested rule was created.
-	Errors []struct {
-		Error struct {
-			// Code Stable error code you can branch on, for example `INVALID_SCHEDULE` or `RULE_ALREADY_EXISTS`.
-			Code string `json:"code"`
-
-			// Details Optional extra information about the error, for example field validation issues or the `rule_id` when that ID already exists.
-			Details *map[string]interface{} `json:"details,omitempty"`
-
-			// Message A readable explanation of the error. The wording can change without notice. Do not parse this field.
-			Message string `json:"message"`
-		} `json:"error"`
-
-		// Id The identifier of the resource that failed.
-		Id string `json:"id"`
-	} `json:"errors"`
+	// Errors Errors for rules that could not be created. Each entry carries the `index` of the item in the request, its `id` when one was supplied, and the error. Empty when every requested rule was created.
+	Errors []KibanaHTTPAPIsAlertingBulkCreateError `json:"errors"`
 
 	// Items Rules that were created. Rules listed in `errors` are not included.
 	Items []KibanaHTTPAPIsAlertingRuleResponse `json:"items"`
@@ -38489,7 +38568,24 @@ type KibanaHTTPAPIsAlertingBulkDryRunResponse struct {
 
 // KibanaHTTPAPIsAlertingBulkGetRulesResponse defines model for Kibana_HTTP_APIs_alerting_bulk_get_rules_response.
 type KibanaHTTPAPIsAlertingBulkGetRulesResponse struct {
-	// Items The requested rules, in the same order as the requested ids.
+	// Errors Errors for rules that could not be returned, keyed by the requested `id`. A rule that does not exist is reported as `RULE_NOT_FOUND`. Empty when every requested rule was found.
+	Errors []struct {
+		Error struct {
+			// Code Stable error code you can branch on, for example `INVALID_SCHEDULE` or `RULE_ALREADY_EXISTS`.
+			Code string `json:"code"`
+
+			// Details Optional structured context whose keys depend on `code`. Identifier keys such as `rule_id`, `action_policy_id` and `group_hash` are stable, permanent public identifiers. On a 400 request-validation error, `details.source` (`params`, `query`, or `body`) names the failing part and is the only guaranteed key. The sibling `details.errors` may change. Do not branch on it.
+			Details *map[string]interface{} `json:"details,omitempty"`
+
+			// Message A readable explanation of the error. The wording can change without notice. Do not parse this field.
+			Message string `json:"message"`
+		} `json:"error"`
+
+		// Id The identifier of the resource that failed.
+		Id string `json:"id"`
+	} `json:"errors"`
+
+	// Items The rules that were found, in the same order as the requested ids. Rules listed in `errors` are not included.
 	Items []KibanaHTTPAPIsAlertingRuleResponse `json:"items"`
 }
 
@@ -38504,7 +38600,7 @@ type KibanaHTTPAPIsAlertingBulkOperationResponse struct {
 			// Code Stable error code you can branch on, for example `INVALID_SCHEDULE` or `RULE_ALREADY_EXISTS`.
 			Code string `json:"code"`
 
-			// Details Optional extra information about the error, for example field validation issues or the `rule_id` when that ID already exists.
+			// Details Optional structured context whose keys depend on `code`. Identifier keys such as `rule_id`, `action_policy_id` and `group_hash` are stable, permanent public identifiers. On a 400 request-validation error, `details.source` (`params`, `query`, or `body`) names the failing part and is the only guaranteed key. The sibling `details.errors` may change. Do not branch on it.
 			Details *map[string]interface{} `json:"details,omitempty"`
 
 			// Message A readable explanation of the error. The wording can change without notice. Do not parse this field.
@@ -38518,10 +38614,10 @@ type KibanaHTTPAPIsAlertingBulkOperationResponse struct {
 
 // KibanaHTTPAPIsAlertingBulkSnoozeActionPoliciesRequest defines model for Kibana_HTTP_APIs_alerting_bulk_snooze_action_policies_request.
 type KibanaHTTPAPIsAlertingBulkSnoozeActionPoliciesRequest struct {
-	// Ids Explicit list of IDs to operate on.
+	// Ids Explicit list of IDs to operate on. Each id can appear at most once.
 	Ids []string `json:"ids"`
 
-	// SnoozedUntil The ISO datetime until which the targeted action policies should be snoozed.
+	// SnoozedUntil The ISO datetime until which the targeted action policies should be snoozed. Must be in the future. A past or current instant is rejected with 400.
 	SnoozedUntil time.Time `json:"snoozed_until"`
 }
 
@@ -38530,8 +38626,8 @@ type KibanaHTTPAPIsAlertingBulkTagAlertsItem struct {
 	// AlertId Identifier of the alert to apply the action to.
 	AlertId string `json:"alert_id"`
 
-	// Tags Replaces the alert's tags. Send `[]` to clear.
-	Tags []string `json:"tags"`
+	// Tags Replaces the alert's tags. Send `null` to clear them. An empty array is rejected.
+	Tags *[]string `json:"tags,omitempty"`
 }
 
 // KibanaHTTPAPIsAlertingBulkTagAlertsRequest defines model for Kibana_HTTP_APIs_alerting_bulk_tag_alerts_request.
@@ -38557,7 +38653,7 @@ type KibanaHTTPAPIsAlertingErrorResponse struct {
 	// Code Stable error code you can branch on, for example `INVALID_SCHEDULE` or `RULE_ALREADY_EXISTS`.
 	Code string `json:"code"`
 
-	// Details Optional extra information about the error, for example field validation issues or the `rule_id` when that ID already exists.
+	// Details Optional structured context whose keys depend on `code`. Identifier keys such as `rule_id`, `action_policy_id` and `group_hash` are stable, permanent public identifiers. On a 400 request-validation error, `details.source` (`params`, `query`, or `body`) names the failing part and is the only guaranteed key. The sibling `details.errors` may change. Do not branch on it.
 	Details *map[string]interface{} `json:"details,omitempty"`
 
 	// Error A short human-readable summary of the error category (e.g., "Not Found", "Bad Request"). Subject to change without notice. Do not parse or rely on its content.
@@ -38575,7 +38671,7 @@ type KibanaHTTPAPIsAlertingNewActionPolicy struct {
 	// Description A description of the action policy. Absent when the policy has none; send `null` on PATCH to clear it.
 	Description *string `json:"description,omitempty"`
 
-	// Destinations The list of destinations. At least one is required.
+	// Destinations The list of destinations. At least one is required. Each one can appear at most once.
 	Destinations []KibanaHTTPAPIsAlertingActionPolicyDestination `json:"destinations"`
 	Grouping     *KibanaHTTPAPIsAlertingActionPolicyGrouping     `json:"grouping,omitempty"`
 
@@ -38649,92 +38745,19 @@ type KibanaHTTPAPIsAlertingNewRuleKind string
 
 // KibanaHTTPAPIsAlertingNewTagAlertAction defines model for Kibana_HTTP_APIs_alerting_new_tag_alert_action.
 type KibanaHTTPAPIsAlertingNewTagAlertAction struct {
-	// Tags Replaces the alert's tags. Send `[]` to clear.
-	Tags []string `json:"tags"`
+	// Tags Replaces the alert's tags. Send `null` to clear them. An empty array is rejected.
+	Tags *[]string `json:"tags,omitempty"`
 }
 
 // KibanaHTTPAPIsAlertingNewUnackAlertAction defines model for Kibana_HTTP_APIs_alerting_new_unack_alert_action.
 type KibanaHTTPAPIsAlertingNewUnackAlertAction = map[string]interface{}
-
-// KibanaHTTPAPIsAlertingPolicyExecutionHistoryItem defines model for Kibana_HTTP_APIs_alerting_policy_execution_history_item.
-type KibanaHTTPAPIsAlertingPolicyExecutionHistoryItem struct {
-	ActionGroupCount float32 `json:"action_group_count"`
-	AlertCount       float32 `json:"alert_count"`
-
-	// Alerts Alert IDs referenced by this event, bounded to 50. Empty when the event references no alerts. Use `alert_count` for the true total.
-	Alerts []struct {
-		Id string `json:"id"`
-	} `json:"alerts"`
-	DispatchedAt time.Time `json:"dispatched_at"`
-
-	// Error Failure details. Omitted when the dispatch did not fail.
-	Error *struct {
-		Message string `json:"message"`
-
-		// StackTrace Omitted when the source recorded no trace.
-		StackTrace *string `json:"stack_trace,omitempty"`
-	} `json:"error,omitempty"`
-	FailureReason *KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemFailureReason `json:"failure_reason,omitempty"`
-	Outcome       KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcome        `json:"outcome"`
-	Policy        struct {
-		Id string `json:"id"`
-
-		// Name Omitted when the referenced resource could not be resolved.
-		Name *string `json:"name,omitempty"`
-	} `json:"policy"`
-
-	// RuleCount Number of rules referenced by this event after search or rule-filter narrowing. Unlike `total` on a list response, this is an exact count and it can exceed `rules.length` when the embedded array is truncated to the cap.
-	RuleCount float32 `json:"rule_count"`
-
-	// Rules Rules referenced by this event, bounded to 20. When a search or rule filter narrows the match, this array is intersected with the matched subset server-side. Use `rule_count` for the full count.
-	Rules []struct {
-		Id string `json:"id"`
-
-		// Name Omitted when the referenced resource could not be resolved.
-		Name *string `json:"name,omitempty"`
-	} `json:"rules"`
-	Workflows []struct {
-		Id string `json:"id"`
-
-		// Name Omitted when the referenced resource could not be resolved.
-		Name *string `json:"name,omitempty"`
-	} `json:"workflows"`
-}
-
-// KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemFailureReason defines model for KibanaHTTPAPIsAlertingPolicyExecutionHistoryItem.FailureReason.
-type KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemFailureReason string
-
-// KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcome defines model for KibanaHTTPAPIsAlertingPolicyExecutionHistoryItem.Outcome.
-type KibanaHTTPAPIsAlertingPolicyExecutionHistoryItemOutcome string
-
-// KibanaHTTPAPIsAlertingPolicyExecutionHistoryResponse defines model for Kibana_HTTP_APIs_alerting_policy_execution_history_response.
-type KibanaHTTPAPIsAlertingPolicyExecutionHistoryResponse struct {
-	Items   []KibanaHTTPAPIsAlertingPolicyExecutionHistoryItem `json:"items"`
-	Page    int                                                `json:"page"`
-	PerPage int                                                `json:"per_page"`
-
-	// SearchMatches Per-type match counts for the active search. Omitted when no search was provided. When is_truncated is true the server ID filter was capped and the result may be truncated.
-	SearchMatches *struct {
-		// IsTruncated True when the server filter cap was reached and results may be truncated.
-		IsTruncated bool `json:"is_truncated"`
-
-		// Policies Policies matching the search. This count is an estimate: results above 10,000 may be reported as 10,000.
-		Policies float32 `json:"policies"`
-
-		// Rules Rules matching the search. This count is an estimate: results above 10,000 may be reported as 10,000.
-		Rules float32 `json:"rules"`
-	} `json:"search_matches,omitempty"`
-
-	// Total The number of action policy events matching the query. This count is an estimate: results above 10,000 may be reported as 10,000.
-	Total int `json:"total"`
-}
 
 // KibanaHTTPAPIsAlertingPutActionPolicy defines model for Kibana_HTTP_APIs_alerting_put_action_policy.
 type KibanaHTTPAPIsAlertingPutActionPolicy struct {
 	// Description A description of the action policy. Absent when the policy has none; send `null` on PATCH to clear it.
 	Description *string `json:"description,omitempty"`
 
-	// Destinations The list of destinations. At least one is required.
+	// Destinations The list of destinations. At least one is required. Each one can appear at most once.
 	Destinations []KibanaHTTPAPIsAlertingActionPolicyDestination `json:"destinations"`
 	Grouping     *KibanaHTTPAPIsAlertingActionPolicyGrouping     `json:"grouping,omitempty"`
 
@@ -38815,8 +38838,8 @@ type KibanaHTTPAPIsAlertingRuleBreachPatch struct {
 	Segment *string `json:"segment,omitempty"`
 }
 
-// KibanaHTTPAPIsAlertingRuleExecution defines model for Kibana_HTTP_APIs_alerting_rule_execution.
-type KibanaHTTPAPIsAlertingRuleExecution struct {
+// KibanaHTTPAPIsAlertingRuleExecutionHistoryItem defines model for Kibana_HTTP_APIs_alerting_rule_execution_history_item.
+type KibanaHTTPAPIsAlertingRuleExecutionHistoryItem struct {
 	EndedAt time.Time `json:"ended_at"`
 
 	// Error Failure details. Omitted on a successful run, or when the failure was unclassified.
@@ -38826,8 +38849,8 @@ type KibanaHTTPAPIsAlertingRuleExecution struct {
 		// StackTrace Omitted when the source recorded no trace.
 		StackTrace *string `json:"stack_trace,omitempty"`
 	} `json:"error,omitempty"`
-	Id      string                                     `json:"id"`
-	Outcome KibanaHTTPAPIsAlertingRuleExecutionOutcome `json:"outcome"`
+	Id      string                                                `json:"id"`
+	Outcome KibanaHTTPAPIsAlertingRuleExecutionHistoryItemOutcome `json:"outcome"`
 
 	// Reason Why the run ended the way it did. Omitted when the source recorded no reason.
 	Reason *string `json:"reason,omitempty"`
@@ -38837,7 +38860,6 @@ type KibanaHTTPAPIsAlertingRuleExecution struct {
 		// Version The rule version this run executed. Omitted until the rule executor emits its own event; the `task-run` event does not carry one.
 		Version *int `json:"version,omitempty"`
 	} `json:"rule"`
-	SpaceId   string    `json:"space_id"`
 	StartedAt time.Time `json:"started_at"`
 	Timings   struct {
 		// DurationMs Wall-clock duration of the run, in milliseconds.
@@ -38848,22 +38870,22 @@ type KibanaHTTPAPIsAlertingRuleExecution struct {
 	} `json:"timings"`
 }
 
-// KibanaHTTPAPIsAlertingRuleExecutionOutcome defines model for KibanaHTTPAPIsAlertingRuleExecution.Outcome.
-type KibanaHTTPAPIsAlertingRuleExecutionOutcome string
+// KibanaHTTPAPIsAlertingRuleExecutionHistoryItemOutcome defines model for KibanaHTTPAPIsAlertingRuleExecutionHistoryItem.Outcome.
+type KibanaHTTPAPIsAlertingRuleExecutionHistoryItemOutcome string
 
-// KibanaHTTPAPIsAlertingRuleExecutionsResponse defines model for Kibana_HTTP_APIs_alerting_rule_executions_response.
-type KibanaHTTPAPIsAlertingRuleExecutionsResponse struct {
-	Items   []KibanaHTTPAPIsAlertingRuleExecution `json:"items"`
-	Page    int                                   `json:"page"`
-	PerPage int                                   `json:"per_page"`
+// KibanaHTTPAPIsAlertingRuleExecutionHistoryResponse defines model for Kibana_HTTP_APIs_alerting_rule_execution_history_response.
+type KibanaHTTPAPIsAlertingRuleExecutionHistoryResponse struct {
+	Items   []KibanaHTTPAPIsAlertingRuleExecutionHistoryItem `json:"items"`
+	Page    int                                              `json:"page"`
+	PerPage int                                              `json:"per_page"`
 
 	// SearchMatches Match counts for the active search. Omitted when no search was provided.
 	SearchMatches *struct {
 		// IsTruncated True when more than 500 rules matched the search. Only the executions of the first 500 matching rules are returned, so the results are incomplete. Narrow the search to see the rest.
 		IsTruncated bool `json:"is_truncated"`
 
-		// Rules Rules matching the search. This count is an estimate: results above 10,000 may be reported as 10,000.
-		Rules float32 `json:"rules"`
+		// RuleCount The number of rules matching the search. This count is an estimate: results above 10,000 may be reported as 10,000.
+		RuleCount int `json:"rule_count"`
 	} `json:"search_matches,omitempty"`
 
 	// Total The number of rule executions matching the query. This count is an estimate: results above 10,000 may be reported as 10,000.
@@ -39065,31 +39087,7 @@ type KibanaHTTPAPIsAlertingRuleResponse struct {
 	Kind KibanaHTTPAPIsAlertingRuleResponseKind `json:"kind"`
 
 	// Metadata Rule metadata.
-	Metadata struct {
-		// Builder Identifies the rule builder that authored this rule (e.g. "threshold"). Absent for rules authored directly in ES|QL; send `null` on PATCH to clear it.
-		Builder *struct {
-			// Type Rule builder type.
-			Type string `json:"type"`
-		} `json:"builder,omitempty"`
-
-		// Description Human-readable description of the rule. Omit to leave it unset; send `null` on PATCH to clear it. An empty string is rejected.
-		Description *string `json:"description,omitempty"`
-
-		// Name Rule name (must be unique within the space).
-		Name string `json:"name"`
-
-		// RoutingTags Routing tags that link alerts from this rule to action policies. An action policy applies when its `matcher.tags` contains at least one of these tags. Only allowed when kind is "alert".
-		RoutingTags *[]string `json:"routing_tags,omitempty"`
-
-		// Tags Tags for categorization, e.g. ["production", "infra"].
-		Tags *[]string `json:"tags,omitempty"`
-
-		// Template The rule template this rule was created from.
-		Template *struct {
-			// Id Id of the rule template.
-			Id string `json:"id"`
-		} `json:"template,omitempty"`
-	} `json:"metadata"`
+	Metadata KibanaHTTPAPIsAlertingRuleMetadata `json:"metadata"`
 
 	// NoData What the rule does when a group has no data. Required when `kind` is `alert`. Not allowed when `kind` is `signal`. Any strategy other than `ignore` requires either `query.breach` or `no_data.query`, so that a group with no data can be told apart from one that stopped breaching.
 	NoData *KibanaHTTPAPIsAlertingRuleNoData `json:"no_data,omitempty"`
@@ -39217,7 +39215,7 @@ type KibanaHTTPAPIsAlertingRuleStateTransitionRecoveringPatchOperator string
 
 // KibanaHTTPAPIsAlertingSnoozeActionPolicyRequest defines model for Kibana_HTTP_APIs_alerting_snooze_action_policy_request.
 type KibanaHTTPAPIsAlertingSnoozeActionPolicyRequest struct {
-	// SnoozedUntil The ISO datetime until which the action policy should be snoozed.
+	// SnoozedUntil The ISO datetime until which the action policy should be snoozed. Must be in the future. A past or current instant is rejected with 400.
 	SnoozedUntil time.Time `json:"snoozed_until"`
 }
 
@@ -39226,7 +39224,7 @@ type KibanaHTTPAPIsAlertingUpdateActionPolicy struct {
 	// Description A description of the action policy. Absent when the policy has none; send `null` on PATCH to clear it.
 	Description *string `json:"description,omitempty"`
 
-	// Destinations The list of destinations. At least one is required.
+	// Destinations The list of destinations. At least one is required. Each one can appear at most once.
 	Destinations *[]KibanaHTTPAPIsAlertingActionPolicyDestination `json:"destinations,omitempty"`
 
 	// Grouping How matched alerts are batched into notifications. Absent falls back to `per_alert`; send `null` on PATCH to clear it. The mode decides the rest of the block, so a PATCH replaces it whole: send the complete mode variant rather than a single field.
@@ -82464,7 +82462,7 @@ type GetAlertingV2ActionPoliciesParams struct {
 	// PerPage The number of action policies to return per page. Defaults to 20.
 	PerPage *int `form:"per_page,omitempty" json:"per_page,omitempty"`
 
-	// Filter A KQL filter to apply to the action policies. Supported fields: id, name, description, enabled.
+	// Filter A KQL filter to apply to the action policies. Supported fields: id, name, description, enabled. Cannot be empty. Omit it to list every action policy.
 	Filter *string `form:"filter,omitempty" json:"filter,omitempty"`
 
 	// Search A text string to search across action policy fields.
@@ -82491,7 +82489,7 @@ type GetAlertingV2ExecutionHistoryActionPoliciesParams struct {
 	// PerPage Number of events per page. Defaults to 20.
 	PerPage int `form:"per_page" json:"per_page"`
 
-	// From Inclusive ISO datetime lower bound on the event timestamp; overrides the default 24-hour window. Independent of alert_ids — e.g. set it to an alert’s start time to scope results to that alert’s lifetime.
+	// From Inclusive ISO datetime lower bound on the event timestamp. Defaults to 24 hours before `to`, or before the request when `to` is omitted. Independent of alert_ids — e.g. set it to an alert’s start time to scope results to that alert’s lifetime.
 	From *time.Time `form:"from,omitempty" json:"from,omitempty"`
 
 	// To Inclusive ISO datetime upper bound on the event timestamp.
@@ -82536,7 +82534,7 @@ type GetAlertingV2ExecutionHistoryRulesParams struct {
 	// Outcomes Outcome filter.
 	Outcomes *[]GetAlertingV2ExecutionHistoryRulesParamsOutcomes `form:"outcomes,omitempty" json:"outcomes,omitempty"`
 
-	// From Inclusive ISO datetime lower bound on event.start.
+	// From Inclusive ISO datetime lower bound on event.start. Defaults to 24 hours before `to`, or before the request when `to` is omitted. Set it to see older executions.
 	From *time.Time `form:"from,omitempty" json:"from,omitempty"`
 
 	// To Inclusive ISO datetime upper bound on event.start.
@@ -82572,7 +82570,7 @@ type GetAlertingV2RulesParams struct {
 	// PerPage The number of rules to return per page. Defaults to 20.
 	PerPage *int `form:"per_page,omitempty" json:"per_page,omitempty"`
 
-	// Filter The filter to apply to the rules.
+	// Filter A KQL filter to apply to the rules. Supported fields: id, kind, enabled, metadata.name, metadata.description, metadata.tags, metadata.routing_tags. Cannot be empty. Omit it to list every rule.
 	Filter *string `form:"filter,omitempty" json:"filter,omitempty"`
 
 	// SortField The field to sort rules by.
@@ -87416,8 +87414,14 @@ type PostFleetCloudOnboardingDeploymentsJSONBody struct {
 	// DataFormat Data format: ecs or otel.
 	DataFormat *PostFleetCloudOnboardingDeploymentsJSONBodyDataFormat `json:"dataFormat,omitempty"`
 
+	// Description Integration description from the Service settings step.
+	Description *string `json:"description,omitempty"`
+
 	// GlobalRegion Global AWS region from the Service Settings step.
 	GlobalRegion *string `json:"globalRegion,omitempty"`
+
+	// IntegrationName Integration name as entered in the Service settings step, before any per-package suffix is applied.
+	IntegrationName *string `json:"integrationName,omitempty"`
 
 	// Mechanisms Delivery mechanisms active in this deployment.
 	Mechanisms []PostFleetCloudOnboardingDeploymentsJSONBodyMechanisms `json:"mechanisms"`
@@ -87515,6 +87519,9 @@ type PutFleetCloudOnboardingDeploymentsIdJSONBody struct {
 	DeploymentId   *string `json:"deploymentId,omitempty"`
 	DeploymentName *string `json:"deploymentName,omitempty"`
 
+	// Description Integration description from the Service settings step. Send null to clear it.
+	Description *string `json:"description,omitempty"`
+
 	// EcfStacks ECF CloudFormation stacks to record for this deployment.
 	EcfStacks *[]struct {
 		// Family ECF template family.
@@ -87532,6 +87539,9 @@ type PutFleetCloudOnboardingDeploymentsIdJSONBody struct {
 		// TemplateVersion ECF semantic version resolved at launch time, e.g. "1.10.0".
 		TemplateVersion string `json:"templateVersion"`
 	} `json:"ecfStacks,omitempty"`
+
+	// IntegrationName Integration name used by the last deploy, before any per-package suffix. Refreshed on each deploy because an unedited default name follows the service selection.
+	IntegrationName *string `json:"integrationName,omitempty"`
 
 	// Mechanisms Delivery mechanisms active in this deployment. Replaces the stored mechanisms array.
 	Mechanisms *[]PutFleetCloudOnboardingDeploymentsIdJSONBodyMechanisms `json:"mechanisms,omitempty"`
@@ -247239,7 +247249,7 @@ func (r PostAlertingV2AlertsIdUnackResponse) ContentType() string {
 type GetAlertingV2ExecutionHistoryActionPoliciesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *KibanaHTTPAPIsAlertingPolicyExecutionHistoryResponse
+	JSON200      *KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryResponse
 	JSON400      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON401      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON403      *KibanaHTTPAPIsAlertingErrorResponse
@@ -247274,7 +247284,7 @@ func (r GetAlertingV2ExecutionHistoryActionPoliciesResponse) ContentType() strin
 type GetAlertingV2ExecutionHistoryRulesResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
-	JSON200      *KibanaHTTPAPIsAlertingRuleExecutionsResponse
+	JSON200      *KibanaHTTPAPIsAlertingRuleExecutionHistoryResponse
 	JSON400      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON401      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON403      *KibanaHTTPAPIsAlertingErrorResponse
@@ -247523,7 +247533,6 @@ type PostAlertingV2RulesBulkGetResponse struct {
 	JSON400      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON401      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON403      *KibanaHTTPAPIsAlertingErrorResponse
-	JSON404      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON500      *KibanaHTTPAPIsAlertingErrorResponse
 	JSON503      *KibanaHTTPAPIsAlertingErrorResponse
 }
@@ -258658,6 +258667,9 @@ type PostFleetCloudOnboardingDeploymentsResponse struct {
 			// DeploymentName Opaque deployment name; for AWS, the CFN stack name.
 			DeploymentName *string `json:"deploymentName,omitempty"`
 
+			// Description Integration description from the Service settings step.
+			Description *string `json:"description,omitempty"`
+
 			// EcfStacks ECF CloudFormation stacks launched as part of this deployment. Written by the wizard after the user clicks Launch.
 			EcfStacks *[]struct {
 				// Family ECF template family.
@@ -258677,9 +258689,12 @@ type PostFleetCloudOnboardingDeploymentsResponse struct {
 			} `json:"ecfStacks,omitempty"`
 
 			// GlobalRegion Global AWS region from the Service Settings step.
-			GlobalRegion *string                                                                `json:"globalRegion,omitempty"`
-			Id           string                                                                 `json:"id"`
-			Mechanisms   []PostFleetCloudOnboardingDeployments200JSONResponseBodyItemMechanisms `json:"mechanisms"`
+			GlobalRegion *string `json:"globalRegion,omitempty"`
+			Id           string  `json:"id"`
+
+			// IntegrationName Integration name as entered in the Service settings step, before any per-package suffix is applied.
+			IntegrationName *string                                                                `json:"integrationName,omitempty"`
+			Mechanisms      []PostFleetCloudOnboardingDeployments200JSONResponseBodyItemMechanisms `json:"mechanisms"`
 
 			// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 			PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
@@ -258768,6 +258783,9 @@ type GetFleetCloudOnboardingDeploymentsConnectorConnectoridResponse struct {
 			// DeploymentName Opaque deployment name; for AWS, the CFN stack name.
 			DeploymentName *string `json:"deploymentName,omitempty"`
 
+			// Description Integration description from the Service settings step.
+			Description *string `json:"description,omitempty"`
+
 			// EcfStacks ECF CloudFormation stacks launched as part of this deployment. Written by the wizard after the user clicks Launch.
 			EcfStacks *[]struct {
 				// Family ECF template family.
@@ -258787,9 +258805,12 @@ type GetFleetCloudOnboardingDeploymentsConnectorConnectoridResponse struct {
 			} `json:"ecfStacks,omitempty"`
 
 			// GlobalRegion Global AWS region from the Service Settings step.
-			GlobalRegion *string                                                                                    `json:"globalRegion,omitempty"`
-			Id           string                                                                                     `json:"id"`
-			Mechanisms   []GetFleetCloudOnboardingDeploymentsConnectorConnectorid200JSONResponseBodyItemsMechanisms `json:"mechanisms"`
+			GlobalRegion *string `json:"globalRegion,omitempty"`
+			Id           string  `json:"id"`
+
+			// IntegrationName Integration name as entered in the Service settings step, before any per-package suffix is applied.
+			IntegrationName *string                                                                                    `json:"integrationName,omitempty"`
+			Mechanisms      []GetFleetCloudOnboardingDeploymentsConnectorConnectorid200JSONResponseBodyItemsMechanisms `json:"mechanisms"`
 
 			// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 			PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
@@ -258920,6 +258941,9 @@ type GetFleetCloudOnboardingDeploymentsIdResponse struct {
 			// DeploymentName Opaque deployment name; for AWS, the CFN stack name.
 			DeploymentName *string `json:"deploymentName,omitempty"`
 
+			// Description Integration description from the Service settings step.
+			Description *string `json:"description,omitempty"`
+
 			// EcfStacks ECF CloudFormation stacks launched as part of this deployment. Written by the wizard after the user clicks Launch.
 			EcfStacks *[]struct {
 				// Family ECF template family.
@@ -258939,9 +258963,12 @@ type GetFleetCloudOnboardingDeploymentsIdResponse struct {
 			} `json:"ecfStacks,omitempty"`
 
 			// GlobalRegion Global AWS region from the Service Settings step.
-			GlobalRegion *string                                                                 `json:"globalRegion,omitempty"`
-			Id           string                                                                  `json:"id"`
-			Mechanisms   []GetFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemMechanisms `json:"mechanisms"`
+			GlobalRegion *string `json:"globalRegion,omitempty"`
+			Id           string  `json:"id"`
+
+			// IntegrationName Integration name as entered in the Service settings step, before any per-package suffix is applied.
+			IntegrationName *string                                                                 `json:"integrationName,omitempty"`
+			Mechanisms      []GetFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemMechanisms `json:"mechanisms"`
 
 			// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 			PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
@@ -259033,6 +259060,9 @@ type PutFleetCloudOnboardingDeploymentsIdResponse struct {
 			// DeploymentName Opaque deployment name; for AWS, the CFN stack name.
 			DeploymentName *string `json:"deploymentName,omitempty"`
 
+			// Description Integration description from the Service settings step.
+			Description *string `json:"description,omitempty"`
+
 			// EcfStacks ECF CloudFormation stacks launched as part of this deployment. Written by the wizard after the user clicks Launch.
 			EcfStacks *[]struct {
 				// Family ECF template family.
@@ -259052,9 +259082,12 @@ type PutFleetCloudOnboardingDeploymentsIdResponse struct {
 			} `json:"ecfStacks,omitempty"`
 
 			// GlobalRegion Global AWS region from the Service Settings step.
-			GlobalRegion *string                                                                 `json:"globalRegion,omitempty"`
-			Id           string                                                                  `json:"id"`
-			Mechanisms   []PutFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemMechanisms `json:"mechanisms"`
+			GlobalRegion *string `json:"globalRegion,omitempty"`
+			Id           string  `json:"id"`
+
+			// IntegrationName Integration name as entered in the Service settings step, before any per-package suffix is applied.
+			IntegrationName *string                                                                 `json:"integrationName,omitempty"`
+			Mechanisms      []PutFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemMechanisms `json:"mechanisms"`
 
 			// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 			PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
@@ -285470,7 +285503,7 @@ func ParseGetAlertingV2ExecutionHistoryActionPoliciesResponse(rsp *http.Response
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest KibanaHTTPAPIsAlertingPolicyExecutionHistoryResponse
+		var dest KibanaHTTPAPIsAlertingActionPolicyExecutionHistoryResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -285531,7 +285564,7 @@ func ParseGetAlertingV2ExecutionHistoryRulesResponse(rsp *http.Response) (*GetAl
 
 	switch {
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
-		var dest KibanaHTTPAPIsAlertingRuleExecutionsResponse
+		var dest KibanaHTTPAPIsAlertingRuleExecutionHistoryResponse
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -285984,13 +286017,6 @@ func ParsePostAlertingV2RulesBulkGetResponse(rsp *http.Response) (*PostAlertingV
 			return nil, err
 		}
 		response.JSON403 = &dest
-
-	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest KibanaHTTPAPIsAlertingErrorResponse
-		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
-			return nil, err
-		}
-		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
 		var dest KibanaHTTPAPIsAlertingErrorResponse
@@ -298489,6 +298515,9 @@ func ParsePostFleetCloudOnboardingDeploymentsResponse(rsp *http.Response) (*Post
 				// DeploymentName Opaque deployment name; for AWS, the CFN stack name.
 				DeploymentName *string `json:"deploymentName,omitempty"`
 
+				// Description Integration description from the Service settings step.
+				Description *string `json:"description,omitempty"`
+
 				// EcfStacks ECF CloudFormation stacks launched as part of this deployment. Written by the wizard after the user clicks Launch.
 				EcfStacks *[]struct {
 					// Family ECF template family.
@@ -298508,9 +298537,12 @@ func ParsePostFleetCloudOnboardingDeploymentsResponse(rsp *http.Response) (*Post
 				} `json:"ecfStacks,omitempty"`
 
 				// GlobalRegion Global AWS region from the Service Settings step.
-				GlobalRegion *string                                                                `json:"globalRegion,omitempty"`
-				Id           string                                                                 `json:"id"`
-				Mechanisms   []PostFleetCloudOnboardingDeployments200JSONResponseBodyItemMechanisms `json:"mechanisms"`
+				GlobalRegion *string `json:"globalRegion,omitempty"`
+				Id           string  `json:"id"`
+
+				// IntegrationName Integration name as entered in the Service settings step, before any per-package suffix is applied.
+				IntegrationName *string                                                                `json:"integrationName,omitempty"`
+				Mechanisms      []PostFleetCloudOnboardingDeployments200JSONResponseBodyItemMechanisms `json:"mechanisms"`
 
 				// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 				PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
@@ -298601,6 +298633,9 @@ func ParseGetFleetCloudOnboardingDeploymentsConnectorConnectoridResponse(rsp *ht
 				// DeploymentName Opaque deployment name; for AWS, the CFN stack name.
 				DeploymentName *string `json:"deploymentName,omitempty"`
 
+				// Description Integration description from the Service settings step.
+				Description *string `json:"description,omitempty"`
+
 				// EcfStacks ECF CloudFormation stacks launched as part of this deployment. Written by the wizard after the user clicks Launch.
 				EcfStacks *[]struct {
 					// Family ECF template family.
@@ -298620,9 +298655,12 @@ func ParseGetFleetCloudOnboardingDeploymentsConnectorConnectoridResponse(rsp *ht
 				} `json:"ecfStacks,omitempty"`
 
 				// GlobalRegion Global AWS region from the Service Settings step.
-				GlobalRegion *string                                                                                    `json:"globalRegion,omitempty"`
-				Id           string                                                                                     `json:"id"`
-				Mechanisms   []GetFleetCloudOnboardingDeploymentsConnectorConnectorid200JSONResponseBodyItemsMechanisms `json:"mechanisms"`
+				GlobalRegion *string `json:"globalRegion,omitempty"`
+				Id           string  `json:"id"`
+
+				// IntegrationName Integration name as entered in the Service settings step, before any per-package suffix is applied.
+				IntegrationName *string                                                                                    `json:"integrationName,omitempty"`
+				Mechanisms      []GetFleetCloudOnboardingDeploymentsConnectorConnectorid200JSONResponseBodyItemsMechanisms `json:"mechanisms"`
 
 				// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 				PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
@@ -298763,6 +298801,9 @@ func ParseGetFleetCloudOnboardingDeploymentsIdResponse(rsp *http.Response) (*Get
 				// DeploymentName Opaque deployment name; for AWS, the CFN stack name.
 				DeploymentName *string `json:"deploymentName,omitempty"`
 
+				// Description Integration description from the Service settings step.
+				Description *string `json:"description,omitempty"`
+
 				// EcfStacks ECF CloudFormation stacks launched as part of this deployment. Written by the wizard after the user clicks Launch.
 				EcfStacks *[]struct {
 					// Family ECF template family.
@@ -298782,9 +298823,12 @@ func ParseGetFleetCloudOnboardingDeploymentsIdResponse(rsp *http.Response) (*Get
 				} `json:"ecfStacks,omitempty"`
 
 				// GlobalRegion Global AWS region from the Service Settings step.
-				GlobalRegion *string                                                                 `json:"globalRegion,omitempty"`
-				Id           string                                                                  `json:"id"`
-				Mechanisms   []GetFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemMechanisms `json:"mechanisms"`
+				GlobalRegion *string `json:"globalRegion,omitempty"`
+				Id           string  `json:"id"`
+
+				// IntegrationName Integration name as entered in the Service settings step, before any per-package suffix is applied.
+				IntegrationName *string                                                                 `json:"integrationName,omitempty"`
+				Mechanisms      []GetFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemMechanisms `json:"mechanisms"`
 
 				// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 				PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
@@ -298884,6 +298928,9 @@ func ParsePutFleetCloudOnboardingDeploymentsIdResponse(rsp *http.Response) (*Put
 				// DeploymentName Opaque deployment name; for AWS, the CFN stack name.
 				DeploymentName *string `json:"deploymentName,omitempty"`
 
+				// Description Integration description from the Service settings step.
+				Description *string `json:"description,omitempty"`
+
 				// EcfStacks ECF CloudFormation stacks launched as part of this deployment. Written by the wizard after the user clicks Launch.
 				EcfStacks *[]struct {
 					// Family ECF template family.
@@ -298903,9 +298950,12 @@ func ParsePutFleetCloudOnboardingDeploymentsIdResponse(rsp *http.Response) (*Put
 				} `json:"ecfStacks,omitempty"`
 
 				// GlobalRegion Global AWS region from the Service Settings step.
-				GlobalRegion *string                                                                 `json:"globalRegion,omitempty"`
-				Id           string                                                                  `json:"id"`
-				Mechanisms   []PutFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemMechanisms `json:"mechanisms"`
+				GlobalRegion *string `json:"globalRegion,omitempty"`
+				Id           string  `json:"id"`
+
+				// IntegrationName Integration name as entered in the Service settings step, before any per-package suffix is applied.
+				IntegrationName *string                                                                 `json:"integrationName,omitempty"`
+				Mechanisms      []PutFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemMechanisms `json:"mechanisms"`
 
 				// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 				PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
