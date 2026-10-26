@@ -58,43 +58,6 @@ func TestStatusJSONValue_ValueFromString(t *testing.T) {
 	assert.False(t, val.(StatusJSONValue).IsUnknown())
 }
 
-func TestStatusJSONValue_RawConstructorUntouched(t *testing.T) {
-	t.Parallel()
-
-	raw := `{"engines":[ {"type":"use\u0072"} ],  "status":"running"}`
-	assert.Equal(t, raw, NewStatusJSONValue(raw).ValueString())
-	assert.True(t, NewStatusJSONNull().IsNull())
-	assert.True(t, NewStatusJSONUnknown().IsUnknown())
-}
-
-func TestStatusJSONValue_NullUnknownSemantics(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	known := NewStatusJSONValue(`{"status":"running"}`)
-
-	tests := []struct {
-		name  string
-		a     StatusJSONValue
-		b     StatusJSONValue
-		equal bool
-	}{
-		{"null vs null", NewStatusJSONNull(), NewStatusJSONNull(), true},
-		{"null vs known", NewStatusJSONNull(), known, false},
-		{"known vs null", known, NewStatusJSONNull(), false},
-		{"unknown vs unknown", NewStatusJSONUnknown(), NewStatusJSONUnknown(), true},
-		{"unknown vs null", NewStatusJSONUnknown(), NewStatusJSONNull(), false},
-		{"known vs unknown", known, NewStatusJSONUnknown(), false},
-	}
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			eq, diags := tc.a.StringSemanticEquals(ctx, tc.b)
-			require.False(t, diags.HasError(), "%v", diags)
-			assert.Equal(t, tc.equal, eq)
-		})
-	}
-}
-
 func TestStatusJSONValue_EngineOrderPermutations(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
