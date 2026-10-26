@@ -2034,6 +2034,16 @@
         "referenceFileCount": 1,
         "testCleanupEligible": true
       }
+    },
+    {
+      "symbol": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store.NewStatusJSONUnknown",
+      "package": "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store",
+      "attemptedAt": "2026-10-26T03:37:08.092395866Z",
+      "reason": "pr_created",
+      "context": {
+        "referenceFileCount": 1,
+        "testCleanupEligible": true
+      }
     }
   ]
 }
