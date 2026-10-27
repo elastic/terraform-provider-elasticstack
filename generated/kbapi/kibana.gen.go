@@ -4821,6 +4821,21 @@ func (e KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramP
 	}
 }
 
+// Defines values for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramVisualization.
+const (
+	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramVisualizationLnsXY KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramVisualization = "lnsXY"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramVisualization enum.
+func (e KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramVisualization) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramVisualizationLnsXY:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2RowHeight1.
 const (
 	KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2RowHeight1Auto KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2RowHeight1 = "auto"
@@ -6084,6 +6099,21 @@ func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile) Valid() bo
 	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentileP95:
 		return true
 	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentileP99:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramVisualization.
+const (
+	KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramVisualizationLnsXY KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramVisualization = "lnsXY"
+)
+
+// Valid indicates whether the value is a known member of the KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramVisualization enum.
+func (e KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramVisualization) Valid() bool {
+	switch e {
+	case KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramVisualizationLnsXY:
 		return true
 	default:
 		return false
@@ -44301,6 +44331,9 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2 struct {
 	// HistogramPercentile Percentile displayed for histogram metric fields.
 	HistogramPercentile KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile `json:"histogram_percentile"`
 
+	// HistogramVisualization How histogram metrics are drawn. If omitted, Discover uses the percentile chart.
+	HistogramVisualization *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramVisualization `json:"histogram_visualization,omitempty"`
+
 	// RowHeight The table data row height, as a number of lines, or `auto` to size it based on content. If omitted, defaults to the `discover:rowHeightOption` advanced setting.
 	RowHeight *KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_RowHeight `json:"row_height,omitempty"`
 
@@ -44360,6 +44393,9 @@ type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_2_HeaderRo
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile Percentile displayed for histogram metric fields.
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramPercentile string
+
+// KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramVisualization How histogram metrics are drawn. If omitted, Discover uses the percentile chart.
+type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2HistogramVisualization string
 
 // KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2RowHeight0 defines model for .
 type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs2RowHeight0 = float32
@@ -45701,6 +45737,9 @@ type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2 struct {
 	// HistogramPercentile Percentile displayed for histogram metric fields.
 	HistogramPercentile KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile `json:"histogram_percentile"`
 
+	// HistogramVisualization How histogram metrics are drawn. If omitted, Discover uses the percentile chart.
+	HistogramVisualization *KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramVisualization `json:"histogram_visualization,omitempty"`
+
 	// Id A unique identifier. Must contain only lowercase letters, numbers, hyphens, and underscores.
 	Id string `json:"id"`
 
@@ -45778,6 +45817,9 @@ type KibanaHTTPAPIsKbnDiscoverSessionData_Tabs_2_HeaderRowHeight struct {
 
 // KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile Percentile displayed for histogram metric fields.
 type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramPercentile string
+
+// KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramVisualization How histogram metrics are drawn. If omitted, Discover uses the percentile chart.
+type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2HistogramVisualization string
 
 // KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0 defines model for .
 type KibanaHTTPAPIsKbnDiscoverSessionDataTabs2RowHeight0 = float32
