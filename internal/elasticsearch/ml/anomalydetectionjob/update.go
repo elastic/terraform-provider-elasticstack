@@ -66,11 +66,8 @@ Please report this warning to the provider developers.`,
 		diags.AddError("Failed to marshal ML anomaly detection job update", err.Error())
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
-	// Use Perform rather than Do: the generated updatejob.Response types
-	// custom_settings as map[string]string, so decoding fails whenever a job
-	// carries nested custom_settings, even though the update itself succeeded.
-	// The response body is not needed; state is refreshed by the read that
-	// follows the update.
+	// Perform, not Do: the generated updatejob.Response types custom_settings as
+	// map[string]string, so Do fails to decode jobs with nested custom_settings.
 	res, err := typedClient.Ml.UpdateJob(jobID).Raw(bytes.NewReader(updateJSON)).Perform(ctx)
 	if err != nil {
 		diags.AddError(
