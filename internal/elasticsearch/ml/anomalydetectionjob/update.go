@@ -24,6 +24,7 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
@@ -65,12 +66,20 @@ Please report this warning to the provider developers.`,
 		diags.AddError("Failed to marshal ML anomaly detection job update", err.Error())
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
-	_, err = typedClient.Ml.UpdateJob(jobID).Raw(bytes.NewReader(updateJSON)).Do(ctx)
+	// Perform, not Do: the generated updatejob.Response types custom_settings as
+	// map[string]string, so Do fails to decode jobs with nested custom_settings.
+	res, err := typedClient.Ml.UpdateJob(jobID).Raw(bytes.NewReader(updateJSON)).Perform(ctx)
 	if err != nil {
 		diags.AddError(
 			"Failed to update ML anomaly detection job",
 			fmt.Sprintf("Unable to update ML anomaly detection job: %s — %s", jobID, err.Error()),
 		)
+		return entitycore.WriteResult[TFModel]{Model: plan}, diags
+	}
+	defer res.Body.Close()
+
+	diags.Append(diagutil.CheckHTTPErrorFromFW(res, fmt.Sprintf("Unable to update ML anomaly detection job: %s", jobID))...)
+	if diags.HasError() {
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 
