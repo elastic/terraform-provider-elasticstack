@@ -87468,6 +87468,9 @@ type PostFleetCloudOnboardingDeploymentsJSONBody struct {
 	// Mechanisms Delivery mechanisms active in this deployment.
 	Mechanisms []PostFleetCloudOnboardingDeploymentsJSONBodyMechanisms `json:"mechanisms"`
 
+	// Namespace Global data stream namespace from the Service settings step. When omitted, an agent-based deployment inherits the agent policy namespace, other deployment methods use the default namespace.
+	Namespace *string `json:"namespace,omitempty"`
+
 	// Provider Cloud provider.
 	Provider PostFleetCloudOnboardingDeploymentsJSONBodyProvider `json:"provider"`
 
@@ -87587,6 +87590,9 @@ type PutFleetCloudOnboardingDeploymentsIdJSONBody struct {
 
 	// Mechanisms Delivery mechanisms active in this deployment. Replaces the stored mechanisms array.
 	Mechanisms *[]PutFleetCloudOnboardingDeploymentsIdJSONBodyMechanisms `json:"mechanisms,omitempty"`
+
+	// Namespace Global data stream namespace from the Service settings step. Omit it to keep the stored value, or send null to clear it. When none is set, an agent-based deployment inherits the agent policy namespace, other deployment methods use the default namespace.
+	Namespace *string `json:"namespace,omitempty"`
 
 	// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 	PackagePolicyIds    *[]string          `json:"packagePolicyIds,omitempty"`
@@ -258738,6 +258744,9 @@ type PostFleetCloudOnboardingDeploymentsResponse struct {
 			IntegrationName *string                                                                `json:"integrationName,omitempty"`
 			Mechanisms      []PostFleetCloudOnboardingDeployments200JSONResponseBodyItemMechanisms `json:"mechanisms"`
 
+			// Namespace Global data stream namespace from the Service settings step. When omitted, an agent-based deployment inherits the agent policy namespace, other deployment methods use the default namespace.
+			Namespace *string `json:"namespace,omitempty"`
+
 			// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 			PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
 
@@ -258853,6 +258862,9 @@ type GetFleetCloudOnboardingDeploymentsConnectorConnectoridResponse struct {
 			// IntegrationName Integration name as entered in the Service settings step, before any per-package suffix is applied.
 			IntegrationName *string                                                                                    `json:"integrationName,omitempty"`
 			Mechanisms      []GetFleetCloudOnboardingDeploymentsConnectorConnectorid200JSONResponseBodyItemsMechanisms `json:"mechanisms"`
+
+			// Namespace Global data stream namespace from the Service settings step. When omitted, an agent-based deployment inherits the agent policy namespace, other deployment methods use the default namespace.
+			Namespace *string `json:"namespace,omitempty"`
 
 			// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 			PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
@@ -259012,6 +259024,9 @@ type GetFleetCloudOnboardingDeploymentsIdResponse struct {
 			IntegrationName *string                                                                 `json:"integrationName,omitempty"`
 			Mechanisms      []GetFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemMechanisms `json:"mechanisms"`
 
+			// Namespace Global data stream namespace from the Service settings step. When omitted, an agent-based deployment inherits the agent policy namespace, other deployment methods use the default namespace.
+			Namespace *string `json:"namespace,omitempty"`
+
 			// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 			PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
 
@@ -259130,6 +259145,9 @@ type PutFleetCloudOnboardingDeploymentsIdResponse struct {
 			// IntegrationName Integration name as entered in the Service settings step, before any per-package suffix is applied.
 			IntegrationName *string                                                                 `json:"integrationName,omitempty"`
 			Mechanisms      []PutFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemMechanisms `json:"mechanisms"`
+
+			// Namespace Global data stream namespace from the Service settings step. When omitted, an agent-based deployment inherits the agent policy namespace, other deployment methods use the default namespace.
+			Namespace *string `json:"namespace,omitempty"`
 
 			// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 			PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
@@ -298586,6 +298604,9 @@ func ParsePostFleetCloudOnboardingDeploymentsResponse(rsp *http.Response) (*Post
 				IntegrationName *string                                                                `json:"integrationName,omitempty"`
 				Mechanisms      []PostFleetCloudOnboardingDeployments200JSONResponseBodyItemMechanisms `json:"mechanisms"`
 
+				// Namespace Global data stream namespace from the Service settings step. When omitted, an agent-based deployment inherits the agent policy namespace, other deployment methods use the default namespace.
+				Namespace *string `json:"namespace,omitempty"`
+
 				// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 				PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
 
@@ -298703,6 +298724,9 @@ func ParseGetFleetCloudOnboardingDeploymentsConnectorConnectoridResponse(rsp *ht
 				// IntegrationName Integration name as entered in the Service settings step, before any per-package suffix is applied.
 				IntegrationName *string                                                                                    `json:"integrationName,omitempty"`
 				Mechanisms      []GetFleetCloudOnboardingDeploymentsConnectorConnectorid200JSONResponseBodyItemsMechanisms `json:"mechanisms"`
+
+				// Namespace Global data stream namespace from the Service settings step. When omitted, an agent-based deployment inherits the agent policy namespace, other deployment methods use the default namespace.
+				Namespace *string `json:"namespace,omitempty"`
 
 				// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 				PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
@@ -298872,6 +298896,9 @@ func ParseGetFleetCloudOnboardingDeploymentsIdResponse(rsp *http.Response) (*Get
 				IntegrationName *string                                                                 `json:"integrationName,omitempty"`
 				Mechanisms      []GetFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemMechanisms `json:"mechanisms"`
 
+				// Namespace Global data stream namespace from the Service settings step. When omitted, an agent-based deployment inherits the agent policy namespace, other deployment methods use the default namespace.
+				Namespace *string `json:"namespace,omitempty"`
+
 				// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 				PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
 
@@ -298998,6 +299025,9 @@ func ParsePutFleetCloudOnboardingDeploymentsIdResponse(rsp *http.Response) (*Put
 				// IntegrationName Integration name as entered in the Service settings step, before any per-package suffix is applied.
 				IntegrationName *string                                                                 `json:"integrationName,omitempty"`
 				Mechanisms      []PutFleetCloudOnboardingDeploymentsId200JSONResponseBodyItemMechanisms `json:"mechanisms"`
+
+				// Namespace Global data stream namespace from the Service settings step. When omitted, an agent-based deployment inherits the agent policy namespace, other deployment methods use the default namespace.
+				Namespace *string `json:"namespace,omitempty"`
 
 				// PackagePolicyIds Package policy IDs created for this deployment (managed_integration and agent_based).
 				PackagePolicyIds *[]string `json:"packagePolicyIds,omitempty"`
