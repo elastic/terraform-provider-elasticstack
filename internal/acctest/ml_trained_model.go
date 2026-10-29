@@ -35,6 +35,13 @@ const AccTestTrainedModelID = "terraform-acc-test-model"
 // AccTestTrainedModelID2 is the stable ID for the second acceptance-test bootstrap trained model.
 const AccTestTrainedModelID2 = "terraform-acc-test-model-2"
 
+// AccTestTrainedModelIDTagged is the stable ID for the acceptance-test bootstrap trained model
+// that carries non-empty tags, used to exercise the `tags` data source attribute.
+const AccTestTrainedModelIDTagged = "terraform-acc-test-model-tagged"
+
+// AccTestTrainedModelTags are the tags set on the trained model created by EnsureTaggedTrainedModel.
+var AccTestTrainedModelTags = []string{"terraform", "acceptance-test"}
+
 var ensureTrainedModelOnces sync.Map // key: modelID, value: *sync.Once
 
 // EnsureTrainedModelByID creates a minimal trained model with the given ID in the
@@ -42,6 +49,19 @@ var ensureTrainedModelOnces sync.Map // key: modelID, value: *sync.Once
 // single-leaf tree_ensemble that uses negligible memory and requires no deployment.
 // Creation is executed once per model ID across the test process.
 func EnsureTrainedModelByID(t *testing.T, modelID string) {
+	t.Helper()
+	ensureTrainedModelByIDWithTags(t, modelID, nil)
+}
+
+// EnsureTaggedTrainedModel creates a minimal trained model with non-empty tags
+// (AccTestTrainedModelTags) if it does not already exist. This is a convenience wrapper
+// around ensureTrainedModelByIDWithTags, used to exercise the `tags` data source attribute.
+func EnsureTaggedTrainedModel(t *testing.T) {
+	t.Helper()
+	ensureTrainedModelByIDWithTags(t, AccTestTrainedModelIDTagged, AccTestTrainedModelTags)
+}
+
+func ensureTrainedModelByIDWithTags(t *testing.T, modelID string, tags []string) {
 	t.Helper()
 
 	once, _ := ensureTrainedModelOnces.LoadOrStore(modelID, &sync.Once{})
@@ -68,6 +88,7 @@ func EnsureTrainedModelByID(t *testing.T, modelID string) {
 			Request(&puttrainedmodel.Request{
 				Description: &description,
 				ModelType:   &modelType,
+				Tags:        tags,
 				Input: &estypes.Input{
 					FieldNames: []string{"foo"},
 				},
