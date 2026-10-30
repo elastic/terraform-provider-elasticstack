@@ -492,6 +492,7 @@ func TestAccResourceDatafeed_ImportNonExistent(t *testing.T) {
 				ImportState:       true,
 				ImportStateId:     "cluster-id/non-existent-datafeed-id",
 				ImportStateVerify: false,
+				ExpectError:       regexp.MustCompile(`Cannot import non-existent remote object`),
 			},
 		},
 	})

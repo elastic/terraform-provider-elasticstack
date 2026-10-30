@@ -22,6 +22,8 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 	"github.com/stretchr/testify/assert"
@@ -187,6 +189,58 @@ func TestRoleDescriptorsValue_StringSemanticEquals(t *testing.T) {
 				assert.False(t, diags.HasError())
 				assert.Equal(t, tt.expected, result)
 			}
+		})
+	}
+}
+
+func TestRoleDescriptorsValue_Equal(t *testing.T) {
+	tests := []struct {
+		name     string
+		value1   JSONWithDefaultsValue[map[string]models.APIKeyRoleDescriptor]
+		value2   attr.Value
+		expected bool
+	}{
+		{
+			name:     "both null values are equal",
+			value1:   NewJSONWithDefaultsNull(testPopulateDefaults),
+			value2:   NewJSONWithDefaultsNull(testPopulateDefaults),
+			expected: true,
+		},
+		{
+			name:     "both unknown values are equal",
+			value1:   NewJSONWithDefaultsUnknown(testPopulateDefaults),
+			value2:   NewJSONWithDefaultsUnknown(testPopulateDefaults),
+			expected: true,
+		},
+		{
+			name:     "same JSON content are equal",
+			value1:   NewJSONWithDefaultsValue(`{"role":{"cluster":["all"]}}`, testPopulateDefaults),
+			value2:   NewJSONWithDefaultsValue(`{"role":{"cluster":["all"]}}`, testPopulateDefaults),
+			expected: true,
+		},
+		{
+			name:     "different JSON content are not equal",
+			value1:   NewJSONWithDefaultsValue(`{"role":{"cluster":["all"]}}`, testPopulateDefaults),
+			value2:   NewJSONWithDefaultsValue(`{"role":{"cluster":["monitor"]}}`, testPopulateDefaults),
+			expected: false,
+		},
+		{
+			name:     "null vs value are not equal",
+			value1:   NewJSONWithDefaultsNull(testPopulateDefaults),
+			value2:   NewJSONWithDefaultsValue(`{}`, testPopulateDefaults),
+			expected: false,
+		},
+		{
+			name:     "plain normalized value is not equal",
+			value1:   NewJSONWithDefaultsValue(`{}`, testPopulateDefaults),
+			value2:   jsontypes.NewNormalizedValue(`{}`),
+			expected: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.value1.Equal(tt.value2))
 		})
 	}
 }
