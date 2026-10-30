@@ -42,6 +42,7 @@ ACCTEST_PARALLELISM ?= 10
 ACCTEST_PACKAGE_PARALLELISM ?= 6
 ACCTEST_TOTAL_SHARDS ?= 1
 ACCTEST_SHARD_INDEX ?= 0
+ACCTEST_SUITE ?= all
 ACCTEST_TIMEOUT = 120m
 ACCTEST_COUNT = 1
 TEST ?= ./...
@@ -133,7 +134,9 @@ testacc-vs-docker:
 
 .PHONY: testacc
 testacc: ## Run acceptance tests
-	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --rerun-fails-max-failures=$(RERUN_FAILS_MAX_FAILURES) --packages="$(shell go list ./... | sort | awk '(NR-1) % $(ACCTEST_TOTAL_SHARDS) == $(ACCTEST_SHARD_INDEX)')" -- -p $(ACCTEST_PACKAGE_PARALLELISM) -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
+	@set -euo pipefail; \
+	packages=$$(go run ./scripts/acceptance-test-packages --suite="$(ACCTEST_SUITE)" --stack-version="$(STACK_VERSION)" --total-shards="$(ACCTEST_TOTAL_SHARDS)" --shard-index="$(ACCTEST_SHARD_INDEX)"); \
+	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --rerun-fails-max-failures=$(RERUN_FAILS_MAX_FAILURES) --packages="$${packages}" -- -p $(ACCTEST_PACKAGE_PARALLELISM) -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
 .PHONY: targeted-testacc
 targeted-testacc: ## Run acceptance tests relevant to the current branch diff
