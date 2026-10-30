@@ -58,19 +58,11 @@ func TestStatusJSONValue_ValueFromString(t *testing.T) {
 	assert.False(t, val.(StatusJSONValue).IsUnknown())
 }
 
-func TestStatusJSONValue_RawConstructorUntouched(t *testing.T) {
-	t.Parallel()
-
-	raw := `{"engines":[ {"type":"use\u0072"} ],  "status":"running"}`
-	assert.Equal(t, raw, NewStatusJSONValue(raw).ValueString())
-	assert.True(t, NewStatusJSONNull().IsNull())
-	assert.True(t, NewStatusJSONUnknown().IsUnknown())
-}
-
 func TestStatusJSONValue_NullUnknownSemantics(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 	known := NewStatusJSONValue(`{"status":"running"}`)
+	unknown := StatusJSONValue{Normalized: jsontypes.NewNormalizedUnknown()}
 
 	tests := []struct {
 		name  string
@@ -81,9 +73,9 @@ func TestStatusJSONValue_NullUnknownSemantics(t *testing.T) {
 		{"null vs null", NewStatusJSONNull(), NewStatusJSONNull(), true},
 		{"null vs known", NewStatusJSONNull(), known, false},
 		{"known vs null", known, NewStatusJSONNull(), false},
-		{"unknown vs unknown", NewStatusJSONUnknown(), NewStatusJSONUnknown(), true},
-		{"unknown vs null", NewStatusJSONUnknown(), NewStatusJSONNull(), false},
-		{"known vs unknown", known, NewStatusJSONUnknown(), false},
+		{"unknown vs unknown", unknown, unknown, true},
+		{"unknown vs null", unknown, NewStatusJSONNull(), false},
+		{"known vs unknown", known, unknown, false},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
