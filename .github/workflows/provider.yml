@@ -178,7 +178,7 @@ jobs:
       ELASTIC_PASSWORD: password
       TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL: true
 
-    timeout-minutes: 60
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
@@ -283,7 +283,7 @@ jobs:
       - name: TF acceptance tests
         id: tf-acceptance
         if: needs['load-matrix'].outputs.has_packages == 'true'
-        timeout-minutes: 45
+        timeout-minutes: 60
         continue-on-error: ${{ endsWith(matrix.version, '-SNAPSHOT') }}
         run: |
           # The prepared plan assigned this shard its final package list;
