@@ -34,6 +34,11 @@ import (
 const modulePath = "github.com/elastic/terraform-provider-elasticstack"
 
 func TestMakeDashboardSuiteContainsOnlyMeasuredHotspots(t *testing.T) {
+	t.Setenv("MAKEFLAGS", "-- ACCTEST_SUITE=general ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=1 STACK_VERSION=9.3.9")
+	t.Setenv("ACCTEST_SUITE", "general")
+	t.Setenv("ACCTEST_TOTAL_SHARDS", "2")
+	t.Setenv("ACCTEST_SHARD_INDEX", "1")
+	t.Setenv("STACK_VERSION", "9.3.9")
 	packages := []string{modulePath + "/internal/acctest", dashboardPackage, dashboardPackage + "/future", lensXYPackage, dashboardPackage + "_extra"}
 	output, err := runMake(t, packages, "ACCTEST_SUITE=dashboard", "STACK_VERSION=9.4.0")
 	require.NoError(t, err, "%s", output)
@@ -101,12 +106,25 @@ func runMake(t *testing.T, packages []string, args ...string) ([]byte, error) {
 	require.NoError(t, os.WriteFile(filepath.Join(bin, "go"), []byte(stub), 0o755))
 	cmd := exec.Command("make", append([]string{"testacc"}, args...)...)
 	cmd.Dir = "../.."
-	cmd.Env = append(os.Environ(), "PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	env := make([]string, 0, len(os.Environ()))
+	for _, entry := range os.Environ() {
+		name, _, _ := strings.Cut(entry, "=")
+		switch name {
+		case "PATH", "MAKEFLAGS", "MFLAGS", "MAKELEVEL",
+			"ACCTEST_SUITE", "ACCTEST_TOTAL_SHARDS", "ACCTEST_SHARD_INDEX", "STACK_VERSION":
+			continue
+		default:
+			env = append(env, entry)
+		}
+	}
+	cmd.Env = append(env, "PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 	output, err := cmd.CombinedOutput()
 	return output, err
 }
 
 func TestMakeOlderAndDefaultSuitesRetainOriginalPartition(t *testing.T) {
+	t.Setenv("MAKEFLAGS", "-- ACCTEST_SUITE=general ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=0 STACK_VERSION=9.5.5")
+	t.Setenv("ACCTEST_SUITE", "general")
 	packages := []string{modulePath + "/a", dashboardPackage, dashboardPackage + "/future", dashboardPackage + "_extra", modulePath + "/z"}
 	for _, args := range [][]string{
 		{"ACCTEST_SUITE=general", "STACK_VERSION=9.3.9-SNAPSHOT"},
