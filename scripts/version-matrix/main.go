@@ -256,6 +256,8 @@ func cmdLoadMatrix(args []string, _, stderr io.Writer) error {
 	fsFlag := flag.NewFlagSet("load-matrix", flag.ContinueOnError)
 	fsFlag.SetOutput(stderr)
 	artifactPath := fsFlag.String("artifact", defaultArtifactPath, "path to the pinned versions artifact")
+	event := fsFlag.String("event", "", "workflow event name")
+	shardPlan := fsFlag.String("shards", "[0,1]", "prepared targeted shard indices")
 	if err := fsFlag.Parse(args); err != nil {
 		return err
 	}
@@ -264,7 +266,25 @@ func cmdLoadMatrix(args []string, _, stderr io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("load-matrix: %w", err)
 	}
+	shards := []int{0, 1}
+	if *event == "pull_request" {
+		if err := json.Unmarshal([]byte(*shardPlan), &shards); err != nil {
+			return fmt.Errorf("load-matrix: invalid shards: %w", err)
+		}
+		if len(shards) < 1 || len(shards) > 2 {
+			return fmt.Errorf("load-matrix: invalid shards: expected [0] or [0,1]")
+		}
+		for index, shard := range shards {
+			if shard != index {
+				return fmt.Errorf("load-matrix: invalid shards: expected [0] or [0,1]")
+			}
+		}
+	}
 	flags := FlagsByVersion(versions)
+	entries := acceptanceEntries(versions, *event, shards)
+	if err := writeGitHubOutputJSON("entries", entries); err != nil {
+		return fmt.Errorf("load-matrix: %w", err)
+	}
 	if err := writeGitHubOutputJSON("versions", versions); err != nil {
 		return fmt.Errorf("load-matrix: %w", err)
 	}
