@@ -117,7 +117,8 @@ func runMake(t *testing.T, packages []string, args ...string) ([]byte, error) {
 			env = append(env, entry)
 		}
 	}
-	cmd.Env = append(env, "PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	env = append(env, "PATH="+bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	cmd.Env = env
 	output, err := cmd.CombinedOutput()
 	return output, err
 }
