@@ -32,6 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
 //go:embed testdata/TestAccResourceSnapRepoMigration/main.tf
@@ -322,6 +323,74 @@ func TestAccResourceSnapRepoS3(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "s3.bucket", "test-bucket-replaced"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSnapRepoS3WithoutEndpoint(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	resourceName := "elasticstack_elasticsearch_snapshot_repository.test_s3_repo"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkRepoDestroy(name),
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckResourceAttr(resourceName, "s3.bucket", "test-bucket"),
+					resource.TestCheckNoResourceAttr(resourceName, "s3.endpoint"),
+					resource.TestCheckResourceAttr(resourceName, "s3.chunk_size", "1gb"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       false,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectUnknownValue(resourceName, tfjsonpath.New("s3").AtMapKey("endpoint")),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", name),
+					resource.TestCheckNoResourceAttr(resourceName, "s3.endpoint"),
+					resource.TestCheckResourceAttr(resourceName, "s3.chunk_size", "500mb"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_endpoint"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "s3.endpoint", "https://minio.example.com:9000"),
+					resource.TestCheckResourceAttr(resourceName, "s3.chunk_size", "500mb"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectUnknownValue(resourceName, tfjsonpath.New("s3").AtMapKey("endpoint")),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "s3.endpoint"),
+					resource.TestCheckResourceAttr(resourceName, "s3.chunk_size", "1gb"),
 				),
 			},
 		},
