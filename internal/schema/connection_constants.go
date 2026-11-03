@@ -61,5 +61,6 @@ const (
 	descKbUsername        = "Username to use for API authentication to Kibana."
 	descKbPassword        = "Password to use for API authentication to Kibana."
 	descKbEndpoints       = "A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number."
+	descKbHeaders         = "A map of headers to be sent with each request to Kibana."
 	descKbCACerts         = "A list of paths to CA certificates to validate the certificate presented by the Kibana server."
 )

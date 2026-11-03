@@ -83,6 +83,7 @@ func kibanaConnectionBlockType() tftypes.Type {
 			"username":     tftypes.String,
 			"password":     tftypes.String,
 			"endpoints":    tftypes.List{ElementType: tftypes.String},
+			"headers":      tftypes.Map{ElementType: tftypes.String},
 			"ca_certs":     tftypes.List{ElementType: tftypes.String},
 			"insecure":     tftypes.Bool,
 		},

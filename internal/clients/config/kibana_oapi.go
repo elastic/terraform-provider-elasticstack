@@ -26,6 +26,7 @@ import (
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 type kibanaOapiConfig kibanaoapi.Config
@@ -97,6 +98,13 @@ func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigu
 
 		if len(cas) > 0 {
 			config.CACerts = cas
+		}
+
+		if headers := kibConfig.Headers.Elements(); len(headers) > 0 {
+			config.Headers = make(map[string]string, len(headers))
+			for name, value := range headers {
+				config.Headers[strings.TrimSpace(name)] = strings.TrimSpace(value.(basetypes.StringValue).ValueString())
+			}
 		}
 
 		if typeutils.IsKnown(kibConfig.Insecure) {

@@ -115,6 +115,7 @@ func TestGetKibanaClient_WithConnection(t *testing.T) {
 		Endpoints: types.ListValueMust(types.StringType, []attr.Value{
 			types.StringValue("http://kibana.example.com:5601"),
 		}),
+		Headers:  types.MapNull(types.StringType),
 		CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
 		Insecure: types.BoolValue(false),
 	}
@@ -132,6 +133,63 @@ func TestGetKibanaClient_WithConnection(t *testing.T) {
 	// The scoped client must expose Kibana-derived surfaces.
 	require.NotNil(t, scoped.GetKibanaOapiClient())
 	require.NotNil(t, scoped.GetFleetClient())
+}
+
+func TestGetKibanaClient_EntityLocalEmptyHeaders(t *testing.T) {
+	scoped := newScopedClientFromFactoryWithHeaders(t, "http://kibana.example.com:5601", map[string]string{})
+	require.NotNil(t, scoped)
+}
+
+func TestGetKibanaClient_EntityLocalHeadersReachKibanaRequest(t *testing.T) {
+	receivedHeaders := make(chan http.Header, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedHeaders <- r.Header.Clone()
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(server.Close)
+
+	scoped := newScopedClientFromFactoryWithHeaders(t, server.URL, map[string]string{"X-Proxy-Token": "secret"})
+
+	response, err := scoped.GetKibanaOapiClient().HTTP.Get(server.URL)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = response.Body.Close() })
+
+	require.Equal(t, "secret", (<-receivedHeaders).Get("X-Proxy-Token"))
+}
+
+func TestGetKibanaClient_EntityLocalHeadersTrimWhitespace(t *testing.T) {
+	receivedHeaders := make(chan http.Header, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedHeaders <- r.Header.Clone()
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(server.Close)
+
+	scoped := newScopedClientFromFactoryWithHeaders(t, server.URL, map[string]string{" X-Proxy-Token ": " secret "})
+
+	response, err := scoped.GetKibanaOapiClient().HTTP.Get(server.URL)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = response.Body.Close() })
+
+	require.Equal(t, "secret", (<-receivedHeaders).Get("X-Proxy-Token"))
+}
+
+func TestGetKibanaClient_EntityLocalHeadersReachFleetRequest(t *testing.T) {
+	receivedHeaders := make(chan http.Header, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedHeaders <- r.Header.Clone()
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(server.Close)
+
+	scoped := newScopedClientFromFactoryWithHeaders(t, server.URL, map[string]string{"X-Proxy-Token": "secret"})
+
+	fleetClient := scoped.GetFleetClient()
+	response, err := fleetClient.HTTP.Get(fleetClient.URL)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = response.Body.Close() })
+
+	require.Equal(t, "secret", (<-receivedHeaders).Get("X-Proxy-Token"))
 }
 
 // --- ElasticsearchScopedClient version / flavor routing ---
@@ -209,7 +267,21 @@ func TestElasticsearchScopedClient_EnforceMinVersion_ViaFactory_ServerlessShortC
 // is set so environment variables cannot override the URL.
 func newScopedClientFromFactory(t *testing.T, endpoint string) *KibanaScopedClient {
 	t.Helper()
+	return newScopedClientFromFactoryWithHeaders(t, endpoint, nil)
+}
+
+func newScopedClientFromFactoryWithHeaders(t *testing.T, endpoint string, headers map[string]string) *KibanaScopedClient {
+	t.Helper()
 	t.Setenv(config.PreferConfiguredKibanaEndpointEnvVar, "true")
+
+	headerValues := make(map[string]attr.Value, len(headers))
+	for name, value := range headers {
+		headerValues[name] = types.StringValue(value)
+	}
+	headersValue := types.MapNull(types.StringType)
+	if headers != nil {
+		headersValue = types.MapValueMust(types.StringType, headerValues)
+	}
 
 	ctx := context.Background()
 	factory := newTestFactory(t)
@@ -221,6 +293,7 @@ func newScopedClientFromFactory(t *testing.T, endpoint string) *KibanaScopedClie
 		Endpoints: types.ListValueMust(types.StringType, []attr.Value{
 			types.StringValue(endpoint),
 		}),
+		Headers:  headersValue,
 		CACerts:  types.ListValueMust(types.StringType, []attr.Value{}),
 		Insecure: types.BoolValue(false),
 	}
@@ -395,6 +468,7 @@ func TestGetKibanaClient_ResourceLevelBuildError(t *testing.T) {
 		Endpoints: types.ListValueMust(types.StringType, []attr.Value{
 			types.StringValue("http://kibana.example.com:5601"),
 		}),
+		Headers: types.MapNull(types.StringType),
 		CACerts: types.ListValueMust(types.StringType, []attr.Value{
 			types.StringValue("/nonexistent/ca.pem"),
 		}),
@@ -473,6 +547,7 @@ func TestGetKibanaClient_EntityLocalMissingEndpoint(t *testing.T) {
 		BearerToken: types.StringValue(""),
 		// Endpoints intentionally empty.
 		Endpoints: types.ListValueMust(types.StringType, []attr.Value{}),
+		Headers:   types.MapNull(types.StringType),
 		CACerts:   types.ListValueMust(types.StringType, []attr.Value{}),
 		Insecure:  types.BoolValue(false),
 	}

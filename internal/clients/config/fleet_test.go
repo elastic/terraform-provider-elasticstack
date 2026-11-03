@@ -19,19 +19,78 @@ package config
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
+	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
+func TestNewFromFramework_inheritedKibanaHeadersReachFleetRequest(t *testing.T) {
+	receivedHeaders := make(chan http.Header, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedHeaders <- r.Header.Clone()
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv(PreferConfiguredKibanaEndpointEnvVar, "true")
+
+	providerConfig := ProviderConfiguration{
+		Kibana: []KibanaConnection{
+			{
+				Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+					"X-Proxy-Token": types.StringValue("secret"),
+				}),
+				Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+					types.StringValue(server.URL),
+				}),
+				CACerts: types.ListNull(types.StringType),
+			},
+		},
+	}
+
+	configuredClient, diags := NewFromFramework(context.Background(), providerConfig, "test")
+	require.False(t, diags.HasError())
+	fleetClient, err := fleetclient.NewClient(*configuredClient.Fleet)
+	require.NoError(t, err)
+
+	response, err := fleetClient.HTTP.Get(fleetClient.URL)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = response.Body.Close() })
+
+	require.Equal(t, "secret", (<-receivedHeaders).Get("X-Proxy-Token"))
+}
+
 func fleetMultipleAuthWarningDiag() fwdiags.Diagnostics {
 	var d fwdiags.Diagnostics
 	addMultipleAuthWarning(&d, "Fleet", "Fleet environment variables")
 	return d
+}
+
+func Test_newFleetConfigFromFramework_inheritsProviderKibanaHeaders(t *testing.T) {
+	providerConfig := ProviderConfiguration{
+		Kibana: []KibanaConnection{
+			{
+				Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+					"X-Proxy-Token": types.StringValue("secret"),
+				}),
+				Endpoints: types.ListNull(types.StringType),
+				CACerts:   types.ListNull(types.StringType),
+			},
+		},
+	}
+
+	kibanaCfg, diags := newProviderKibanaOapiConfigFromFramework(context.Background(), providerConfig, baseConfig{})
+	require.False(t, diags.HasError())
+	fleetCfg, diags := newFleetConfigFromFramework(context.Background(), providerConfig, kibanaCfg)
+
+	require.False(t, diags.HasError())
+	require.Equal(t, map[string]string{"X-Proxy-Token": "secret"}, fleetCfg.Headers)
 }
 
 func Test_newFleetConfigFromFramework(t *testing.T) {

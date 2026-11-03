@@ -20,6 +20,7 @@ package entitycore
 import (
 	"context"
 	"encoding/json"
+	"strings"
 
 	clientconfig "github.com/elastic/terraform-provider-elasticstack/internal/clients/config"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
@@ -54,13 +55,14 @@ type ephemeralESConnectionSnapshot struct {
 }
 
 type ephemeralKibanaConnectionSnapshot struct {
-	Username    string   `json:"username,omitempty"`
-	Password    string   `json:"password,omitempty"`
-	APIKey      string   `json:"api_key,omitempty"`
-	BearerToken string   `json:"bearer_token,omitempty"`
-	Endpoints   []string `json:"endpoints,omitempty"`
-	CACerts     []string `json:"ca_certs,omitempty"`
-	Insecure    *bool    `json:"insecure,omitempty"`
+	Username    string            `json:"username,omitempty"`
+	Password    string            `json:"password,omitempty"`
+	APIKey      string            `json:"api_key,omitempty"`
+	BearerToken string            `json:"bearer_token,omitempty"`
+	Endpoints   []string          `json:"endpoints,omitempty"`
+	Headers     map[string]string `json:"headers,omitempty"`
+	CACerts     []string          `json:"ca_certs,omitempty"`
+	Insecure    *bool             `json:"insecure,omitempty"`
 }
 
 func encodeEphemeralConnection[Snap any](
@@ -253,6 +255,16 @@ func snapshotFromKibanaConnection(ctx context.Context, conn clientconfig.KibanaC
 	if typeutils.IsKnown(conn.Endpoints) {
 		diags.Append(conn.Endpoints.ElementsAs(ctx, &snapshot.Endpoints, false)...)
 	}
+	if typeutils.IsKnown(conn.Headers) {
+		var headers map[string]string
+		diags.Append(conn.Headers.ElementsAs(ctx, &headers, false)...)
+		if !diags.HasError() && len(headers) > 0 {
+			snapshot.Headers = make(map[string]string, len(headers))
+			for name, value := range headers {
+				snapshot.Headers[strings.TrimSpace(name)] = strings.TrimSpace(value)
+			}
+		}
+	}
 	if typeutils.IsKnown(conn.CACerts) {
 		diags.Append(conn.CACerts.ElementsAs(ctx, &snapshot.CACerts, false)...)
 	}
@@ -270,7 +282,12 @@ func kibanaConnectionListFromSnapshot(ctx context.Context, snapshot *ephemeralKi
 		return providerschema.KibanaConnectionNullList(), diags
 	}
 
-	conn := kibanaConnectionFromSnapshot(snapshot)
+	conn, connDiags := kibanaConnectionFromSnapshot(snapshot)
+	diags.Append(connDiags...)
+	if diags.HasError() {
+		return providerschema.KibanaConnectionNullList(), diags
+	}
+
 	connection, listDiags := types.ListValueFrom(ctx, providerschema.KibanaConnectionObjectType(), []clientconfig.KibanaConnection{conn})
 	diags.Append(listDiags...)
 	if diags.HasError() {
@@ -280,7 +297,8 @@ func kibanaConnectionListFromSnapshot(ctx context.Context, snapshot *ephemeralKi
 	return connection, diags
 }
 
-func kibanaConnectionFromSnapshot(snapshot *ephemeralKibanaConnectionSnapshot) clientconfig.KibanaConnection {
+func kibanaConnectionFromSnapshot(snapshot *ephemeralKibanaConnectionSnapshot) (clientconfig.KibanaConnection, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	conn := clientconfig.KibanaConnection{
 		Username:    typeutils.NonEmptyStringishValue(snapshot.Username),
 		Password:    typeutils.NonEmptyStringishValue(snapshot.Password),
@@ -295,13 +313,25 @@ func kibanaConnectionFromSnapshot(snapshot *ephemeralKibanaConnectionSnapshot) c
 		conn.Endpoints = types.ListNull(types.StringType)
 	}
 
+	if len(snapshot.Headers) > 0 {
+		headerValues := make(map[string]attr.Value, len(snapshot.Headers))
+		for key, value := range snapshot.Headers {
+			headerValues[key] = types.StringValue(value)
+		}
+		headers, headersDiags := types.MapValue(types.StringType, headerValues)
+		diags.Append(headersDiags...)
+		conn.Headers = headers
+	} else {
+		conn.Headers = types.MapNull(types.StringType)
+	}
+
 	if len(snapshot.CACerts) > 0 {
 		conn.CACerts = typeutils.StringsToListMust(snapshot.CACerts)
 	} else {
 		conn.CACerts = types.ListNull(types.StringType)
 	}
 
-	return conn
+	return conn, diags
 }
 
 func knownStringValue(value types.String) string {

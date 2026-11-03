@@ -38,6 +38,7 @@ type Config struct {
 	BearerToken string
 	Insecure    bool
 	CACerts     []string
+	Headers     map[string]string
 }
 
 // Client provides an API client for Elastic Kibana.
@@ -111,6 +112,10 @@ type transport struct {
 }
 
 func (t *transport) RoundTrip(req *http.Request) (*http.Response, error) {
+	for name, value := range t.Headers {
+		req.Header.Set(name, value)
+	}
+
 	switch req.Method {
 	case "GET", "HEAD":
 	default:

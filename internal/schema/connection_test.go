@@ -20,9 +20,24 @@ package schema
 import (
 	"testing"
 
+	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
+
+func TestKibanaConnectionBlock_acceptsSensitiveStringMapHeaders(t *testing.T) {
+	t.Parallel()
+
+	block := GetKbFWConnectionBlock().(fwschema.ListNestedBlock)
+	headerAttribute, ok := block.NestedObject.Attributes[attrHeaders]
+	require.True(t, ok)
+	headers, ok := headerAttribute.(fwschema.MapAttribute)
+	require.True(t, ok)
+
+	require.True(t, headers.Optional)
+	require.True(t, headers.Sensitive)
+	require.Equal(t, types.StringType, headers.ElementType)
+}
 
 func TestElasticsearchConnectionBlockObjectAttrTypes_returnsCopy(t *testing.T) {
 	t.Parallel()
