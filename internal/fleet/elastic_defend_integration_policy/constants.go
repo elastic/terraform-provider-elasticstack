@@ -17,6 +17,13 @@
 
 package elasticdefendintegrationpolicy
 
+const endpointPackageName = "endpoint"
+
+const (
+	endpointInputType          = "endpoint"
+	bootstrapEndpointInputType = "ENDPOINT_INTEGRATION_CONFIG"
+)
+
 // Terraform schema attribute and Elastic Defend policy JSON keys reused
 // across the policy schema, mapping helpers, and default-value builders.
 const (
