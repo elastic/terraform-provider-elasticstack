@@ -176,10 +176,6 @@ type statusJSONKeyedEngine struct {
 	raw     json.RawMessage
 }
 
-func NewStatusJSONNull() StatusJSONValue {
-	return StatusJSONValue{Normalized: jsontypes.NewNormalizedNull()}
-}
-
 func NewStatusJSONUnknown() StatusJSONValue {
 	return StatusJSONValue{Normalized: jsontypes.NewNormalizedUnknown()}
 }
