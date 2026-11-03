@@ -19,6 +19,7 @@ package trainedmodel_test
 
 import (
 	"regexp"
+	"strconv"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -51,19 +52,57 @@ func TestAccDataSourceMLTrainedModel_basic(t *testing.T) {
 						regexp.MustCompile(`^[A-Za-z0-9_-]{22}/`+regexp.QuoteMeta(modelID)+`$`)),
 					resource.TestCheckResourceAttr(dataSourceAddress, "model_type", "tree_ensemble"),
 					resource.TestCheckResourceAttr(dataSourceAddress, "description", "Terraform acceptance test trained model"),
-					// Computed size/timestamps/author attributes
-					resource.TestCheckResourceAttrSet(dataSourceAddress, "model_size_bytes"),
-					resource.TestCheckResourceAttrSet(dataSourceAddress, "create_time"),
-					resource.TestCheckResourceAttrSet(dataSourceAddress, "created_by"),
-					resource.TestCheckResourceAttrSet(dataSourceAddress, "version"),
-					resource.TestCheckResourceAttrSet(dataSourceAddress, "license_level"),
+					// The get-trained-models call does not request "definition_status", so the API omits
+					// fully_defined from the response.
+					resource.TestCheckNoResourceAttr(dataSourceAddress, "fully_defined"),
+					// Model size is deterministic for the same tiny tree model; assert it is a positive integer.
+					resource.TestMatchResourceAttr(dataSourceAddress, "model_size_bytes", regexp.MustCompile(`^[1-9][0-9]*$`)),
+					resource.TestMatchResourceAttr(dataSourceAddress, "create_time", regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$`)),
+					// Created via the REST API with an explicit user, so created_by reflects the API user,
+					// not the "_xpack" value used for models created by data frame analytics.
+					resource.TestCheckResourceAttr(dataSourceAddress, "created_by", "api_user"),
+					resource.TestMatchResourceAttr(dataSourceAddress, "version", regexp.MustCompile(`^\d+\.\d+\.\d+`)),
+					resource.TestMatchResourceAttr(dataSourceAddress, "license_level", regexp.MustCompile(`^(basic|trial|gold|standard|platinum|enterprise)$`)),
+					// The fixture is a tree_ensemble (not a PyTorch model), so no platform architecture applies.
+					resource.TestCheckNoResourceAttr(dataSourceAddress, "platform_architecture"),
+					// The fixture sets no default field map. metadata_json is asserted on the dedicated
+					// tagged-model fixture instead: this shared model may accumulate a "model_aliases"
+					// metadata entry from the trained-model-alias acceptance tests running against it.
+					resource.TestCheckNoResourceAttr(dataSourceAddress, "default_field_map"),
 					// The test model has no tags
 					resource.TestCheckResourceAttr(dataSourceAddress, "tags.#", "0"),
-					// The test model's input field list contains "foo"
-					resource.TestMatchResourceAttr(dataSourceAddress, "input_json",
-						regexp.MustCompile(`"field_names".*"foo"`)),
+					// The test model's input field list is exactly ["foo"]
+					resource.TestCheckResourceAttr(dataSourceAddress, "input_json", `{"field_names":["foo"]}`),
 					// Inference config is present (regression model)
-					resource.TestCheckResourceAttrSet(dataSourceAddress, "inference_config_json"),
+					resource.TestMatchResourceAttr(dataSourceAddress, "inference_config_json", regexp.MustCompile(`"regression"`)),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceMLTrainedModel_tags(t *testing.T) {
+	modelID := acctest.AccTestTrainedModelIDTagged
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() {
+			acctest.PreCheck(t)
+			acctest.EnsureTaggedTrainedModel(t)
+		},
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"model_id": config.StringVariable(modelID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(dataSourceAddress, "model_id", modelID),
+					resource.TestCheckResourceAttr(dataSourceAddress, "tags.#", strconv.Itoa(len(acctest.AccTestTrainedModelTags))),
+					resource.TestCheckTypeSetElemAttr(dataSourceAddress, "tags.*", acctest.AccTestTrainedModelTags[0]),
+					resource.TestCheckTypeSetElemAttr(dataSourceAddress, "tags.*", acctest.AccTestTrainedModelTags[1]),
+					// This fixture is never aliased by other tests, so metadata_json stays absent.
+					resource.TestCheckNoResourceAttr(dataSourceAddress, "metadata_json"),
 				),
 			},
 		},
