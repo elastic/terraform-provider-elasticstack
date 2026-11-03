@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/sslcore"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -42,7 +43,7 @@ func TestSchemaSsl(t *testing.T) {
 	require.True(t, ok, "ssl attribute must exist as a single nested attribute")
 	require.True(t, sslAttr.Optional)
 	require.False(t, sslAttr.Computed)
-	require.Equal(t, []validator.Object{sslAtLeastOneSubattrValidator{}}, sslAttr.Validators)
+	require.Equal(t, []validator.Object{sslcore.AtLeastOneSubattrValidator(sslSubattrNames, sslAtLeastOneSubattrSummary, sslAtLeastOneSubattrMessage)}, sslAttr.Validators)
 	require.Len(t, sslAttr.Attributes, 4)
 	require.Equal(t, sslAttrTypes, sslAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
 
@@ -112,7 +113,7 @@ func TestSslAtLeastOneSubattrValidator(t *testing.T) {
 			t.Parallel()
 
 			resp := &validator.ObjectResponse{}
-			sslAtLeastOneSubattrValidator{}.ValidateObject(t.Context(), validator.ObjectRequest{
+			sslcore.AtLeastOneSubattrValidator(sslSubattrNames, sslAtLeastOneSubattrSummary, sslAtLeastOneSubattrMessage).ValidateObject(t.Context(), validator.ObjectRequest{
 				Path:        path.Root("ssl"),
 				ConfigValue: tc.obj,
 			}, resp)
