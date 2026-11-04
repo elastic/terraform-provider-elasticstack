@@ -89,6 +89,19 @@ func packageFixture(t *testing.T, packages []string) {
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 }
 
+func TestRunForwardsGoListStderr(t *testing.T) {
+	bin := t.TempDir()
+	stub := "#!/bin/sh\nprintf '%s\\n' 'broken package dependency' >&2\nexit 1\n"
+	require.NoError(t, os.WriteFile(filepath.Join(bin, "go"), []byte(stub), 0o755))
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	var stdout, stderr bytes.Buffer
+	err := run(nil, &stdout, &stderr)
+
+	require.Error(t, err)
+	assert.Contains(t, stderr.String(), "broken package dependency")
+}
+
 func runMake(t *testing.T, packages []string, args ...string) ([]byte, error) {
 	t.Helper()
 	actualGo, err := exec.LookPath("go")

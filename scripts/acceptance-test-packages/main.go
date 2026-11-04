@@ -56,7 +56,9 @@ func run(args []string, stdout, stderr io.Writer) error {
 	if *total <= 0 || *index < 0 || *index >= *total {
 		return fmt.Errorf("invalid shard assignment: total=%d index=%d (require total > 0 and 0 <= index < total)", *total, *index)
 	}
-	output, err := exec.Command("go", "list", "./...").Output()
+	command := exec.Command("go", "list", "./...")
+	command.Stderr = stderr
+	output, err := command.Output()
 	if err != nil {
 		return fmt.Errorf("list packages: %w", err)
 	}
