@@ -3,7 +3,7 @@
 Kibana is frequently placed behind an identity-aware proxy (Cloudflare Access, Google IAP) that
 requires a custom HTTP header on every request (`cf-access-token: ...`, `Proxy-Authorization: ...`)
 before Kibana itself is ever reached. The provider's `kibana` connection block has no way to attach
-arbitrary headers to outgoing Kibana API requests, so these setups cannot authenticate the Terraform
+custom headers to outgoing Kibana API requests, so these setups cannot authenticate the Terraform
 provider at all ([#440](https://github.com/elastic/terraform-provider-elasticstack/issues/440), with
 corroborating reports from `@hayk96` and `@hossamdash`).
 
@@ -13,14 +13,15 @@ corroborating reports from `@hayk96` and `@hossamdash`).
   available. Provider, managed-resource, data-source, and ephemeral values are sensitive;
   managed-resource and data-source values remain in state; action values are write-only; and ephemeral
   values follow Terraform's ephemeral-state semantics.
-- Send each configured custom header on every outgoing Kibana HTTP request alongside the
+- Send each accepted custom header on every outgoing Kibana HTTP request alongside the
   provider-managed `kbn-xsrf` and `Authorization` headers.
 - When custom headers are configured, allow redirects only when the destination has the same origin
   (scheme, host, and effective port) as the initial Kibana request. Reject cross-origin redirects,
   including HTTPS-to-HTTP downgrades, before custom credentials can be forwarded.
-- Reject (case-insensitively) a configured header named `kbn-xsrf` or `authorization` with a clear
-  provider error before the affected connection sends its first request, preventing a user-supplied
-  value from conflicting with provider-managed headers.
+- Reject (case-insensitively) a configured header named `kbn-xsrf`, `authorization`, or `host` with a
+  clear provider error before the affected connection sends its first request. The first two conflict
+  with provider-managed headers; Go transmits `Host` through the request authority rather than the
+  ordinary header map, so accepting it would silently violate the header-delivery contract.
 - Exclude Kibana custom headers from Fleet requests, since Fleet's endpoint can diverge from Kibana's
   and forwarding a Kibana-proxy credential to a different host by default would be a credential-leak
   risk. Fleet does not gain its own `headers` attribute in this change.

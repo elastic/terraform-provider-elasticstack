@@ -29,12 +29,12 @@ a different origin. The redirect boundary therefore forms part of the credential
 ## Goals / Non-Goals
 
 **Goals:**
-- Let users attach one or more custom HTTP headers to every outgoing Kibana API request, configurable
+- Let users attach one or more supported custom HTTP headers to every outgoing Kibana API request, configurable
   at the provider level (`kibana { headers = {...} }`) and per-entity (`kibana_connection { headers =
   {...} }`), via the existing shared-spec mechanism so no per-entity schema changes are needed.
-- Prevent a configured custom header from silently colliding with the two headers the provider manages
-  itself (`kbn-xsrf`, `Authorization`), by rejecting the collision outright rather than relying on
-  write order.
+- Prevent a configured custom header from silently colliding with provider-managed headers
+  (`kbn-xsrf`, `Authorization`) or being ignored by Go's special handling of `Host`, by rejecting those
+  names outright.
 - Prevent configured custom headers from being forwarded when Kibana or an intermediary redirects to
   a different origin, including an HTTPS-to-HTTP destination.
 - Keep Fleet's client configuration unaffected by Kibana-only custom headers, since Fleet's endpoint
@@ -95,16 +95,18 @@ with a new `[]validator.Map` field (which would ripple into all three entity-kin
 single attribute), reject the reserved names where `headers` is actually decoded into
 `kibanaoapi.Config`: inside `buildKibanaOapiConfigFromFramework` in
 `internal/clients/config/kibana_oapi.go`, immediately after `kibConfig.Headers.ElementsAs(...)`.
-Case-insensitively comparing each configured header key against `kbn-xsrf` and `authorization` and
-returning a diagnostic error that names the offending key blocks use of that connection before it
-sends its first request. Provider-level configuration is built during provider configuration, while a
-new entity-local scoped connection may not be built until Create; this design therefore does not
-promise that every reserved-name error appears during planning.
+Case-insensitively comparing each configured header key against `kbn-xsrf`, `authorization`, and
+`host` and returning a diagnostic error that names the offending key blocks use of that connection
+before it sends its first request. `Host` must be rejected because Go sends the request authority from
+`req.Host` or the request URL rather than `req.Header["Host"]`; accepting it into the ordinary header
+map would not put the configured value on the wire. Provider-level configuration is built during
+provider configuration, while a new entity-local scoped connection may not be built until Create;
+this design therefore does not promise that every reserved-name error appears during planning.
 
 Why:
 - Matches the precedent already used for endpoint/CA decoding errors in the same function (returning
   `fwdiags.Diagnostics` on invalid input).
-- Avoids a second place (a schema-level validator function) that would need to know about the two
+- Avoids a second place (a schema-level validator function) that would need to know about the three
   reserved names, keeping the reserved-name policy in a single function.
 - Guarantees rejection before the connection can send an HTTP request, which is the security boundary
   this validation protects, without expanding the shared schema-generator validator surface.
@@ -129,7 +131,7 @@ Why:
 - Reuses the single existing injection point that already handles per-request header writes and is
   already covered by `transport_test.go`.
 - `req.Header.Set` (rather than `Add`) matches how `Authorization` is already written, and is correct
-  for arbitrary single-valued custom headers.
+  for accepted single-valued custom headers after the transport-special `Host` name is rejected.
 
 ### 4. Reject cross-origin redirects when custom headers are configured
 

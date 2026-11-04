@@ -44,7 +44,7 @@ Terraform's ephemeral-state semantics.
 ### Requirement: Reserved header names are rejected before any request is sent
 
 The provider SHALL reject reserved Kibana header names before the affected connection sends its first
-request. A configured `headers` key equal to `kbn-xsrf` or `authorization`, compared
+request. A configured `headers` key equal to `kbn-xsrf`, `authorization`, or `host`, compared
 case-insensitively, SHALL produce a diagnostic identifying the offending key. The diagnostic MAY
 occur during apply when a new entity-local scoped connection is first built; this requirement does
 not guarantee plan-time rejection in every context.
@@ -62,15 +62,22 @@ not guarantee plan-time rejection in every context.
 - **THEN** the provider SHALL report a diagnostic error identifying the key as a reserved header name
   before the affected connection sends its first request
 
+#### Scenario: Custom Host header is rejected rather than silently ignored
+
+- **WHEN** a practitioner configures `headers = { "Host" = "kibana.example.com" }` on a Kibana
+  connection block
+- **THEN** the provider SHALL report a diagnostic error identifying `Host` as a reserved header name
+  before the affected connection sends its first request
+
 #### Scenario: Non-reserved headers are unaffected by the rejection rule
 
 - **WHEN** a practitioner configures `headers` containing only non-reserved keys (for example
   `cf-access-token`)
 - **THEN** the provider SHALL NOT report a reserved-header diagnostic for that configuration
 
-### Requirement: Configured headers are sent on every outgoing Kibana request
+### Requirement: Accepted configured headers are sent on every outgoing Kibana request
 
-The effective Kibana connection SHALL send every configured custom header on every outgoing Kibana
+The effective Kibana connection SHALL send every accepted configured custom header on every outgoing Kibana
 request. This behavior SHALL apply to provider-level and entity-local connections, alongside the
 provider's own `kbn-xsrf` and `Authorization` headers.
 
@@ -135,13 +142,14 @@ gain its own `headers` attribute as part of this requirement.
 - **WHEN** the provider sends a Fleet API request
 - **THEN** outgoing Fleet API requests SHALL NOT include `cf-access-token`
 
-### Requirement: Kibana connection headers are not gated by a minimum Stack version
+### Requirement: Accepted Kibana connection headers are not gated by a minimum Stack version
 
-Kibana connection headers SHALL NOT be gated by a minimum Kibana or Stack version. The behavior only
-shapes outgoing HTTP requests before they reach a Kibana API operation.
+Accepted Kibana connection headers SHALL NOT be gated by a minimum Kibana or Stack version. The
+behavior only shapes outgoing HTTP requests before they reach a Kibana API operation.
 
-#### Scenario: Headers are honored on any supported Stack version
+#### Scenario: Accepted headers are honored on any supported Stack version
 
-- **WHEN** a practitioner configures `headers` on a Kibana connection block against any Kibana version
-  within the provider's supported version range
-- **THEN** the provider SHALL send the configured headers without emitting a version-related diagnostic
+- **WHEN** a practitioner configures non-reserved `headers` on a Kibana connection block against any
+  Kibana version within the provider's supported version range
+- **THEN** the provider SHALL send the accepted configured headers without emitting a version-related
+  diagnostic
