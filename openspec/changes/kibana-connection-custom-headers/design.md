@@ -22,6 +22,10 @@ the research recommendation and its post-critique fixes: no Stack version gate, 
 across the provider's supported Stack-version matrix, and explicit handling of `KIBANA_ENDPOINT`
 precedence in the new acceptance test.
 
+The client currently uses Go's default redirect behavior. Because the custom transport injects
+configured headers on every round trip, an unconstrained redirect could forward a proxy credential to
+a different origin. The redirect boundary therefore forms part of the credential-delivery design.
+
 ## Goals / Non-Goals
 
 **Goals:**
@@ -31,6 +35,8 @@ precedence in the new acceptance test.
 - Prevent a configured custom header from silently colliding with the two headers the provider manages
   itself (`kbn-xsrf`, `Authorization`), by rejecting the collision outright rather than relying on
   write order.
+- Prevent configured custom headers from being forwarded when Kibana or an intermediary redirects to
+  a different origin, including an HTTPS-to-HTTP destination.
 - Keep Fleet's client configuration unaffected by Kibana-only custom headers, since Fleet's endpoint
   can diverge from Kibana's.
 - Ship as a normal additive feature with no stack-version gate, and prove the behavior holds across the
@@ -39,9 +45,9 @@ precedence in the new acceptance test.
 **Non-Goals:**
 - Adding a `headers` attribute to the Fleet connection block (tracked as a non-blocking follow-up).
 - Changing the existing Elasticsearch `headers` attribute's behavior.
-- Adding new redaction logic to the debug-log transport (`internal/debugutils/http_log.go`); it already
-  logs `Authorization` unredacted today, and will do the same for custom headers. This change only
-  documents the existing limitation.
+- Adding new redaction logic to the debug-log transport (`internal/debugutils/http_log.go`);
+  `Authorization` is already masked by the existing debug formatter, while arbitrary custom
+  proxy-token headers are not generally redacted. This change only documents that limitation.
 - Extending the ephemeral Kibana connection snapshot (`internal/entitycore/ephemeral_connection_snapshot.go`)
   — no Kibana ephemeral resource is registered in `provider/plugin_framework.go` today, so there is no
   reachable ephemeral `kibana_connection` for a `headers` field to serialize.
@@ -125,7 +131,30 @@ Why:
 - `req.Header.Set` (rather than `Add`) matches how `Authorization` is already written, and is correct
   for arbitrary single-valued custom headers.
 
-### 4. Explicitly drop `Headers` in `toFleetConfig()`
+### 4. Reject cross-origin redirects when custom headers are configured
+
+Configure the Kibana HTTP client with a redirect policy whenever `Config.Headers` is non-empty.
+Compare every redirect destination with the initial request's origin, where origin consists of the
+scheme, canonical host, and effective port. Allow same-origin redirects, but return an error before
+sending a redirected request when any origin component differs. This rejects cross-host and
+cross-port redirects as well as HTTPS-to-HTTP downgrades.
+
+Why:
+- Redirected requests pass through `transport.RoundTrip` again, so clearing headers only on the
+  redirect request would not help: the transport would re-inject them.
+- Rejecting the redirect gives the practitioner a visible failure instead of silently following an
+  unexpected destination without the configured proxy credential.
+- Applying the restriction only when custom headers are configured preserves the client's existing
+  redirect behavior for unaffected configurations.
+
+Alternatives considered:
+- Strip custom headers on cross-origin redirects and continue: rejected because the custom transport
+  would re-inject them unless additional request-scoped suppression were introduced, and continuing
+  without a required proxy credential would usually fail later with a less useful error.
+- Disable all redirects: rejected because ordinary same-origin redirects do not cross the credential
+  boundary and may be required by a Kibana proxy.
+
+### 5. Explicitly drop `Headers` in `toFleetConfig()`
 
 The Kibana and Fleet client configurations share an underlying configuration shape, and Fleet is
 currently derived by converting the effective Kibana configuration. Once custom headers are added,
@@ -140,7 +169,7 @@ Why:
 - Fleet gaining its own `headers` attribute is left as a clearly-scoped, non-blocking follow-up (see
   Open Questions).
 
-### 5. No Stack/Kibana minimum-version gate; validate via the supported-version test matrix instead
+### 6. No Stack/Kibana minimum-version gate; validate via the supported-version test matrix instead
 
 This feature only shapes outgoing HTTP requests before they reach any Kibana/Fleet API operation, so it
 has no API-surface dependency on a specific Kibana version. No source consulted during research
@@ -152,7 +181,7 @@ later, the acceptance test added for this change runs against the provider's sta
 supported-Stack-version test matrix (not a single pinned version), so a real dependency would still be
 caught by CI rather than assumed away silently.
 
-### 6. Prove headers reach the wire with a local recording reverse-proxy acceptance test, accounting for `KIBANA_ENDPOINT` precedence
+### 7. Prove headers reach the wire with a local recording reverse-proxy acceptance test, accounting for `KIBANA_ENDPOINT` precedence
 
 There is no real Cloudflare Access or Google IAP available in CI, so state-shape acceptance tests alone
 (following `TestAccDataSourceEnrichPolicyConnectionAPIKey` /
@@ -179,7 +208,21 @@ Why:
   where the real Kibana endpoint was hit instead of the proxy.
 
 If `internal/acctest` does not already have a reusable header-recording proxy helper, this change adds
-one; this was not confirmed to exist before this change and is called out in tasks.md as a prep step.
+one as part of the acceptance-test boundary.
+
+### 8. Test each security boundary at the narrowest observable layer
+
+Use config-level tests for header decoding, reserved-name rejection, and Fleet exclusion; transport
+tests for ordinary request injection; HTTP client tests with controlled redirect endpoints for
+same-origin success and cross-origin rejection; and acceptance tests with a recording proxy for
+provider-level and entity-local delivery. Redirect tests assert that rejected destinations receive no
+request at all, including host, effective-port, and scheme changes. Acceptance coverage explicitly
+controls endpoint environment precedence and runs through the supported Stack-version matrix.
+
+Why:
+- Config and client tests isolate failure boundaries and can prove that rejected inputs or redirects
+  do not produce network requests.
+- Acceptance tests remain focused on the user-visible schema-to-wire path that unit tests cannot prove.
 
 ## Risks / Trade-offs
 
@@ -190,9 +233,12 @@ one; this was not confirmed to exist before this change and is called out in tas
 - **A reserved-name error for a new entity-local connection may surface during apply rather than
   planning** → Build and validate the scoped configuration before its first request, so invalid input
   cannot reach Kibana even though the diagnostic timing varies by context.
+- **A cross-origin redirect that previously succeeded will fail when custom headers are configured** →
+  Allow same-origin redirects, reject the redirect before the destination receives a request, and
+  return an error that identifies the credential-protection boundary.
 - **Debug logging can expose custom header values** → Document that the existing debug transport logs
-  request headers, including `Authorization`, and do not claim that `Sensitive` redacts provider debug
-  logs.
+  request headers, that existing formatting masks `Authorization` but not arbitrary custom proxy-token
+  headers, and do not claim that `Sensitive` redacts provider debug logs.
 - **A recording proxy adds acceptance-test complexity and can be bypassed by endpoint environment
   precedence** → Force configured-endpoint preference (or point the environment endpoint at the proxy)
   and assert that the proxy actually observed the expected header.

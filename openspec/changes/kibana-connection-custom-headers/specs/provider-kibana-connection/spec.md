@@ -94,6 +94,34 @@ provider's own `kbn-xsrf` and `Authorization` headers.
 - **THEN** the outgoing request SHALL include `Proxy-Authorization: proxy-value`
 - **AND** the outgoing request SHALL NOT include an `Authorization` header
 
+### Requirement: Redirects cannot forward custom headers across origins
+
+When one or more custom headers are configured, the Kibana client SHALL follow redirects only when
+the destination has the same origin as the initial request. Origin equality SHALL require the same
+scheme, host, and effective port. The client SHALL reject a cross-origin redirect, including an
+HTTPS-to-HTTP redirect, before sending a request to the redirect destination.
+
+#### Scenario: Same-origin redirect retains custom headers
+
+- **GIVEN** a Kibana connection configured with `headers = { "cf-access-token" = "xyz" }`
+- **WHEN** a Kibana endpoint redirects the request to another path on the same origin
+- **THEN** the client SHALL follow the redirect
+- **AND** the redirected request SHALL include `cf-access-token: xyz`
+
+#### Scenario: Cross-origin redirect is rejected before credentials are forwarded
+
+- **GIVEN** a Kibana connection configured with `headers = { "cf-access-token" = "xyz" }`
+- **WHEN** a Kibana endpoint redirects the request to a different scheme, host, or effective port
+- **THEN** the client SHALL return a redirect error
+- **AND** the redirect destination SHALL NOT receive any request
+
+#### Scenario: HTTPS-to-HTTP redirect is rejected
+
+- **GIVEN** a Kibana connection configured with `headers = { "cf-access-token" = "xyz" }`
+- **WHEN** a Kibana endpoint redirects an HTTPS request to an HTTP destination
+- **THEN** the client SHALL return a redirect error
+- **AND** the HTTP destination SHALL NOT receive any request
+
 ### Requirement: Fleet client excludes Kibana-only headers
 
 The Fleet client SHALL exclude custom headers configured on the Kibana connection. This exclusion
@@ -104,7 +132,7 @@ gain its own `headers` attribute as part of this requirement.
 
 - **GIVEN** a provider-level `kibana { headers = { "cf-access-token" = "xyz" } }` block and no
   `headers`-equivalent configuration on the `fleet` block
-- **WHEN** the provider derives the Fleet client configuration from the Kibana connection
+- **WHEN** the provider sends a Fleet API request
 - **THEN** outgoing Fleet API requests SHALL NOT include `cf-access-token`
 
 ### Requirement: Kibana connection headers are not gated by a minimum Stack version
