@@ -248,7 +248,9 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 	// (client-setting overrides rather than native repository settings). Whether
 	// Elasticsearch returns them via the raw settings overlay is version-dependent
 	// and difficult to determine empirically, so we inherit those two from prior
-	// state when GET omits them. Empirically, GET _snapshot/{repo} on Elasticsearch
+	// state when GET omits them and the prior value is known. During the read that
+	// follows create or update the prior value is the plan, where an unconfigured
+	// Optional+Computed attribute is unknown. Empirically, GET _snapshot/{repo} on Elasticsearch
 	// 8.19.17 and 9.4.0 echoes disable_chunked_encoding and always_sign_requests
 	// (as the strings "true"/"false") whenever they were set in the PUT body —
 	// including false — so those two map directly with no fallback. The API value
@@ -256,7 +258,7 @@ func settingsToS3(ctx context.Context, repo *elasticsearch.SnapshotRepositoryInf
 	var endpoint types.String
 	if endpointStr := strSetting(s, settingEndpoint); endpointStr != "" {
 		endpoint = strSettingNull(s, settingEndpoint)
-	} else if !endpointFallback.IsNull() {
+	} else if typeutils.IsKnown(endpointFallback) {
 		endpoint = endpointFallback
 	} else {
 		endpoint = types.StringNull()
