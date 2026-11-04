@@ -58,6 +58,12 @@ returned by `kbConnectionBlockSpec()`, matching the shape of the Elasticsearch `
 `internal/schema/connection_constants.go` and add a new Kibana-specific description constant (the
 existing `descHeaders` text says "...to Elasticsearch", so Kibana needs its own wording).
 
+Those flags are shared-spec inputs, not a promise that every generated schema marks the attribute
+write-only. The existing factories apply `Sensitive` to provider, managed-resource, data-source, and
+ephemeral attributes, while only the action factory applies `WriteOnly`. Consequently, entity-local
+managed-resource and data-source header values remain in Terraform state, marked sensitive; action
+header values are write-only; and ephemeral values follow Terraform's ephemeral-state semantics.
+
 Why:
 - `kbConnectionBlockSpec()` is the sole generator for the managed-resource, ephemeral-resource, and
   action-resource variants of the Kibana connection block (via `connAttrFactory[T]` in
@@ -84,23 +90,25 @@ single attribute), reject the reserved names where `headers` is actually decoded
 `kibanaoapi.Config`: inside `buildKibanaOapiConfigFromFramework` in
 `internal/clients/config/kibana_oapi.go`, immediately after `kibConfig.Headers.ElementsAs(...)`.
 Case-insensitively comparing each configured header key against `kbn-xsrf` and `authorization` and
-returning a `fwdiags.Diagnostics` error (naming the offending key) blocks `terraform plan`/`apply`
-before any request is ever sent.
+returning a diagnostic error that names the offending key blocks use of that connection before it
+sends its first request. Provider-level configuration is built during provider configuration, while a
+new entity-local scoped connection may not be built until Create; this design therefore does not
+promise that every reserved-name error appears during planning.
 
 Why:
 - Matches the precedent already used for endpoint/CA decoding errors in the same function (returning
   `fwdiags.Diagnostics` on invalid input).
 - Avoids a second place (a schema-level validator function) that would need to know about the two
   reserved names, keeping the reserved-name policy in a single function.
-- Still happens at plan time, before any HTTP request is attempted, same as a schema-level validator
-  would achieve.
+- Guarantees rejection before the connection can send an HTTP request, which is the security boundary
+  this validation protects, without expanding the shared schema-generator validator surface.
 
 Alternatives considered:
 - Reject at the point `transport.RoundTrip` consumes `Config.Headers`: rejected because it defers the
-  error from plan time to apply/request time, surfacing a worse user experience for a problem that is
-  fully knowable from configuration alone.
-- Extend `connAttrSpec` with a `[]validator.Map` field: rejected as unnecessary generator surface area
-  for a single attribute when a config-build-time check is simpler and sufficient.
+  error until request execution rather than scoped-client construction.
+- Extend `connAttrSpec` with a `[]validator.Map` field: this would provide uniform plan-time validation,
+  including for new entity-local resources, but is rejected as unnecessary generator surface area for
+  a single attribute when rejection before the first request satisfies the required safety property.
 
 ### 3. Inject custom headers in `transport.RoundTrip`, after the reserved-name check removes any collision risk
 
@@ -119,23 +127,12 @@ Why:
 
 ### 4. Explicitly drop `Headers` in `toFleetConfig()`
 
-`fleetConfig` (`internal/clients/config/fleet.go`) and `kibanaOapiConfig`
-(`internal/clients/config/kibana_oapi.go`) are both named types over the same underlying
-`kibanaoapi.Config` struct (`fleet.Config` is a type alias for `kibanaoapi.Config`), and
-`toFleetConfig()` currently does a raw type conversion: `func (k kibanaOapiConfig) toFleetConfig()
-fleetConfig { return fleetConfig(k) }`. Once `Headers` is added to `kibanaoapi.Config`, that raw
-conversion would carry Kibana's custom headers into the Fleet client unchanged. Since Fleet's endpoint
-can be configured independently of Kibana's (fleet-block `endpoint` override, or `FLEET_ENDPOINT` env),
-forwarding a Kibana-proxy header by default risks leaking that header's value to a different host.
-Change `toFleetConfig()` to clear `Headers` after the conversion:
-
-```go
-func (k kibanaOapiConfig) toFleetConfig() fleetConfig {
-    fc := fleetConfig(k)
-    fc.Headers = nil
-    return fc
-}
-```
+The Kibana and Fleet client configurations share an underlying configuration shape, and Fleet is
+currently derived by converting the effective Kibana configuration. Once custom headers are added,
+that conversion would carry them into the Fleet client unchanged. Since Fleet's endpoint can be
+configured independently of Kibana's (through the Fleet block or environment), forwarding a
+Kibana-proxy header by default risks leaking that header's value to a different host. The Fleet
+derivation boundary therefore explicitly clears Kibana custom headers.
 
 Why:
 - Keeps the default behavior safe (no implicit credential forwarding to a potentially different host)
@@ -184,27 +181,20 @@ Why:
 If `internal/acctest` does not already have a reusable header-recording proxy helper, this change adds
 one; this was not confirmed to exist before this change and is called out in tasks.md as a prep step.
 
-## Open Questions
+## Risks / Trade-offs
 
-- Is there in fact no Kibana/Stack minimum-version requirement for custom request headers? Research
-  found no source either confirming or ruling this out (an absence-of-evidence inference, not a
-  verified fact) — worth a quick confirmation before implementation, but not expected to change the
-  recommended approach. (non-blocking)
-- Should Fleet gain its *own* `headers` attribute in a follow-up, now that this change deliberately
-  excludes Fleet from inheriting Kibana's headers? The issue and its comments only describe headers for
-  Kibana itself (Cloudflare Access, Google IAP in front of Kibana); no comment mentions Fleet. This
-  question is motivated purely by the shared-client code path (`toFleetConfig()`), not by any stated
-  user requirement, and is a separate, non-blocking follow-up.
-- Should header values be `sensitive` by default (as ES's `headers` attribute is), even though not
-  every header a user sets will be a secret (e.g. a non-secret `X-Request-Source` header), or should
-  sensitivity be left to the user via a plain (non-sensitive) map, accepting that Terraform's CLI
-  masking is coarse either way? (non-blocking, a UX/consistency decision; recommend following the ES
-  precedent — `sensitive: true` — for now since the motivating headers, like `cf-access-token`, are
-  secrets)
-- Does `internal/acctest` already have a header-recording test-proxy harness, or does one need to be
-  added to prove headers are transmitted on the wire? (non-blocking; this change adds one if none
-  exists, per Decision 6)
-
-Per the human direction on the issue, all of the open questions above are treated as non-blocking for
-this proposal and do not change the recommended approach; they are recorded here for implementation-time
-awareness and potential follow-up work.
+- **Sensitive managed-resource and data-source header values remain in Terraform state** → Mark them
+  sensitive so Terraform masks them in normal CLI output, document the persistence explicitly, and
+  reserve true state exclusion for the action variant's write-only attribute and Terraform's
+  ephemeral-value semantics.
+- **A reserved-name error for a new entity-local connection may surface during apply rather than
+  planning** → Build and validate the scoped configuration before its first request, so invalid input
+  cannot reach Kibana even though the diagnostic timing varies by context.
+- **Debug logging can expose custom header values** → Document that the existing debug transport logs
+  request headers, including `Authorization`, and do not claim that `Sensitive` redacts provider debug
+  logs.
+- **A recording proxy adds acceptance-test complexity and can be bypassed by endpoint environment
+  precedence** → Force configured-endpoint preference (or point the environment endpoint at the proxy)
+  and assert that the proxy actually observed the expected header.
+- **Kibana headers are deliberately unavailable to Fleet** → Drop them at the Fleet derivation
+  boundary; a separate Fleet `headers` attribute requires its own user requirement and follow-up.

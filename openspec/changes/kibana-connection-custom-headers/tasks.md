@@ -5,9 +5,10 @@
       Elasticsearch-specific wording)
 - [ ] 1.2 Add a `headers` entry (`kind: connAttrMap, sensitive: true, writeOnly: true`) to the `attrs`
       slice in `kbConnectionBlockSpec()` (`internal/schema/kb_connection_shared.go`)
-- [ ] 1.3 Confirm (no code change expected) that `GetKbFWConnectionBlock()`, the entity-local Kibana
-      connection block, the ephemeral-resource block, and the action-resource block all pick up
-      `headers` automatically via the shared spec
+- [ ] 1.3 Verify that generated provider, managed-resource, data-source, and ephemeral variants mark
+      `headers` sensitive, that only the action variant marks it write-only, and that entity-local
+      managed-resource/data-source values remain in state while ephemeral values follow Terraform's
+      ephemeral-state semantics
 
 ## 2. Config plumbing
 
@@ -18,7 +19,8 @@
       `endpoints`/`ca_certs` decoding pattern)
 - [ ] 2.4 In the same function, after decoding, case-insensitively reject any configured header key
       equal to `kbn-xsrf` or `authorization`, returning a `fwdiags.Diagnostics` error that names the
-      offending key
+      offending key before the scoped connection's first request; do not require the diagnostic to
+      occur during planning for a new entity-local resource
 - [ ] 2.5 Update `toFleetConfig()` (`internal/clients/config/kibana_oapi.go`) to explicitly clear
       `Headers` on the returned `fleetConfig` after the struct conversion, so Kibana-only headers are
       never forwarded to the Fleet client by default

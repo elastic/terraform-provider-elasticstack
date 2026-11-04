@@ -2,11 +2,13 @@
 
 ### Requirement: Kibana connection block exposes a `headers` attribute
 
-The shared Kibana connection block (`kbConnectionBlockSpec()`) SHALL define an `Optional`,
-`Sensitive`, `WriteOnly` map-of-string attribute named `headers`, mirroring the Elasticsearch
-connection block's `headers` attribute. Adding it to the shared block SHALL make it available in every
-context the block is used — provider-level, entity-local, ephemeral, and action — without any
-entity-specific schema change.
+The shared Kibana connection block SHALL expose an optional map-of-string attribute named `headers`.
+Provider, managed-resource, data-source, and ephemeral variants SHALL mark the attribute sensitive,
+while the action variant SHALL make it write-only. The attribute SHALL be available in every context
+where the Kibana connection block is used without entity-specific schema changes. Entity-local
+managed-resource and data-source header values SHALL remain in Terraform state as sensitive values;
+action header values SHALL be excluded from state; and ephemeral header values SHALL follow
+Terraform's ephemeral-state semantics.
 
 #### Scenario: Provider-level kibana block accepts headers
 
@@ -19,6 +21,19 @@ entity-specific schema change.
 - **WHEN** a practitioner configures `kibana_connection { headers = { "X-Custom" = "value" } }` on a
   resource or data source that already supports `kibana_connection`
 - **THEN** Terraform SHALL accept the configuration without a schema validation error
+- **AND** the header value SHALL be retained in state as a sensitive value
+
+#### Scenario: Action connection headers are write-only
+
+- **WHEN** a practitioner configures `headers` on an action variant of the Kibana connection block
+- **THEN** the header value SHALL be accepted as write-only input
+- **AND** the header value SHALL NOT be retained in state
+
+#### Scenario: Ephemeral connection headers follow ephemeral-state semantics
+
+- **WHEN** an ephemeral variant of the Kibana connection block accepts `headers`
+- **THEN** the header value SHALL be marked sensitive
+- **AND** Terraform SHALL NOT persist the ephemeral value in state
 
 #### Scenario: Omitted headers is a no-op
 
@@ -28,24 +43,24 @@ entity-specific schema change.
 
 ### Requirement: Reserved header names are rejected before any request is sent
 
-The provider SHALL reject, case-insensitively, a configured Kibana connection `headers` key equal to
-`kbn-xsrf` or `authorization`, with a diagnostic error identifying the offending key, before sending
-any request. The provider's own writes for these two headers are conditional on request method and
-configured auth method, so write order alone cannot guarantee a same-named custom header is always
-overridden; rejecting the collision up front avoids relying on that ordering.
+The provider SHALL reject reserved Kibana header names before the affected connection sends its first
+request. A configured `headers` key equal to `kbn-xsrf` or `authorization`, compared
+case-insensitively, SHALL produce a diagnostic identifying the offending key. The diagnostic MAY
+occur during apply when a new entity-local scoped connection is first built; this requirement does
+not guarantee plan-time rejection in every context.
 
 #### Scenario: Custom Authorization header is rejected
 
 - **WHEN** a practitioner configures `headers = { "Authorization" = "custom" }` on a Kibana connection
   block
 - **THEN** the provider SHALL report a diagnostic error identifying `Authorization` as a reserved header
-  name before any Kibana API call is made
+  name before the affected connection sends its first request
 
 #### Scenario: Custom kbn-xsrf header is rejected regardless of case
 
 - **WHEN** a practitioner configures `headers = { "KBN-XSRF" = "false" }` on a Kibana connection block
 - **THEN** the provider SHALL report a diagnostic error identifying the key as a reserved header name
-  before any Kibana API call is made
+  before the affected connection sends its first request
 
 #### Scenario: Non-reserved headers are unaffected by the rejection rule
 
@@ -55,10 +70,9 @@ overridden; rejecting the collision up front avoids relying on that ordering.
 
 ### Requirement: Configured headers are sent on every outgoing Kibana request
 
-When one or more `headers` entries are configured on the effective Kibana connection (provider-level or
-entity-local), the Kibana HTTP client SHALL set each configured header, by name and value, on every
-outgoing request to the Kibana API, in addition to the provider's own `kbn-xsrf` and `Authorization`
-headers.
+The effective Kibana connection SHALL send every configured custom header on every outgoing Kibana
+request. This behavior SHALL apply to provider-level and entity-local connections, alongside the
+provider's own `kbn-xsrf` and `Authorization` headers.
 
 #### Scenario: Custom header reaches a GET request
 
@@ -82,10 +96,9 @@ headers.
 
 ### Requirement: Fleet client excludes Kibana-only headers
 
-The Fleet client configuration derived from the effective Kibana connection (`toFleetConfig()`) SHALL
-NOT carry the Kibana connection's `headers` into the Fleet client, regardless of whether the Fleet
-block itself configures any connection fields. Fleet does not gain its own `headers` attribute as part
-of this requirement.
+The Fleet client SHALL exclude custom headers configured on the Kibana connection. This exclusion
+SHALL apply regardless of whether the Fleet block configures other connection fields. Fleet does not
+gain its own `headers` attribute as part of this requirement.
 
 #### Scenario: Fleet requests omit Kibana's custom headers
 
@@ -96,9 +109,8 @@ of this requirement.
 
 ### Requirement: Kibana connection headers are not gated by a minimum Stack version
 
-The `headers` attribute on the Kibana connection block SHALL NOT be subject to a `VersionRequirement`
-or equivalent minimum-Kibana/Stack-version check, since it only shapes outgoing HTTP requests before
-they reach any Kibana or Fleet API operation.
+Kibana connection headers SHALL NOT be gated by a minimum Kibana or Stack version. The behavior only
+shapes outgoing HTTP requests before they reach a Kibana API operation.
 
 #### Scenario: Headers are honored on any supported Stack version
 

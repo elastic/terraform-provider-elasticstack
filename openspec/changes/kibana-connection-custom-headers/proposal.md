@@ -11,10 +11,13 @@ solves this with a `headers` map attribute; Kibana has no equivalent.
 ## What Changes
 
 - Add a `headers` map-of-string attribute to the shared Kibana connection block (`kbConnectionBlockSpec()`),
-  mirroring the existing Elasticsearch `headers` attribute (`sensitive: true`, `writeOnly: true`). Because
-  the Kibana connection block is defined once and shared across the provider-level `kibana` block and
-  every entity-local `kibana_connection` block, the new attribute becomes available everywhere that
-  block already appears — no per-entity schema changes required.
+  using the same `sensitive: true`, `writeOnly: true` shared-spec metadata as the existing Elasticsearch
+  `headers` attribute. The generated variants interpret that metadata differently: provider,
+  managed-resource, data-source, and ephemeral attributes are sensitive; managed-resource and
+  data-source values remain in state; only action attributes are write-only; and ephemeral values
+  follow Terraform's ephemeral-state semantics. Because the Kibana connection block is defined once
+  and shared across these contexts, the new attribute becomes available everywhere that block already
+  appears without entity-specific schema changes.
 - Thread `headers` through `kibanaoapi.Config` and inject configured header values on every outgoing
   Kibana HTTP request via the existing custom `transport.RoundTrip`, alongside the current `kbn-xsrf`
   and `Authorization` header writes.
