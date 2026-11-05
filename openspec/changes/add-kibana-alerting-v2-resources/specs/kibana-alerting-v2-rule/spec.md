@@ -257,7 +257,7 @@ Every field of the rule write body SHALL be a typed attribute or nested attribut
 
 ### Requirement: `metadata.builder` is not managed
 
-`metadata.builder` marks the Kibana UI form that authored a rule and is absent for rules authored directly in ES|QL. Rules managed by this resource are ES|QL rules, so the resource SHALL NOT expose, send, or store `metadata.builder`. Because a full-replace `PUT` without it clears it on the server, the provider SHALL warn when it reads a rule that carries one, so an imported UI-authored rule is not converted silently. The resource description SHALL state that Terraform-managed rules are ES|QL rules.
+`metadata.builder` marks the Kibana UI form that authored a rule and is absent for rules authored directly in ES|QL. Rules managed by this resource are ES|QL rules, so the resource SHALL NOT expose, send, or store `metadata.builder`. Because a full-replace `PUT` without it clears it on the server, the provider SHALL warn when it reads a rule that carries one, so an imported UI-authored rule is not converted silently. The description SHALL state that Terraform-managed rules are ES|QL rules.
 
 #### Scenario: The write body never carries a builder
 
