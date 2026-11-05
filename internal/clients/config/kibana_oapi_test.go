@@ -155,6 +155,28 @@ func Test_newKibanaOapiConfigFromFramework_rejectsCaseInsensitiveDuplicateHeader
 	require.Contains(t, diags[0].Detail(), `"`+secondConfiguredName+`"`)
 }
 
+func Test_newKibanaOapiConfigFromFramework_reportsCaseInsensitiveDuplicateHeaderNamesDeterministically(t *testing.T) {
+	providerConfig := ProviderConfiguration{
+		Kibana: []KibanaConnection{
+			{
+				Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+					"X-PROXY-TOKEN": types.StringValue("first"),
+					"X-Proxy-Token": types.StringValue("second"),
+					"x-proxy-token": types.StringValue("third"),
+				}),
+				Endpoints: types.ListNull(types.StringType),
+				CACerts:   types.ListNull(types.StringType),
+			},
+		},
+	}
+
+	_, diags := newKibanaOapiConfigFromFramework(context.Background(), providerConfig, baseConfig{})
+
+	require.Len(t, diags, 2)
+	require.Equal(t, `Headers "X-PROXY-TOKEN" and "X-Proxy-Token" differ only by case and cannot both be configured.`, diags[0].Detail())
+	require.Equal(t, `Headers "X-PROXY-TOKEN" and "x-proxy-token" differ only by case and cannot both be configured.`, diags[1].Detail())
+}
+
 func Test_newKibanaOapiConfigFromFramework_preservesNilHeadersForOmittedNullAndEmptyMaps(t *testing.T) {
 	tests := []struct {
 		name           string

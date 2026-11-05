@@ -271,7 +271,6 @@ func kibanaConnectionListFromSnapshot(ctx context.Context, snapshot *ephemeralKi
 	}
 
 	conn := kibanaConnectionFromSnapshot(snapshot)
-
 	connection, listDiags := types.ListValueFrom(ctx, providerschema.KibanaConnectionObjectType(), []clientconfig.KibanaConnection{conn})
 	diags.Append(listDiags...)
 	if diags.HasError() {
@@ -288,7 +287,8 @@ func kibanaConnectionFromSnapshot(snapshot *ephemeralKibanaConnectionSnapshot) c
 		APIKey:      typeutils.NonEmptyStringishValue(snapshot.APIKey),
 		BearerToken: typeutils.NonEmptyStringishValue(snapshot.BearerToken),
 		Insecure:    types.BoolPointerValue(snapshot.Insecure),
-		Headers:     types.MapNull(types.StringType),
+		// Headers are intentionally not serialized because no Kibana ephemeral resource is registered.
+		Headers: types.MapNull(types.StringType),
 	}
 
 	if len(snapshot.Endpoints) > 0 {

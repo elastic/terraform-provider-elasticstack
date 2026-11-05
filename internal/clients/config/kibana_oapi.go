@@ -21,6 +21,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -103,7 +104,12 @@ func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigu
 			diags.Append(kibConfig.Headers.ElementsAs(ctx, &headers, true)...)
 		}
 		configuredNames := make(map[string]string, len(headers))
+		headerNames := make([]string, 0, len(headers))
 		for name := range headers {
+			headerNames = append(headerNames, name)
+		}
+		sort.Strings(headerNames)
+		for _, name := range headerNames {
 			normalizedName := strings.ToLower(strings.TrimSpace(name))
 			if _, reserved := reservedKibanaHeaderNames[normalizedName]; reserved {
 				diags.AddError(
