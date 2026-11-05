@@ -39,6 +39,8 @@ type providerJob struct {
 	RunsOn   string                 `yaml:"runs-on"`
 	Strategy providerStrategy       `yaml:"strategy"`
 	Steps    []providerWorkflowStep `yaml:"steps"`
+
+	TimeoutMinutes int `yaml:"timeout-minutes"`
 }
 
 type providerStrategy struct {
@@ -308,8 +310,15 @@ func TestProviderWorkflow_fullSuiteFailureHandlingPreserved(t *testing.T) {
 		"the shard axis comes from the prepared plan")
 
 	tfAcceptance := providerWorkflowStepByID(t, test, "tf-acceptance")
-	assert.Equal(t, 45, tfAcceptance.TimeoutMinutes,
+	assert.Equal(t, 60, tfAcceptance.TimeoutMinutes,
 		"the acceptance step timeout must not regress")
+	// The job-level timeout must leave room for stack setup (about 10
+	// minutes) on top of the acceptance step, otherwise the runner reaps
+	// the job before the step's own timeout fires.
+	assert.Equal(t, 75, test.TimeoutMinutes,
+		"the matrix job timeout must not regress")
+	assert.GreaterOrEqual(t, test.TimeoutMinutes-tfAcceptance.TimeoutMinutes, 10,
+		"the job timeout must exceed the acceptance step timeout by at least the stack setup budget")
 	assert.Equal(t, "${{ endsWith(matrix.version, '-SNAPSHOT') }}",
 		tfAcceptance.ContinueOnError,
 		"snapshot versions are allowed to fail while non-snapshot versions block")

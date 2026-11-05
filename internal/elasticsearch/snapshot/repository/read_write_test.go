@@ -272,6 +272,43 @@ func TestSettingsToS3StateInheritance(t *testing.T) {
 			wantPathStyleAccess: false,
 		},
 		{
+			name: "ES omits endpoint, prior endpoint unknown (read after create/update)",
+			apiSettings: map[string]any{
+				"bucket": "api-bucket",
+			},
+			stateS3: s3SettingsForState(
+				types.StringUnknown(),
+				types.BoolValue(false),
+			),
+			wantEndpoint:        types.StringNull(),
+			wantPathStyleAccess: false,
+		},
+		{
+			name: "ES echoes endpoint, prior endpoint unknown",
+			apiSettings: map[string]any{
+				"bucket":   "api-bucket",
+				"endpoint": "https://api.example",
+			},
+			stateS3: s3SettingsForState(
+				types.StringUnknown(),
+				types.BoolValue(false),
+			),
+			wantEndpoint:        types.StringValue("https://api.example"),
+			wantPathStyleAccess: false,
+		},
+		{
+			name: "ES omits path_style_access, prior path_style_access unknown",
+			apiSettings: map[string]any{
+				"bucket": "api-bucket",
+			},
+			stateS3: s3SettingsForState(
+				types.StringNull(),
+				types.BoolUnknown(),
+			),
+			wantEndpoint:        types.StringNull(),
+			wantPathStyleAccess: false,
+		},
+		{
 			name: "ES echoes endpoint but not path_style_access",
 			apiSettings: map[string]any{
 				"bucket":   "api-bucket",
@@ -311,7 +348,7 @@ func TestSettingsToS3StateInheritance(t *testing.T) {
 			} else {
 				require.Equal(t, tc.wantEndpoint.ValueString(), got.Endpoint.ValueString())
 			}
-			require.Equal(t, tc.wantPathStyleAccess, got.PathStyleAccess.ValueBool())
+			require.Equal(t, types.BoolValue(tc.wantPathStyleAccess), got.PathStyleAccess)
 		})
 	}
 }

@@ -115,6 +115,21 @@ func (v JSONWithDefaultsValue[TModel]) StringSemanticEquals(ctx context.Context,
 	return thisWithDefaults.Normalized.StringSemanticEquals(ctx, thatWithDefaults.Normalized)
 }
 
+// Equal returns true if the given value is a JSONWithDefaultsValue with the
+// same underlying value. Without this override the embedded
+// jsontypes.Normalized.Equal is used, which asserts the other value to
+// jsontypes.Normalized and therefore never matches a JSONWithDefaultsValue,
+// not even null against null. The framework's semantic equality pass then
+// writes the value back into a state the resource has just removed, which
+// keeps deleted resources in state.
+func (v JSONWithDefaultsValue[TModel]) Equal(o attr.Value) bool {
+	other, ok := o.(JSONWithDefaultsValue[TModel])
+	if !ok {
+		return false
+	}
+	return v.Normalized.Equal(other.Normalized)
+}
+
 // NewJSONWithDefaultsNull creates a JSONWithDefaultsValue with a null value.
 func NewJSONWithDefaultsNull[TModel any](populateDefaults PopulateDefaultsFunc[TModel]) JSONWithDefaultsValue[TModel] {
 	return JSONWithDefaultsValue[TModel]{
