@@ -14,8 +14,16 @@ provider "elasticstack" {
   kibana {}
 }
 
+# The registry may only list prerelease versions of the APM package for the
+# stack under test, so fall back to the latest prerelease when no GA version
+# is available.
 data "elasticstack_fleet_integration" "apm" {
   name = "apm"
+}
+
+data "elasticstack_fleet_integration" "apm_prerelease" {
+  name       = "apm"
+  prerelease = true
 }
 
 resource "elasticstack_fleet_agent_policy" "test_policy" {
@@ -33,7 +41,7 @@ resource "elasticstack_fleet_integration_policy" "test_policy" {
   description         = "IntegrationPolicyTest APM Policy"
   agent_policy_id     = elasticstack_fleet_agent_policy.test_policy.policy_id
   integration_name    = data.elasticstack_fleet_integration.apm.name
-  integration_version = data.elasticstack_fleet_integration.apm.version
+  integration_version = coalesce(data.elasticstack_fleet_integration.apm.version, data.elasticstack_fleet_integration.apm_prerelease.version)
 
   inputs = {
     "apmserver-apm" = {
