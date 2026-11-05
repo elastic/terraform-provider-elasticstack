@@ -27,10 +27,7 @@ resource "elasticstack_kibana_alerting_v2_rule" "example" {
     description  = <optional, string>         # 1-1024 chars
     tags         = <optional, list(string)>   # 1-20 items, each 1-128 chars
     routing_tags = <optional, list(string)>   # 1-20 items, each 1-128 chars; kind = "alert" only
-    builder = {                               # optional
-      type = <required, string>               # 1-64 chars
-    }
-  }
+  }                                           # metadata.builder is deliberately not exposed
 
   schedule = {                                # required
     every    = <required, duration string>    # >= 5s, <= 365d
@@ -91,7 +88,7 @@ Notes:
 
 - `kibana_connection` and `timeouts` are injected by the Kibana resource envelope and are not part of the resource's own schema.
 - A duration string is an unsigned integer followed by one of `ms`, `s`, `m`, `h`, `d`, or `w`, for example `5m` or `250ms`.
-- Omitting an optional collection (`tags`, `routing_tags`, `grouping`, `artifacts`) or object (`breach`, `builder`, `state_transition`) omits it from the request. An empty collection is a plan-time error because the API rejects empty arrays.
+- Omitting an optional collection (`tags`, `routing_tags`, `grouping`, `artifacts`) or object (`breach`, `state_transition`) omits it from the request. An empty collection is a plan-time error because the API rejects empty arrays.
 
 ## ADDED Requirements
 
@@ -243,7 +240,7 @@ The resource SHALL support `terraform import` with an id of the form `<space_id>
 
 ### Requirement: Typed rule configuration
 
-Every field of the rule write body SHALL be a typed attribute or nested attribute as laid out in the Schema section, with the sole exception of `artifacts[].data`, which SHALL be a normalized JSON object string. Enum membership, string lengths, integer ranges, collection sizes, and duration format SHALL be validated at plan time.
+Every field of the rule write body SHALL be a typed attribute or nested attribute as laid out in the Schema section, with two exceptions: `artifacts[].data` SHALL be a normalized JSON object string, and `metadata.builder` SHALL NOT be exposed (see the next requirement). Enum membership, string lengths, integer ranges, collection sizes, and duration format SHALL be validated at plan time.
 
 #### Scenario: Bound violations are caught before apply
 
@@ -257,6 +254,31 @@ Every field of the rule write body SHALL be a typed attribute or nested attribut
 - **GIVEN** `metadata.tags = []` or `artifacts = []` or `grouping.fields = []`
 - **WHEN** Terraform validates the configuration
 - **THEN** the provider SHALL return a validation diagnostic stating at least one item is required, or the attribute must be omitted
+
+### Requirement: `metadata.builder` is not managed
+
+`metadata.builder` marks the Kibana UI form that authored a rule and is absent for rules authored directly in ES|QL. Rules managed by this resource are ES|QL rules, so the resource SHALL NOT expose, send, or store `metadata.builder`. Because a full-replace `PUT` without it clears it on the server, the provider SHALL warn when it reads a rule that carries one, so an imported UI-authored rule is not converted silently. The resource description SHALL state that Terraform-managed rules are ES|QL rules.
+
+#### Scenario: The write body never carries a builder
+
+- **GIVEN** any rule configuration
+- **WHEN** create or update runs
+- **THEN** the `PUT` body SHALL omit `metadata.builder`
+
+#### Scenario: Reading a builder-authored rule warns
+
+- **GIVEN** a rule that was created in the Kibana UI with `metadata.builder.type = "threshold"`
+- **WHEN** the rule is imported, or refreshed before its first apply
+- **THEN** the provider SHALL emit a warning diagnostic naming the builder type and stating that the next apply converts the rule to an ES|QL rule
+- **AND** the rest of the rule SHALL be read into state normally
+
+#### Scenario: The first apply clears the builder and settles
+
+- **GIVEN** an imported rule whose server copy carries `metadata.builder`
+- **WHEN** Terraform applies the configuration
+- **THEN** the server copy SHALL no longer carry `metadata.builder`
+- **AND** a subsequent plan SHALL be empty
+- **AND** no further warning SHALL be emitted
 
 ### Requirement: `enabled` is written in the create-or-replace body
 
@@ -559,11 +581,12 @@ Transport failures, unexpected HTTP statuses, and successful responses with an e
 
 The acceptance test suite SHALL be skipped below Elastic Stack 9.6.0, SHALL follow the repository's acceptance-test isolation conventions, and SHALL cover:
 
-1. An alert rule with `time_field`, `schedule.lookback`, `metadata.builder`, `query.breach`, `recovery`, `no_data`, `state_transition`, `grouping`, `tags`, `routing_tags`, and `artifacts`: create, update, import, and an empty re-plan.
+1. An alert rule with `time_field`, `schedule.lookback`, `query.breach`, `recovery`, `no_data`, `state_transition`, `grouping`, `tags`, `routing_tags`, and `artifacts`: create, update, import, and an empty re-plan.
 2. A signal rule with only `metadata`, `schedule`, and `query`.
 3. `enabled = false` on create and toggling it on update.
 4. Removing `grouping`, `state_transition`, and `artifacts` and asserting they are cleared.
 5. A rule in a non-default space, with composite-id import.
+6. Importing a rule created outside Terraform with `metadata.builder` set: the import emits the builder warning, the first apply clears the builder on the server, and the next plan is empty.
 6. `rule_id` omitted (generated) and supplied.
 7. Plan-only `ExpectError` steps for the cross-field rules and schema bounds, runnable without a live stack.
 
