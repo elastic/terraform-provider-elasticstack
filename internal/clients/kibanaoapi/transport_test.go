@@ -76,12 +76,15 @@ func TestTransport_RoundTrip_sendsProviderConfiguredHeaders(t *testing.T) {
 	}
 }
 
-func TestTransport_RoundTrip_usesCustomAuthorizationWithoutNativeAuthentication(t *testing.T) {
+func TestTransport_RoundTrip_sendsProxyAuthorizationWithoutNativeAuthentication(t *testing.T) {
 	tr := &transport{
-		Headers: map[string]string{"Authorization": "Proxy secret"},
+		Headers: map[string]string{"Proxy-Authorization": "proxy-value"},
 		next: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-			if got := req.Header.Get("Authorization"); got != "Proxy secret" {
-				t.Errorf("Authorization = %q, want %q", got, "Proxy secret")
+			if got := req.Header.Get("Proxy-Authorization"); got != "proxy-value" {
+				t.Errorf("Proxy-Authorization = %q, want %q", got, "proxy-value")
+			}
+			if got := req.Header.Get("Authorization"); got != "" {
+				t.Errorf("Authorization = %q, want empty", got)
 			}
 			return &http.Response{StatusCode: http.StatusOK, Request: req}, nil
 		}),

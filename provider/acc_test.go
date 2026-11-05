@@ -163,10 +163,6 @@ func testKibanaConfigurationInvalidHeaderSendsNoRequest(t *testing.T, headerName
 	t.Cleanup(server.Close)
 	t.Setenv("KIBANA_ENDPOINT", server.URL)
 
-	if endpoint := strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT")); endpoint != server.URL {
-		t.Fatalf("KIBANA_ENDPOINT = %q, want observed server %q", endpoint, server.URL)
-	}
-
 	resource.Test(t, resource.TestCase{
 		Steps: []resource.TestStep{
 			{
