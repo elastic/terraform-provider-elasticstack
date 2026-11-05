@@ -53,11 +53,13 @@ See `proposal.md` for motivation and the two delta specs under `specs/` for requ
 
 ## Decisions
 
-### D1. Two resource packages plus one shared helper package
+### D1. One `alerting_v2` directory holding two resource packages plus one shared helper package
 
-- `internal/kibana/alertingv2rule` — `elasticstack_kibana_alerting_v2_rule`
-- `internal/kibana/alertingv2actionpolicy` — `elasticstack_kibana_alerting_v2_action_policy`
-- `internal/kibana/alertingv2` — shared, dependency-free schema helpers: entity-id validator, duration validator (with optional minimum), and the "already exists, import instead" diagnostic builder.
+All Alerting v2 code lives under `internal/kibana/alerting_v2/`, one sub-package per resource plus a shared one. Following the repo convention for underscore directories (for example `internal/kibana/maintenance_window` is package `maintenancewindow`), package names drop the underscore.
+
+- `internal/kibana/alerting_v2/rule` (package `rule`) — `elasticstack_kibana_alerting_v2_rule`
+- `internal/kibana/alerting_v2/action_policy` (package `actionpolicy`) — `elasticstack_kibana_alerting_v2_action_policy`
+- `internal/kibana/alerting_v2/utils` (package `utils`) — shared, dependency-free schema helpers: entity-id validator, duration validator (with optional minimum), and the "already exists, import instead" diagnostic builder.
 - `internal/clients/kibanaoapi/alerting_v2_rule.go`, `alerting_v2_action_policy.go`, and `alerting_v2_errors.go` (shared decoding of `KibanaHTTPAPIsAlertingErrorResponse` into diagnostics, including the `ALERTING_DISABLED` diagnostic that names `alerting:v2:enabled`. It is the single owner of that text).
 
 Each resource package follows the repo layout: `resource.go`, `schema.go`, `models.go` (plus `models_*.go` where the union mapping gets long), `validate.go`, `create.go`, `read.go`, `update.go`, `descriptions.go` + `descriptions/` markdown, `acc_test.go`, `entitycore_contract_test.go`, `testdata/`.
@@ -102,7 +104,7 @@ Alternative: `GET`, seed the body from the response, overwrite modelled fields, 
 
 ### D5. Durations: plain strings with a v2-specific validator, no semantic equality
 
-A `validator.String` in `internal/kibana/alertingv2` accepts `^\d+(ms|s|m|h|d|w)$`, enforces at most 365 days, and takes an optional minimum (used as `5s` for `schedule.every`). Attributes stay `types.String`. The API echoes the value as written, so no normalization or semantic-equality type is needed.
+A `validator.String` in `internal/kibana/alerting_v2/utils` accepts `^\d+(ms|s|m|h|d|w)$`, enforces at most 365 days, and takes an optional minimum (used as `5s` for `schedule.every`). Attributes stay `types.String`. The API echoes the value as written, so no normalization or semantic-equality type is needed.
 
 Alternative: reuse `kibanacustomtypes.AlertingDuration`. Rejected: it lacks `ms`, accepts `M` and `y` that v2 rejects, and its semantic equality would mask a genuine server change.
 

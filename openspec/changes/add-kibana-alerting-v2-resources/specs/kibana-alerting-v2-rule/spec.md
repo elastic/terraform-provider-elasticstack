@@ -1,6 +1,6 @@
 # `elasticstack_kibana_alerting_v2_rule` — Schema and Functional Requirements
 
-Resource implementation: `internal/kibana/alertingv2rule`
+Resource implementation: `internal/kibana/alerting_v2/rule`
 
 ## Purpose
 

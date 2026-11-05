@@ -1,6 +1,6 @@
 # `elasticstack_kibana_alerting_v2_action_policy` — Schema and Functional Requirements
 
-Resource implementation: `internal/kibana/alertingv2actionpolicy`
+Resource implementation: `internal/kibana/alerting_v2/action_policy`
 
 ## Purpose
 
