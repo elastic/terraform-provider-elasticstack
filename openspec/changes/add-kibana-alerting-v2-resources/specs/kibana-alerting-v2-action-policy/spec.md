@@ -53,7 +53,7 @@ Notes:
 - `kibana_connection` and `timeouts` are injected by the Kibana resource envelope and are not part of the resource's own schema.
 - A duration string is an unsigned integer followed by one of `ms`, `s`, `m`, `h`, `d`, or `w`, at most 365 days in total.
 - Snooze state (`snoozed_until`) is runtime operational state and is not exposed or managed.
-- `type` is an enum with a single value today; it is kept as an explicit attribute so new destination types can be added without a schema change.
+- `type` is an enum with a single value today. It is kept as an explicit attribute so new destination types can be added without a schema change.
 
 ## ADDED Requirements
 
@@ -142,7 +142,7 @@ Before the first write, create SHALL check whether an action policy with the tar
 
 ### Requirement: Identity and `action_policy_id` generation
 
-`id` SHALL be `<space_id>/<action_policy_id>`. `action_policy_id` SHALL be optional and computed: when supplied it SHALL be used verbatim; when omitted the provider SHALL generate a UUID before the first write and persist it. A configured value SHALL be 1-150 characters of letters, digits, underscores, or hyphens. Changing `action_policy_id` or `space_id` SHALL require replacement.
+`id` SHALL be `<space_id>/<action_policy_id>`. `action_policy_id` SHALL be optional and computed: when supplied it SHALL be used verbatim. When omitted the provider SHALL generate a UUID before the first write and persist it. A configured value SHALL be 1-150 characters of letters, digits, underscores, or hyphens. Changing `action_policy_id` or `space_id` SHALL require replacement.
 
 #### Scenario: Generated id is stable
 
@@ -274,7 +274,7 @@ The resource SHALL support `terraform import` with an id of the form `<space_id>
 
 ### Requirement: Throttle mapping and mode compatibility
 
-`throttle` SHALL be an optional object with a required `strategy` of `on_status_change`, `per_status_interval`, `time_interval`, or `every_time`, and an optional duration `interval` that SHALL be required for `per_status_interval` and `time_interval` and not allowed otherwise. When `grouping.mode` is `per_alert` or `grouping` is omitted, `strategy` SHALL be one of `on_status_change`, `per_status_interval`, `every_time`; when it is `all` or `per_field`, `strategy` SHALL be `time_interval` or `every_time`.
+`throttle` SHALL be an optional object with a required `strategy` of `on_status_change`, `per_status_interval`, `time_interval`, or `every_time`, and an optional duration `interval` that SHALL be required for `per_status_interval` and `time_interval` and not allowed otherwise. When `grouping.mode` is `per_alert` or `grouping` is omitted, `strategy` SHALL be one of `on_status_change`, `per_status_interval`, `every_time`. When it is `all` or `per_field`, `strategy` SHALL be `time_interval` or `every_time`.
 
 #### Scenario: Interval throttle round-trip
 

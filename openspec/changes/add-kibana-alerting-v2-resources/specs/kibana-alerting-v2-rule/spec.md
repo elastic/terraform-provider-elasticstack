@@ -91,7 +91,7 @@ Notes:
 
 - `kibana_connection` and `timeouts` are injected by the Kibana resource envelope and are not part of the resource's own schema.
 - A duration string is an unsigned integer followed by one of `ms`, `s`, `m`, `h`, `d`, or `w`, for example `5m` or `250ms`.
-- Omitting an optional collection (`tags`, `routing_tags`, `grouping`, `artifacts`) or object (`breach`, `builder`, `state_transition`) omits it from the request; an empty collection is a plan-time error because the API rejects empty arrays.
+- Omitting an optional collection (`tags`, `routing_tags`, `grouping`, `artifacts`) or object (`breach`, `builder`, `state_transition`) omits it from the request. An empty collection is a plan-time error because the API rejects empty arrays.
 
 ## ADDED Requirements
 
@@ -180,7 +180,7 @@ Before the first write, create SHALL check whether a rule with the target id alr
 
 ### Requirement: Identity and `rule_id` generation
 
-`id` SHALL be `<space_id>/<rule_id>`. `rule_id` SHALL be optional and computed: when supplied it SHALL be used as the rule's identifier; when omitted the provider SHALL generate a UUID before the first write and persist it. A configured `rule_id` SHALL be 1-150 characters of letters, digits, underscores, or hyphens. Changing `rule_id` or `space_id` SHALL require replacement.
+`id` SHALL be `<space_id>/<rule_id>`. `rule_id` SHALL be optional and computed: when supplied it SHALL be used as the rule's identifier. When omitted the provider SHALL generate a UUID before the first write and persist it. A configured `rule_id` SHALL be 1-150 characters of letters, digits, underscores, or hyphens. Changing `rule_id` or `space_id` SHALL require replacement.
 
 #### Scenario: Generated rule_id is stable
 
@@ -307,7 +307,7 @@ Every field of the rule write body SHALL be a typed attribute or nested attribut
 
 ### Requirement: Query mapping
 
-`query.base` SHALL be required and `query.breach.segment` SHALL be optional, each 1-10000 characters. The provider SHALL NOT parse or validate ES|QL; server-side ES|QL errors SHALL be surfaced verbatim.
+`query.base` SHALL be required and `query.breach.segment` SHALL be optional, each 1-10000 characters. The provider SHALL NOT parse or validate ES|QL. Server-side ES|QL errors SHALL be surfaced verbatim.
 
 #### Scenario: Base-only query
 
@@ -323,7 +323,7 @@ Every field of the rule write body SHALL be a typed attribute or nested attribut
 
 ### Requirement: Recovery mapping
 
-`recovery` SHALL be a single object with a required `strategy` of `no_breach`, `condition`, `query`, or `manual`. `segment` SHALL be required when `strategy = "condition"` and not allowed otherwise; `query` SHALL be required when `strategy = "query"` and not allowed otherwise. The object SHALL map to the API's strategy-discriminated `recovery` body and back.
+`recovery` SHALL be a single object with a required `strategy` of `no_breach`, `condition`, `query`, or `manual`. `segment` SHALL be required when `strategy = "condition"` and not allowed otherwise. `query` SHALL be required when `strategy = "query"` and not allowed otherwise. The object SHALL map to the API's strategy-discriminated `recovery` body and back.
 
 #### Scenario: Condition strategy round-trip
 
@@ -381,7 +381,7 @@ The rules are:
 
 1. `state_transition` only when `kind = "alert"`.
 2. `metadata.routing_tags` only when `kind = "alert"`.
-3. `kind = "alert"` requires both `recovery` and `no_data`; `kind = "signal"` forbids both.
+3. `kind = "alert"` requires both `recovery` and `no_data`. `kind = "signal"` forbids both.
 4. `recovery.strategy = "condition"` requires `query.breach`.
 5. `no_data.strategy` other than `ignore` requires `query.breach` or `no_data.query`.
 6. `recovery.strategy = "manual"` forbids `state_transition.recovering`.

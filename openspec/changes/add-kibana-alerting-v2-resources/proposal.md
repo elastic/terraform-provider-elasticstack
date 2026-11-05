@@ -20,7 +20,7 @@ Program tracking: [elastic/rna-program#655](https://github.com/elastic/rna-progr
 - Alert actions (acknowledge, assign, activate, deactivate, tag) and alert or series snooze state.
 - Snooze state on action policies: it is runtime operational state, not configuration, and is not managed by Terraform.
 - Any change to the classic `elasticstack_kibana_alerting_rule` resource, and any migration path from classic rules to v2 rules.
-- Changes to the generated Kibana API client; the pinned OpenAPI bundle already contains the Alerting v2 operations.
+- Changes to the generated Kibana API client. The pinned OpenAPI bundle already contains the Alerting v2 operations.
 
 ## Capabilities
 
@@ -35,9 +35,9 @@ Program tracking: [elastic/rna-program#655](https://github.com/elastic/rna-progr
 
 ## Impact
 
-- **Provider surface**: two new resource types registered in the provider's standard resource list; two new generated documentation pages under `docs/resources/` with examples under `examples/resources/`.
+- **Provider surface**: two new resource types registered in the provider's standard resource list and two new generated documentation pages under `docs/resources/` with examples under `examples/resources/`.
 - **Code**: two new resource packages under `internal/kibana/` and new Kibana API client wrappers under `internal/clients/kibanaoapi/`, following the existing Plugin Framework resource conventions.
-- **Generated client**: no regeneration required; `generated/kbapi` already exposes the Alerting v2 operations and named schema components.
-- **Testing**: acceptance tests require an Elastic Stack 9.6.0+ environment; tests are skipped on older stacks.
+- **Generated client**: no regeneration required. The `generated/kbapi` already exposes the Alerting v2 operations and named schema components.
+- **Testing**: acceptance tests require an Elastic Stack 9.6.0+ environment. Tests are skipped on older stacks.
 - **Upstream dependency**: the action policy resource's implementation (not its design) waits on Kibana accepting `enabled` in `PUT /api/alerting/v2/action_policies/{id}`.
 - **Existing users**: no impact on existing resources, state, or behaviour.

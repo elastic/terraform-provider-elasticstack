@@ -11,29 +11,29 @@ See `proposal.md` for motivation and the two delta specs under `specs/` for requ
 | Rule write body | `KibanaHTTPAPIsAlertingPutRule` (`PutAlertingV2RulesIdJSONRequestBody`), includes `Enabled *bool` |
 | Rule response | `KibanaHTTPAPIsAlertingRuleResponse` (`Id`, `Version int`, `Enabled`, `CreatedAt`/`UpdatedAt time.Time`, `CreatedBy`/`UpdatedBy *KibanaHTTPAPIsAlertingActor`, plus every write field) |
 | Rule nested objects | `...RuleMetadata` (with inline `Builder *struct{Type string}`), `...RuleSchedule`, `...RuleQuery` + `...RuleBreach`, `...RuleStateTransition` + `...Pending`/`...Recovering`, `...RuleGrouping`, `...RuleArtifact` (`Data map[string]interface{}`) |
-| Rule unions | `KibanaHTTPAPIsAlertingRuleRecovery` and `KibanaHTTPAPIsAlertingRuleNoData` are `union json.RawMessage` wrappers with `As<Variant>()`, `From<Variant>()`, `Discriminator()`, `ValueByDiscriminator()`; variants `RecoveryNoBreach`/`RecoveryCondition{Segment}`/`RecoveryQuery{Query}`/`RecoveryManual`, `NoDataIgnore`/`NoDataKeepLast{Query *string}`/`NoDataResolve{Query *string}`/`NoDataAlert{Query *string}` |
+| Rule unions | `KibanaHTTPAPIsAlertingRuleRecovery` and `KibanaHTTPAPIsAlertingRuleNoData` are `union json.RawMessage` wrappers with `As<Variant>()`, `From<Variant>()`, `Discriminator()`, `ValueByDiscriminator()`. Variants are `RecoveryNoBreach`/`RecoveryCondition{Segment}`/`RecoveryQuery{Query}`/`RecoveryManual`, `NoDataIgnore`/`NoDataKeepLast{Query *string}`/`NoDataResolve{Query *string}`/`NoDataAlert{Query *string}` |
 | Action policy write body | `KibanaHTTPAPIsAlertingPutActionPolicy` (`PutAlertingV2ActionPoliciesIdJSONRequestBody`): `Name`, `Description *string`, `Destinations []...ActionPolicyDestination`, `Matcher *struct{Tags *[]string; Expression *string}`, `Grouping *...ActionPolicyGrouping`, `Throttle *...ActionPolicyThrottle`. **No `Enabled` field yet** (see Decision 12) |
 | Action policy response | `KibanaHTTPAPIsAlertingActionPolicyResponse` adds `Id`, `Enabled bool`, `SnoozedUntil *string`, `CreatedAt`/`UpdatedAt`, actors |
 | Action policy unions | `...ActionPolicyDestination` (variant `WorkflowActionPolicyDestination{Id, Type}`), `...ActionPolicyGrouping` (`GroupingPerAlert`/`GroupingAll`/`GroupingPerField{Fields}`), `...ActionPolicyThrottle` (`ThrottleOnStatusChange`/`ThrottlePerStatusInterval{Interval}`/`ThrottleTimeInterval{Interval}`/`ThrottleEveryTime`), all with the same accessor pattern |
 | Operations | `ClientWithResponses.{Put,Get,Delete}AlertingV2RulesIdWithResponse(ctx, id, body?, reqEditors...)`, same for `AlertingV2ActionPoliciesId`. Paths are `/api/alerting/v2/...` with no space parameter |
-| Responses | `PutAlertingV2RulesIdResponse{JSON200, JSON201, JSON400, JSON401, JSON403, JSON409, JSON500, JSON503}`; `Get...{JSON200, JSON404, ...}`; `Delete...{JSON404, ...}` (204 has no body). Every error body is `KibanaHTTPAPIsAlertingErrorResponse{Code, Error, Message, Details}` with stable codes such as `RULE_NOT_FOUND`, `ACTION_POLICY_NOT_FOUND`, `ALERTING_DISABLED` |
+| Responses | `PutAlertingV2RulesIdResponse{JSON200, JSON201, JSON400, JSON401, JSON403, JSON409, JSON500, JSON503}`, `Get...{JSON200, JSON404, ...}`, and `Delete...{JSON404, ...}` (204 has no body). Every error body is `KibanaHTTPAPIsAlertingErrorResponse{Code, Error, Message, Details}` with stable codes such as `RULE_NOT_FOUND`, `ACTION_POLICY_NOT_FOUND`, `ALERTING_DISABLED` |
 
 **API semantics that shape the design** (from `@kbn/alerting-v2-schemas` in Kibana `main`, matching the pinned OAS):
 
 - `PUT /{id}` is create-or-replace: 201 when created, 200 when replaced. Ids are `^[a-zA-Z0-9_-]{1,150}$`, chosen by the caller, permanent.
 - Request schemas are `strict`: unknown keys and empty arrays are rejected with 400. Omitted optional keys mean "unset".
-- `kind` is the only immutable rule field; a replace that changes it answers 409.
-- Rule `PUT` accepts `enabled` (create default `true`; omitted on replace preserves the stored value). Action policy `PUT` does **not** accept `enabled` yet; the stored value is preserved on replace and `_enable`/`_disable` own the transition.
-- Durations are `^\d+(ms|s|m|h|d|w)$`, at most `365d`; `schedule.every` is at least `5s` (deployment-level minimum, default `1m`, is enforced server-side only).
-- Every v2 route answers 503 `ALERTING_DISABLED` while the `alerting:v2:enabled` advanced setting is off. Routes are `access: public`, `availability: stable since 9.6.0`; the plugin-level `xpack.alerting_v2.enabled` setting defaults to `true`.
+- `kind` is the only immutable rule field. A replace that changes it answers 409.
+- Rule `PUT` accepts `enabled` (create default `true`, and omitting it on replace preserves the stored value). Action policy `PUT` does **not** accept `enabled` yet. The stored value is preserved on replace and `_enable`/`_disable` own the transition.
+- Durations are `^\d+(ms|s|m|h|d|w)$`, at most `365d`. `schedule.every` is at least `5s` (deployment-level minimum, default `1m`, is enforced server-side only).
+- Every v2 route answers 503 `ALERTING_DISABLED` while the `alerting:v2:enabled` advanced setting is off. Routes are `access: public`, `availability: stable since 9.6.0`. The plugin-level `xpack.alerting_v2.enabled` setting defaults to `true`.
 - Responses echo values as sent (snake_case, no normalization), so stored durations and ES|QL strings compare byte-for-byte.
 
 **Provider machinery assumed** (all existing):
 
-- `entitycore.NewKibanaResource[Model]` envelope with `KibanaResourceOptions{Schema, Read, Create, Update, Delete}`; `entitycore.SimpleKibanaDelete`; `entitycore.KibanaSpaceImporter` for `<space_id>/<id>` import; `GetVersionRequirements` on the model for the version gate (serverless bypass is envelope behaviour); `kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly()`. Closest precedents: `internal/kibana/alertingrule` (composite id, `rule_id` optional-computed, `ValidateConfig`) and `internal/kibana/maintenance_window` (version gate, nested attributes).
+- `entitycore.NewKibanaResource[Model]` envelope with `KibanaResourceOptions{Schema, Read, Create, Update, Delete}`, `entitycore.SimpleKibanaDelete`, `entitycore.KibanaSpaceImporter` for `<space_id>/<id>` import, `GetVersionRequirements` on the model for the version gate (serverless bypass is envelope behaviour), and `kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly()`. Closest precedents: `internal/kibana/alertingrule` (composite id, `rule_id` optional-computed, `ValidateConfig`) and `internal/kibana/maintenance_window` (version gate, nested attributes).
 - `internal/clients/kibanaoapi` wrappers return `diag.Diagnostics`, call `client.API.<Op>WithResponse(ctx, id, ..., kibanautil.SpaceAwarePathRequestEditor(spaceID))`, and use `HandleGetTypedResponse` / `HandleMutateTypedResponse` / `diagutil.HandleStatusResponse` / `diagutil.ReportUnknownHTTPError`.
 - `jsontypes.Normalized` for JSON-string attributes. `kibanacustomtypes.AlertingDuration` exists but accepts units `smhdwMy` and not `ms`, so it does not match the v2 grammar.
-- Docs come from `examples/resources/<type>/{resource.tf,import.sh}` through `make docs-generate`; acceptance tests follow `acctest.NamedTestCaseDirectory` + `testdata/<Test>/<step>/` and `versionutils.SkipIfUnsupported`.
+- Docs come from `examples/resources/<type>/{resource.tf,import.sh}` through `make docs-generate`. Acceptance tests follow `acctest.NamedTestCaseDirectory` + `testdata/<Test>/<step>/` and `versionutils.SkipIfUnsupported`.
 
 ## Goals / Non-Goals
 
@@ -47,8 +47,8 @@ See `proposal.md` for motivation and the two delta specs under `specs/` for requ
 **Non-Goals:**
 
 - Read-merge-write, optimistic concurrency (the API's `PUT` takes no token), or conflict detection beyond what `RequiresReplace` on `kind` already prevents.
-- Reconciling `enabled` through `_enable`/`_disable`; the action policy resource waits for the upstream `PUT` change instead.
-- Semantic equality for durations or ES|QL; values are compared as written because the API echoes them as written.
+- Reconciling `enabled` through `_enable`/`_disable`. The action policy resource waits for the upstream `PUT` change instead.
+- Semantic equality for durations or ES|QL. Values are compared as written because the API echoes them as written.
 - Exposing runtime state (`snoozed_until`, actors) or anything outside basic CRUD.
 
 ## Decisions
@@ -58,7 +58,7 @@ See `proposal.md` for motivation and the two delta specs under `specs/` for requ
 - `internal/kibana/alertingv2rule` — `elasticstack_kibana_alerting_v2_rule`
 - `internal/kibana/alertingv2actionpolicy` — `elasticstack_kibana_alerting_v2_action_policy`
 - `internal/kibana/alertingv2` — shared, dependency-free schema helpers: entity-id validator, duration validator (with optional minimum), and the "already exists, import instead" diagnostic builder.
-- `internal/clients/kibanaoapi/alerting_v2_rule.go`, `alerting_v2_action_policy.go`, and `alerting_v2_errors.go` (shared decoding of `KibanaHTTPAPIsAlertingErrorResponse` into diagnostics, including the `ALERTING_DISABLED` diagnostic that names `alerting:v2:enabled`; it is the single owner of that text).
+- `internal/clients/kibanaoapi/alerting_v2_rule.go`, `alerting_v2_action_policy.go`, and `alerting_v2_errors.go` (shared decoding of `KibanaHTTPAPIsAlertingErrorResponse` into diagnostics, including the `ALERTING_DISABLED` diagnostic that names `alerting:v2:enabled`. It is the single owner of that text).
 
 Each resource package follows the repo layout: `resource.go`, `schema.go`, `models.go` (plus `models_*.go` where the union mapping gets long), `validate.go`, `create.go`, `read.go`, `update.go`, `descriptions.go` + `descriptions/` markdown, `acc_test.go`, `entitycore_contract_test.go`, `testdata/`.
 
@@ -68,29 +68,29 @@ Alternative: one package with both resources. Rejected: the repo convention is o
 
 Both lifecycle writes call `PutAlertingV2{Rules,ActionPolicies}IdWithResponse`. When `rule_id` / `action_policy_id` is not configured, the resource generates a UUID (`github.com/google/uuid`, already a dependency) in Create before the write and stores it, so every write is addressed and idempotent.
 
-Create first issues a `GET`: 200 means the object exists and Create fails with an "already exists, import it" diagnostic without writing; 404 proceeds to `PUT`. If `PUT` still answers 200 (a race), Create fails with the same diagnostic plus "the object has been replaced". Update expects 200; 201 (the object vanished between refresh and apply) is accepted because the result converges on the configuration.
+Create first issues a `GET`: 200 means the object exists and Create fails with an "already exists, import it" diagnostic without writing. A 404 proceeds to `PUT`. If `PUT` still answers 200 (a race), Create fails with the same diagnostic plus "the object has been replaced". Update expects 200. A 201 (the object vanished between refresh and apply) is accepted because the result converges on the configuration.
 
 The `PUT` response body is never used as state. The envelope performs the read-after-write with the resource's `Read` callback, so final state after create and update always comes from `GET`, as the specs require.
 
-Alternatives: `POST` when the id is omitted (two write paths, no safe retry after a partial create); adopt silently on 200 (Terraform never silently takes over unmanaged objects; it would also clobber a UI-authored object with no plan diff); no pre-check (clobbers before failing).
+Alternatives considered: `POST` when the id is omitted, which means two write paths and no safe retry after a partial create. Adopting silently on 200, which Terraform never does for unmanaged objects and which would also clobber a UI-authored object with no plan diff. Skipping the pre-check, which clobbers before failing.
 
-### D3. Schema mirrors the API body one-to-one; unions flatten to `{discriminator + variant fields}`
+### D3. Schema mirrors the API body one-to-one and unions flatten to `{discriminator + variant fields}`
 
-All nested objects are `SingleNestedAttribute`s (not blocks) with the API's names: `metadata`, `schedule`, `query`, `query.breach`, `recovery`, `no_data`, `state_transition.pending|recovering`, `grouping`; `artifacts` and `destinations` are `ListNestedAttribute`s.
+All nested objects are `SingleNestedAttribute`s (not blocks) with the API's names: `metadata`, `schedule`, `query`, `query.breach`, `recovery`, `no_data`, `state_transition.pending|recovering`, `grouping`. `artifacts` and `destinations` are `ListNestedAttribute`s.
 
 Each discriminated union becomes one object whose discriminator is required and whose variant-specific fields are optional, with plan-time validation enforcing the variant contract:
 
 | API union | Terraform object | Variant rule |
 |---|---|---|
-| rule `recovery` (`strategy`) | `recovery = { strategy, segment?, query? }` | `segment` iff `condition`; `query` iff `query` |
-| rule `no_data` (`strategy`) | `no_data = { strategy, query? }` | `query` only when strategy ≠ `ignore`; `alert` rejected on write, tolerated on read |
+| rule `recovery` (`strategy`) | `recovery = { strategy, segment?, query? }` | `segment` iff `condition`. `query` iff `query` |
+| rule `no_data` (`strategy`) | `no_data = { strategy, query? }` | `query` only when strategy ≠ `ignore`. `alert` rejected on write, tolerated on read |
 | policy `destinations[]` (`type`) | `{ type, id }` | `type` enum (`workflow`) |
 | policy `grouping` (`mode`) | `grouping = { mode, fields? }` | `fields` iff `per_field` |
-| policy `throttle` (`strategy`) | `throttle = { strategy, interval? }` | `interval` iff `per_status_interval`/`time_interval`; strategy set depends on `grouping.mode` |
+| policy `throttle` (`strategy`) | `throttle = { strategy, interval? }` | `interval` iff `per_status_interval`/`time_interval`. Strategy set depends on `grouping.mode` |
 
-Mapping to the API uses the generated `From<Variant>()` setters chosen by the discriminator; mapping from the API uses `Discriminator()` then `As<Variant>()`. An unrecognised discriminator on read is an error diagnostic (never silently dropped).
+Mapping to the API uses the generated `From<Variant>()` setters chosen by the discriminator. Mapping from the API uses `Discriminator()` then `As<Variant>()`. An unrecognised discriminator on read is an error diagnostic (never silently dropped).
 
-Alternatives: one nested attribute per variant (`recovery_condition = {...}` etc.) is verbose and moves the exactly-one-of rule into validation anyway; a JSON blob for the lifecycle objects is the classic resource's `params` problem the v2 API was designed to avoid.
+Alternatives: one nested attribute per variant (`recovery_condition = {...}` etc.) is verbose and moves the exactly-one-of rule into validation anyway. A JSON blob for the lifecycle objects is the classic resource's `params` problem the v2 API was designed to avoid.
 
 `metadata.builder` is exposed as `builder = { type }` even though Terraform authors will rarely set it: an imported UI-authored rule carries it, and a full-replace `PUT` that omitted it would silently clear it.
 
@@ -102,13 +102,13 @@ Alternative: `GET`, seed the body from the response, overwrite modelled fields, 
 
 ### D5. Durations: plain strings with a v2-specific validator, no semantic equality
 
-A `validator.String` in `internal/kibana/alertingv2` accepts `^\d+(ms|s|m|h|d|w)$`, enforces at most 365 days, and takes an optional minimum (used as `5s` for `schedule.every`). Attributes stay `types.String`; the API echoes the value as written, so no normalization or semantic-equality type is needed.
+A `validator.String` in `internal/kibana/alertingv2` accepts `^\d+(ms|s|m|h|d|w)$`, enforces at most 365 days, and takes an optional minimum (used as `5s` for `schedule.every`). Attributes stay `types.String`. The API echoes the value as written, so no normalization or semantic-equality type is needed.
 
 Alternative: reuse `kibanacustomtypes.AlertingDuration`. Rejected: it lacks `ms`, accepts `M` and `y` that v2 rejects, and its semantic equality would mask a genuine server change.
 
 ### D6. Space handling, identity, import
 
-Requests use `kibanautil.SpaceAwarePathRequestEditor(spaceID)`; `space_id` is `kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly()`. Models satisfy `entitycore.KibanaResourceModel` with `GetResourceID()` returning `rule_id` / `action_policy_id` and `GetID()` the composite; the resource embeds `entitycore.KibanaSpaceImporter` built with `NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id"))` (respectively `action_policy_id`), exactly as `internal/kibana/alertingrule` does. Read sets `id = <space_id>/<resource_id>`.
+Requests use `kibanautil.SpaceAwarePathRequestEditor(spaceID)`. `space_id` is `kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly()`. Models satisfy `entitycore.KibanaResourceModel` with `GetResourceID()` returning `rule_id` / `action_policy_id` and `GetID()` the composite. The resource embeds `entitycore.KibanaSpaceImporter` built with `NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id"))` (respectively `action_policy_id`), exactly as `internal/kibana/alertingrule` does. Read sets `id = <space_id>/<resource_id>`.
 
 ### D7. Version gate at 9.6.0
 
@@ -120,13 +120,13 @@ Requests use `kibanautil.SpaceAwarePathRequestEditor(spaceID)`; `space_id` is `k
 
 | Status / code | Read | Delete | Create / Update |
 |---|---|---|---|
-| 404 | `(nil, nil)` → removed from state | success | error on the read-after-write (object vanished mid-apply; message surfaced). Create's existence pre-check treats 404 as the normal "free id" path (D2) |
+| 404 | `(nil, nil)` → removed from state | success | error on the read-after-write (the object vanished mid-apply and the message is surfaced). Create's existence pre-check treats 404 as the normal "free id" path (D2) |
 | 503 `ALERTING_DISABLED` | error naming `alerting:v2:enabled` | same | same |
 | 400 / 409 / 401 / 403 / 500 | error with `code` and `message` | same | same |
 | 200 on create's `PUT` | n/a | n/a | "already exists, import instead" + "replaced" (D2) |
 | empty 2xx body where one is required | error | n/a | error |
 
-Diagnostics always include the server `message` and `code`; `details` is not parsed (the API documents it as unstable).
+Diagnostics always include the server `message` and `code`. `details` is not parsed (the API documents it as unstable).
 
 ### D9. Server-owned fields, defaults, and plan modifiers
 
@@ -138,11 +138,11 @@ Diagnostics always include the server `message` and `code`; `details` is not par
 | `id` | composite | computed, `UseStateForUnknown` |
 | `rule_id` / `action_policy_id` | path id | optional, computed, `RequiresReplace`, `UseStateForUnknown` |
 | `space_id` | `kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly()` | optional, computed, default `default`, `RequiresReplace` |
-| `kind` (rule only) | `Kind` | required, `RequiresReplace` (API-immutable; never sent as a change) |
+| `kind` (rule only) | `Kind` | required, `RequiresReplace` (API-immutable, never sent as a change) |
 | `enabled` | `Enabled` | optional, computed, schema `Default` `true` (`booldefault.StaticBool`), so the plan always holds a known value and the `PUT` body always carries it |
 | `time_field` (rule only) | `TimeField` | optional, computed, schema `Default` `"@timestamp"` (`stringdefault.StaticString`), always sent |
 
-Schema-level defaults, not server defaults read back with `UseStateForUnknown`, are used for `enabled` and `time_field` so that the write body never omits them and a plan shows the effective value. Actors (`created_by`, `updated_by`) and `snoozed_until` are not modelled; the framework ignores response fields it does not know.
+Schema-level defaults, not server defaults read back with `UseStateForUnknown`, are used for `enabled` and `time_field` so that the write body never omits them and a plan shows the effective value. Actors (`created_by`, `updated_by`) and `snoozed_until` are not modelled. The framework ignores response fields it does not know.
 
 ### D10. Artifacts `data`
 
@@ -152,40 +152,40 @@ Schema-level defaults, not server defaults read back with `UseStateForUnknown`, 
 
 - Attribute-level validators (`stringvalidator.OneOf`, `LengthBetween`, `RegexMatches`, `listvalidator.SizeBetween`, `int64validator.Between`, the duration validator) carry every bound in the specs' Schema sections so they appear in generated docs and `terraform validate`.
 - Intra-object rules expressible with `AlsoRequires`/`ConflictsWith` path expressions are declared on the attribute (for example `grouping.fields` ⇄ `grouping.mode`). List-level uniqueness (`artifacts[].id`, `destinations[]` `(type, id)` pairs) is a list validator on the collection attribute.
-- Cross-object rules (the rule spec's seven cross-field rules; the policy's throttle-strategy-by-grouping-mode rule) live in `ValidateConfig` (`resource.ResourceWithValidateConfig`), each check returning early when any participating value is unknown, following `internal/kibana/alertingrule/validate.go`.
+- Cross-object rules (the rule spec's seven cross-field rules and the policy's throttle-strategy-by-grouping-mode rule) live in `ValidateConfig` (`resource.ResourceWithValidateConfig`), each check returning early when any participating value is unknown, following `internal/kibana/alertingrule/validate.go`.
 
 ### D12. Action policy `enabled` and the upstream prerequisite
 
-The spec requires `enabled` in the `PUT` body. `KibanaHTTPAPIsAlertingPutActionPolicy` has no `Enabled` field on the pinned client, so the action policy resource is **blocked** until Kibana adds it (Alerting team follow-up) and the regular Renovate `kibana-openapi-spec` bump brings it into `generated/kbapi`; the client is not regenerated by hand for this change. The tasks file gates the whole action policy slice on that; the rule resource ships first. Fallback reconciliation through `_enable`/`_disable` is deliberately not designed in, so the resource never has two write models.
+The spec requires `enabled` in the `PUT` body. `KibanaHTTPAPIsAlertingPutActionPolicy` has no `Enabled` field on the pinned client, so the action policy resource is **blocked** until Kibana adds it (Alerting team follow-up) and the regular Renovate `kibana-openapi-spec` bump brings it into `generated/kbapi`. The client is not regenerated by hand for this change. The tasks file gates the whole action policy slice on that. The rule resource ships first. Fallback reconciliation through `_enable`/`_disable` is deliberately not designed in, so the resource never has two write models.
 
 ### D13. Testing approach
 
 - **Unit**: model ↔ API mapping in both directions for every union variant and every optional object (present / absent), `GetVersionRequirements`, the fail-closed field-accounting test (D4), the duration and id validators, and the `ValidateConfig` rules with known and unknown inputs.
 - **Wrapper**: `httptest`-backed tests of the `kibanaoapi` functions covering 201 vs 200 on `PUT`, 404 on `GET`/`DELETE`, 503 `ALERTING_DISABLED`, 400 with a JSON error body, and the `/s/<space>` path prefix, modelled on `internal/clients/kibanaoapi/alerting_rule_test.go`.
-- **Plan-only**: `ExpectError` steps for every validation scenario in the specs; these run without `TF_ACC`.
-- **Acceptance** (9.6.0+ stack): one test per spec acceptance item, each step followed by `plancheck.ExpectEmptyPlan()`; configs in `testdata/<Test>/<step>/` with unique names through variables; import steps with `ImportStateVerify`. Action policy tests create their destination workflow in the same configuration through `elasticstack_kibana_agentbuilder_workflow` (the Kibana Workflows API the dispatcher dispatches to; confirm during implementation that the id it returns is what `destinations[].id` expects).
+- **Plan-only**: `ExpectError` steps for every validation scenario in the specs. These run without `TF_ACC`.
+- **Acceptance** (9.6.0+ stack): one test per spec acceptance item, each step followed by `plancheck.ExpectEmptyPlan()`. Configs in `testdata/<Test>/<step>/` with unique names through variables. Import steps with `ImportStateVerify`. Action policy tests create their destination workflow in the same configuration through `elasticstack_kibana_agentbuilder_workflow` (the Kibana Workflows API the dispatcher dispatches to). Confirm during implementation that the id it returns is what `destinations[].id` expects.
 - **Registration**: `entitycore_contract_test.go` per package and the provider-level resource registration test.
 
 ### D14. Documentation
 
-Each resource gets `examples/resources/<type>/resource.tf` (a realistic alert rule with breach, recovery, no-data, grouping, and a routing tag; a policy routing those tags to a workflow) and `import.sh`, plus `descriptions/` markdown embedded into `MarkdownDescription`. The rule description states that updates are full replacements (last write wins) and that the engine must be enabled. `make docs-generate` produces the registry pages; no hand-written template is needed unless `tfplugindocs` output needs reordering.
+Each resource gets `examples/resources/<type>/resource.tf` (a realistic alert rule with breach, recovery, no-data, grouping, and a routing tag, together with a policy routing those tags to a workflow) and `import.sh`, plus `descriptions/` markdown embedded into `MarkdownDescription`. The rule description states that updates are full replacements (last write wins) and that the engine must be enabled. `make docs-generate` produces the registry pages. No hand-written template is needed unless `tfplugindocs` output needs reordering.
 
 ## Risks / Trade-offs
 
-- [Full-replace `PUT` is last-write-wins; a UI edit between refresh and apply is overwritten] → Standard Terraform ownership semantics; stated in the resource description. `kind` changes are the only server-side conflict and `RequiresReplace` prevents sending them.
+- [Full-replace `PUT` is last-write-wins. A UI edit between refresh and apply is overwritten] → Standard Terraform ownership semantics, stated in the resource description. `kind` changes are the only server-side conflict and `RequiresReplace` prevents sending them.
 - [A new upstream write field would be silently cleared on every apply] → Fail-closed field-accounting unit test (D4) fails the Renovate regeneration PR by field name.
-- [Create pre-check adds one `GET` and still has a race window] → One request on create only; the race is closed by treating `PUT` 200 as an error with an explicit "replaced" message.
-- [Null ⇄ absent mapping assumes the API never materialises defaults for omitted optional objects such as `grouping` (absent means `per_alert`) or `time_field`] → The Context section records that responses echo values as sent; the "removing grouping/throttle clears it" and "absent tags read back as null" acceptance scenarios catch any drift cheaply, and the mapping would then switch to treating the server default as null.
-- [`ms` and `w` durations are accepted by the validator but may be rejected by future server rules] → The validator mirrors the schema regex exactly; server rejections surface verbatim.
-- [Action policy resource depends on an upstream Kibana change landing and being picked up by Renovate] → Tasks are gated; the rule resource is independent and ships first. The design needs no change when the field lands.
-- [Serverless availability of Alerting v2 at release time is unverified] → The version gate is bypassed on serverless by the envelope; if the routes are absent, requests fail with a clear 404 diagnostic and acceptance tests are skipped by flavour.
-- [`elasticstack_kibana_agentbuilder_workflow` may not be the workflow object action policies dispatch to] → Confirm during the action policy slice; if not, the acceptance test creates the workflow through a provider-supported alternative and the design note is updated.
+- [Create pre-check adds one `GET` and still has a race window] → One request on create only. The race is closed by treating `PUT` 200 as an error with an explicit "replaced" message.
+- [Null ⇄ absent mapping assumes the API never materialises defaults for omitted optional objects such as `grouping` (absent means `per_alert`) or `time_field`] → The Context section records that responses echo values as sent. The "removing grouping/throttle clears it" and "absent tags read back as null" acceptance scenarios catch any drift cheaply, and the mapping would then switch to treating the server default as null.
+- [`ms` and `w` durations are accepted by the validator but may be rejected by future server rules] → The validator mirrors the schema regex exactly. Server rejections surface verbatim.
+- [Action policy resource depends on an upstream Kibana change landing and being picked up by Renovate] → Tasks are gated. The rule resource is independent and ships first. The design needs no change when the field lands.
+- [Serverless availability of Alerting v2 at release time is unverified] → The version gate is bypassed on serverless by the envelope. If the routes are absent, requests fail with a clear 404 diagnostic and acceptance tests are skipped by flavour.
+- [`elasticstack_kibana_agentbuilder_workflow` may not be the workflow object action policies dispatch to] → Confirm during the action policy slice. If not, the acceptance test creates the workflow through a provider-supported alternative and the design note is updated.
 
 ## Migration Plan
 
-New resources with no prior state; nothing to migrate. Rollout is two pull requests after this proposal merges: the rule resource first, the action policy resource once the upstream `enabled` field is in the pinned client. Rollback is removing the resource from configuration; destroy issues a normal `DELETE`.
+New resources with no prior state. Nothing to migrate. Rollout is two pull requests after this proposal merges: the rule resource first, the action policy resource once the upstream `enabled` field is in the pinned client. Rollback is removing the resource from configuration. Destroy issues a normal `DELETE`.
 
 ## Open Questions
 
-- Which Kibana pull request adds `enabled` to `PUT /api/alerting/v2/action_policies/{id}`, and which pinned `generated/kbapi` commit first contains it. Deferrable: it only unblocks the action policy tasks; the design and specs do not change.
-- Whether Alerting v2 is enabled on serverless projects at the time the rule resource ships. Deferrable: the envelope already bypasses the version gate on serverless; only the acceptance-test flavour filter might change.
+- Which Kibana pull request adds `enabled` to `PUT /api/alerting/v2/action_policies/{id}`, and which pinned `generated/kbapi` commit first contains it. Deferrable: it only unblocks the action policy tasks. The design and specs do not change.
+- Whether Alerting v2 is enabled on serverless projects at the time the rule resource ships. Deferrable: the envelope already bypasses the version gate on serverless. Only the acceptance-test flavour filter might change.
