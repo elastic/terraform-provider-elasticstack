@@ -20,14 +20,18 @@ package kibanaoapi
 import (
 	"crypto/tls"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
 )
+
+var errCrossOriginRedirect = errors.New("refusing to forward custom headers to redirect destination with a different origin")
 
 // Config is the configuration for the Kibana client.
 type Config struct {
@@ -88,6 +92,17 @@ func NewClientWithLabel(cfg Config, debugLabel string) (*Client, error) {
 			next:   roundTripper,
 		},
 	}
+	if len(cfg.Headers) > 0 {
+		httpClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+			if len(via) >= 10 {
+				return errors.New("stopped after 10 redirects")
+			}
+			if !sameOrigin(req.URL, via[0].URL) {
+				return errCrossOriginRedirect
+			}
+			return nil
+		}
+	}
 
 	endpoint := cfg.URL
 	if !strings.HasSuffix(endpoint, "/") {
@@ -104,6 +119,26 @@ func NewClientWithLabel(cfg Config, debugLabel string) (*Client, error) {
 		HTTP: httpClient,
 		API:  apiClient,
 	}, nil
+}
+
+func sameOrigin(a, b *url.URL) bool {
+	return strings.EqualFold(a.Scheme, b.Scheme) &&
+		strings.EqualFold(a.Hostname(), b.Hostname()) &&
+		effectivePort(a) == effectivePort(b)
+}
+
+func effectivePort(u *url.URL) string {
+	if port := u.Port(); port != "" {
+		return port
+	}
+	switch strings.ToLower(u.Scheme) {
+	case "http":
+		return "80"
+	case "https":
+		return "443"
+	default:
+		return ""
+	}
 }
 
 type transport struct {

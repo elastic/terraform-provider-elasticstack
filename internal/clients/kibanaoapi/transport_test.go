@@ -55,18 +55,25 @@ func TestConfig_carriesCustomHeaders(t *testing.T) {
 }
 
 func TestTransport_RoundTrip_sendsProviderConfiguredHeaders(t *testing.T) {
-	tr := &transport{
-		Headers: map[string]string{"X-Proxy-Token": "secret"},
-		next: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-			if got := req.Header.Get("X-Proxy-Token"); got != "secret" {
-				t.Errorf("X-Proxy-Token = %q, want %q", got, "secret")
+	for _, method := range []string{http.MethodGet, http.MethodHead} {
+		t.Run(method, func(t *testing.T) {
+			tr := &transport{
+				Headers: map[string]string{"X-Proxy-Token": "secret"},
+				next: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+					if got := req.Header.Get("X-Proxy-Token"); got != "secret" {
+						t.Errorf("X-Proxy-Token = %q, want %q", got, "secret")
+					}
+					if got := req.Header.Get("kbn-xsrf"); got != "" {
+						t.Errorf("kbn-xsrf = %q, want empty", got)
+					}
+					return &http.Response{StatusCode: http.StatusOK, Request: req}, nil
+				}),
 			}
-			return &http.Response{StatusCode: http.StatusOK, Request: req}, nil
-		}),
-	}
 
-	req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
-	executeRoundTrip(t, tr, req)
+			req := httptest.NewRequest(method, "http://example.com", nil)
+			executeRoundTrip(t, tr, req)
+		})
+	}
 }
 
 func TestTransport_RoundTrip_usesCustomAuthorizationWithoutNativeAuthentication(t *testing.T) {
@@ -82,6 +89,28 @@ func TestTransport_RoundTrip_usesCustomAuthorizationWithoutNativeAuthentication(
 
 	req := httptest.NewRequest(http.MethodGet, "http://example.com", nil)
 	executeRoundTrip(t, tr, req)
+}
+
+func TestTransport_RoundTrip_sendsCustomHeaderAlongsideKbnXsrf(t *testing.T) {
+	for _, method := range []string{http.MethodPost, http.MethodPut, http.MethodDelete} {
+		t.Run(method, func(t *testing.T) {
+			tr := &transport{
+				Headers: map[string]string{"cf-access-token": "xyz"},
+				next: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+					if got := req.Header.Get("cf-access-token"); got != "xyz" {
+						t.Errorf("cf-access-token = %q, want %q", got, "xyz")
+					}
+					if got := req.Header.Get("kbn-xsrf"); got != "true" {
+						t.Errorf("kbn-xsrf = %q, want %q", got, "true")
+					}
+					return &http.Response{StatusCode: http.StatusOK, Request: req}, nil
+				}),
+			}
+
+			req := httptest.NewRequest(method, "http://example.com", nil)
+			executeRoundTrip(t, tr, req)
+		})
+	}
 }
 
 func TestTransport_RoundTrip_omittedHeadersPreserveExistingBehavior(t *testing.T) {

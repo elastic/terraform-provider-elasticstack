@@ -31,7 +31,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestNewFromFramework_inheritedKibanaHeadersReachFleetRequest(t *testing.T) {
+func TestNewFromFramework_kibanaHeadersDoNotReachFleetRequest(t *testing.T) {
 	receivedHeaders := make(chan http.Header, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		receivedHeaders <- r.Header.Clone()
@@ -47,9 +47,17 @@ func TestNewFromFramework_inheritedKibanaHeadersReachFleetRequest(t *testing.T) 
 					"X-Proxy-Token": types.StringValue("secret"),
 				}),
 				Endpoints: types.ListValueMust(types.StringType, []attr.Value{
-					types.StringValue(server.URL),
+					types.StringValue("https://kibana.example.com"),
 				}),
 				CACerts: types.ListNull(types.StringType),
+			},
+		},
+		Fleet: []FleetConnection{
+			{
+				Endpoint: types.StringValue(server.URL),
+				APIKey:   types.StringValue("fleet-api-key"),
+				Insecure: types.BoolValue(true),
+				CACerts:  types.ListNull(types.StringType),
 			},
 		},
 	}
@@ -63,7 +71,7 @@ func TestNewFromFramework_inheritedKibanaHeadersReachFleetRequest(t *testing.T) 
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = response.Body.Close() })
 
-	require.Equal(t, "secret", (<-receivedHeaders).Get("X-Proxy-Token"))
+	require.Empty(t, (<-receivedHeaders).Get("X-Proxy-Token"))
 }
 
 func fleetMultipleAuthWarningDiag() fwdiags.Diagnostics {
@@ -72,25 +80,65 @@ func fleetMultipleAuthWarningDiag() fwdiags.Diagnostics {
 	return d
 }
 
-func Test_newFleetConfigFromFramework_inheritsProviderKibanaHeaders(t *testing.T) {
-	providerConfig := ProviderConfiguration{
-		Kibana: []KibanaConnection{
-			{
-				Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
-					"X-Proxy-Token": types.StringValue("secret"),
-				}),
-				Endpoints: types.ListNull(types.StringType),
-				CACerts:   types.ListNull(types.StringType),
+func Test_newFleetConfigFromFramework_excludesProviderKibanaHeaders(t *testing.T) {
+	tests := []struct {
+		name          string
+		fleet         []FleetConnection
+		expectedFleet fleetConfig
+	}{
+		{
+			name: "without Fleet block",
+			expectedFleet: fleetConfig{
+				URL: "https://kibana.example.com",
+			},
+		},
+		{
+			name: "with Fleet endpoint auth and TLS settings",
+			fleet: []FleetConnection{
+				{
+					Endpoint: types.StringValue("https://fleet.example.com"),
+					APIKey:   types.StringValue("fleet-api-key"),
+					Insecure: types.BoolValue(true),
+					CACerts: types.ListValueMust(types.StringType, []attr.Value{
+						types.StringValue("fleet-ca.pem"),
+					}),
+				},
+			},
+			expectedFleet: fleetConfig{
+				URL:      "https://fleet.example.com",
+				APIKey:   "fleet-api-key",
+				Insecure: true,
+				CACerts:  []string{"fleet-ca.pem"},
 			},
 		},
 	}
 
-	kibanaCfg, diags := newProviderKibanaOapiConfigFromFramework(context.Background(), providerConfig, baseConfig{})
-	require.False(t, diags.HasError())
-	fleetCfg, diags := newFleetConfigFromFramework(context.Background(), providerConfig, kibanaCfg)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			providerConfig := ProviderConfiguration{
+				Kibana: []KibanaConnection{
+					{
+						Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+							"X-Proxy-Token": types.StringValue("secret"),
+						}),
+						Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+							types.StringValue("https://kibana.example.com"),
+						}),
+						CACerts: types.ListNull(types.StringType),
+					},
+				},
+				Fleet: tt.fleet,
+			}
 
-	require.False(t, diags.HasError())
-	require.Equal(t, map[string]string{"X-Proxy-Token": "secret"}, fleetCfg.Headers)
+			kibanaCfg, diags := newProviderKibanaOapiConfigFromFramework(context.Background(), providerConfig, baseConfig{})
+			require.False(t, diags.HasError())
+			fleetCfg, diags := newFleetConfigFromFramework(context.Background(), providerConfig, kibanaCfg)
+
+			require.False(t, diags.HasError())
+			require.Equal(t, tt.expectedFleet, fleetCfg)
+			require.Nil(t, fleetCfg.Headers)
+		})
+	}
 }
 
 func Test_newFleetConfigFromFramework(t *testing.T) {

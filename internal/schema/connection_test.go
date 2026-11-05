@@ -20,6 +20,8 @@ package schema
 import (
 	"testing"
 
+	actionschema "github.com/hashicorp/terraform-plugin-framework/action/schema"
+	ephemeralschema "github.com/hashicorp/terraform-plugin-framework/ephemeral/schema"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
@@ -37,6 +39,22 @@ func TestKibanaConnectionBlock_acceptsSensitiveStringMapHeaders(t *testing.T) {
 	require.True(t, headers.Optional)
 	require.True(t, headers.Sensitive)
 	require.Equal(t, types.StringType, headers.ElementType)
+}
+
+func TestKibanaConnectionBlock_headersUseContextStateSemantics(t *testing.T) {
+	t.Parallel()
+
+	ephemeralBlock := kbConnectionBlockSpec().ephemeralBlock().(ephemeralschema.ListNestedBlock)
+	ephemeralHeaders := ephemeralBlock.NestedObject.Attributes[attrHeaders].(ephemeralschema.MapAttribute)
+	require.True(t, ephemeralHeaders.Optional)
+	require.True(t, ephemeralHeaders.Sensitive)
+	require.Equal(t, types.StringType, ephemeralHeaders.ElementType)
+
+	actionBlock := kbConnectionBlockSpec().actionBlock().(actionschema.ListNestedBlock)
+	actionHeaders := actionBlock.NestedObject.Attributes[attrHeaders].(actionschema.MapAttribute)
+	require.True(t, actionHeaders.Optional)
+	require.True(t, actionHeaders.WriteOnly)
+	require.Equal(t, types.StringType, actionHeaders.ElementType)
 }
 
 func TestElasticsearchConnectionBlockObjectAttrTypes_returnsCopy(t *testing.T) {

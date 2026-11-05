@@ -226,7 +226,7 @@ func TestKibanaConnectionSnapshotRoundTrip(t *testing.T) {
 	require.Equal(t, []string{"/path/to/ca.pem"}, caCerts)
 }
 
-func TestKibanaConnectionSnapshotRoundTripHeaders(t *testing.T) {
+func TestKibanaConnectionSnapshotDoesNotSerializeHeaders(t *testing.T) {
 	t.Parallel()
 
 	ctx := context.Background()
@@ -243,6 +243,7 @@ func TestKibanaConnectionSnapshotRoundTripHeaders(t *testing.T) {
 
 	encoded, encodeDiags := encodeKibanaConnection(ctx, connection)
 	require.False(t, encodeDiags.HasError())
+	require.NotContains(t, string(encoded), `"headers"`)
 
 	decoded, decodeDiags := decodeKibanaConnection(ctx, encoded)
 	require.False(t, decodeDiags.HasError())
@@ -250,40 +251,7 @@ func TestKibanaConnectionSnapshotRoundTripHeaders(t *testing.T) {
 	var decodedConnections []clientconfig.KibanaConnection
 	require.False(t, decoded.ElementsAs(ctx, &decodedConnections, false).HasError())
 	require.Len(t, decodedConnections, 1)
-
-	var headers map[string]string
-	require.False(t, decodedConnections[0].Headers.ElementsAs(ctx, &headers, false).HasError())
-	require.Equal(t, map[string]string{"X-Proxy-Token": "secret"}, headers)
-}
-
-func TestKibanaConnectionSnapshotRoundTripNormalizesHeaders(t *testing.T) {
-	t.Parallel()
-
-	ctx := context.Background()
-	connection, diags := types.ListValueFrom(ctx, providerschema.KibanaConnectionObjectType(), []clientconfig.KibanaConnection{
-		{
-			Endpoints: types.ListNull(types.StringType),
-			Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
-				" X-Proxy-Token ": types.StringValue(" secret "),
-			}),
-			CACerts: types.ListNull(types.StringType),
-		},
-	})
-	require.False(t, diags.HasError())
-
-	encoded, encodeDiags := encodeKibanaConnection(ctx, connection)
-	require.False(t, encodeDiags.HasError())
-
-	decoded, decodeDiags := decodeKibanaConnection(ctx, encoded)
-	require.False(t, decodeDiags.HasError())
-
-	var decodedConnections []clientconfig.KibanaConnection
-	require.False(t, decoded.ElementsAs(ctx, &decodedConnections, false).HasError())
-	require.Len(t, decodedConnections, 1)
-
-	var headers map[string]string
-	require.False(t, decodedConnections[0].Headers.ElementsAs(ctx, &headers, false).HasError())
-	require.Equal(t, map[string]string{"X-Proxy-Token": "secret"}, headers)
+	require.True(t, decodedConnections[0].Headers.IsNull())
 }
 
 func TestKibanaConnectionSnapshotNullConnection(t *testing.T) {

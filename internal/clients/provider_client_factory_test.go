@@ -157,6 +157,23 @@ func TestGetKibanaClient_EntityLocalHeadersReachKibanaRequest(t *testing.T) {
 	require.Equal(t, "secret", (<-receivedHeaders).Get("X-Proxy-Token"))
 }
 
+func TestGetKibanaClient_EntityLocalHeadersDoNotRequireMinimumVersion(t *testing.T) {
+	receivedHeaders := make(chan http.Header, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedHeaders <- r.Header.Clone()
+		w.Header().Set("Content-Type", "application/json")
+		fmt.Fprint(w, `{"version":{"number":"7.17.0","build_flavor":"default"}}`)
+	}))
+	t.Cleanup(server.Close)
+
+	scoped := newScopedClientFromFactoryWithHeaders(t, server.URL, map[string]string{"X-Proxy-Token": "secret"})
+
+	response, err := scoped.GetKibanaOapiClient().HTTP.Get(server.URL + kibanaStatusPath)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = response.Body.Close() })
+	require.Equal(t, "secret", (<-receivedHeaders).Get("X-Proxy-Token"))
+}
+
 func TestGetKibanaClient_EntityLocalHeadersTrimWhitespace(t *testing.T) {
 	receivedHeaders := make(chan http.Header, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -174,7 +191,7 @@ func TestGetKibanaClient_EntityLocalHeadersTrimWhitespace(t *testing.T) {
 	require.Equal(t, "secret", (<-receivedHeaders).Get("X-Proxy-Token"))
 }
 
-func TestGetKibanaClient_EntityLocalHeadersReachFleetRequest(t *testing.T) {
+func TestGetKibanaClient_EntityLocalHeadersDoNotReachFleetRequest(t *testing.T) {
 	receivedHeaders := make(chan http.Header, 1)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		receivedHeaders <- r.Header.Clone()
@@ -189,7 +206,7 @@ func TestGetKibanaClient_EntityLocalHeadersReachFleetRequest(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = response.Body.Close() })
 
-	require.Equal(t, "secret", (<-receivedHeaders).Get("X-Proxy-Token"))
+	require.Empty(t, (<-receivedHeaders).Get("X-Proxy-Token"))
 }
 
 // --- ElasticsearchScopedClient version / flavor routing ---

@@ -94,6 +94,67 @@ func Test_newKibanaOapiConfigFromFramework_trimsHeaderWhitespace(t *testing.T) {
 	require.Equal(t, map[string]string{"X-Proxy-Token": "secret"}, kibanaCfg.Headers)
 }
 
+func Test_newKibanaOapiConfigFromFramework_rejectsReservedHeaderNamesCaseInsensitively(t *testing.T) {
+	configuredNames := []string{
+		"aUtHoRiZaTiOn",
+		"AUTHORIZATION",
+		"KbN-XsRf",
+		"KBN-XSRF",
+		"hOsT",
+		"HOST",
+		"cOnTeNt-LeNgTh",
+		"CONTENT-LENGTH",
+		"tRaNsFeR-EnCoDiNg",
+		"TRANSFER-ENCODING",
+		"tRaIlEr",
+		"TRAILER",
+	}
+
+	for _, configuredName := range configuredNames {
+		providerConfig := ProviderConfiguration{
+			Kibana: []KibanaConnection{
+				{
+					Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+						configuredName: types.StringValue("value"),
+					}),
+					Endpoints: types.ListNull(types.StringType),
+					CACerts:   types.ListNull(types.StringType),
+				},
+			},
+		}
+
+		_, diags := newKibanaOapiConfigFromFramework(context.Background(), providerConfig, baseConfig{})
+
+		require.Len(t, diags, 1)
+		require.Contains(t, diags[0].Detail(), `"`+configuredName+`"`)
+	}
+}
+
+func Test_newKibanaOapiConfigFromFramework_rejectsCaseInsensitiveDuplicateHeaderNames(t *testing.T) {
+	const (
+		firstConfiguredName  = "X-Proxy-Token"
+		secondConfiguredName = "x-pRoXy-ToKeN"
+	)
+	providerConfig := ProviderConfiguration{
+		Kibana: []KibanaConnection{
+			{
+				Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+					firstConfiguredName:  types.StringValue("first"),
+					secondConfiguredName: types.StringValue("second"),
+				}),
+				Endpoints: types.ListNull(types.StringType),
+				CACerts:   types.ListNull(types.StringType),
+			},
+		},
+	}
+
+	_, diags := newKibanaOapiConfigFromFramework(context.Background(), providerConfig, baseConfig{})
+
+	require.Len(t, diags, 1)
+	require.Contains(t, diags[0].Detail(), `"`+firstConfiguredName+`"`)
+	require.Contains(t, diags[0].Detail(), `"`+secondConfiguredName+`"`)
+}
+
 func Test_newKibanaOapiConfigFromFramework_preservesNilHeadersForOmittedNullAndEmptyMaps(t *testing.T) {
 	tests := []struct {
 		name           string
