@@ -28,7 +28,7 @@ Cost: when `config` was lost there are two policy revisions in quick succession.
 
 ### Match inputs by type and policy template, streams by dataset
 
-Input ids change when a policy moves from the typed to the simplified representation (for example `<package-policy-id>` becomes `apm-apmserver-<package-policy-id>`), so ids are not stable. An input is identified by `type` plus `policy_template`; a stream within it by `data_stream.dataset`. These are the same identities the simplified format derives its keys from.
+Input ids change when a policy moves from the typed to the simplified representation (for example `<package-policy-id>` becomes `apm-apmserver-<package-policy-id>`), so ids are not stable. An input is identified by `type` plus `policy_template`; a stream within it by `data_stream.dataset`. These are the same identities the simplified format derives its keys from. Identities are counted over all inputs and streams, with or without `config`, both before and after the update; only identities that are unique on both sides are restored, so `config` can never land on the wrong element or on more than one.
 
 ### Deep fill, current values win
 
@@ -40,7 +40,7 @@ Kibana merges a typed update body over the stored policy, so omitting other fiel
 
 ### Snapshot failures are errors
 
-If the typed read before the update fails, the update is not attempted: proceeding would risk exactly the silent data loss this change prevents. A failure of the restoring write is reported as an error after the simplified update has been applied, so the user learns that `config` needs attention.
+If the typed read before the update fails, the update is not attempted: proceeding would risk exactly the silent data loss this change prevents. A failure of the restoring read or write, including a policy that is no longer found, is reported as an error after the simplified update has been applied, so the user learns that `config` needs attention.
 
 ## Risks / Trade-offs
 

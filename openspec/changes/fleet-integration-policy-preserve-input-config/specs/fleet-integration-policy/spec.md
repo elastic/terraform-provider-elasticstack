@@ -13,7 +13,7 @@ The resource SHALL NOT remove input-level or stream-level `config` values from a
 
 ### Requirement: Update — snapshot `config` before the update (REQ-032)
 
-Before submitting the update, the resource SHALL read the package policy in the typed (non-simplified) format and record the `config` of every input, identified by `type` and `policy_template`, and of every stream, identified additionally by `data_stream.dataset`. When that read fails, the resource SHALL return the error and SHALL NOT submit the update.
+Before submitting the update, the resource SHALL read the package policy in the typed (non-simplified) format and record the `config` of every input, identified by `type` and `policy_template`, and of every stream, identified additionally by `data_stream.dataset`. An identity shared by more than one input or stream, with or without `config`, SHALL NOT be recorded. When that read fails, the resource SHALL return the error and SHALL NOT submit the update.
 
 #### Scenario: No config means no extra write
 
@@ -23,7 +23,13 @@ Before submitting the update, the resource SHALL read the package policy in the 
 
 ### Requirement: Update — restore `config` removed by the update (REQ-033)
 
-After the update succeeds, the resource SHALL read the policy again in the typed format and deep-merge each recorded `config` into the matching input or stream. A key present before and absent or null now SHALL be restored; when both values are objects the merge SHALL recurse; otherwise the current value SHALL be kept.
+After the update succeeds, the resource SHALL read the policy again in the typed format and deep-merge each recorded `config` into the matching input or stream, only when that identity is unique in the updated policy. A key present before and absent or null now SHALL be restored; when both values are objects the merge SHALL recurse; otherwise the current value SHALL be kept.
+
+#### Scenario: Ambiguous identities are never restored
+
+- **GIVEN** two inputs with the same `type` and `policy_template`, only one of them with `config`
+- **WHEN** Terraform updates the policy
+- **THEN** no `config` SHALL be recorded or restored for that identity
 
 #### Scenario: Values written during the update are kept
 
@@ -33,13 +39,19 @@ After the update succeeds, the resource SHALL read the policy again in the typed
 
 ### Requirement: Update — restoring write (REQ-034)
 
-When at least one value was restored, the resource SHALL submit one typed update containing only the `version` token from the preceding read and the full `inputs` array with compiled fields removed. When nothing was restored, it SHALL NOT submit a further update. Errors from the restoring read or update SHALL be returned.
+When at least one value was restored, the resource SHALL submit one typed update containing only the `version` token from the preceding read and the full `inputs` array with compiled fields removed. When nothing was restored, it SHALL NOT submit a further update. Errors from the restoring read or update SHALL be returned, and a policy that is not found by the restoring read SHALL be an error.
 
 #### Scenario: Config survives unchanged
 
 - **GIVEN** an integration policy whose input `config` is not affected by the update
 - **WHEN** Terraform updates the policy
 - **THEN** no restoring update request SHALL be sent
+
+#### Scenario: Policy deleted before the restoring read
+
+- **GIVEN** recorded `config` and a policy that is not found by the restoring read
+- **WHEN** the resource restores the `config`
+- **THEN** it SHALL return an error and SHALL NOT submit an update
 
 #### Scenario: Restoring write carries only version and inputs
 

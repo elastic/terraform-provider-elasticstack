@@ -18,7 +18,9 @@
 package integrationpolicy
 
 import (
+	"context"
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -243,4 +245,81 @@ func TestRestoreInputConfig(t *testing.T) {
 		require.False(t, changed)
 		require.Nil(t, inputs)
 	})
+}
+
+func TestInputConfigAmbiguousIdentities(t *testing.T) {
+	// Two inputs share type and policy template; only the first has config.
+	before := `{
+		"id": "p", "name": "p", "enabled": true, "revision": 1,
+		"created_at": "", "created_by": "", "updated_at": "", "updated_by": "",
+		"inputs": [
+			{"id": "a", "type": "x", "policy_template": "t", "enabled": true, "streams": [], "config": {"keys": {"value": "secret"}}},
+			{"id": "b", "type": "x", "policy_template": "t", "enabled": true, "streams": []}
+		]
+	}`
+
+	t.Run("configured and unconfigured duplicates are not snapshotted", func(t *testing.T) {
+		snapshot, err := snapshotInputConfig(mustPolicy(t, before))
+		require.NoError(t, err)
+		require.True(t, snapshot.isEmpty())
+	})
+
+	t.Run("configured and unconfigured duplicate streams are not snapshotted", func(t *testing.T) {
+		snapshot, err := snapshotInputConfig(mustPolicy(t, `{
+			"id": "p", "name": "p", "enabled": true, "revision": 1,
+			"created_at": "", "created_by": "", "updated_at": "", "updated_by": "",
+			"inputs": [{"type": "x", "enabled": true, "streams": [
+				{"enabled": true, "data_stream": {"type": "logs", "dataset": "d"}, "config": {"k": {"value": 1}}},
+				{"enabled": true, "data_stream": {"type": "logs", "dataset": "d"}}
+			]}]
+		}`))
+		require.NoError(t, err)
+		require.Empty(t, snapshot.streams)
+	})
+
+	t.Run("identity that becomes ambiguous after the update is not restored", func(t *testing.T) {
+		snapshot, err := snapshotInputConfig(mustPolicy(t, `{
+			"id": "p", "name": "p", "enabled": true, "revision": 1,
+			"created_at": "", "created_by": "", "updated_at": "", "updated_by": "",
+			"inputs": [{"id": "a", "type": "x", "policy_template": "t", "enabled": true, "streams": [], "config": {"keys": {"value": "secret"}}}]
+		}`))
+		require.NoError(t, err)
+		require.False(t, snapshot.isEmpty())
+
+		after := mustPolicy(t, `{
+			"id": "p", "name": "p", "enabled": true, "revision": 2,
+			"created_at": "", "created_by": "", "updated_at": "", "updated_by": "",
+			"inputs": [
+				{"id": "a2", "type": "x", "policy_template": "t", "enabled": true, "streams": []},
+				{"id": "b2", "type": "x", "policy_template": "t", "enabled": true, "streams": []}
+			]
+		}`)
+		inputs, changed, err := restoreInputConfig(snapshot, after)
+		require.NoError(t, err)
+		require.False(t, changed)
+		require.Nil(t, inputs)
+	})
+}
+
+func TestRestorePreservedInputConfig_PolicyNotFound(t *testing.T) {
+	var methods []string
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		methods = append(methods, r.Method)
+		w.WriteHeader(http.StatusNotFound)
+	}))
+
+	snapshot, err := snapshotInputConfig(mustPolicy(t, apmPolicyWithKeys))
+	require.NoError(t, err)
+
+	diags := restorePreservedInputConfig(context.Background(), client, "apm-pp", "", snapshot)
+	require.True(t, diags.HasError(), "a policy deleted before the restoring read must be an error")
+	require.Contains(t, diags.Errors()[0].Detail(), "apm-pp")
+	require.Equal(t, []string{http.MethodGet}, methods, "only the restoring read may be sent when the policy is gone")
+}
+
+func TestRestorePreservedInputConfig_EmptySnapshotSendsNothing(t *testing.T) {
+	client := newTestFleetClient(t, http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		t.Fatalf("unexpected request %s %s", r.Method, r.URL.Path)
+	}))
+	require.False(t, restorePreservedInputConfig(context.Background(), client, "p", "", inputConfigSnapshot{}).HasError())
 }

@@ -21,6 +21,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -132,7 +133,7 @@ func checkOutOfBandInputConfig(resourceAddress string) resource.TestCheckFunc {
 			value, _ := marker["value"].(map[string]any)
 			nested, _ := value["nested"].(map[string]any)
 			if nested["secret"] != "input-marker" {
-				return fmt.Errorf("input %v lost its out-of-band config: %v", input["type"], input["config"])
+				return fmt.Errorf("input %v lost its out-of-band config key %q", input["type"], outOfBandConfigKey)
 			}
 			streams, _ := input["streams"].([]any)
 			if len(streams) == 0 {
@@ -142,7 +143,7 @@ func checkOutOfBandInputConfig(resourceAddress string) resource.TestCheckFunc {
 			streamCfg, _ := stream["config"].(map[string]any)
 			streamMarker, _ := streamCfg[outOfBandConfigKey].(map[string]any)
 			if streamMarker["value"] != "stream-marker" {
-				return fmt.Errorf("stream %v lost its out-of-band config: %v", stream["data_stream"], stream["config"])
+				return fmt.Errorf("stream %v lost its out-of-band config key %q", stream["data_stream"], outOfBandConfigKey)
 			}
 		}
 		return nil
@@ -207,8 +208,9 @@ func checkAPMAPIKeysInConfig(resourceAddress string) resource.TestCheckFunc {
 				for _, key := range path {
 					node, _ = node[key].(map[string]any)
 				}
+				// Never include config values in the message: they hold API keys.
 				if key, _ := node["api_key"].(string); key == "" {
-					return fmt.Errorf("APM input config is missing %v.api_key: %v", path, input["config"])
+					return fmt.Errorf("APM input config is missing apm-server.value.%s.api_key", strings.Join(path, "."))
 				}
 			}
 			return nil

@@ -97,34 +97,44 @@ func rawTypedInputs(policy *kbapi.PackagePolicy) ([]map[string]any, error) {
 	return inputs, nil
 }
 
+// countIdentities counts every input and stream identity of a list of typed
+// inputs, whether or not the element has config. An identity that occurs more
+// than once cannot be matched to a single element.
+func countIdentities(inputs []map[string]any) map[string]int {
+	counts := map[string]int{}
+	for _, input := range inputs {
+		inputID := inputIdentity(input)
+		counts[inputID]++
+		streams, _ := input[inputStreamsKey].([]any)
+		for _, s := range streams {
+			stream, ok := s.(map[string]any)
+			if !ok {
+				continue
+			}
+			if streamID := streamIdentity(inputID, stream); streamID != missingIdentityKey {
+				counts[streamID]++
+			}
+		}
+	}
+	return counts
+}
+
 // snapshotInputConfig records the non-empty `config` of every input and stream
 // of a package policy read in the typed format. Identities that occur more
-// than once are left out, since their config could not be restored to the
-// right element unambiguously.
+// than once (counting elements with and without config) are left out, since
+// their config could not be restored to the right element unambiguously.
 func snapshotInputConfig(policy *kbapi.PackagePolicy) (inputConfigSnapshot, error) {
 	inputs, err := rawTypedInputs(policy)
 	if err != nil {
 		return inputConfigSnapshot{}, err
 	}
 
+	counts := countIdentities(inputs)
 	snapshot := inputConfigSnapshot{inputs: map[string]map[string]any{}, streams: map[string]map[string]any{}}
-	ambiguous := map[string]bool{}
-	record := func(target map[string]map[string]any, id string, cfg map[string]any) {
-		if ambiguous[id] {
-			return
-		}
-		if _, seen := target[id]; seen {
-			delete(target, id)
-			ambiguous[id] = true
-			return
-		}
-		target[id] = cfg
-	}
-
 	for _, input := range inputs {
 		inputID := inputIdentity(input)
-		if cfg, ok := input[inputConfigKey].(map[string]any); ok && len(cfg) > 0 {
-			record(snapshot.inputs, inputID, cfg)
+		if cfg, ok := input[inputConfigKey].(map[string]any); ok && len(cfg) > 0 && counts[inputID] == 1 {
+			snapshot.inputs[inputID] = cfg
 		}
 		streams, _ := input[inputStreamsKey].([]any)
 		for _, s := range streams {
@@ -133,11 +143,11 @@ func snapshotInputConfig(policy *kbapi.PackagePolicy) (inputConfigSnapshot, erro
 				continue
 			}
 			streamID := streamIdentity(inputID, stream)
-			if streamID == missingIdentityKey {
+			if streamID == missingIdentityKey || counts[streamID] != 1 {
 				continue
 			}
 			if cfg, ok := stream[inputConfigKey].(map[string]any); ok && len(cfg) > 0 {
-				record(snapshot.streams, streamID, cfg)
+				snapshot.streams[streamID] = cfg
 			}
 		}
 	}
@@ -197,10 +207,13 @@ func restoreInputConfig(snapshot inputConfigSnapshot, policy *kbapi.PackagePolic
 		return nil, false, err
 	}
 
+	// Only identities that are unique after the update as well are restored,
+	// so config never lands on more than one element.
+	counts := countIdentities(inputs)
 	changed := false
 	for _, input := range inputs {
 		inputID := inputIdentity(input)
-		if fillConfig(input, snapshot.inputs[inputID]) {
+		if counts[inputID] == 1 && fillConfig(input, snapshot.inputs[inputID]) {
 			changed = true
 		}
 		delete(input, compiledInputKey)
@@ -211,7 +224,8 @@ func restoreInputConfig(snapshot inputConfigSnapshot, policy *kbapi.PackagePolic
 				continue
 			}
 			delete(stream, compiledStreamKey)
-			if streamID := streamIdentity(inputID, stream); streamID != missingIdentityKey && fillConfig(stream, snapshot.streams[streamID]) {
+			streamID := streamIdentity(inputID, stream)
+			if streamID != missingIdentityKey && counts[streamID] == 1 && fillConfig(stream, snapshot.streams[streamID]) {
 				changed = true
 			}
 		}
@@ -257,7 +271,14 @@ func restorePreservedInputConfig(ctx context.Context, client *fleet.Client, poli
 	}
 
 	policy, diags := fleet.GetPackagePolicyTyped(ctx, client, policyID, spaceID)
-	if diags.HasError() || policy == nil {
+	if diags.HasError() {
+		return diags
+	}
+	if policy == nil {
+		diags.AddError(
+			"Failed to restore integration policy input config",
+			fmt.Sprintf("The integration policy %q was not found when re-reading it to restore input config after the update.", policyID),
+		)
 		return diags
 	}
 
