@@ -2,7 +2,7 @@
 
 ## Why
 
-Kibana Alerting v2 (the `alerting_v2` plugin) ships as GA in Kibana 9.6.0 with a public HTTP surface under `/api/alerting/v2/`. It introduces two new objects: **rules**, which are ES|QL-first and evaluated on a schedule, and **action policies**, which route alerts to notification destinations and are configured separately from the rules that produce them. The provider today manages only classic alerting rules through `elasticstack_kibana_alerting_rule`. Classic and v2 share no API, no saved object type, and no identifier space, so practitioners adopting v2 have no way to declare rules or action policies as code, review them, or detect drift. Landing Terraform support alongside the 9.6.0 GA release means v2 users get infrastructure-as-code from day one instead of after the fact.
+Kibana Alerting v2 (the `alerting_v2` plugin) ships as GA in Kibana 9.6.0 with a public HTTP surface under `/api/alerting/v2/`. It introduces two new objects: **rules**, which are ES|QL-first and evaluated on a schedule, and **action policies**, which route alerts to notification destinations and are configured separately from the rules that produce them. The provider today manages only classic alerting rules through `elasticstack_kibana_alerting_rule`. Classic and v2 share no API, no saved object type, and no identifier space, so users adopting v2 have no way to declare rules or action policies as code, review them, or detect drift. Landing Terraform support alongside the 9.6.0 GA release means v2 users get infrastructure-as-code from day one instead of after the fact.
 
 Program tracking: [elastic/rna-program#655](https://github.com/elastic/rna-program/issues/655) (epic), with implementation issues [#676](https://github.com/elastic/rna-program/issues/676) (rule) and [#677](https://github.com/elastic/rna-program/issues/677) (action policy). API reference: the **Alerting V2** group of the [Kibana API documentation](https://www.elastic.co/docs/api/doc/kibana/).
 
@@ -15,7 +15,7 @@ Program tracking: [elastic/rna-program#655](https://github.com/elastic/rna-progr
 
 **Not in scope** (explicit non-goals):
 
-- Data sources (read-only `data` lookups) for v2 rules or action policies.
+- Read-only lookups of rules or action policies that already exist in Kibana but are not managed by Terraform (Terraform "data sources"). This change only adds the managed resources that create, update, and delete these objects.
 - Bulk endpoints, by-query endpoints, the manual `_run` endpoint, execution history, rule change history, rule templates, and tag or routing-tag lookups.
 - Alert actions (acknowledge, assign, activate, deactivate, tag) and alert or series snooze state.
 - Snooze state on action policies: it is runtime operational state, not configuration, and is not managed by Terraform.
