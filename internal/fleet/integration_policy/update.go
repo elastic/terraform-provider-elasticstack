@@ -77,11 +77,25 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
+	// The simplified update below drops input- and stream-level config written
+	// by Kibana or other Kibana features (e.g. APM API keys, Osquery packs).
+	// Snapshot it first so it can be written back afterwards.
+	inputConfig, diags := readInputConfigSnapshot(ctx, fleetClient, policyID, spaceID)
+	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
 	// Update using the operational space from STATE
 	// The API will handle adding/removing policy from spaces based on space_ids in body
 	policy, diags := fleet.UpdatePackagePolicy(ctx, fleetClient, policyID, spaceID, body)
 
 	resp.Diagnostics.Append(diags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	resp.Diagnostics.Append(restorePreservedInputConfig(ctx, fleetClient, policyID, spaceID, inputConfig)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
