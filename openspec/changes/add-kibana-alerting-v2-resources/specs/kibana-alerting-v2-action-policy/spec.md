@@ -4,7 +4,7 @@ Resource implementation: `internal/kibana/alerting_v2/action_policy`
 
 ## Purpose
 
-Define the Terraform schema and runtime behaviour of the `elasticstack_kibana_alerting_v2_action_policy` resource, which manages a single Kibana Alerting v2 action policy through `/api/alerting/v2/action_policies`: typed destinations, matcher, grouping, and throttle configuration, create-or-replace lifecycle, space-aware identity and import, enabled-state handling, plan-time validation mirroring the API, and the Elastic Stack 9.6.0 version gate.
+Define the Terraform schema and runtime behaviour of the `elasticstack_kibana_alerting_v2_action_policy` resource, which manages a single Kibana Alerting v2 action policy through `/api/alerting/v2/action_policies`: typed destinations, matcher, grouping, and throttle configuration, create-or-replace lifecycle, space-aware identity and import, enabled-state handling, plan-time validation mirroring the API, and the Elastic Stack 9.7.0 version gate.
 
 ## Schema
 
@@ -70,18 +70,18 @@ The provider SHALL expose a managed resource with type name `elasticstack_kibana
 
 ### Requirement: Minimum Elastic Stack version
 
-The resource SHALL require Elastic Stack 9.6.0 or later and SHALL fail every lifecycle operation with a diagnostic naming the required version when the target stack is older. Serverless targets SHALL bypass the version check.
+The resource SHALL require Elastic Stack 9.7.0 or later and SHALL fail every lifecycle operation with a diagnostic naming the required version when the target stack is older. Serverless targets SHALL bypass the version check.
 
 #### Scenario: Older stack is rejected before any API call
 
 - **GIVEN** a target Elastic Stack at version 9.5.x
 - **WHEN** create, read, update, or delete runs
-- **THEN** the provider SHALL return an error diagnostic stating that Alerting v2 action policies require Elastic Stack 9.6.0 or later
+- **THEN** the provider SHALL return an error diagnostic stating that Alerting v2 action policies require Elastic Stack 9.7.0 or later
 - **AND** SHALL NOT call any `/api/alerting/v2/` endpoint
 
 #### Scenario: Supported stack proceeds
 
-- **GIVEN** a target Elastic Stack at version 9.6.0 or later, or a serverless project
+- **GIVEN** a target Elastic Stack at version 9.7.0 or later, or a serverless project
 - **WHEN** any lifecycle operation runs
 - **THEN** the provider SHALL proceed with the operation
 
@@ -176,7 +176,7 @@ The resource SHALL support `terraform import` with an id of the form `<space_id>
 
 ### Requirement: `enabled` is written in the create-or-replace body
 
-`enabled` SHALL be optional, computed, and default to `true`. The provider SHALL always send `enabled` in the `PUT` body so the policy is created in, or replaced into, the configured state in one request, with no follow-up enable or disable call. This depends on Kibana accepting `enabled` in `PUT /api/alerting/v2/action_policies/{id}`, which is an upstream prerequisite for implementing this resource.
+`enabled` SHALL be optional, computed, and default to `true`. The provider SHALL always send `enabled` in the `PUT` body so the policy is created in, or replaced into, the configured state in one request, with no follow-up enable or disable call. This depends on Kibana accepting `enabled` in `PUT /api/alerting/v2/action_policies/{id}` (elastic/rna-program#1266, targeted at 9.7.0), which is the upstream prerequisite for implementing this resource and the reason for its 9.7.0 version gate.
 
 #### Scenario: Create a disabled policy
 
@@ -381,7 +381,7 @@ Transport failures, unexpected HTTP statuses, and successful responses with an e
 
 ### Requirement: Acceptance tests
 
-The acceptance test suite SHALL be skipped below Elastic Stack 9.6.0, SHALL follow the repository's acceptance-test isolation conventions, and SHALL cover:
+The acceptance test suite SHALL be skipped below Elastic Stack 9.7.0, SHALL follow the repository's acceptance-test isolation conventions, and SHALL cover:
 
 1. A policy with `description`, a workflow destination, `matcher` (tags and expression), `grouping = per_field`, and an interval `throttle`: create, update, import, and an empty re-plan.
 2. A minimal catch-all policy with only `name` and `destinations`.

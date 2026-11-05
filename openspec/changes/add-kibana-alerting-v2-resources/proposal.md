@@ -10,8 +10,8 @@ Program tracking: [elastic/rna-program#655](https://github.com/elastic/rna-progr
 
 - Add a new Terraform resource **`elasticstack_kibana_alerting_v2_rule`** that manages a single Alerting v2 rule: create, read, update, delete, and import, scoped to a Kibana space.
 - Add a new Terraform resource **`elasticstack_kibana_alerting_v2_action_policy`** that manages a single Alerting v2 action policy with the same lifecycle.
-- Register both as **standard provider resources** (not behind the experimental opt-in), gated to Elastic Stack **9.6.0 or later**, with generated registry documentation and examples. The resource type names keep the `alerting` qualifier and the `v2` marker, mirroring the API path, per the Alerting team's naming preference.
-- Deliver in two steps: the **rule resource is implemented first**. The **action policy resource follows** once Kibana accepts the enabled state in the action policy create-or-replace request (upstream follow-up owned by the Alerting team), so that the action policy's enabled state is fully managed by Terraform from the first release of that resource. The design and specs in this change cover both resources so the second implementation needs no new proposal.
+- Register both as **standard provider resources** (not behind the experimental opt-in), gated to Elastic Stack **9.6.0 or later** for rules and **9.7.0 or later** for action policies (the first release whose action policy create-or-replace request accepts the enabled state), with generated registry documentation and examples. The resource type names keep the `alerting` qualifier and the `v2` marker, mirroring the API path, per the Alerting team's naming preference.
+- Deliver in two steps: the **rule resource is implemented first**. The **action policy resource follows** once Kibana accepts the enabled state in the action policy create-or-replace request ([elastic/rna-program#1266](https://github.com/elastic/rna-program/issues/1266), targeted at 9.7.0), so that the action policy's enabled state is fully managed by Terraform from the first release of that resource. The design and specs in this change cover both resources so the second implementation needs no new proposal.
 
 **Not in scope** (explicit non-goals):
 
@@ -38,6 +38,6 @@ Program tracking: [elastic/rna-program#655](https://github.com/elastic/rna-progr
 - **Provider surface**: two new resource types registered in the provider's standard resource list and two new generated documentation pages under `docs/resources/` with examples under `examples/resources/`.
 - **Code**: two new resource packages under `internal/kibana/` and new Kibana API client wrappers under `internal/clients/kibanaoapi/`, following the existing Plugin Framework resource conventions.
 - **Generated client**: no regeneration required. The `generated/kbapi` already exposes the Alerting v2 operations and named schema components.
-- **Testing**: acceptance tests require an Elastic Stack 9.6.0+ environment. Tests are skipped on older stacks.
+- **Testing**: acceptance tests require an Elastic Stack 9.6.0+ environment for rules and 9.7.0+ for action policies. Tests are skipped on older stacks.
 - **Upstream dependency**: the action policy resource's implementation (not its design) waits on Kibana accepting `enabled` in `PUT /api/alerting/v2/action_policies/{id}`.
 - **Existing users**: no impact on existing resources, state, or behaviour.
