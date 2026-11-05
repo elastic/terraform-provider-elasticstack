@@ -18,10 +18,11 @@ corroborating reports from `@hayk96` and `@hossamdash`).
 - When custom headers are configured, allow redirects only when the destination has the same origin
   (scheme, host, and effective port) as the initial Kibana request. Reject cross-origin redirects,
   including HTTPS-to-HTTP downgrades, before custom credentials can be forwarded.
-- Reject (case-insensitively) a configured header named `kbn-xsrf`, `authorization`, or `host` with a
-  clear provider error before the affected connection sends its first request. The first two conflict
-  with provider-managed headers; Go transmits `Host` through the request authority rather than the
-  ordinary header map, so accepting it would silently violate the header-delivery contract.
+- Reject provider-managed or Go transport-controlled header names (`kbn-xsrf`, `authorization`,
+  `host`, `content-length`, `transfer-encoding`, and `trailer`) case-insensitively with a clear
+  provider error before the affected connection sends its first request. Also reject multiple
+  configured keys that differ only by case, because HTTP header names are case-insensitive and
+  accepting both would make the transmitted value nondeterministic.
 - Exclude Kibana custom headers from Fleet requests, since Fleet's endpoint can diverge from Kibana's
   and forwarding a Kibana-proxy credential to a different host by default would be a credential-leak
   risk. Fleet does not gain its own `headers` attribute in this change.
@@ -43,9 +44,9 @@ corroborating reports from `@hayk96` and `@hossamdash`).
 
 - `provider-kibana-connection`: Adds a `headers` attribute to the shared Kibana connection block
   (`kbConnectionBlockSpec()`), the config-build path that decodes it into `kibanaoapi.Config`, the
-  reserved-header validation rule, same-origin redirect protection, the Kibana client's header
-  injection in `transport.RoundTrip`, and the explicit exclusion of `headers` from the derived Fleet
-  client configuration.
+  reserved-header and case-insensitive-collision validation rules, same-origin redirect protection,
+  the Kibana client's header injection in `transport.RoundTrip`, and the explicit exclusion of
+  `headers` from the derived Fleet client configuration.
 
 ## Impact
 

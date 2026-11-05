@@ -15,13 +15,16 @@
       existing debug formatting masks `Authorization` but does not generally redact arbitrary custom
       proxy-token headers
 
-## 2. Reserved and transport-special headers fail before a Kibana request
+## 2. Invalid custom header sets fail before a Kibana request
 
-- [ ] 2.1 Reject `authorization`, `kbn-xsrf`, and `host` keys case-insensitively while building the
-      affected connection, identifying the configured key in the diagnostic before that connection
-      sends its first request
-- [ ] 2.2 Preserve non-reserved custom headers while guaranteeing that an invalid provider-level or
-      entity-local connection sends no request, regardless of reserved-key casing or diagnostic timing
+- [ ] 2.1 Reject `authorization`, `kbn-xsrf`, `host`, `content-length`, `transfer-encoding`, and
+      `trailer` keys case-insensitively while building the affected connection, identifying the
+      configured key in the diagnostic before that connection sends its first request
+- [ ] 2.2 Reject multiple configured keys that differ only by case, identifying both conflicting keys
+      before the affected connection sends its first request
+- [ ] 2.3 Preserve uniquely named, non-reserved custom headers while guaranteeing that an invalid
+      provider-level or entity-local connection sends no request, regardless of key casing or
+      diagnostic timing
 
 ## 3. Custom credentials remain within the initial Kibana origin
 

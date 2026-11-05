@@ -32,9 +32,9 @@ a different origin. The redirect boundary therefore forms part of the credential
 - Let users attach one or more supported custom HTTP headers to every outgoing Kibana API request, configurable
   at the provider level (`kibana { headers = {...} }`) and per-entity (`kibana_connection { headers =
   {...} }`), via the existing shared-spec mechanism so no per-entity schema changes are needed.
-- Prevent a configured custom header from silently colliding with provider-managed headers
-  (`kbn-xsrf`, `Authorization`) or being ignored by Go's special handling of `Host`, by rejecting those
-  names outright.
+- Prevent configured custom headers from silently colliding with provider-managed headers, being
+  ignored by Go's transport-controlled request fields, or producing a nondeterministic value when two
+  keys differ only by case.
 - Prevent configured custom headers from being forwarded when Kibana or an intermediary redirects to
   a different origin, including an HTTPS-to-HTTP destination.
 - Keep Fleet's client configuration unaffected by Kibana-only custom headers, since Fleet's endpoint
@@ -86,28 +86,33 @@ Alternatives considered:
   cannot vary per connection block, and requires an awkward delimited-string encoding for header names
   and values that may themselves contain `=` or `,`.
 
-### 2. Validate the reserved header names at config-build time, not as a schema-level map validator
+### 2. Validate reserved names and case-insensitive collisions at config-build time
 
 The `connAttrSpec` struct (`internal/schema/connection_spec.go`) only carries `validators
 []validator.String` — there is no map-level validator plumbing today, and the existing Elasticsearch
 `headers` attribute has no validators at all. Rather than extending `connAttrSpec`/`connAttrFactory[T]`
 with a new `[]validator.Map` field (which would ripple into all three entity-kind factories for a
-single attribute), reject the reserved names where `headers` is actually decoded into
+single attribute), reject invalid header sets where `headers` is actually decoded into
 `kibanaoapi.Config`: inside `buildKibanaOapiConfigFromFramework` in
 `internal/clients/config/kibana_oapi.go`, immediately after `kibConfig.Headers.ElementsAs(...)`.
-Case-insensitively comparing each configured header key against `kbn-xsrf`, `authorization`, and
-`host` and returning a diagnostic error that names the offending key blocks use of that connection
-before it sends its first request. `Host` must be rejected because Go sends the request authority from
-`req.Host` or the request URL rather than `req.Header["Host"]`; accepting it into the ordinary header
-map would not put the configured value on the wire. Provider-level configuration is built during
-provider configuration, while a new entity-local scoped connection may not be built until Create;
-this design therefore does not promise that every reserved-name error appears during planning.
+Case-insensitively compare each configured key against `kbn-xsrf`, `authorization`, `host`,
+`content-length`, `transfer-encoding`, and `trailer`, and reject any match with a diagnostic that names
+the offending key. The first two are provider-managed. Go derives the other four from dedicated
+`http.Request` fields rather than ordinary `req.Header` entries, so accepting them would not reliably
+put the configured value on the wire. During the same pass, normalize each key for comparison and
+reject a second key that differs from an earlier key only by case, naming both conflicting keys;
+otherwise Go's canonical header map plus nondeterministic map iteration could choose either value.
+
+These diagnostics block use of the affected connection before it sends its first request.
+Provider-level configuration is built during provider configuration, while a new entity-local scoped
+connection may not be built until Create; this design therefore does not promise that every validation
+error appears during planning.
 
 Why:
 - Matches the precedent already used for endpoint/CA decoding errors in the same function (returning
   `fwdiags.Diagnostics` on invalid input).
-- Avoids a second place (a schema-level validator function) that would need to know about the three
-  reserved names, keeping the reserved-name policy in a single function.
+- Avoids a second place (a schema-level validator function) that would need to know about the reserved
+  names and case-insensitive uniqueness rule, keeping the accepted-header policy in a single function.
 - Guarantees rejection before the connection can send an HTTP request, which is the security boundary
   this validation protects, without expanding the shared schema-generator validator surface.
 
@@ -117,6 +122,9 @@ Alternatives considered:
 - Extend `connAttrSpec` with a `[]validator.Map` field: this would provide uniform plan-time validation,
   including for new entity-local resources, but is rejected as unnecessary generator surface area for
   a single attribute when rejection before the first request satisfies the required safety property.
+- Map transport-controlled names onto dedicated `http.Request` fields: rejected because those fields
+  change request framing or routing rather than adding ordinary custom metadata, and would make the
+  `headers` map's behavior protocol-dependent.
 
 ### 3. Inject custom headers in `transport.RoundTrip`, after the reserved-name check removes any collision risk
 
@@ -214,12 +222,13 @@ one as part of the acceptance-test boundary.
 
 ### 8. Test each security boundary at the narrowest observable layer
 
-Use config-level tests for header decoding, reserved-name rejection, and Fleet exclusion; transport
-tests for ordinary request injection; HTTP client tests with controlled redirect endpoints for
-same-origin success and cross-origin rejection; and acceptance tests with a recording proxy for
-provider-level and entity-local delivery. Redirect tests assert that rejected destinations receive no
-request at all, including host, effective-port, and scheme changes. Acceptance coverage explicitly
-controls endpoint environment precedence and runs through the supported Stack-version matrix.
+Use config-level tests for header decoding, every reserved-name rejection, case-insensitive duplicate
+rejection, and Fleet exclusion; transport tests for ordinary request injection; HTTP client tests with
+controlled redirect endpoints for same-origin success and cross-origin rejection; and acceptance tests
+with a recording proxy for provider-level and entity-local delivery. Redirect tests assert that
+rejected destinations receive no request at all, including host, effective-port, and scheme changes.
+Acceptance coverage explicitly controls endpoint environment precedence and runs through the supported
+Stack-version matrix.
 
 Why:
 - Config and client tests isolate failure boundaries and can prove that rejected inputs or redirects

@@ -41,13 +41,15 @@ Terraform's ephemeral-state semantics.
 - **THEN** no additional request headers SHALL be sent, and existing configurations without `headers`
   SHALL continue to plan and apply with no diff attributable to this change
 
-### Requirement: Reserved header names are rejected before any request is sent
+### Requirement: Invalid custom header sets are rejected before any request is sent
 
 The provider SHALL reject reserved Kibana header names before the affected connection sends its first
-request. A configured `headers` key equal to `kbn-xsrf`, `authorization`, or `host`, compared
-case-insensitively, SHALL produce a diagnostic identifying the offending key. The diagnostic MAY
-occur during apply when a new entity-local scoped connection is first built; this requirement does
-not guarantee plan-time rejection in every context.
+request. A configured `headers` key equal to `kbn-xsrf`, `authorization`, `host`, `content-length`,
+`transfer-encoding`, or `trailer`, compared case-insensitively, SHALL produce a diagnostic identifying
+the offending key. The provider SHALL also reject two configured keys that differ only by case, with a
+diagnostic identifying both conflicting keys. The diagnostic MAY occur during apply when a new
+entity-local scoped connection is first built; this requirement does not guarantee plan-time rejection
+in every context.
 
 #### Scenario: Custom Authorization header is rejected
 
@@ -69,11 +71,25 @@ not guarantee plan-time rejection in every context.
 - **THEN** the provider SHALL report a diagnostic error identifying `Host` as a reserved header name
   before the affected connection sends its first request
 
+#### Scenario: Transport-controlled framing header is rejected
+
+- **WHEN** a practitioner configures `headers` with `Content-Length`, `Transfer-Encoding`, or `Trailer`
+  on a Kibana connection block
+- **THEN** the provider SHALL report a diagnostic error identifying the offending key as a reserved
+  header name before the affected connection sends its first request
+
+#### Scenario: Header names that differ only by case are rejected
+
+- **WHEN** a practitioner configures `headers = { "X-Proxy-Token" = "first", "x-proxy-token" =
+  "second" }` on a Kibana connection block
+- **THEN** the provider SHALL report a diagnostic error identifying both conflicting keys before the
+  affected connection sends its first request
+
 #### Scenario: Non-reserved headers are unaffected by the rejection rule
 
-- **WHEN** a practitioner configures `headers` containing only non-reserved keys (for example
-  `cf-access-token`)
-- **THEN** the provider SHALL NOT report a reserved-header diagnostic for that configuration
+- **WHEN** a practitioner configures `headers` containing only uniquely named, non-reserved keys (for
+  example `cf-access-token`)
+- **THEN** the provider SHALL NOT report an invalid-header-set diagnostic for that configuration
 
 ### Requirement: Accepted configured headers are sent on every outgoing Kibana request
 
