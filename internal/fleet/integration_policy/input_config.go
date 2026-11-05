@@ -263,7 +263,8 @@ func readInputConfigSnapshot(ctx context.Context, client *fleet.Client, policyID
 }
 
 // restorePreservedInputConfig writes back any input or stream config that the
-// simplified update removed. It issues no request when the snapshot is empty,
+// simplified update removed. The restoring request carries only the version,
+// the agent policy assignment and the inputs. It issues no request when the snapshot is empty,
 // and no update when nothing was removed.
 func restorePreservedInputConfig(ctx context.Context, client *fleet.Client, policyID, spaceID string, snapshot inputConfigSnapshot) diag.Diagnostics {
 	if snapshot.isEmpty() {
@@ -291,9 +292,13 @@ func restorePreservedInputConfig(ctx context.Context, client *fleet.Client, poli
 		return diags
 	}
 
+	// Send the agent policy assignment back as read: Kibana 8.x clears
+	// policy_id on a typed update that omits policy_ids.
 	req := kbapi.PackagePolicyUpdateRequestTypedInputs{
-		Inputs:  &inputs,
-		Version: policy.Version,
+		Inputs:    &inputs,
+		Version:   policy.Version,
+		PolicyId:  policy.PolicyId,
+		PolicyIds: policy.PolicyIds,
 	}
 	_, updateDiags := fleet.UpdatePackagePolicyTyped(ctx, client, policyID, spaceID, req)
 	diags.Append(updateDiags...)

@@ -2,7 +2,7 @@
 
 - `Update` (`internal/fleet/integration_policy/update.go`) builds a `PackagePolicyRequestMappedInputs` body with `toAPIModel` and sends it with `fleet.UpdatePackagePolicy` (`PUT /api/fleet/package_policies/{id}?format=simplified`).
 - In the simplified format Kibana regenerates each input from the package template (`simplifiedPackagePolicytoNewPackagePolicy`), so fields that are not part of the mapped-input shape are dropped. The generated `PackagePolicyRequestMappedInput` type has no `config` field; `PackagePolicyRequestTypedInput` and `PackagePolicyRequestTypedInputStream` do.
-- Verified against Kibana 9.4.2: after creating an APM package policy, Kibana's APM plugin writes `inputs[0].config["apm-server"].value.{rum.source_mapping,agent.config}.elasticsearch.api_key` (revision 2). A simplified PUT (revision 3) leaves `config["apm-server"].value` in place but without both `elasticsearch` objects. A subsequent typed PUT carrying only `version` and `inputs` (with the keys restored) keeps every other top-level field (name, namespace, description, policy ids, package) and the values the simplified PUT set.
+- Verified against Kibana 9.4.2: after creating an APM package policy, Kibana's APM plugin writes `inputs[0].config["apm-server"].value.{rum.source_mapping,agent.config}.elasticsearch.api_key` (revision 2). A simplified PUT (revision 3) leaves `config["apm-server"].value` in place but without both `elasticsearch` objects. A subsequent typed PUT carrying only `version`, `policy_id`, `policy_ids` and `inputs` (with the keys restored) keeps every other top-level field (name, namespace, description, policy ids, package) and the values the simplified PUT set.
 - `fleet.GetDefendPackagePolicy` / `fleet.UpdateDefendPackagePolicy` already perform typed-format GET/PUT for the Defend resource.
 
 ## Goals / Non-Goals
@@ -34,9 +34,9 @@ Input ids change when a policy moves from the typed to the simplified representa
 
 For each matched input/stream, every key of the prior `config` that is missing in the current `config` is copied over; when both sides hold objects the merge recurses; when both sides hold a value the current one is kept. This restores data that the update dropped without undoing anything the update (or a Kibana callback that ran during it, such as the APM plugin rewriting `rum.source_mapping.metadata`) wrote.
 
-### Send only `version` and `inputs` in the restoring request
+### Send only `version`, the agent policy assignment and `inputs` in the restoring request
 
-Kibana merges a typed update body over the stored policy, so omitting other fields leaves them untouched. Sending the `version` token from the read immediately preceding the write makes a concurrent modification fail with a conflict rather than be overwritten. Compiled fields (`compiled_input`, `compiled_stream`) are stripped from the request.
+Kibana merges a typed update body over the stored policy, so omitting other fields leaves them untouched. The exception is the agent policy assignment: Kibana 8.x clears `policy_id` on a typed update that omits `policy_ids`, so `policy_id` and `policy_ids` are sent back exactly as read. Sending the `version` token from the read immediately preceding the write makes a concurrent modification fail with a conflict rather than be overwritten. Compiled fields (`compiled_input`, `compiled_stream`) are stripped from the request.
 
 ### Snapshot failures are errors
 

@@ -323,3 +323,39 @@ func TestRestorePreservedInputConfig_EmptySnapshotSendsNothing(t *testing.T) {
 	}))
 	require.False(t, restorePreservedInputConfig(context.Background(), client, "p", "", inputConfigSnapshot{}).HasError())
 }
+
+func TestRestorePreservedInputConfig_RequestBody(t *testing.T) {
+	after := mustPolicy(t, apmPolicyAfterSimplifiedUpdate)
+	policyID := "agent-policy-1"
+	after.PolicyId = &policyID
+	after.PolicyIds = &[]string{policyID}
+	afterJSON, err := json.Marshal(map[string]any{"item": after})
+	require.NoError(t, err)
+
+	var putBody map[string]any
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodPut {
+			if err := json.NewDecoder(r.Body).Decode(&putBody); err != nil {
+				w.WriteHeader(http.StatusBadRequest)
+				return
+			}
+		}
+		_, _ = w.Write(afterJSON)
+	}))
+
+	snapshot, err := snapshotInputConfig(mustPolicy(t, apmPolicyWithKeys))
+	require.NoError(t, err)
+	diags := restorePreservedInputConfig(context.Background(), client, "apm-pp", "", snapshot)
+	require.False(t, diags.HasError(), "%v", diags)
+
+	require.NotNil(t, putBody, "a restoring update must be sent")
+	keys := make([]string, 0, len(putBody))
+	for k := range putBody {
+		keys = append(keys, k)
+	}
+	require.ElementsMatch(t, []string{"version", "inputs", "policy_id", "policy_ids"}, keys)
+	require.Equal(t, "WzIsMV0=", putBody["version"])
+	require.Equal(t, policyID, putBody["policy_id"])
+	require.Equal(t, []any{policyID}, putBody["policy_ids"])
+}

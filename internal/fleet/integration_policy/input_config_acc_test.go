@@ -108,7 +108,12 @@ func setInputConfigOutOfBand(resourceAddress string) resource.TestCheckFunc {
 		if err != nil {
 			return err
 		}
-		req := kbapi.PackagePolicyUpdateRequestTypedInputs{Inputs: &requestInputs, Version: policy.Version}
+		req := kbapi.PackagePolicyUpdateRequestTypedInputs{
+			Inputs:    &requestInputs,
+			Version:   policy.Version,
+			PolicyId:  policy.PolicyId,
+			PolicyIds: policy.PolicyIds,
+		}
 		if _, diags := fleet.UpdatePackagePolicyTyped(context.Background(), apiClient.GetFleetClient(), policy.Id, "", req); diags.HasError() {
 			return fmt.Errorf("error writing input config out of band: %v", diags)
 		}

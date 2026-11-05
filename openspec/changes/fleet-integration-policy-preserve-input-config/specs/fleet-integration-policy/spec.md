@@ -39,7 +39,7 @@ After the update succeeds, the resource SHALL read the policy again in the typed
 
 ### Requirement: Update — restoring write (REQ-034)
 
-When at least one value was restored, the resource SHALL submit one typed update containing only the `version` token from the preceding read and the full `inputs` array with compiled fields removed. When nothing was restored, it SHALL NOT submit a further update. Errors from the restoring read or update SHALL be returned, and a policy that is not found by the restoring read SHALL be an error.
+When at least one value was restored, the resource SHALL submit one typed update containing only the `version` token, `policy_id` and `policy_ids` from the preceding read and the full `inputs` array with compiled fields removed. When nothing was restored, it SHALL NOT submit a further update. Errors from the restoring read or update SHALL be returned, and a policy that is not found by the restoring read SHALL be an error.
 
 #### Scenario: Config survives unchanged
 
@@ -53,9 +53,9 @@ When at least one value was restored, the resource SHALL submit one typed update
 - **WHEN** the resource restores the `config`
 - **THEN** it SHALL return an error and SHALL NOT submit an update
 
-#### Scenario: Restoring write carries only version and inputs
+#### Scenario: Restoring write carries only version, agent policy assignment and inputs
 
 - **GIVEN** an update that removed input `config`
 - **WHEN** the resource restores it
-- **THEN** the restoring request body SHALL contain only `version` and `inputs`
-- **AND** fields such as `name`, `description` and `policy_ids` SHALL be left unchanged on the server
+- **THEN** the restoring request body SHALL contain only `version`, `policy_id`, `policy_ids` and `inputs`
+- **AND** fields such as `name`, `description`, `policy_id` and `policy_ids` SHALL be left unchanged on the server
