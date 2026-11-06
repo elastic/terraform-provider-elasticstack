@@ -81,6 +81,23 @@ func fleetMultipleAuthWarningDiag() fwdiags.Diagnostics {
 }
 
 func Test_newFleetConfigFromFramework_excludesProviderKibanaHeaders(t *testing.T) {
+	unsetEnvironmentVariables(t,
+		"KIBANA_ENDPOINT",
+		"KIBANA_USERNAME",
+		"KIBANA_PASSWORD",
+		"KIBANA_API_KEY",
+		"KIBANA_BEARER_TOKEN",
+		"KIBANA_CA_CERTS",
+		"KIBANA_INSECURE",
+		PreferConfiguredKibanaEndpointEnvVar,
+		"FLEET_ENDPOINT",
+		"FLEET_USERNAME",
+		"FLEET_PASSWORD",
+		"FLEET_API_KEY",
+		"FLEET_BEARER_TOKEN",
+		"FLEET_CA_CERTS",
+	)
+
 	tests := []struct {
 		name          string
 		fleet         []FleetConnection
@@ -137,6 +154,22 @@ func Test_newFleetConfigFromFramework_excludesProviderKibanaHeaders(t *testing.T
 			require.False(t, diags.HasError())
 			require.Equal(t, tt.expectedFleet, fleetCfg)
 			require.Nil(t, fleetCfg.Headers)
+		})
+	}
+}
+
+func unsetEnvironmentVariables(t *testing.T, keys ...string) {
+	t.Helper()
+
+	for _, key := range keys {
+		value, set := os.LookupEnv(key)
+		require.NoError(t, os.Unsetenv(key))
+		t.Cleanup(func() {
+			if set {
+				require.NoError(t, os.Setenv(key, value))
+				return
+			}
+			require.NoError(t, os.Unsetenv(key))
 		})
 	}
 }
