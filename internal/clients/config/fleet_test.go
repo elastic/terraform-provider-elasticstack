@@ -162,15 +162,8 @@ func unsetEnvironmentVariables(t *testing.T, keys ...string) {
 	t.Helper()
 
 	for _, key := range keys {
-		value, set := os.LookupEnv(key)
+		t.Setenv(key, "")
 		require.NoError(t, os.Unsetenv(key))
-		t.Cleanup(func() {
-			if set {
-				require.NoError(t, os.Setenv(key, value))
-				return
-			}
-			require.NoError(t, os.Unsetenv(key))
-		})
 	}
 }
 
