@@ -19,19 +19,152 @@ package config
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 
+	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
 
+func TestNewFromFramework_kibanaHeadersDoNotReachFleetRequest(t *testing.T) {
+	receivedHeaders := make(chan http.Header, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedHeaders <- r.Header.Clone()
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv(PreferConfiguredKibanaEndpointEnvVar, "true")
+
+	providerConfig := ProviderConfiguration{
+		Kibana: []KibanaConnection{
+			{
+				Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+					"X-Proxy-Token": types.StringValue("secret"),
+				}),
+				Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+					types.StringValue("https://kibana.example.com"),
+				}),
+				CACerts: types.ListNull(types.StringType),
+			},
+		},
+		Fleet: []FleetConnection{
+			{
+				Endpoint: types.StringValue(server.URL),
+				APIKey:   types.StringValue("fleet-api-key"),
+				Insecure: types.BoolValue(true),
+				CACerts:  types.ListNull(types.StringType),
+			},
+		},
+	}
+
+	configuredClient, diags := NewFromFramework(context.Background(), providerConfig, "test")
+	require.False(t, diags.HasError())
+	fleetClient, err := fleetclient.NewClient(*configuredClient.Fleet)
+	require.NoError(t, err)
+
+	response, err := fleetClient.HTTP.Get(fleetClient.URL)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = response.Body.Close() })
+
+	require.Empty(t, (<-receivedHeaders).Get("X-Proxy-Token"))
+}
+
 func fleetMultipleAuthWarningDiag() fwdiags.Diagnostics {
 	var d fwdiags.Diagnostics
 	addMultipleAuthWarning(&d, "Fleet", "Fleet environment variables")
 	return d
+}
+
+func Test_newFleetConfigFromFramework_excludesProviderKibanaHeaders(t *testing.T) {
+	unsetEnvironmentVariables(t,
+		"KIBANA_ENDPOINT",
+		"KIBANA_USERNAME",
+		"KIBANA_PASSWORD",
+		"KIBANA_API_KEY",
+		"KIBANA_BEARER_TOKEN",
+		"KIBANA_CA_CERTS",
+		"KIBANA_INSECURE",
+		PreferConfiguredKibanaEndpointEnvVar,
+		"FLEET_ENDPOINT",
+		"FLEET_USERNAME",
+		"FLEET_PASSWORD",
+		"FLEET_API_KEY",
+		"FLEET_BEARER_TOKEN",
+		"FLEET_CA_CERTS",
+	)
+
+	tests := []struct {
+		name          string
+		fleet         []FleetConnection
+		expectedFleet fleetConfig
+	}{
+		{
+			name: "without Fleet block",
+			expectedFleet: fleetConfig{
+				URL: "https://kibana.example.com",
+			},
+		},
+		{
+			name: "with Fleet endpoint auth and TLS settings",
+			fleet: []FleetConnection{
+				{
+					Endpoint: types.StringValue("https://fleet.example.com"),
+					APIKey:   types.StringValue("fleet-api-key"),
+					Insecure: types.BoolValue(true),
+					CACerts: types.ListValueMust(types.StringType, []attr.Value{
+						types.StringValue("fleet-ca.pem"),
+					}),
+				},
+			},
+			expectedFleet: fleetConfig{
+				URL:      "https://fleet.example.com",
+				APIKey:   "fleet-api-key",
+				Insecure: true,
+				CACerts:  []string{"fleet-ca.pem"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			providerConfig := ProviderConfiguration{
+				Kibana: []KibanaConnection{
+					{
+						Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+							"X-Proxy-Token": types.StringValue("secret"),
+						}),
+						Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+							types.StringValue("https://kibana.example.com"),
+						}),
+						CACerts: types.ListNull(types.StringType),
+					},
+				},
+				Fleet: tt.fleet,
+			}
+
+			kibanaCfg, diags := newProviderKibanaOapiConfigFromFramework(context.Background(), providerConfig, baseConfig{})
+			require.False(t, diags.HasError())
+			fleetCfg, diags := newFleetConfigFromFramework(context.Background(), providerConfig, kibanaCfg)
+
+			require.False(t, diags.HasError())
+			require.Equal(t, tt.expectedFleet, fleetCfg)
+			require.Nil(t, fleetCfg.Headers)
+		})
+	}
+}
+
+func unsetEnvironmentVariables(t *testing.T, keys ...string) {
+	t.Helper()
+
+	for _, key := range keys {
+		t.Setenv(key, "")
+		require.NoError(t, os.Unsetenv(key))
+	}
 }
 
 func Test_newFleetConfigFromFramework(t *testing.T) {

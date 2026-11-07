@@ -83,6 +83,7 @@ func kibanaConnectionBlockType() tftypes.Type {
 			"username":     tftypes.String,
 			"password":     tftypes.String,
 			"endpoints":    tftypes.List{ElementType: tftypes.String},
+			"headers":      tftypes.Map{ElementType: tftypes.String},
 			"ca_certs":     tftypes.List{ElementType: tftypes.String},
 			"insecure":     tftypes.Bool,
 		},
@@ -321,6 +322,60 @@ func TestKibanaConnectionField_stateRoundTrip(t *testing.T) {
 	diags = state.Get(ctx, &result)
 	require.False(t, diags.HasError())
 	require.True(t, result.KibanaConnection.IsNull())
+}
+
+func TestKibanaConnectionField_stateRoundTripRetainsHeaders(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	connection, diags := types.ListValueFrom(ctx, providerschema.KibanaConnectionObjectType(), []config.KibanaConnection{
+		{
+			Endpoints: types.ListNull(types.StringType),
+			Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+				"X-Custom": types.StringValue("value"),
+			}),
+			CACerts: types.ListNull(types.StringType),
+		},
+	})
+	require.False(t, diags.HasError())
+
+	connBlockType := kibanaConnectionBlockType()
+	objType := tftypes.Object{
+		AttributeTypes: map[string]tftypes.Type{
+			"kibana_connection": connBlockType,
+		},
+	}
+	schema := dsschema.Schema{
+		Blocks: map[string]dsschema.Block{
+			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
+		},
+	}
+	state := tfsdk.State{
+		Raw:    tftypes.NewValue(objType, nil),
+		Schema: schema,
+	}
+	model := struct {
+		KibanaConnectionField
+	}{KibanaConnectionField{KibanaConnection: connection}}
+
+	diags = state.Set(ctx, &model)
+	require.False(t, diags.HasError())
+
+	var result struct {
+		KibanaConnectionField
+	}
+	diags = state.Get(ctx, &result)
+	require.False(t, diags.HasError())
+
+	var connections []config.KibanaConnection
+	diags = result.KibanaConnection.ElementsAs(ctx, &connections, false)
+	require.False(t, diags.HasError())
+	require.Len(t, connections, 1)
+
+	var headers map[string]string
+	diags = connections[0].Headers.ElementsAs(ctx, &headers, false)
+	require.False(t, diags.HasError())
+	require.Equal(t, map[string]string{"X-Custom": "value"}, headers)
 }
 
 // =============================================================================
