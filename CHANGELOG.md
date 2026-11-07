@@ -8,6 +8,7 @@ The `thresholds[].axis` values `bottom`, `left` and `right` are no longer accept
 
 ### Changes
 
+- Add custom `headers` to provider-level and entity-local Kibana connections without a minimum Stack version. Values are sensitive in managed state and sent with Kibana requests, but provider debug formatting only masks `Authorization`; arbitrary custom proxy-token headers are not generally redacted.
 - Add optional `ssl` (certificate, sensitive key, certificate authorities, and client authentication mode) to `elasticstack_fleet_server_host` (requires Elastic Stack 9.1.0+). Hosts that already have a server-side `ssl` must add those settings to configuration when upgrading, otherwise Terraform plans to remove them. ([#5366](https://github.com/elastic/terraform-provider-elasticstack/issues/5366))
 - Add write-only secrets support (e.g. SSL key) to elasticstack_fleet_agent_download_source ([#5310](https://github.com/elastic/terraform-provider-elasticstack/pull/5310))
 - Add `allow_outdated_version` to `elasticstack_fleet_integration` (requires Kibana 9.6.0+). ([#5336](https://github.com/elastic/terraform-provider-elasticstack/pull/5336))
