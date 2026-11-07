@@ -140,6 +140,17 @@ Before the first write, create SHALL check whether an action policy with the tar
 - **WHEN** create runs and the API answers HTTP 201
 - **THEN** the provider SHALL continue to the read-after-write and record the resource in state
 
+### Requirement: Update does not silently recreate a deleted policy
+
+Update SHALL expect HTTP 200 from the `PUT`. HTTP 201 means the policy was deleted between plan and apply and the `PUT` recreated it with a new `created_at`. The provider SHALL return an error diagnostic stating that the policy was deleted outside Terraform and recreated, and that a new plan reconciles state, and SHALL NOT report a successful update.
+
+#### Scenario: Policy deleted between plan and apply
+
+- **GIVEN** a managed policy deleted outside Terraform after the plan was produced
+- **WHEN** update runs and the `PUT` answers HTTP 201
+- **THEN** the provider SHALL return an error diagnostic stating the policy was deleted outside Terraform and recreated
+- **AND** the next plan SHALL converge on the configuration
+
 ### Requirement: Identity and `action_policy_id` generation
 
 `id` SHALL be `<space_id>/<action_policy_id>`. `action_policy_id` SHALL be optional and computed: when supplied it SHALL be used verbatim. When omitted the provider SHALL generate a UUID before the first write and persist it. A configured value SHALL be 1-150 characters of letters, digits, underscores, or hyphens. Changing `action_policy_id` or `space_id` SHALL require replacement.
@@ -159,7 +170,7 @@ Before the first write, create SHALL check whether an action policy with the tar
 
 ### Requirement: Import
 
-The resource SHALL support `terraform import` with an id of the form `<space_id>/<action_policy_id>`. On success it SHALL populate `space_id`, `action_policy_id`, and `id`, and the following read SHALL populate every other attribute. A malformed import id SHALL produce an error diagnostic naming the required format.
+The resource SHALL support `terraform import` with an id of the form `<space_id>/<action_policy_id>`. On success it SHALL populate `space_id`, `action_policy_id`, and `id`, and the following read SHALL populate every other attribute. An import id without a separator, or with an empty space or action_policy_id segment, SHALL be rejected before any attribute is written to state, with an error diagnostic naming the `<space_id>/<action_policy_id>` format.
 
 #### Scenario: Import round-trip
 
@@ -173,6 +184,7 @@ The resource SHALL support `terraform import` with an id of the form `<space_id>
 - **GIVEN** an import id without a `/` separator or with an empty segment
 - **WHEN** import runs
 - **THEN** the provider SHALL return an error diagnostic describing the `<space_id>/<action_policy_id>` format
+- **AND** no attribute SHALL be written to state
 
 ### Requirement: `enabled` is written in the create-or-replace body
 
@@ -365,7 +377,7 @@ On read, HTTP 404 SHALL remove the resource from state without error. On delete,
 
 ### Requirement: Error surfacing and connection handling
 
-Transport failures, unexpected HTTP statuses, and successful responses with an empty body SHALL produce error diagnostics that include the server's message when one is present. The resource SHALL use the provider-level Kibana client by default and the scoped client from a resource-level `kibana_connection` block when present.
+Transport failures, unexpected HTTP statuses, and `GET` or `PUT` responses that succeed without a body SHALL produce error diagnostics that include the server's message when one is present. A `DELETE` answering HTTP 204 with no body SHALL be treated as success. The resource SHALL use the provider-level Kibana client by default and the scoped client from a resource-level `kibana_connection` block when present.
 
 #### Scenario: Validation error from the server
 

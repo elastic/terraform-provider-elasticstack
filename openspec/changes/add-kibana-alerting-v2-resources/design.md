@@ -70,9 +70,11 @@ Alternative: one package with both resources. Rejected: the repo convention is o
 
 Both lifecycle writes call `PutAlertingV2{Rules,ActionPolicies}IdWithResponse`. When `rule_id` / `action_policy_id` is not configured, the resource generates a UUID (`github.com/google/uuid`, already a dependency) in Create before the write and stores it, so every write is addressed and idempotent.
 
-Create first issues a `GET`: 200 means the object exists and Create fails with an "already exists, import it" diagnostic without writing. A 404 proceeds to `PUT`. If `PUT` still answers 200 (a race), Create fails with the same diagnostic plus "the object has been replaced". Update expects 200. A 201 (the object vanished between refresh and apply) is accepted because the result converges on the configuration.
+Create first issues a `GET`: 200 means the object exists and Create fails with an "already exists, import it" diagnostic without writing. A 404 proceeds to `PUT`. If `PUT` still answers 200 (a race), Create fails with the same diagnostic plus "the object has been replaced". Update expects 200. A 201 means the object was deleted between plan and apply and the `PUT` recreated it. That is an error, not a silent recreation: the plan carries `created_at` as a known prior value (D9), so the read-after-write would fail the apply with an inconsistent-result error anyway. The diagnostic states that the object was deleted outside Terraform and recreated, and that a new plan reconciles state.
 
 The `PUT` response body is never used as state. The envelope performs the read-after-write with the resource's `Read` callback, so final state after create and update always comes from `GET`, as the specs require.
+
+Known limitation, shared with every `entitycore` resource: if the read-after-write fails after a successful `PUT`, the envelope returns the error without saving state, so the object exists on the server but not in state. `Read` includes the composite id in its error diagnostics so the written id is visible. Recovery is `terraform import` with that id. A retried create with a supplied id fails the existence pre-check with the import diagnostic. A retried create with a generated id would create a second object, which is why the id is in the diagnostic. No retry logic is designed in.
 
 Alternatives considered:
 
@@ -85,7 +87,7 @@ Alternatives considered:
 
 All nested objects are `SingleNestedAttribute`s (not blocks) with the API's names: `metadata`, `schedule`, `query`, `query.breach`, `recovery`, `no_data`, `state_transition.pending|recovering`, `grouping`. `artifacts` and `destinations` are `ListNestedAttribute`s.
 
-Each discriminated union becomes one object whose discriminator is required and whose variant-specific fields are optional, with plan-time validation enforcing the variant contract:
+Each discriminated union becomes one object whose discriminator is required and whose variant-specific fields are optional, with plan-time validation in `ValidateConfig` (D11) enforcing the variant contract:
 
 | API union | Terraform object | Variant rule |
 |---|---|---|
@@ -99,7 +101,7 @@ Mapping to the API uses the generated `From<Variant>()` setters chosen by the di
 
 Alternatives: one nested attribute per variant (`recovery_condition = {...}` etc.) is verbose and moves the exactly-one-of rule into validation anyway. A JSON blob for the lifecycle objects is the classic resource's `params` problem the v2 API was designed to avoid.
 
-`metadata.builder` is **not exposed**. It marks which Kibana UI form authored a rule (for example `threshold`), is absent for rules authored directly in ES|QL, has no effect on evaluation, and is an unvalidated free string the provider could give no contract for. A Terraform-managed rule is an ES|QL rule by definition, and setting a builder type from HCL would make the UI try to parse the query back into a form it never came from. Leaving it out is reversible (adding an optional attribute later is non-breaking) whereas exposing it and removing it later is not. The cost is that importing a UI-authored rule clears the builder on the first full-replace `PUT`, so `Read` emits a warning diagnostic whenever the response carries `metadata.builder`, which fires on import, and the resource description states that Terraform-managed rules are ES|QL rules. The field is the first entry in the D4 waiver list.
+`metadata.builder` is **not exposed**. It marks which Kibana UI form authored a rule (for example `threshold`), is absent for rules authored directly in ES|QL, has no effect on evaluation, and is an unvalidated free string the provider could give no contract for. A Terraform-managed rule is an ES|QL rule by definition, and setting a builder type from HCL would make the UI try to parse the query back into a form it never came from. Leaving it out is reversible (adding an optional attribute later is non-breaking) whereas exposing it and removing it later is not. The cost is that importing a UI-authored rule clears the builder on the first full-replace `PUT`. That is the first apply that changes an attribute, because a matching configuration plans nothing and writes nothing. So `Read` emits a warning diagnostic whenever the response carries `metadata.builder`: it fires on import and on every refresh until a write clears it, and the resource description states that Terraform-managed rules are ES|QL rules. The field is the first entry in the D4 waiver list.
 
 ### D4. Write body built entirely from the plan, guarded by a fail-closed field-accounting test
 
@@ -115,7 +117,7 @@ Alternative: reuse `kibanacustomtypes.AlertingDuration`. Rejected: it lacks `ms`
 
 ### D6. Space handling, identity, import
 
-Requests use `kibanautil.SpaceAwarePathRequestEditor(spaceID)`. `space_id` is `kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly()`. Models satisfy `entitycore.KibanaResourceModel` with `GetResourceID()` returning `rule_id` / `action_policy_id` and `GetID()` the composite. The resource embeds `entitycore.KibanaSpaceImporter` built with `NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id"))` (respectively `action_policy_id`), exactly as `internal/kibana/alertingrule` does. Read sets `id = <space_id>/<resource_id>`.
+Requests use `kibanautil.SpaceAwarePathRequestEditor(spaceID)`. `space_id` is `kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly()`. Models satisfy `entitycore.KibanaResourceModel` with `GetResourceID()` returning `rule_id` / `action_policy_id` and `GetID()` the composite. The resource embeds `entitycore.KibanaSpaceImporter` built with `NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id"))` (respectively `action_policy_id`), as `internal/kibana/alertingrule` does, but wraps `ImportState`: it validates the import id first (exactly one separator, both segments non-empty) and reports the `<space_id>/<rule_id>` format in its own diagnostic, then calls `KibanaSpaceImporter.SeedState`. The bare importer sets an empty `space_id` for `/my-id` and reports a cluster-oriented format for an id without a separator, neither of which meets the import contract. Read sets `id = <space_id>/<resource_id>`.
 
 ### D7. Version gate at 9.6.0 for rules and 9.7.0 for action policies
 
@@ -131,7 +133,8 @@ Requests use `kibanautil.SpaceAwarePathRequestEditor(spaceID)`. `space_id` is `k
 | 503 `ALERTING_DISABLED` | error naming `alerting:v2:enabled` | same | same |
 | 400 / 409 / 401 / 403 / 500 | error with `code` and `message` | same | same |
 | 200 on create's `PUT` | n/a | n/a | "already exists, import instead" + "replaced" (D2) |
-| empty 2xx body where one is required | error | n/a | error |
+| 201 on update's `PUT` | n/a | n/a | error: deleted outside Terraform between plan and apply and recreated, re-plan to reconcile (D2) |
+| empty 2xx body on `GET` or `PUT` | error | n/a (`DELETE` answers 204 with no body) | error |
 
 Diagnostics always include the server `message` and `code`. `details` is not parsed (the API documents it as unstable).
 
@@ -158,8 +161,8 @@ Schema-level defaults, not server defaults read back with `UseStateForUnknown`, 
 ### D11. Validation placement
 
 - Attribute-level validators (`stringvalidator.OneOf`, `LengthBetween`, `RegexMatches`, `listvalidator.SizeBetween`, `int64validator.Between`, the duration validator) carry every bound in the specs' Schema sections so they appear in generated docs and `terraform validate`.
-- Intra-object rules expressible with `AlsoRequires`/`ConflictsWith` path expressions are declared on the attribute (for example `grouping.fields` ⇄ `grouping.mode`). List-level uniqueness (`artifacts[].id`, `destinations[]` `(type, id)` pairs) is a list validator on the collection attribute.
-- Cross-object rules (the rule spec's seven cross-field rules and the policy's throttle-strategy-by-grouping-mode rule) live in `ValidateConfig` (`resource.ResourceWithValidateConfig`), each check returning early when any participating value is unknown, following `internal/kibana/alertingrule/validate.go`.
+- `AlsoRequires` and `ConflictsWith` test attribute presence only, so they cannot express the variant contracts, where a field is required or forbidden depending on the discriminator's value (`recovery.segment` iff `strategy = "condition"`, `recovery.query` iff `strategy = "query"`, `no_data.query` forbidden with `ignore`, `grouping.fields` iff `mode = "per_field"`, `throttle.interval` iff an interval strategy). Those are not declared on the attribute. List-level uniqueness (`artifacts[].id`, `destinations[]` `(type, id)` pairs) is a list validator on the collection attribute.
+- The variant contracts above and the cross-object rules (the rule spec's seven cross-field rules and the policy's throttle-strategy-by-grouping-mode rule) live in `ValidateConfig` (`resource.ResourceWithValidateConfig`), each check returning early when any participating value is unknown, following `internal/kibana/alertingrule/validate.go`.
 
 ### D12. Action policy `enabled` and the upstream prerequisite
 

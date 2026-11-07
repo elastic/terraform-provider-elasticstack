@@ -175,6 +175,17 @@ Before the first write, create SHALL check whether a rule with the target id alr
 - **WHEN** create runs and the API answers HTTP 201
 - **THEN** the provider SHALL continue to the read-after-write and record the resource in state
 
+### Requirement: Update does not silently recreate a deleted rule
+
+Update SHALL expect HTTP 200 from the `PUT`. HTTP 201 means the rule was deleted between plan and apply and the `PUT` recreated it with a new `created_at`. The provider SHALL return an error diagnostic stating that the rule was deleted outside Terraform and recreated, and that a new plan reconciles state, and SHALL NOT report a successful update.
+
+#### Scenario: Rule deleted between plan and apply
+
+- **GIVEN** a managed rule deleted outside Terraform after the plan was produced
+- **WHEN** update runs and the `PUT` answers HTTP 201
+- **THEN** the provider SHALL return an error diagnostic stating the rule was deleted outside Terraform and recreated
+- **AND** the next plan SHALL converge on the configuration
+
 ### Requirement: Identity and `rule_id` generation
 
 `id` SHALL be `<space_id>/<rule_id>`. `rule_id` SHALL be optional and computed: when supplied it SHALL be used as the rule's identifier. When omitted the provider SHALL generate a UUID before the first write and persist it. A configured `rule_id` SHALL be 1-150 characters of letters, digits, underscores, or hyphens. Changing `rule_id` or `space_id` SHALL require replacement.
@@ -207,7 +218,7 @@ Before the first write, create SHALL check whether a rule with the target id alr
 
 ### Requirement: Import
 
-The resource SHALL support `terraform import` with an id of the form `<space_id>/<rule_id>`. On success it SHALL populate `space_id`, `rule_id`, and `id`, and the following read SHALL populate every other attribute. A malformed import id SHALL produce an error diagnostic naming the required format.
+The resource SHALL support `terraform import` with an id of the form `<space_id>/<rule_id>`. On success it SHALL populate `space_id`, `rule_id`, and `id`, and the following read SHALL populate every other attribute. An import id without a separator, or with an empty space or rule_id segment, SHALL be rejected before any attribute is written to state, with an error diagnostic naming the `<space_id>/<rule_id>` format.
 
 #### Scenario: Import round-trip
 
@@ -221,6 +232,7 @@ The resource SHALL support `terraform import` with an id of the form `<space_id>
 - **GIVEN** an import id without a `/` separator or with an empty segment
 - **WHEN** import runs
 - **THEN** the provider SHALL return an error diagnostic describing the `<space_id>/<rule_id>` format
+- **AND** no attribute SHALL be written to state
 
 ### Requirement: Immutable `kind`
 
@@ -257,7 +269,7 @@ Every field of the rule write body SHALL be a typed attribute or nested attribut
 
 ### Requirement: `metadata.builder` is not managed
 
-`metadata.builder` marks the Kibana UI form that authored a rule and is absent for rules authored directly in ES|QL. Rules managed by this resource are ES|QL rules, so the resource SHALL NOT expose, send, or store `metadata.builder`. Because a full-replace `PUT` without it clears it on the server, the provider SHALL warn when it reads a rule that carries one, so an imported UI-authored rule is not converted silently. The description SHALL state that Terraform-managed rules are ES|QL rules.
+`metadata.builder` marks the Kibana UI form that authored a rule and is absent for ES|QL-authored rules. Rules managed by this resource are ES|QL rules, so the resource SHALL NOT expose, send, or store `metadata.builder`. Because the first full-replace `PUT` clears it, the provider SHALL warn on every read of a rule that carries one until a write clears it, so an imported UI-authored rule is not converted silently. The description SHALL state that Terraform-managed rules are ES|QL rules.
 
 #### Scenario: The write body never carries a builder
 
@@ -268,14 +280,23 @@ Every field of the rule write body SHALL be a typed attribute or nested attribut
 #### Scenario: Reading a builder-authored rule warns
 
 - **GIVEN** a rule that was created in the Kibana UI with `metadata.builder.type = "threshold"`
-- **WHEN** the rule is imported, or refreshed before its first apply
-- **THEN** the provider SHALL emit a warning diagnostic naming the builder type and stating that the next apply converts the rule to an ES|QL rule
+- **WHEN** the rule is imported, or refreshed before its first write
+- **THEN** the provider SHALL emit a warning diagnostic naming the builder type and stating that the next write converts the rule to an ES|QL rule
 - **AND** the rest of the rule SHALL be read into state normally
 
-#### Scenario: The first apply clears the builder and settles
+#### Scenario: A matching configuration leaves the builder in place
 
 - **GIVEN** an imported rule whose server copy carries `metadata.builder`
-- **WHEN** Terraform applies the configuration
+- **AND** a configuration that matches the imported state
+- **WHEN** Terraform plans and applies
+- **THEN** the plan SHALL be empty and no `PUT` SHALL be issued
+- **AND** the server copy SHALL still carry `metadata.builder`
+- **AND** the warning SHALL be emitted again on the next refresh
+
+#### Scenario: The first write clears the builder and settles
+
+- **GIVEN** an imported rule whose server copy carries `metadata.builder`
+- **WHEN** Terraform applies a configuration change that issues a `PUT`
 - **THEN** the server copy SHALL no longer carry `metadata.builder`
 - **AND** a subsequent plan SHALL be empty
 - **AND** no further warning SHALL be emitted
@@ -557,7 +578,7 @@ On read, HTTP 404 SHALL remove the resource from state without error. On delete,
 
 ### Requirement: Error surfacing and connection handling
 
-Transport failures, unexpected HTTP statuses, and successful responses with an empty body SHALL produce error diagnostics that include the server's message when one is present. The resource SHALL use the provider-level Kibana client by default and the scoped client from a resource-level `kibana_connection` block when present.
+Transport failures, unexpected HTTP statuses, and `GET` or `PUT` responses that succeed without a body SHALL produce error diagnostics that include the server's message when one is present. A `DELETE` answering HTTP 204 with no body SHALL be treated as success. The resource SHALL use the provider-level Kibana client by default and the scoped client from a resource-level `kibana_connection` block when present.
 
 #### Scenario: Validation error from the server
 
@@ -586,9 +607,9 @@ The acceptance test suite SHALL be skipped below Elastic Stack 9.6.0, SHALL foll
 3. `enabled = false` on create and toggling it on update.
 4. Removing `grouping`, `state_transition`, and `artifacts` and asserting they are cleared.
 5. A rule in a non-default space, with composite-id import.
-6. Importing a rule created outside Terraform with `metadata.builder` set: the import emits the builder warning, the first apply clears the builder on the server, and the next plan is empty.
-6. `rule_id` omitted (generated) and supplied.
-7. Plan-only `ExpectError` steps for the cross-field rules and schema bounds, runnable without a live stack.
+6. Importing a rule created outside Terraform with `metadata.builder` set: the import emits the builder warning, a no-op apply against a matching configuration keeps the builder and the warning, the first apply that changes an attribute clears the builder, and the next plan is empty and silent.
+7. `rule_id` omitted (generated) and supplied.
+8. Plan-only `ExpectError` steps for the cross-field rules and schema bounds, runnable without a live stack.
 
 #### Scenario: Empty plan after every apply step
 
