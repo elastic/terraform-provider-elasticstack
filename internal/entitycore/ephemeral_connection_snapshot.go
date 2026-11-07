@@ -287,6 +287,8 @@ func kibanaConnectionFromSnapshot(snapshot *ephemeralKibanaConnectionSnapshot) c
 		APIKey:      typeutils.NonEmptyStringishValue(snapshot.APIKey),
 		BearerToken: typeutils.NonEmptyStringishValue(snapshot.BearerToken),
 		Insecure:    types.BoolPointerValue(snapshot.Insecure),
+		// Headers are intentionally not serialized because no Kibana ephemeral resource is registered.
+		Headers: types.MapNull(types.StringType),
 	}
 
 	if len(snapshot.Endpoints) > 0 {
