@@ -98,3 +98,20 @@ func updateEntityStore(
 	plan.ID = clients.CompositeIDValue(spaceID, resourceID)
 	return entitycore.KibanaWriteResult[tfModel]{Model: plan}, nil
 }
+
+func buildUpdateBody(ctx context.Context, model tfModel) (kbapi.PutSecurityEntityStoreJSONRequestBody, diag.Diagnostics) {
+	body := kbapi.PutSecurityEntityStoreJSONRequestBody{}
+	if model.LogExtraction.IsNull() || model.LogExtraction.IsUnknown() {
+		return body, nil
+	}
+	le, diags := expandUpdateLogExtraction(ctx, model.LogExtraction)
+	if diags.HasError() {
+		return body, diags
+	}
+	body.LogExtraction = le
+	return body, diags
+}
+
+func expandUpdateLogExtraction(ctx context.Context, obj types.Object) (*apiLogExtraction[kbapi.PutSecurityEntityStoreJSONBodyLogExtractionMaxLogsPerWindowCapBehavior], diag.Diagnostics) {
+	return expandLogExtractionCommon[kbapi.PutSecurityEntityStoreJSONBodyLogExtractionMaxLogsPerWindowCapBehavior](ctx, obj)
+}

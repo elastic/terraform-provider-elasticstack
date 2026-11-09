@@ -27,7 +27,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // installRetryPollInterval is the cadence at which the entity store install is
@@ -64,4 +66,42 @@ func createEntityStore(
 	plan.SpaceID = types.StringValue(spaceID)
 	plan.ID = clients.CompositeIDValue(spaceID, resourceID)
 	return entitycore.KibanaWriteResult[tfModel]{Model: plan}, nil
+}
+
+func buildInstallBody(ctx context.Context, model tfModel) (kbapi.PostSecurityEntityStoreInstallJSONRequestBody, diag.Diagnostics) {
+	body := kbapi.PostSecurityEntityStoreInstallJSONRequestBody{}
+	var diags diag.Diagnostics
+	entityTypes := typeutils.SetTypeAs[string](ctx, model.EntityTypes, path.Empty(), &diags)
+	if diags.HasError() {
+		return body, diags
+	}
+	if len(entityTypes) > 0 {
+		body.EntityTypes = stringSliceToAPITypes[kbapi.PostSecurityEntityStoreInstallJSONBodyEntityTypes](entityTypes)
+	}
+	if typeutils.IsKnown(model.HistorySnapshot) {
+		var hs historySnapshotModel
+		diags.Append(model.HistorySnapshot.As(ctx, &hs, basetypes.ObjectAsOptions{})...)
+		if diags.HasError() {
+			return body, diags
+		}
+		if p := typeutils.OptionalString(hs.Frequency); p != nil {
+			body.HistorySnapshot = &struct {
+				Frequency     *string `json:"frequency,omitempty"`
+				RetentionDays *int    `json:"retentionDays,omitempty"`
+			}{Frequency: p}
+		}
+	}
+	if typeutils.IsKnown(model.LogExtraction) {
+		le, d := expandInstallLogExtraction(ctx, model.LogExtraction)
+		diags.Append(d...)
+		if diags.HasError() {
+			return body, diags
+		}
+		body.LogExtraction = le
+	}
+	return body, diags
+}
+
+func expandInstallLogExtraction(ctx context.Context, obj types.Object) (*apiLogExtraction[kbapi.PostSecurityEntityStoreInstallJSONBodyLogExtractionMaxLogsPerWindowCapBehavior], diag.Diagnostics) {
+	return expandLogExtractionCommon[kbapi.PostSecurityEntityStoreInstallJSONBodyLogExtractionMaxLogsPerWindowCapBehavior](ctx, obj)
 }
