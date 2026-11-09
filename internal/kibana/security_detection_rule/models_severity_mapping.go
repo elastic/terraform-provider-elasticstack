@@ -38,11 +38,7 @@ type SeverityMappingModel struct {
 func (d Data) severityMappingToAPI(ctx context.Context) (*kbapi.SecurityDetectionsAPISeverityMapping, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !typeutils.IsKnown(d.SeverityMapping) || len(d.SeverityMapping.Elements()) == 0 {
-		return nil, diags
-	}
-
-	apiSeverityMapping := typeutils.ListTypeToSlice(ctx, d.SeverityMapping, path.Root("severity_mapping"), &diags,
+	apiSeverityMapping := toAPIList(ctx, d.SeverityMapping, path.Root("severity_mapping"), &diags,
 		func(mapping SeverityMappingModel, _ typeutils.ListMeta) struct {
 			Field    string                                             `json:"field"`
 			Operator kbapi.SecurityDetectionsAPISeverityMappingOperator `json:"operator"`
@@ -62,6 +58,10 @@ func (d Data) severityMappingToAPI(ctx context.Context) (*kbapi.SecurityDetectio
 			}
 		})
 
+	if apiSeverityMapping == nil {
+		return nil, diags
+	}
+
 	// Convert to the expected slice type
 	severityMappingSlice := make(kbapi.SecurityDetectionsAPISeverityMapping, len(apiSeverityMapping))
 	copy(severityMappingSlice, apiSeverityMapping)
@@ -71,28 +71,25 @@ func (d Data) severityMappingToAPI(ctx context.Context) (*kbapi.SecurityDetectio
 
 // convertSeverityMappingToModel converts kbapi.SecurityDetectionsAPISeverityMapping to Terraform model
 func convertSeverityMappingToModel(ctx context.Context, apiSeverityMapping *kbapi.SecurityDetectionsAPISeverityMapping) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	if apiSeverityMapping == nil || len(*apiSeverityMapping) == 0 {
-		return types.ListNull(getSeverityMappingElementType()), diags
+	var slice kbapi.SecurityDetectionsAPISeverityMapping
+	if apiSeverityMapping != nil {
+		slice = *apiSeverityMapping
 	}
 
-	mappings := make([]SeverityMappingModel, 0)
-
-	for _, apiMapping := range *apiSeverityMapping {
-		mapping := SeverityMappingModel{
-			Field:    types.StringValue(apiMapping.Field),
-			Operator: types.StringValue(string(apiMapping.Operator)),
-			Value:    types.StringValue(apiMapping.Value),
-			Severity: types.StringValue(string(apiMapping.Severity)),
-		}
-
-		mappings = append(mappings, mapping)
-	}
-
-	listValue, listDiags := types.ListValueFrom(ctx, getSeverityMappingElementType(), mappings)
-	diags.Append(listDiags...)
-	return listValue, diags
+	return toModelList(ctx, slice, getSeverityMappingElementType(),
+		func(apiMapping struct {
+			Field    string                                             `json:"field"`
+			Operator kbapi.SecurityDetectionsAPISeverityMappingOperator `json:"operator"`
+			Severity kbapi.SecurityDetectionsAPISeverity                `json:"severity"`
+			Value    string                                             `json:"value"`
+		}) SeverityMappingModel {
+			return SeverityMappingModel{
+				Field:    types.StringValue(apiMapping.Field),
+				Operator: types.StringValue(string(apiMapping.Operator)),
+				Value:    types.StringValue(apiMapping.Value),
+				Severity: types.StringValue(string(apiMapping.Severity)),
+			}
+		})
 }
 
 func (d *Data) updateSeverityMappingFromAPI(ctx context.Context, severityMapping *kbapi.SecurityDetectionsAPISeverityMapping) diag.Diagnostics {
