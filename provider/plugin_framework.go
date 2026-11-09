@@ -93,6 +93,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderskill"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuildertool"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderworkflow"
+	alertingv2rule "github.com/elastic/terraform-provider-elasticstack/internal/kibana/alerting_v2/rule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrules"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/casefielddefinition"
@@ -242,6 +243,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		sourcemap.NewSourceMapResource,
 		importsavedobjects.NewResource,
 		alertingrule.NewResource,
+		alertingv2rule.NewResource,
 		dashboard.NewResource,
 		dataview.NewResource,
 		defaultdataview.NewResource,
