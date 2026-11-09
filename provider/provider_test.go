@@ -20,6 +20,7 @@ package provider_test
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -28,6 +29,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/action"
+	"github.com/hashicorp/terraform-plugin-framework/ephemeral"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
 	tfconfig "github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
@@ -44,6 +47,29 @@ func TestProvider(t *testing.T) {
 	p.Schema(ctx, fwprovider.SchemaRequest{}, &schemaResp)
 	if schemaResp.Diagnostics.HasError() {
 		t.Fatalf("provider schema diagnostics: %v", schemaResp.Diagnostics)
+	}
+}
+
+func TestProvider_registersNoKibanaActionsOrEphemeralResources(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	p := provider.NewFrameworkProvider("dev")
+
+	for _, factory := range p.(fwprovider.ProviderWithActions).Actions(ctx) {
+		var resp action.MetadataResponse
+		factory().Metadata(ctx, action.MetadataRequest{ProviderTypeName: "elasticstack"}, &resp)
+		if strings.HasPrefix(resp.TypeName, "elasticstack_kibana_") {
+			t.Errorf("unexpected registered Kibana action %q", resp.TypeName)
+		}
+	}
+
+	for _, factory := range p.(fwprovider.ProviderWithEphemeralResources).EphemeralResources(ctx) {
+		var resp ephemeral.MetadataResponse
+		factory().Metadata(ctx, ephemeral.MetadataRequest{ProviderTypeName: "elasticstack"}, &resp)
+		if strings.HasPrefix(resp.TypeName, "elasticstack_kibana_") {
+			t.Errorf("unexpected registered Kibana ephemeral resource %q", resp.TypeName)
+		}
 	}
 }
 

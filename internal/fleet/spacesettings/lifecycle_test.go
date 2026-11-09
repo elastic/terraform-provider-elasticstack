@@ -195,6 +195,7 @@ func scopedConnectionTo(t *testing.T, endpoint string) types.List {
 		Endpoints: types.ListValueMust(types.StringType, []attr.Value{types.StringValue(endpoint)}),
 		Username:  types.StringValue("elastic"),
 		Password:  types.StringValue("password"),
+		Headers:   types.MapNull(types.StringType),
 		CACerts:   types.ListNull(types.StringType),
 	}})
 	require.False(t, diags.HasError(), "%v", diags)
