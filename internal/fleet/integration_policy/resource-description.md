@@ -9,4 +9,6 @@ Some Kibana features store data in an integration policy's input- or
 stream-level `config` (for example the API keys Kibana's APM plugin creates for
 APM Server to read source maps and agent configuration, or the packs assigned
 by Osquery). This data is not managed by this resource and is preserved when
-the resource updates the policy.
+the resource updates the policy. If another client modifies the policy while
+the resource is updating it, the resource reports an error instead of restoring
+that data from a copy that may be out of date.

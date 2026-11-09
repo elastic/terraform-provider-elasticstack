@@ -20,10 +20,12 @@ package integrationpolicy
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/stretchr/testify/require"
 )
 
@@ -276,6 +278,29 @@ func TestRestoreInputConfig(t *testing.T) {
 		require.Equal(t, map[string]any{"opt": nil, "kept": true}, stream["config"].(map[string]any)["settings"].(map[string]any)["value"])
 	})
 
+	t.Run("restores a key that the update left null", func(t *testing.T) {
+		before := `{
+			"id": "p", "name": "p", "enabled": true, "revision": 1,
+			"created_at": "", "created_by": "", "updated_at": "", "updated_by": "",
+			"inputs": [{"type": "x", "policy_template": "x", "enabled": true, "streams": [],
+				"config": {"settings": {"value": {"a": 1, "b": "kept"}}}}]
+		}`
+		after := `{
+			"id": "p", "name": "p", "enabled": true, "revision": 2,
+			"created_at": "", "created_by": "", "updated_at": "", "updated_by": "",
+			"inputs": [{"type": "x", "policy_template": "x", "enabled": true, "streams": [],
+				"config": {"settings": {"value": {"a": null, "b": "kept"}}}}]
+		}`
+		snapshot, err := snapshotInputConfig(mustPolicy(t, before))
+		require.NoError(t, err)
+
+		inputs, changed, err := restoreInputConfig(snapshot, mustPolicy(t, after))
+		require.NoError(t, err)
+		require.True(t, changed)
+		raw := requestInputsAsMaps(t, inputs)[0]
+		require.Equal(t, map[string]any{"a": float64(1), "b": "kept"}, raw["config"].(map[string]any)["settings"].(map[string]any)["value"])
+	})
+
 	t.Run("no change when a restored null cannot be carried by the typed request", func(t *testing.T) {
 		// The typed request omits a null config entry `value`, so restoring it
 		// would send a body identical to the current inputs.
@@ -433,4 +458,187 @@ func TestRestorePreservedInputConfig_RequestBody(t *testing.T) {
 	require.Equal(t, "WzIsMV0=", putBody["version"])
 	require.Equal(t, policyID, putBody["policy_id"])
 	require.Equal(t, []any{policyID}, putBody["policy_ids"])
+}
+
+func TestRestorePreservedInputConfig_StaleSnapshot(t *testing.T) {
+	// Another client wrote the policy between the snapshot (revision 2) and the
+	// restoring read: the restoring read shows revision 4 instead of 3.
+	after := mustPolicy(t, apmPolicyAfterSimplifiedUpdate)
+	after.Revision = 4
+	afterJSON, err := json.Marshal(map[string]any{"item": after})
+	require.NoError(t, err)
+
+	var methods []string
+	client := newTestFleetClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		methods = append(methods, r.Method)
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(afterJSON)
+	}))
+
+	snapshot, err := snapshotInputConfig(mustPolicy(t, apmPolicyWithKeys))
+	require.NoError(t, err)
+	diags := restorePreservedInputConfig(context.Background(), client, "apm-pp", "", snapshot)
+	require.True(t, diags.HasError(), "restoring from a snapshot older than the last write must be an error")
+	require.Contains(t, diags.Errors()[0].Detail(), "apm-pp")
+	require.Equal(t, []string{http.MethodGet}, methods, "no restoring update may be sent from a stale snapshot")
+}
+
+// osqueryPolicy is a typed package policy with the given revision and packs in
+// its input config. No packs means no input config.
+func osqueryPolicy(t *testing.T, revision int, packs ...string) map[string]any {
+	t.Helper()
+	input := map[string]any{"id": "osquery-pp", "type": "osquery", "policy_template": "osquery_manager", "enabled": true, "streams": []any{}}
+	if len(packs) > 0 {
+		packConfig := map[string]any{}
+		for _, pack := range packs {
+			packConfig[pack] = map[string]any{"queries": map[string]any{}}
+		}
+		input["config"] = map[string]any{"osquery": map[string]any{"value": map[string]any{"packs": packConfig}}}
+	}
+	return map[string]any{
+		"id": "osquery-pp", "name": "osquery", "namespace": "default", "enabled": true,
+		"revision": revision, "version": fmt.Sprintf("v%d", revision),
+		"created_at": "", "created_by": "", "updated_at": "", "updated_by": "",
+		"package": map[string]any{"name": "osquery_manager", "version": "1.0.0"},
+		"inputs":  []any{input},
+	}
+}
+
+// fakeFleet serves a single package policy. A simplified PUT drops the input
+// config, as Kibana does, and bumps the revision; a typed PUT replaces the
+// inputs. beforeSimplifiedPut, when set, runs first to model a concurrent write.
+type fakeFleet struct {
+	t                   *testing.T
+	policy              map[string]any
+	beforeSimplifiedPut func(f *fakeFleet)
+	getStatus           int
+	typedPutStatus      int
+	requests            []string
+	typedPutBody        map[string]any
+}
+
+func (f *fakeFleet) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	simplified := r.URL.Query().Get("format") == "simplified"
+	f.requests = append(f.requests, fmt.Sprintf("%s simplified=%t", r.Method, simplified))
+	w.Header().Set("Content-Type", "application/json")
+	switch {
+	case r.Method == http.MethodGet && f.getStatus != 0:
+		w.WriteHeader(f.getStatus)
+		_, _ = fmt.Fprintf(w, `{"statusCode":%d,"error":"error","message":"boom"}`, f.getStatus)
+		return
+	case r.Method == http.MethodPut && simplified:
+		if f.beforeSimplifiedPut != nil {
+			f.beforeSimplifiedPut(f)
+		}
+		f.policy = osqueryPolicy(f.t, f.policy["revision"].(int)+1)
+	case r.Method == http.MethodPut && f.typedPutStatus != 0:
+		w.WriteHeader(f.typedPutStatus)
+		_, _ = fmt.Fprintf(w, `{"statusCode":%d,"error":"error","message":"boom"}`, f.typedPutStatus)
+		return
+	case r.Method == http.MethodPut:
+		if err := json.NewDecoder(r.Body).Decode(&f.typedPutBody); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
+		}
+		next := osqueryPolicy(f.t, f.policy["revision"].(int)+1)
+		next["inputs"] = f.typedPutBody["inputs"]
+		f.policy = next
+	}
+	_ = json.NewEncoder(w).Encode(map[string]any{"item": f.policy})
+}
+
+func osqueryUpdateBody() kbapi.PackagePolicyRequestMappedInputs {
+	return kbapi.PackagePolicyRequestMappedInputs{
+		Name:    "osquery",
+		Package: kbapi.PackagePolicyRequestPackage{Name: "osquery_manager", Version: "1.0.0"},
+	}
+}
+
+func TestUpdatePackagePolicyPreservingInputConfig(t *testing.T) {
+	for name, status := range map[string]int{"fails": http.StatusInternalServerError, "does not find the policy": http.StatusNotFound} {
+		t.Run("a snapshot read that "+name+" prevents the simplified update", func(t *testing.T) {
+			fake := &fakeFleet{t: t, policy: osqueryPolicy(t, 1, "pack-1"), getStatus: status}
+			client := newTestFleetClient(t, fake)
+
+			policy, diags := updatePackagePolicyPreservingInputConfig(context.Background(), client, "osquery-pp", "", osqueryUpdateBody())
+			require.True(t, diags.HasError(), "a snapshot read that %s must be an error", name)
+			require.Nil(t, policy)
+			require.Equal(t, []string{"GET simplified=false"}, fake.requests, "no update may be sent without a snapshot")
+		})
+	}
+
+	t.Run("config removed by the update is restored", func(t *testing.T) {
+		fake := &fakeFleet{t: t, policy: osqueryPolicy(t, 1, "pack-1", "pack-2")}
+		client := newTestFleetClient(t, fake)
+
+		policy, diags := updatePackagePolicyPreservingInputConfig(context.Background(), client, "osquery-pp", "", osqueryUpdateBody())
+		require.False(t, diags.HasError(), "%v", diags)
+		require.NotNil(t, policy)
+		require.Equal(t, []string{"GET simplified=false", "PUT simplified=true", "GET simplified=false", "PUT simplified=false"}, fake.requests)
+
+		inputs := fake.typedPutBody["inputs"].([]any)
+		packs := inputs[0].(map[string]any)["config"].(map[string]any)["osquery"].(map[string]any)["value"].(map[string]any)["packs"].(map[string]any)
+		require.Contains(t, packs, "pack-1")
+		require.Contains(t, packs, "pack-2")
+	})
+
+	t.Run("a pack removed between the snapshot and the update is not restored", func(t *testing.T) {
+		fake := &fakeFleet{
+			t:      t,
+			policy: osqueryPolicy(t, 1, "pack-1", "pack-2"),
+			beforeSimplifiedPut: func(f *fakeFleet) {
+				// Osquery deletes pack-2 after the snapshot was taken.
+				f.policy = osqueryPolicy(f.t, f.policy["revision"].(int)+1, "pack-1")
+			},
+		}
+		client := newTestFleetClient(t, fake)
+
+		_, diags := updatePackagePolicyPreservingInputConfig(context.Background(), client, "osquery-pp", "", osqueryUpdateBody())
+		require.True(t, diags.HasError(), "a concurrent write since the snapshot must be an error")
+		require.Contains(t, diags.Errors()[0].Detail(), "osquery-pp")
+		requireConfigNotRestoredError(t, diags)
+		require.Equal(t, []string{"GET simplified=false", "PUT simplified=true", "GET simplified=false"}, fake.requests,
+			"no restoring update may be sent from a stale snapshot")
+		require.Nil(t, fake.typedPutBody)
+	})
+}
+
+// requireConfigNotRestoredError asserts that the diagnostics tell the user the
+// config removed by the update was not written back and that re-running apply
+// does not bring it back.
+func requireConfigNotRestoredError(t *testing.T, diags diag.Diagnostics) {
+	t.Helper()
+	for _, d := range diags.Errors() {
+		if d.Summary() == "Integration policy input config not restored" {
+			require.Contains(t, d.Detail(), "Re-running apply does not restore it")
+			return
+		}
+	}
+	require.Fail(t, "missing the input config not restored error", "%v", diags)
+}
+
+func TestUpdatePackagePolicyPreservingInputConfig_RestoreFailure(t *testing.T) {
+	t.Run("restoring read fails", func(t *testing.T) {
+		fake := &fakeFleet{t: t, policy: osqueryPolicy(t, 1, "pack-1")}
+		fake.beforeSimplifiedPut = func(f *fakeFleet) { f.getStatus = http.StatusInternalServerError }
+		client := newTestFleetClient(t, fake)
+
+		policy, diags := updatePackagePolicyPreservingInputConfig(context.Background(), client, "osquery-pp", "", osqueryUpdateBody())
+		require.True(t, diags.HasError())
+		require.Nil(t, policy)
+		requireConfigNotRestoredError(t, diags)
+		require.Equal(t, []string{"GET simplified=false", "PUT simplified=true", "GET simplified=false"}, fake.requests)
+	})
+
+	t.Run("restoring update fails", func(t *testing.T) {
+		fake := &fakeFleet{t: t, policy: osqueryPolicy(t, 1, "pack-1"), typedPutStatus: http.StatusInternalServerError}
+		client := newTestFleetClient(t, fake)
+
+		policy, diags := updatePackagePolicyPreservingInputConfig(context.Background(), client, "osquery-pp", "", osqueryUpdateBody())
+		require.True(t, diags.HasError())
+		require.Nil(t, policy)
+		require.Len(t, diags.Errors(), 2, "the restoring update error and the config not restored error: %v", diags)
+		requireConfigNotRestoredError(t, diags)
+		require.Equal(t, []string{"GET simplified=false", "PUT simplified=true", "GET simplified=false", "PUT simplified=false"}, fake.requests)
+	})
 }

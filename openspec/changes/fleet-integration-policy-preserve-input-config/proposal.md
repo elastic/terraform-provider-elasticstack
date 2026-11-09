@@ -11,12 +11,14 @@ Because the attribute is not modeled, users cannot work around the problem from 
 
 ## What Changes
 
-- **Preserve** input-level and stream-level `config` across updates. Before sending the simplified update, the resource reads the current policy in the typed (non-simplified) format and records each input's and stream's `config`. After the simplified update, it re-reads the policy and, if any previously stored `config` value is now missing, writes it back with a single typed update that carries only the `version` token and the `inputs` array.
+- **Preserve** input-level and stream-level `config` across updates. Before sending the simplified update, the resource reads the current policy in the typed (non-simplified) format and records each input's and stream's `config`. After the simplified update, it re-reads the policy and, if any previously stored `config` value is now missing, writes it back with a single typed update that carries only the `version` token from that re-read, the agent policy assignment (`policy_id`, `policy_ids`, sent back as read because Kibana 8.x clears it otherwise) and the `inputs` array.
 - **Merge, do not overwrite.** Restoration is a deep fill: keys that the update (or a Kibana callback that ran during it) wrote are kept as-is; only keys that were present before and are absent after are restored. Lists and scalar values are treated as leaves.
-- **No extra writes** when nothing was lost: policies with no `config`, or whose `config` survived the update, are updated exactly as before (one additional read only).
+- **Never restore stale data.** The simplified update ignores the `version` token, so it cannot be made conditional on the snapshot. Kibana bumps the policy `revision` by one on every update, so when something needs restoring and the re-read's `revision` is not the snapshot's plus one, another client wrote the policy in between (for example Osquery deleting a pack); the resource then returns an error instead of writing back possibly stale `config`.
+- **Fail closed.** If the read before the update fails or does not find the policy, the update is not sent. If restoring fails after the update, the error says that the removed `config` was not written back and that re-running apply does not restore it.
+- **No extra writes** when nothing was lost: policies with no `config`, or whose `config` survived the update, get no additional write. Every update adds one read before the simplified update, and one read after it when that read recorded `config`.
 - **Document** the behaviour on the resource page.
 
-Not breaking: no schema change, no state change, and policies without input `config` behave exactly as before.
+Not breaking: no schema change and no state change. Policies without input `config` are updated as before, apart from the additional read. An update of a policy with `config` can now fail when another client writes the policy while it is being updated and `config` needs restoring, where it previously lost that `config` silently.
 
 Out of scope: modeling `config` as a Terraform attribute (it is owned by Kibana, not by the user), and `elasticstack_fleet_elastic_defend_integration_policy`, which already uses the typed API and manages its `config` explicitly.
 
@@ -28,11 +30,11 @@ _None — this changes the update behaviour of an existing resource._
 
 ### Modified Capabilities
 
-- `fleet-integration-policy`: adds a requirement that updates preserve input-level and stream-level `config` written outside Terraform.
+- `fleet-integration-policy`: adds requirements that updates preserve input-level and stream-level `config` written outside Terraform, never restore it from a stale snapshot, and report when it could not be restored.
 
 ## Impact
 
 - `internal/clients/fleet/package_policy.go`: generic typed-format `GetPackagePolicyTyped` / `UpdatePackagePolicyTyped` helpers; the existing Defend helpers delegate to them.
-- `internal/fleet/integration_policy/`: new `input_config.go` (snapshot, deep-fill merge, typed request construction) and wiring in `update.go`.
-- Tests: unit tests for snapshot/merge/request construction; an acceptance test that injects input `config` out of band, applies a Terraform update, and asserts the `config` survived.
+- `internal/fleet/integration_policy/`: new `input_config.go` (snapshot, deep-fill merge, revision check, typed request construction, and `updatePackagePolicyPreservingInputConfig`, which runs snapshot → simplified update → restore) called from `update.go`.
+- Tests: unit tests for snapshot, merge and request construction, and for the update sequence against a fake Fleet API (failed snapshot read, restore, concurrent pack removal, restore failure); acceptance tests that inject input and stream `config` out of band and that use the APM integration's API keys, apply a Terraform update, and assert the `config` survived.
 - Docs: `docs/resources/fleet_integration_policy.md` regenerated via `make docs-generate`.

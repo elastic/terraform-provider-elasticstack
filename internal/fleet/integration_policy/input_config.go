@@ -53,10 +53,12 @@ const (
 // inputConfigSnapshot holds the `config` objects of a package policy's inputs
 // and streams, keyed by a stable identity. Input ids are not stable across the
 // typed and simplified representations, so inputs are identified by type and
-// policy template, and streams additionally by their data stream dataset.
+// policy template, and streams additionally by their data stream dataset. The
+// policy revision the snapshot was read at is kept to detect later writes.
 type inputConfigSnapshot struct {
-	inputs  map[string]map[string]any
-	streams map[string]map[string]any
+	revision float32
+	inputs   map[string]map[string]any
+	streams  map[string]map[string]any
 }
 
 func (s inputConfigSnapshot) isEmpty() bool {
@@ -125,13 +127,16 @@ func countIdentities(inputs []map[string]any) map[string]int {
 // than once (counting elements with and without config) are left out, since
 // their config could not be restored to the right element unambiguously.
 func snapshotInputConfig(policy *kbapi.PackagePolicy) (inputConfigSnapshot, error) {
+	if policy == nil {
+		return inputConfigSnapshot{}, nil
+	}
 	inputs, err := rawTypedInputs(policy)
 	if err != nil {
 		return inputConfigSnapshot{}, err
 	}
 
 	counts := countIdentities(inputs)
-	snapshot := inputConfigSnapshot{inputs: map[string]map[string]any{}, streams: map[string]map[string]any{}}
+	snapshot := inputConfigSnapshot{revision: policy.Revision, inputs: map[string]map[string]any{}, streams: map[string]map[string]any{}}
 	for _, input := range inputs {
 		inputID := inputIdentity(input)
 		if cfg, ok := input[inputConfigKey].(map[string]any); ok && len(cfg) > 0 && counts[inputID] == 1 {
@@ -290,13 +295,18 @@ func restoreInputConfig(snapshot inputConfigSnapshot, policy *kbapi.PackagePolic
 }
 
 // readInputConfigSnapshot reads the package policy in the typed format and
-// returns the config of its inputs and streams.
+// returns the config of its inputs and streams. A policy that is not found is
+// an error, so that the update is never sent without a snapshot.
 func readInputConfigSnapshot(ctx context.Context, client *fleet.Client, policyID, spaceID string) (inputConfigSnapshot, diag.Diagnostics) {
 	policy, diags := fleet.GetPackagePolicyTyped(ctx, client, policyID, spaceID)
 	if diags.HasError() {
 		return inputConfigSnapshot{}, diags
 	}
 	if policy == nil {
+		diags.AddError(
+			"Failed to read integration policy input config",
+			fmt.Sprintf("The integration policy %q was not found when reading its input config before the update.", policyID),
+		)
 		return inputConfigSnapshot{}, diags
 	}
 	snapshot, err := snapshotInputConfig(policy)
@@ -308,8 +318,9 @@ func readInputConfigSnapshot(ctx context.Context, client *fleet.Client, policyID
 
 // restorePreservedInputConfig writes back any input or stream config that the
 // simplified update removed. The restoring request carries only the version,
-// the agent policy assignment and the inputs. It issues no request when the snapshot is empty,
-// and no update when nothing was removed.
+// the agent policy assignment and the inputs. It issues no request when the
+// snapshot is empty, and no update when nothing was removed. It refuses to
+// restore when the policy was written by anyone else since the snapshot.
 func restorePreservedInputConfig(ctx context.Context, client *fleet.Client, policyID, spaceID string, snapshot inputConfigSnapshot) diag.Diagnostics {
 	if snapshot.isEmpty() {
 		return nil
@@ -336,6 +347,23 @@ func restorePreservedInputConfig(ctx context.Context, client *fleet.Client, poli
 		return diags
 	}
 
+	// Kibana bumps the revision by exactly one on every update, and the
+	// simplified update ignores the version token, so it cannot be made
+	// conditional on the snapshot. Any revision other than the snapshot's plus
+	// one means another client wrote the policy since the snapshot, and the
+	// snapshot may hold config that was deliberately removed in the meantime
+	// (for example an Osquery pack). Restoring it would bring that back.
+	if policy.Revision != snapshot.revision+1 {
+		diags.AddError(
+			"Integration policy modified during update",
+			fmt.Sprintf("The integration policy %q was modified by another client while it was being updated "+
+				"(revision %d before the update, %d after it, expected %d). The input config read before the update "+
+				"may no longer be current, so it was not written back.",
+				policyID, int64(snapshot.revision), int64(policy.Revision), int64(snapshot.revision)+1),
+		)
+		return diags
+	}
+
 	// Send the agent policy assignment back as read: Kibana 8.x clears
 	// policy_id on a typed update that omits policy_ids.
 	req := kbapi.PackagePolicyUpdateRequestTypedInputs{
@@ -347,4 +375,40 @@ func restorePreservedInputConfig(ctx context.Context, client *fleet.Client, poli
 	_, updateDiags := fleet.UpdatePackagePolicyTyped(ctx, client, policyID, spaceID, req)
 	diags.Append(updateDiags...)
 	return diags
+}
+
+// updatePackagePolicyPreservingInputConfig sends the simplified update and
+// writes back any input or stream config it removed. The config is
+// snapshotted first; when that read fails no update is sent, since the update
+// would otherwise drop the config without any way to restore it.
+func updatePackagePolicyPreservingInputConfig(
+	ctx context.Context, client *fleet.Client, policyID, spaceID string, body kbapi.PackagePolicyRequestMappedInputs,
+) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	snapshot, diags := readInputConfigSnapshot(ctx, client, policyID, spaceID)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	policy, updateDiags := fleet.UpdatePackagePolicy(ctx, client, policyID, spaceID, body)
+	diags.Append(updateDiags...)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	restoreDiags := restorePreservedInputConfig(ctx, client, policyID, spaceID, snapshot)
+	diags.Append(restoreDiags...)
+	if restoreDiags.HasError() {
+		// The simplified update has been applied at this point, so any config it
+		// removed is gone from the server, and the next update's snapshot will
+		// not contain it either.
+		diags.AddError(
+			"Integration policy input config not restored",
+			fmt.Sprintf("The integration policy %q was updated, but any input or stream config the update removed "+
+				"could not be written back (see the other errors). Re-running apply does not restore it, because the "+
+				"next update reads the policy without that config. Check the input config of the integration policy "+
+				"in Kibana, for example APM API keys or Osquery packs, and recreate it where needed.", policyID),
+		)
+		return nil, diags
+	}
+	return policy, diags
 }
