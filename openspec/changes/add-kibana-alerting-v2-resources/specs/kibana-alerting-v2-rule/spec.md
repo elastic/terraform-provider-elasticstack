@@ -326,6 +326,24 @@ Every field of the rule write body SHALL be a typed attribute or nested attribut
 - **WHEN** create runs
 - **THEN** the plan SHALL show `enabled = true` and the `PUT` body SHALL contain `"enabled": true`
 
+### Requirement: `time_field` defaults to `@timestamp`
+
+`time_field` SHALL be optional, computed, and default to `@timestamp`, and SHALL always be sent in the `PUT` body. On read, including the read that follows import, an absent `time_field` in the response SHALL be stored as `@timestamp`, so a rule created outside Terraform without it never plans a diff.
+
+#### Scenario: Omitted time_field is sent as the default
+
+- **GIVEN** a configuration that omits `time_field`
+- **WHEN** create runs
+- **THEN** the `PUT` body SHALL contain `"time_field": "@timestamp"`
+- **AND** state SHALL hold `time_field = "@timestamp"`
+
+#### Scenario: Imported rule without time_field plans no diff
+
+- **GIVEN** a rule created outside Terraform whose response omits `time_field`
+- **WHEN** the rule is imported with a configuration that omits `time_field`
+- **THEN** state SHALL hold `time_field = "@timestamp"`
+- **AND** the subsequent plan SHALL be empty
+
 ### Requirement: Duration attributes
 
 `schedule.every`, `schedule.lookback`, `state_transition.pending.timeframe`, and `state_transition.recovering.timeframe` SHALL accept only an unsigned integer followed by `ms`, `s`, `m`, `h`, `d`, or `w`, at most 365 days in total. `schedule.every` SHALL additionally be at least 5 seconds. Values SHALL be stored and sent exactly as written, without normalization.

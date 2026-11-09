@@ -20,7 +20,7 @@ Program tracking: [elastic/rna-program#655](https://github.com/elastic/rna-progr
 - Alert actions (acknowledge, assign, activate, deactivate, tag) and alert or series snooze state.
 - Snooze state on action policies: it is runtime operational state, not configuration, and is not managed by Terraform.
 - Any change to the classic `elasticstack_kibana_alerting_rule` resource, and any migration path from classic rules to v2 rules.
-- Changes to the generated Kibana API client. The pinned OpenAPI bundle already contains the Alerting v2 operations.
+- Hand-made changes to the generated Kibana API client. The pinned OpenAPI bundle already contains every Alerting v2 operation. The action policy create-or-replace body still lacks `enabled`, and that arrives through the regular Renovate `kibana-openapi-spec` bump once Kibana ships it. The action policy resource waits for that bump.
 
 ## Capabilities
 
