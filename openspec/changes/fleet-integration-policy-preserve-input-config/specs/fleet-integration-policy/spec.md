@@ -23,7 +23,7 @@ Before submitting the update, the resource SHALL read the package policy in the 
 
 ### Requirement: Update — restore `config` removed by the update (REQ-033)
 
-After the update succeeds, the resource SHALL read the policy again in the typed format and deep-merge each recorded `config` into the matching input or stream, only when that identity is unique in the updated policy. A key present before and absent or null now SHALL be restored; when both values are objects the merge SHALL recurse; otherwise the current value SHALL be kept.
+After the update succeeds, the resource SHALL read the policy again in the typed format and deep-merge each recorded `config` into the matching input or stream, only when that identity is unique in the updated policy. A key present before and absent now SHALL be restored, including a key whose prior value is null; a key null now SHALL be restored when its prior value is not null; when both values are objects the merge SHALL recurse; otherwise the current value SHALL be kept.
 
 #### Scenario: Ambiguous identities are never restored
 
@@ -37,14 +37,26 @@ After the update succeeds, the resource SHALL read the policy again in the typed
 - **WHEN** the update leaves `config` containing only `b` with a new value
 - **THEN** the restored `config` SHALL contain `a` with its prior value and `b` with the new value
 
+#### Scenario: Nested keys with null values are restored
+
+- **GIVEN** an input `config` whose object `parent` contains `kept` and `removed`, where `removed` is null
+- **WHEN** the update leaves `parent` containing only `kept`
+- **THEN** the restored `parent` SHALL contain `kept` and `removed` with a null value
+
 ### Requirement: Update — restoring write (REQ-034)
 
-When at least one value was restored, the resource SHALL submit one typed update containing only the `version` token, `policy_id` and `policy_ids` from the preceding read and the full `inputs` array with compiled fields removed. When nothing was restored, it SHALL NOT submit a further update. Errors from the restoring read or update SHALL be returned, and a policy that is not found by the restoring read SHALL be an error.
+When at least one value was restored, the resource SHALL submit one typed update containing only the `version` token, `policy_id` and `policy_ids` from the preceding read and the full `inputs` array with compiled fields removed. When nothing was restored, or the request would carry the same `inputs` as the policy already holds, it SHALL NOT submit a further update. Errors from the restoring read or update SHALL be returned, and a policy that is not found by the restoring read SHALL be an error.
 
 #### Scenario: Config survives unchanged
 
 - **GIVEN** an integration policy whose input `config` is not affected by the update
 - **WHEN** Terraform updates the policy
+- **THEN** no restoring update request SHALL be sent
+
+#### Scenario: Restored null that the typed request cannot carry
+
+- **GIVEN** recorded `config` whose entry had a null `value`, which the typed request omits
+- **WHEN** the update removed only that `value`
 - **THEN** no restoring update request SHALL be sent
 
 #### Scenario: Policy deleted before the restoring read

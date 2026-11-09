@@ -18,6 +18,7 @@
 package integrationpolicy
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -154,14 +155,20 @@ func snapshotInputConfig(policy *kbapi.PackagePolicy) (inputConfigSnapshot, erro
 	return snapshot, nil
 }
 
-// deepFill copies into dst every key of src that is absent (or null) in dst,
+// deepFill copies into dst every key of src that is absent in dst (even when
+// its value in src is null) or null in dst (when its value in src is not),
 // recursing when both sides hold objects. Values already present in dst win.
 // It reports whether dst was modified.
 func deepFill(dst, src map[string]any) bool {
 	changed := false
 	for key, srcValue := range src {
 		dstValue, ok := dst[key]
-		if !ok || dstValue == nil {
+		if !ok {
+			dst[key] = srcValue
+			changed = true
+			continue
+		}
+		if dstValue == nil {
 			if srcValue != nil {
 				dst[key] = srcValue
 				changed = true
@@ -194,6 +201,34 @@ func fillConfig(element map[string]any, prior map[string]any) bool {
 	return true
 }
 
+// typedRequestInputs strips the compiled fields from typed inputs read from the
+// API and converts them to the typed update request shape. It also returns the
+// JSON encoding of that request shape, which is what would be sent.
+func typedRequestInputs(inputs []map[string]any) ([]kbapi.PackagePolicyRequestTypedInput, []byte, error) {
+	for _, input := range inputs {
+		delete(input, compiledInputKey)
+		streams, _ := input[inputStreamsKey].([]any)
+		for _, s := range streams {
+			if stream, ok := s.(map[string]any); ok {
+				delete(stream, compiledStreamKey)
+			}
+		}
+	}
+	data, err := json.Marshal(inputs)
+	if err != nil {
+		return nil, nil, err
+	}
+	var requestInputs []kbapi.PackagePolicyRequestTypedInput
+	if err := json.Unmarshal(data, &requestInputs); err != nil {
+		return nil, nil, err
+	}
+	encoded, err := json.Marshal(requestInputs)
+	if err != nil {
+		return nil, nil, err
+	}
+	return requestInputs, encoded, nil
+}
+
 // restoreInputConfig merges the snapshot into the inputs of a package policy
 // read in the typed format after an update. It returns the inputs to send in a
 // typed update request (compiled fields removed) and whether any config was
@@ -216,14 +251,12 @@ func restoreInputConfig(snapshot inputConfigSnapshot, policy *kbapi.PackagePolic
 		if counts[inputID] == 1 && fillConfig(input, snapshot.inputs[inputID]) {
 			changed = true
 		}
-		delete(input, compiledInputKey)
 		streams, _ := input[inputStreamsKey].([]any)
 		for _, s := range streams {
 			stream, ok := s.(map[string]any)
 			if !ok {
 				continue
 			}
-			delete(stream, compiledStreamKey)
 			streamID := streamIdentity(inputID, stream)
 			if streamID != missingIdentityKey && counts[streamID] == 1 && fillConfig(stream, snapshot.streams[streamID]) {
 				changed = true
@@ -234,13 +267,24 @@ func restoreInputConfig(snapshot inputConfigSnapshot, policy *kbapi.PackagePolic
 		return nil, false, nil
 	}
 
-	data, err := json.Marshal(inputs)
+	requestInputs, restored, err := typedRequestInputs(inputs)
 	if err != nil {
 		return nil, false, err
 	}
-	var requestInputs []kbapi.PackagePolicyRequestTypedInput
-	if err := json.Unmarshal(data, &requestInputs); err != nil {
+
+	// The typed request omits some nulls (a config entry's null `value`, `type`
+	// or `frozen`), so a restored null can encode to the same request as the
+	// current inputs. Nothing would be restored then; send no update.
+	current, err := rawTypedInputs(policy)
+	if err != nil {
 		return nil, false, err
+	}
+	_, unchanged, err := typedRequestInputs(current)
+	if err != nil {
+		return nil, false, err
+	}
+	if bytes.Equal(restored, unchanged) {
+		return nil, false, nil
 	}
 	return requestInputs, true, nil
 }

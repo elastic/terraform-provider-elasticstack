@@ -32,7 +32,7 @@ Input ids change when a policy moves from the typed to the simplified representa
 
 ### Deep fill, current values win
 
-For each matched input/stream, every key of the prior `config` that is missing in the current `config` is copied over; when both sides hold objects the merge recurses; when both sides hold a value the current one is kept. This restores data that the update dropped without undoing anything the update (or a Kibana callback that ran during it, such as the APM plugin rewriting `rum.source_mapping.metadata`) wrote.
+For each matched input/stream, every key of the prior `config` that is missing in the current `config` is copied over, including keys whose prior value is null; a key that is null now is replaced by a non-null prior value; when both sides hold objects the merge recurses; when both sides hold a value the current one is kept. The typed request type omits a null `value`, `type` or `frozen` on a config entry, so a restored null at that level cannot be sent; when the restored inputs encode to the same request as the current inputs, no restoring write is sent. This restores data that the update dropped without undoing anything the update (or a Kibana callback that ran during it, such as the APM plugin rewriting `rum.source_mapping.metadata`) wrote.
 
 ### Send only `version`, the agent policy assignment and `inputs` in the restoring request
 

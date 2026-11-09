@@ -139,28 +139,48 @@ func TestSnapshotInputConfig(t *testing.T) {
 
 func TestDeepFill(t *testing.T) {
 	dst := map[string]any{
-		"kept":   "new",
-		"nested": map[string]any{"b": "new-b"},
-		"nulled": nil,
-		"list":   []any{"new"},
+		"kept":      "new",
+		"nested":    map[string]any{"b": "new-b"},
+		"nulled":    nil,
+		"both_null": nil,
+		"list":      []any{"new"},
 	}
 	src := map[string]any{
-		"kept":    "old",
-		"missing": "old-missing",
-		"nested":  map[string]any{"a": "old-a", "b": "old-b"},
-		"nulled":  "old-nulled",
-		"list":    []any{"old"},
+		"kept":         "old",
+		"missing":      "old-missing",
+		"missing_null": nil,
+		"nested":       map[string]any{"a": "old-a", "b": "old-b", "c": nil},
+		"nulled":       "old-nulled",
+		"both_null":    nil,
+		"list":         []any{"old"},
 	}
 	require.True(t, deepFill(dst, src))
 	require.Equal(t, map[string]any{
-		"kept":    "new",
-		"missing": "old-missing",
-		"nested":  map[string]any{"a": "old-a", "b": "new-b"},
-		"nulled":  "old-nulled",
-		"list":    []any{"new"},
+		"kept":         "new",
+		"missing":      "old-missing",
+		"missing_null": nil,
+		"nested":       map[string]any{"a": "old-a", "b": "new-b", "c": nil},
+		"nulled":       "old-nulled",
+		"both_null":    nil,
+		"list":         []any{"new"},
 	}, dst)
 
 	require.False(t, deepFill(dst, src), "a second fill must be a no-op")
+}
+
+func TestDeepFill_NullOnlyChange(t *testing.T) {
+	t.Run("a nested key with a null value removed under a kept parent is restored", func(t *testing.T) {
+		dst := map[string]any{"parent": map[string]any{"kept": 1}}
+		src := map[string]any{"parent": map[string]any{"kept": 1, "removed": nil}}
+		require.True(t, deepFill(dst, src))
+		require.Equal(t, map[string]any{"parent": map[string]any{"kept": 1, "removed": nil}}, dst)
+	})
+
+	t.Run("a key null on both sides is not a change", func(t *testing.T) {
+		dst := map[string]any{"parent": map[string]any{"same": nil}}
+		src := map[string]any{"parent": map[string]any{"same": nil}}
+		require.False(t, deepFill(dst, src))
+	})
 }
 
 func TestRestoreInputConfig(t *testing.T) {
@@ -223,6 +243,61 @@ func TestRestoreInputConfig(t *testing.T) {
 		stream := raw["streams"].([]any)[0].(map[string]any)
 		require.NotContains(t, stream, "compiled_stream")
 		require.Equal(t, map[string]any{"extra": map[string]any{"value": true}}, stream["config"])
+	})
+
+	t.Run("restores nested keys with null values removed under a kept parent", func(t *testing.T) {
+		before := `{
+			"id": "p", "name": "p", "enabled": true, "revision": 1,
+			"created_at": "", "created_by": "", "updated_at": "", "updated_by": "",
+			"inputs": [{"type": "x", "policy_template": "x", "enabled": true,
+				"config": {"settings": {"value": {"parent": {"kept": 1, "removed": null}}}},
+				"streams": [{"enabled": true, "data_stream": {"type": "logs", "dataset": "x.log"},
+					"config": {"settings": {"value": {"opt": null, "kept": true}}}}]}]
+		}`
+		after := `{
+			"id": "p", "name": "p", "enabled": true, "revision": 2,
+			"created_at": "", "created_by": "", "updated_at": "", "updated_by": "",
+			"inputs": [{"type": "x", "policy_template": "x", "enabled": true,
+				"config": {"settings": {"value": {"parent": {"kept": 1}}}},
+				"streams": [{"enabled": true, "data_stream": {"type": "logs", "dataset": "x.log"},
+					"config": {"settings": {"value": {"kept": true}}}}]}]
+		}`
+		snapshot, err := snapshotInputConfig(mustPolicy(t, before))
+		require.NoError(t, err)
+
+		inputs, changed, err := restoreInputConfig(snapshot, mustPolicy(t, after))
+		require.NoError(t, err)
+		require.True(t, changed)
+
+		raw := requestInputsAsMaps(t, inputs)[0]
+		parent := raw["config"].(map[string]any)["settings"].(map[string]any)["value"].(map[string]any)["parent"].(map[string]any)
+		require.Equal(t, map[string]any{"kept": float64(1), "removed": nil}, parent)
+		stream := raw["streams"].([]any)[0].(map[string]any)
+		require.Equal(t, map[string]any{"opt": nil, "kept": true}, stream["config"].(map[string]any)["settings"].(map[string]any)["value"])
+	})
+
+	t.Run("no change when a restored null cannot be carried by the typed request", func(t *testing.T) {
+		// The typed request omits a null config entry `value`, so restoring it
+		// would send a body identical to the current inputs.
+		before := `{
+			"id": "p", "name": "p", "enabled": true, "revision": 1,
+			"created_at": "", "created_by": "", "updated_at": "", "updated_by": "",
+			"inputs": [{"type": "x", "policy_template": "x", "enabled": true, "streams": [],
+				"config": {"settings": {"type": "text", "value": null}}}]
+		}`
+		after := `{
+			"id": "p", "name": "p", "enabled": true, "revision": 2,
+			"created_at": "", "created_by": "", "updated_at": "", "updated_by": "",
+			"inputs": [{"type": "x", "policy_template": "x", "enabled": true, "streams": [],
+				"config": {"settings": {"type": "text"}}}]
+		}`
+		snapshot, err := snapshotInputConfig(mustPolicy(t, before))
+		require.NoError(t, err)
+
+		inputs, changed, err := restoreInputConfig(snapshot, mustPolicy(t, after))
+		require.NoError(t, err)
+		require.False(t, changed)
+		require.Nil(t, inputs)
 	})
 
 	t.Run("inputs that no longer exist are ignored", func(t *testing.T) {
