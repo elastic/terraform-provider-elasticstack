@@ -42,7 +42,7 @@ func TestSchemaSsl(t *testing.T) {
 	require.True(t, ok, "ssl attribute must exist as a single nested attribute")
 	require.True(t, sslAttr.Optional)
 	require.False(t, sslAttr.Computed)
-	require.Equal(t, []validator.Object{sslAtLeastOneSubattrValidator{}}, sslAttr.Validators)
+	require.Equal(t, []validator.Object{sslAtLeastOneSubattrValidator()}, sslAttr.Validators)
 	require.Len(t, sslAttr.Attributes, 4)
 	require.Equal(t, sslAttrTypes, sslAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
 
@@ -112,7 +112,7 @@ func TestSslAtLeastOneSubattrValidator(t *testing.T) {
 			t.Parallel()
 
 			resp := &validator.ObjectResponse{}
-			sslAtLeastOneSubattrValidator{}.ValidateObject(t.Context(), validator.ObjectRequest{
+			sslAtLeastOneSubattrValidator().ValidateObject(t.Context(), validator.ObjectRequest{
 				Path:        path.Root("ssl"),
 				ConfigValue: tc.obj,
 			}, resp)
