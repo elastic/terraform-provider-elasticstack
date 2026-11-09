@@ -35,11 +35,6 @@ func updateMonitor(
 	planModel := req.Plan
 	var diags diag.Diagnostics
 
-	diags.Append(planModel.enforceVersionConstraints(ctx, client)...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[tfModelV0]{}, diags
-	}
-
 	input, apiDiags := planModel.toKibanaAPIRequest(ctx)
 	diags.Append(apiDiags...)
 	if diags.HasError() {
