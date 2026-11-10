@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alerting_v2/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -29,6 +30,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const (
@@ -88,6 +90,21 @@ func getSchema(_ context.Context) schema.Schema {
 						Required:            true,
 						Validators:          []validator.String{stringvalidator.LengthBetween(1, 256)},
 					},
+					"description": schema.StringAttribute{
+						MarkdownDescription: "Human-readable description of the rule.",
+						Optional:            true,
+					},
+					"tags": schema.ListAttribute{
+						MarkdownDescription: "Tags for categorisation, for example `[\"production\", \"infra\"]`. Stored in the configured order.",
+						Optional:            true,
+						ElementType:         types.StringType,
+					},
+					"routing_tags": schema.ListAttribute{
+						MarkdownDescription: "Routing tags that link alerts from this rule to action policies: a policy applies when its `matcher.tags` contains at least one of them. " +
+							"Only allowed when `kind` is `alert`.",
+						Optional:    true,
+						ElementType: types.StringType,
+					},
 				},
 			},
 			"schedule": schema.SingleNestedAttribute{
@@ -115,6 +132,16 @@ func getSchema(_ context.Context) schema.Schema {
 						MarkdownDescription: "ES|QL query that specifies the data to evaluate. Must include a `FROM` clause. Kibana applies the time filter from `schedule.lookback` using `time_field`.",
 						Required:            true,
 						Validators:          []validator.String{stringvalidator.LengthBetween(1, 10000)},
+					},
+					"breach": schema.SingleNestedAttribute{
+						MarkdownDescription: "Optional ES|QL clause appended to `query.base` that decides which rows breach. When omitted, every row returned by `query.base` is a match.",
+						Optional:            true,
+						Attributes: map[string]schema.Attribute{
+							"segment": schema.StringAttribute{
+								MarkdownDescription: "ES|QL clause appended to `query.base`, for example `WHERE avg_cpu > 0.85`. Must not include a `FROM` clause.",
+								Required:            true,
+							},
+						},
 					},
 				},
 			},
@@ -158,6 +185,48 @@ func getSchema(_ context.Context) schema.Schema {
 					},
 				},
 			},
+			"state_transition": schema.SingleNestedAttribute{
+				MarkdownDescription: "How many consecutive matches, or how long a condition must hold, before an alert becomes `active` or `inactive`. Only allowed when `kind` is `alert`.",
+				Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"pending":    stateTransitionPhaseAttribute("pending", "active", "matches"),
+					"recovering": stateTransitionPhaseAttribute("recovering", "inactive", "recoveries"),
+				},
+			},
+			"grouping": schema.SingleNestedAttribute{
+				MarkdownDescription: "Grouping configuration. When omitted, every row is its own alert group.",
+				Optional:            true,
+				Attributes: map[string]schema.Attribute{
+					"fields": schema.ListAttribute{
+						MarkdownDescription: "Fields to group alerts by, for example `[\"host.name\", \"service.name\"]`. Should match the `BY` fields of the ES|QL query. Stored in the configured order.",
+						Required:            true,
+						ElementType:         types.StringType,
+					},
+				},
+			},
+			"artifacts": schema.ListNestedAttribute{
+				MarkdownDescription: "Objects attached to the rule, such as a runbook or a dashboard. Each `id` must be unique within the rule.",
+				Optional:            true,
+				NestedObject: schema.NestedAttributeObject{
+					Attributes: map[string]schema.Attribute{
+						"id": schema.StringAttribute{
+							MarkdownDescription: "Artifact identifier, unique within the rule.",
+							Required:            true,
+						},
+						"type": schema.StringAttribute{
+							MarkdownDescription: "Artifact type, for example `runbook` or `dashboard`. Known types are validated server-side against their expected `data` shape.",
+							Required:            true,
+						},
+						"data": schema.StringAttribute{
+							MarkdownDescription: "Artifact payload as a JSON object string with at most 32 top-level keys. A `runbook` carries `content` and a `dashboard` carries `dashboard_id`. " +
+								"Semantically equal JSON produces no diff.",
+							Required:   true,
+							CustomType: jsontypes.NormalizedType{},
+							Validators: []validator.String{artifactDataValidator()},
+						},
+					},
+				},
+			},
 			"version": schema.Int64Attribute{
 				MarkdownDescription: "Configuration revision of the rule, incremented by the server on every change.",
 				Computed:            true,
@@ -170,6 +239,28 @@ func getSchema(_ context.Context) schema.Schema {
 			"updated_at": schema.StringAttribute{
 				MarkdownDescription: "Timestamp of the rule's last change in ISO 8601 format.",
 				Computed:            true,
+			},
+		},
+	}
+}
+
+func stateTransitionPhaseAttribute(phase, targetStatus, events string) schema.SingleNestedAttribute {
+	return schema.SingleNestedAttribute{
+		MarkdownDescription: "How long an alert stays `" + phase + "` before it becomes `" + targetStatus + "`.",
+		Optional:            true,
+		Attributes: map[string]schema.Attribute{
+			"count": schema.Int64Attribute{
+				MarkdownDescription: "Consecutive " + events + " the alert spends in `" + phase + "` before it becomes `" + targetStatus + "` on the next one. `0` transitions on the first.",
+				Optional:            true,
+			},
+			"timeframe": schema.StringAttribute{
+				MarkdownDescription: "Duration the condition must hold, for example `5m`, in the same duration grammar as `schedule.every`. At most `365d`.",
+				Optional:            true,
+				Validators:          []validator.String{utils.DurationValidator()},
+			},
+			"operator": schema.StringAttribute{
+				MarkdownDescription: "How `count` and `timeframe` combine when both are set: `and` requires both, `or` requires either. Only allowed when both are set.",
+				Optional:            true,
 			},
 		},
 	}

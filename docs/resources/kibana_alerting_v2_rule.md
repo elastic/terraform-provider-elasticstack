@@ -6,7 +6,8 @@ description: |-
   Creates and manages Kibana Alerting v2 rules https://www.elastic.co/docs/api/doc/kibana/group/endpoint-alerting-v2: ES|QL rules that create alerts (kind = "alert") or only store matching events (kind = "signal").
   Prerequisites. The target Elastic Stack must be version 9.6.0 or later and the Alerting v2 engine must be enabled in the target space through the alerting:v2:enabled Kibana advanced setting. Requests against a space where the engine is disabled fail with a diagnostic naming that setting.
   Update semantics. Create and update both issue a single PUT whose body is built entirely from the configuration, so every apply is a full replacement of the rule's configuration (last write wins): attributes removed from the configuration are removed server-side, and edits made in the Kibana UI between a refresh and an apply are overwritten. kind is immutable server-side and changing it replaces the resource.
-  Managed scope. Terraform-managed rules are ES|QL rules. The resource does not expose metadata.builder (the Kibana UI form that authored a rule), the rule actors, or runtime state.
+  Lifecycle configuration. An alert rule evaluates query.base on every schedule.every, with query.breach.segment deciding which rows breach, recovery deciding when an alert recovers, no_data deciding what happens to a group that stops returning rows, state_transition delaying the pending and recovering phases, grouping choosing the fields that identify an alert group, and artifacts attaching runbooks and dashboards. metadata.routing_tags link the rule's alerts to Alerting v2 action policies: a policy applies when its matcher.tags contains at least one of the rule's routing tags.
+  Managed scope. Terraform-managed rules are ES|QL rules. The resource does not expose metadata.builder (the Kibana UI form that authored a rule), the rule actors, or runtime state. Importing a rule that was built in the Kibana UI emits a warning on every refresh until the first write, which converts it to an ES|QL rule by clearing the builder.
 ---
 
 # elasticstack_kibana_alerting_v2_rule (Resource)
@@ -17,7 +18,9 @@ Creates and manages Kibana [Alerting v2 rules](https://www.elastic.co/docs/api/d
 
 **Update semantics.** Create and update both issue a single `PUT` whose body is built entirely from the configuration, so every apply is a full replacement of the rule's configuration (last write wins): attributes removed from the configuration are removed server-side, and edits made in the Kibana UI between a refresh and an apply are overwritten. `kind` is immutable server-side and changing it replaces the resource.
 
-**Managed scope.** Terraform-managed rules are ES|QL rules. The resource does not expose `metadata.builder` (the Kibana UI form that authored a rule), the rule actors, or runtime state.
+**Lifecycle configuration.** An alert rule evaluates `query.base` on every `schedule.every`, with `query.breach.segment` deciding which rows breach, `recovery` deciding when an alert recovers, `no_data` deciding what happens to a group that stops returning rows, `state_transition` delaying the `pending` and `recovering` phases, `grouping` choosing the fields that identify an alert group, and `artifacts` attaching runbooks and dashboards. `metadata.routing_tags` link the rule's alerts to Alerting v2 action policies: a policy applies when its `matcher.tags` contains at least one of the rule's routing tags.
+
+**Managed scope.** Terraform-managed rules are ES|QL rules. The resource does not expose `metadata.builder` (the Kibana UI form that authored a rule), the rule actors, or runtime state. Importing a rule that was built in the Kibana UI emits a warning on every refresh until the first write, which converts it to an ES|QL rule by clearing the builder.
 ## Example Usage
 
 ```terraform
@@ -27,11 +30,16 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_kibana_alerting_v2_rule" "cpu_high" {
-  rule_id = "cpu-high-prod"
-  kind    = "alert"
+  rule_id    = "cpu-high-prod"
+  kind       = "alert"
+  time_field = "@timestamp"
 
   metadata = {
-    name = "CPU usage above 90% (production)"
+    name        = "CPU usage above 90% (production)"
+    description = "Hosts whose average CPU stays above 90% for a minute."
+    tags        = ["production", "infra"]
+    # Alerts from this rule are picked up by action policies whose matcher.tags contain one of these tags.
+    routing_tags = ["pager"]
   }
 
   schedule = {
@@ -40,7 +48,10 @@ resource "elasticstack_kibana_alerting_v2_rule" "cpu_high" {
   }
 
   query = {
-    base = "FROM metrics-system.cpu-* | STATS avg_cpu = AVG(system.cpu.total.norm.pct) BY host.name | WHERE avg_cpu > 0.9"
+    base = "FROM metrics-system.cpu-* | STATS avg_cpu = AVG(system.cpu.total.norm.pct) BY host.name"
+    breach = {
+      segment = "WHERE avg_cpu > 0.9"
+    }
   }
 
   recovery = {
@@ -52,6 +63,34 @@ resource "elasticstack_kibana_alerting_v2_rule" "cpu_high" {
     strategy = "keep_last"
     query    = "FROM metrics-system.cpu-* | STATS count = COUNT(*) BY host.name"
   }
+
+  state_transition = {
+    pending = {
+      count     = 2
+      timeframe = "5m"
+      operator  = "and"
+    }
+    recovering = {
+      count = 1
+    }
+  }
+
+  grouping = {
+    fields = ["host.name"]
+  }
+
+  artifacts = [
+    {
+      id   = "runbook"
+      type = "runbook"
+      data = jsonencode({ content = "# CPU high\n\n1. Check the host's top processes." })
+    },
+    {
+      id   = "dashboard"
+      type = "dashboard"
+      data = jsonencode({ dashboard_id = "hosts-overview" })
+    },
+  ]
 }
 ```
 
@@ -67,12 +106,15 @@ resource "elasticstack_kibana_alerting_v2_rule" "cpu_high" {
 
 ### Optional
 
+- `artifacts` (Attributes List) Objects attached to the rule, such as a runbook or a dashboard. Each `id` must be unique within the rule. (see [below for nested schema](#nestedatt--artifacts))
 - `enabled` (Boolean) Whether the rule is enabled. Always sent, so a rule is created in or replaced into the configured state in one request.
+- `grouping` (Attributes) Grouping configuration. When omitted, every row is its own alert group. (see [below for nested schema](#nestedatt--grouping))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `no_data` (Attributes) What the rule does when a group has no data. Required when `kind` is `alert` and not allowed when `kind` is `signal`. (see [below for nested schema](#nestedatt--no_data))
 - `recovery` (Attributes) When an alert recovers. Required when `kind` is `alert` and not allowed when `kind` is `signal`. (see [below for nested schema](#nestedatt--recovery))
 - `rule_id` (String) Identifier of the rule within the space: 1-150 characters of letters, digits, underscores, or hyphens. A UUID is generated when omitted. Changing it replaces the resource.
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
+- `state_transition` (Attributes) How many consecutive matches, or how long a condition must hold, before an alert becomes `active` or `inactive`. Only allowed when `kind` is `alert`. (see [below for nested schema](#nestedatt--state_transition))
 - `time_field` (String) Document field Kibana uses with `schedule.lookback` to time-filter `query.base`. Defaults to `@timestamp`.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
@@ -90,6 +132,12 @@ Required:
 
 - `name` (String) Rule name. Must be unique within the space.
 
+Optional:
+
+- `description` (String) Human-readable description of the rule.
+- `routing_tags` (List of String) Routing tags that link alerts from this rule to action policies: a policy applies when its `matcher.tags` contains at least one of them. Only allowed when `kind` is `alert`.
+- `tags` (List of String) Tags for categorisation, for example `["production", "infra"]`. Stored in the configured order.
+
 
 <a id="nestedatt--query"></a>
 ### Nested Schema for `query`
@@ -97,6 +145,18 @@ Required:
 Required:
 
 - `base` (String) ES|QL query that specifies the data to evaluate. Must include a `FROM` clause. Kibana applies the time filter from `schedule.lookback` using `time_field`.
+
+Optional:
+
+- `breach` (Attributes) Optional ES|QL clause appended to `query.base` that decides which rows breach. When omitted, every row returned by `query.base` is a match. (see [below for nested schema](#nestedatt--query--breach))
+
+<a id="nestedatt--query--breach"></a>
+### Nested Schema for `query.breach`
+
+Required:
+
+- `segment` (String) ES|QL clause appended to `query.base`, for example `WHERE avg_cpu > 0.85`. Must not include a `FROM` clause.
+
 
 
 <a id="nestedatt--schedule"></a>
@@ -109,6 +169,24 @@ Required:
 Optional:
 
 - `lookback` (String) Lookback window for the query in the same duration grammar (for example `5m`). At most `365d`.
+
+
+<a id="nestedatt--artifacts"></a>
+### Nested Schema for `artifacts`
+
+Required:
+
+- `data` (String) Artifact payload as a JSON object string with at most 32 top-level keys. A `runbook` carries `content` and a `dashboard` carries `dashboard_id`. Semantically equal JSON produces no diff.
+- `id` (String) Artifact identifier, unique within the rule.
+- `type` (String) Artifact type, for example `runbook` or `dashboard`. Known types are validated server-side against their expected `data` shape.
+
+
+<a id="nestedatt--grouping"></a>
+### Nested Schema for `grouping`
+
+Required:
+
+- `fields` (List of String) Fields to group alerts by, for example `["host.name", "service.name"]`. Should match the `BY` fields of the ES|QL query. Stored in the configured order.
 
 
 <a id="nestedblock--kibana_connection"></a>
@@ -149,6 +227,35 @@ Optional:
 
 - `query` (String) Independent ES|QL query, including its own `FROM` clause. Required when `strategy` is `query` and not allowed otherwise.
 - `segment` (String) ES|QL clause appended to `query.base`, for example `WHERE avg_cpu < 0.60`. Required when `strategy` is `condition` and not allowed otherwise.
+
+
+<a id="nestedatt--state_transition"></a>
+### Nested Schema for `state_transition`
+
+Optional:
+
+- `pending` (Attributes) How long an alert stays `pending` before it becomes `active`. (see [below for nested schema](#nestedatt--state_transition--pending))
+- `recovering` (Attributes) How long an alert stays `recovering` before it becomes `inactive`. (see [below for nested schema](#nestedatt--state_transition--recovering))
+
+<a id="nestedatt--state_transition--pending"></a>
+### Nested Schema for `state_transition.pending`
+
+Optional:
+
+- `count` (Number) Consecutive matches the alert spends in `pending` before it becomes `active` on the next one. `0` transitions on the first.
+- `operator` (String) How `count` and `timeframe` combine when both are set: `and` requires both, `or` requires either. Only allowed when both are set.
+- `timeframe` (String) Duration the condition must hold, for example `5m`, in the same duration grammar as `schedule.every`. At most `365d`.
+
+
+<a id="nestedatt--state_transition--recovering"></a>
+### Nested Schema for `state_transition.recovering`
+
+Optional:
+
+- `count` (Number) Consecutive recoveries the alert spends in `recovering` before it becomes `inactive` on the next one. `0` transitions on the first.
+- `operator` (String) How `count` and `timeframe` combine when both are set: `and` requires both, `or` requires either. Only allowed when both are set.
+- `timeframe` (String) Duration the condition must hold, for example `5m`, in the same duration grammar as `schedule.every`. At most `365d`.
+
 
 
 <a id="nestedatt--timeouts"></a>

@@ -38,7 +38,7 @@ func readRule(ctx context.Context, client *clients.KibanaScopedClient, resourceI
 		return model, false, diags
 	}
 
-	diags.Append(model.populateFromAPI(rule)...)
+	diags.Append(model.populateFromAPI(ctx, rule)...)
 	if diags.HasError() {
 		return model, false, diags
 	}

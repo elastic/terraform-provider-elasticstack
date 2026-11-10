@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -40,21 +41,27 @@ type Model struct {
 	ID     types.String `tfsdk:"id"`
 	RuleID types.String `tfsdk:"rule_id"`
 	entitycore.SpaceIDField
-	Kind      types.String   `tfsdk:"kind"`
-	Enabled   types.Bool     `tfsdk:"enabled"`
-	TimeField types.String   `tfsdk:"time_field"`
-	Metadata  *metadataModel `tfsdk:"metadata"`
-	Schedule  *scheduleModel `tfsdk:"schedule"`
-	Query     *queryModel    `tfsdk:"query"`
-	Recovery  *recoveryModel `tfsdk:"recovery"`
-	NoData    *noDataModel   `tfsdk:"no_data"`
-	Version   types.Int64    `tfsdk:"version"`
-	CreatedAt types.String   `tfsdk:"created_at"`
-	UpdatedAt types.String   `tfsdk:"updated_at"`
+	Kind            types.String          `tfsdk:"kind"`
+	Enabled         types.Bool            `tfsdk:"enabled"`
+	TimeField       types.String          `tfsdk:"time_field"`
+	Metadata        *metadataModel        `tfsdk:"metadata"`
+	Schedule        *scheduleModel        `tfsdk:"schedule"`
+	Query           *queryModel           `tfsdk:"query"`
+	Recovery        *recoveryModel        `tfsdk:"recovery"`
+	NoData          *noDataModel          `tfsdk:"no_data"`
+	StateTransition *stateTransitionModel `tfsdk:"state_transition"`
+	Grouping        *groupingModel        `tfsdk:"grouping"`
+	Artifacts       []artifactModel       `tfsdk:"artifacts"`
+	Version         types.Int64           `tfsdk:"version"`
+	CreatedAt       types.String          `tfsdk:"created_at"`
+	UpdatedAt       types.String          `tfsdk:"updated_at"`
 }
 
 type metadataModel struct {
-	Name types.String `tfsdk:"name"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	Tags        types.List   `tfsdk:"tags"`
+	RoutingTags types.List   `tfsdk:"routing_tags"`
 }
 
 type scheduleModel struct {
@@ -63,7 +70,33 @@ type scheduleModel struct {
 }
 
 type queryModel struct {
-	Base types.String `tfsdk:"base"`
+	Base   types.String `tfsdk:"base"`
+	Breach *breachModel `tfsdk:"breach"`
+}
+
+type breachModel struct {
+	Segment types.String `tfsdk:"segment"`
+}
+
+type stateTransitionModel struct {
+	Pending    *stateTransitionPhaseModel `tfsdk:"pending"`
+	Recovering *stateTransitionPhaseModel `tfsdk:"recovering"`
+}
+
+type stateTransitionPhaseModel struct {
+	Count     types.Int64  `tfsdk:"count"`
+	Timeframe types.String `tfsdk:"timeframe"`
+	Operator  types.String `tfsdk:"operator"`
+}
+
+type groupingModel struct {
+	Fields types.List `tfsdk:"fields"`
+}
+
+type artifactModel struct {
+	ID   types.String         `tfsdk:"id"`
+	Type types.String         `tfsdk:"type"`
+	Data jsontypes.Normalized `tfsdk:"data"`
 }
 
 type recoveryModel struct {
@@ -85,19 +118,22 @@ func (m Model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRe
 	), nil
 }
 
-func (m Model) toAPIPutBody() (kbapi.KibanaHTTPAPIsAlertingPutRule, diag.Diagnostics) {
+func (m Model) toAPIPutBody(ctx context.Context) (kbapi.KibanaHTTPAPIsAlertingPutRule, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	body := kbapi.KibanaHTTPAPIsAlertingPutRule{
 		Kind:      kbapi.KibanaHTTPAPIsAlertingPutRuleKind(m.Kind.ValueString()),
 		Enabled:   m.Enabled.ValueBoolPointer(),
 		TimeField: m.TimeField.ValueStringPointer(),
-		Metadata:  kbapi.KibanaHTTPAPIsAlertingRuleMetadata{Name: m.Metadata.Name.ValueString()},
+		Metadata:  m.Metadata.toAPI(ctx, &diags),
 		Schedule: kbapi.KibanaHTTPAPIsAlertingRuleSchedule{
 			Every:    m.Schedule.Every.ValueString(),
 			Lookback: m.Schedule.Lookback.ValueStringPointer(),
 		},
-		Query: kbapi.KibanaHTTPAPIsAlertingRuleQuery{Base: m.Query.Base.ValueString()},
+		Query:           m.Query.toAPI(),
+		StateTransition: m.StateTransition.toAPI(),
+		Grouping:        m.Grouping.toAPI(ctx, &diags),
+		Artifacts:       artifactsToAPI(m.Artifacts, &diags),
 	}
 
 	recovery, d := m.Recovery.toAPI()
@@ -111,7 +147,7 @@ func (m Model) toAPIPutBody() (kbapi.KibanaHTTPAPIsAlertingPutRule, diag.Diagnos
 	return body, diags
 }
 
-func (m *Model) populateFromAPI(resp *kbapi.KibanaHTTPAPIsAlertingRuleResponse) diag.Diagnostics {
+func (m *Model) populateFromAPI(ctx context.Context, resp *kbapi.KibanaHTTPAPIsAlertingRuleResponse) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	m.Kind = types.StringValue(string(resp.Kind))
@@ -120,12 +156,12 @@ func (m *Model) populateFromAPI(resp *kbapi.KibanaHTTPAPIsAlertingRuleResponse) 
 	if resp.TimeField != nil {
 		m.TimeField = types.StringValue(*resp.TimeField)
 	}
-	m.Metadata = &metadataModel{Name: types.StringValue(resp.Metadata.Name)}
+	m.Metadata = metadataFromAPI(ctx, resp.Metadata, &diags)
 	m.Schedule = &scheduleModel{
 		Every:    types.StringValue(resp.Schedule.Every),
 		Lookback: types.StringPointerValue(resp.Schedule.Lookback),
 	}
-	m.Query = &queryModel{Base: types.StringValue(resp.Query.Base)}
+	m.Query = queryFromAPI(resp.Query)
 
 	recovery, d := recoveryFromAPI(resp.Recovery)
 	diags.Append(d...)
@@ -134,6 +170,10 @@ func (m *Model) populateFromAPI(resp *kbapi.KibanaHTTPAPIsAlertingRuleResponse) 
 	noData, d := noDataFromAPI(resp.NoData)
 	diags.Append(d...)
 	m.NoData = noData
+
+	m.StateTransition = stateTransitionFromAPI(resp.StateTransition)
+	m.Grouping = groupingFromAPI(ctx, resp.Grouping, &diags)
+	m.Artifacts = artifactsFromAPI(resp.Artifacts, &diags)
 
 	m.Version = types.Int64Value(int64(resp.Version))
 	m.CreatedAt = types.StringValue(resp.CreatedAt.UTC().Format(kbschema.KibanaTimestampLayout))

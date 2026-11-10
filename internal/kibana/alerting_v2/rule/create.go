@@ -67,7 +67,7 @@ func createRule(ctx context.Context, client *clients.KibanaScopedClient, req ent
 
 // putRule issues the create-or-replace write. created reports whether the server answered 201 (created) rather than 200 (replaced).
 func putRule(ctx context.Context, client *clients.KibanaScopedClient, spaceID, ruleID string, plan Model) (created bool, written Model, diags diag.Diagnostics) {
-	body, bodyDiags := plan.toAPIPutBody()
+	body, bodyDiags := plan.toAPIPutBody(ctx)
 	diags.Append(bodyDiags...)
 	if diags.HasError() {
 		return false, plan, diags
