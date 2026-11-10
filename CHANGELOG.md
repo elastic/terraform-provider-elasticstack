@@ -2,18 +2,20 @@
 
 ### Breaking changes
 
+`elasticstack_fleet_server_host` now reads `ssl` from Fleet. If a host already has SSL settings configured outside Terraform, a configuration without an `ssl` block plans to remove them, and applying that plan clears the host's SSL settings, which can disconnect enrolled agents. Add the existing settings to an `ssl` block before applying. On Elastic Stack 9.3.0+, if the host also stores `agent_*` or `es_*` SSL fields, which this resource does not manage, updates to `ssl` fail instead; remove those fields outside Terraform first.
+
 The `thresholds[].axis` values `bottom`, `left` and `right` are no longer accepted; use `x`, `y` or `y2`. The removed values were always rejected by Kibana, so they now fail at plan time.
 
 `comments` on `kibana_security_exception_item` is now computed/read-only. Move texts Terraform should enforce into the new `required_comments` attribute and remove any configured `comments`. Previously stored comments remain in Kibana and are echoed in `comments`.
 
 ### Changes
 
-- Add support for configuring custom headers on Kibana connections. ([#5482](https://github.com/elastic/terraform-provider-elasticstack/pull/5482))
+- Add custom `headers` to provider-level and entity-local Kibana connections. Values are stored as sensitive in state, but provider debug logging masks only the `Authorization` header, so other header values (such as proxy tokens) can appear in `TF_LOG=DEBUG` output. ([#5482](https://github.com/elastic/terraform-provider-elasticstack/pull/5482))
 - Fix `elasticstack_elasticsearch_snapshot_repository` failing with "Provider returned invalid result object after apply" for S3 repositories without `endpoint`. ([#5476](https://github.com/elastic/terraform-provider-elasticstack/pull/5476))
 - Remove `elasticstack_elasticsearch_security_role` and other resources using JSON attributes with defaults from state when they were deleted outside Terraform, instead of planning a replacement. ([#5461](https://github.com/elastic/terraform-provider-elasticstack/pull/5461))
 - Fix `elasticstack_elasticsearch_ml_anomaly_detection_job` updates failing to decode the response when the job has nested `custom_settings`. ([#5462](https://github.com/elastic/terraform-provider-elasticstack/pull/5462))
 - Add `access_control` support to `elasticstack_kibana_agentbuilder_agent`. ([#5401](https://github.com/elastic/terraform-provider-elasticstack/pull/5401))
-- Add `ssl` attribute to `elasticstack_fleet_server_host`. ([#5394](https://github.com/elastic/terraform-provider-elasticstack/pull/5394))
+- Add optional `ssl` (certificate, sensitive key, certificate authorities, and client authentication mode) to `elasticstack_fleet_server_host` (requires Elastic Stack 9.1.0+). ([#5394](https://github.com/elastic/terraform-provider-elasticstack/pull/5394))
 - Fixes `elasticstack_elasticsearch_connector` showing a perpetual plan diff when optional blocks (e.g. `scheduling`) are left at their computed defaults, and fixes creating a connector with `connector_id` omitted so Elasticsearch can auto-generate the ID. ([#5398](https://github.com/elastic/terraform-provider-elasticstack/pull/5398))
 - Add a data source to look up a Fleet agent policy by name or policy id. ([#5369](https://github.com/elastic/terraform-provider-elasticstack/pull/5369))
 - Add write-only secrets support (e.g. SSL key) to elasticstack_fleet_agent_download_source ([#5310](https://github.com/elastic/terraform-provider-elasticstack/pull/5310))
