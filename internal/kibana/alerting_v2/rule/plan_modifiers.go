@@ -27,8 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var artifactsPath = path.Root("artifacts")
-
 // ModifyPlan keeps a reformat-only edit of artifacts[].data from planning an
 // update. The framework applies jsontypes.Normalized semantic equality after
 // writes and reads but not while planning, and it marks every computed

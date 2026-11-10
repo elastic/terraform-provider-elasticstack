@@ -30,11 +30,16 @@ import (
 )
 
 var (
-	kindPath     = path.Root("kind")
-	metadataPath = path.Root("metadata")
-	queryPath    = path.Root(queryAttribute)
-	recoveryPath = path.Root("recovery")
-	noDataPath   = path.Root("no_data")
+	kindPath        = path.Root("kind")
+	metadataPath    = path.Root("metadata")
+	tagsPath        = metadataPath.AtName("tags")
+	routingTagsPath = metadataPath.AtName("routing_tags")
+	queryPath       = path.Root(queryAttribute)
+	recoveryPath    = path.Root("recovery")
+	noDataPath      = path.Root("no_data")
+	artifactsPath   = path.Root("artifacts")
+
+	groupingFieldsPath = path.Root("grouping").AtName("fields")
 
 	stateTransitionPath = path.Root("state_transition")
 	pendingPath         = stateTransitionPath.AtName("pending")

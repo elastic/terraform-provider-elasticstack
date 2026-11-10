@@ -22,6 +22,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -325,4 +326,20 @@ func TestWithCompositeID_prefixesErrorsAndKeepsWarnings(t *testing.T) {
 	require.Equal(t, in[0], out[0])
 	require.Equal(t, "failed", out[1].Summary())
 	require.Equal(t, `Rule "team-a/my-rule": boom`, out[1].Detail())
+}
+
+func TestReadRule_mappingErrorDiagnosticsCarryCompositeID(t *testing.T) {
+	t.Parallel()
+
+	unknownStrategy := strings.Replace(ruleResponseJSON, `"recovery": {"strategy": "no_breach"}`, `"recovery": {"strategy": "teleport"}`, 1)
+	client, _ := newScriptedClient(t, map[string][]scriptedResponse{
+		"GET /s/team-a/api/alerting/v2/rules/my-rule": {{status: http.StatusOK, body: unknownStrategy}},
+	})
+
+	_, found, diags := readRule(context.Background(), client, "my-rule", "team-a", Model{})
+
+	require.False(t, found)
+	require.True(t, diags.HasError())
+	require.Contains(t, diags[0].Detail(), "team-a/my-rule")
+	require.Contains(t, diags[0].Detail(), "teleport")
 }

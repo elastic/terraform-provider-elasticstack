@@ -27,12 +27,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var (
-	tagsPath           = path.Root("metadata").AtName("tags")
-	routingTagsPath    = path.Root("metadata").AtName("routing_tags")
-	groupingFieldsPath = path.Root("grouping").AtName("fields")
-)
-
 func (m *metadataModel) toAPI(ctx context.Context, diags *diag.Diagnostics) kbapi.KibanaHTTPAPIsAlertingRuleMetadata {
 	return kbapi.KibanaHTTPAPIsAlertingRuleMetadata{
 		Name:        m.Name.ValueString(),

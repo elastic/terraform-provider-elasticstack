@@ -158,3 +158,18 @@ func TestDurationValidatorAtLeast_enforcesMinimum(t *testing.T) {
 		require.False(t, resp.Diagnostics.HasError())
 	})
 }
+
+func TestDurationValidator_rejectsAmountsThatOverflow(t *testing.T) {
+	t.Parallel()
+
+	for _, d := range []string{"213504d", "106752d", "30500w", "9223372036854775807ms", "99999999999999999999d"} {
+		t.Run(d, func(t *testing.T) {
+			t.Parallel()
+			resp := validateString(t, utils.DurationValidator(), types.StringValue(d))
+			require.True(t, resp.Diagnostics.HasError())
+			detail := resp.Diagnostics[0].Detail()
+			require.Contains(t, detail, "365d")
+			require.NotContains(t, detail, "at least")
+		})
+	}
+}

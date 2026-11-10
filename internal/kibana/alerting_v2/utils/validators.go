@@ -108,19 +108,24 @@ func (v durationValidator) ValidateString(_ context.Context, req validator.Strin
 		resp.Diagnostics.Append(validatordiag.InvalidAttributeValueDiagnostic(req.Path, "must be at most 365d", value))
 		return
 	}
-	if parsed < v.minimum {
+	if v.minimum > 0 && parsed < v.minimum {
 		resp.Diagnostics.Append(validatordiag.InvalidAttributeValueDiagnostic(req.Path, "must be at least "+v.minimumText, value))
 	}
 }
 
+// parseDuration returns false for values outside the grammar. Amounts whose
+// product with the unit would overflow time.Duration are clamped to one unit
+// above maxDuration instead, so they fail the ceiling check with the right
+// message rather than wrapping around to a small or negative value.
 func parseDuration(value string) (time.Duration, bool) {
 	match := durationPattern.FindStringSubmatch(value)
 	if match == nil {
 		return 0, false
 	}
+	unit := durationUnits[match[2]]
 	amount, err := strconv.ParseInt(match[1], 10, 64)
-	if err != nil {
-		return 0, false
+	if err != nil || amount > int64(maxDuration/unit) {
+		return maxDuration + unit, true
 	}
-	return time.Duration(amount) * durationUnits[match[2]], true
+	return time.Duration(amount) * unit, true
 }
