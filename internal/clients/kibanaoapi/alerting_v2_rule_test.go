@@ -204,6 +204,19 @@ func TestPutAlertingV2Rule_conflictSurfacesCodeAndMessage(t *testing.T) {
 	require.Equal(t, "A rule named CPU high already exists", diags[0].Detail())
 }
 
+func TestPutAlertingV2Rule_alertingDisabledNamesAdvancedSetting(t *testing.T) {
+	t.Parallel()
+
+	client := newAlertingV2Client(t, http.StatusServiceUnavailable, `{"code":"ALERTING_DISABLED","error":"Service Unavailable","message":"Alerting v2 is disabled"}`, nil)
+
+	created, diags := kibanaoapi.PutAlertingV2Rule(context.Background(), client, "default", "my-rule", minimalPutRuleBody())
+
+	require.False(t, created)
+	require.True(t, diags.HasError())
+	require.Contains(t, diags[0].Detail(), "alerting:v2:enabled")
+	require.Contains(t, diags[0].Detail(), "Alerting v2 is disabled")
+}
+
 func TestPutAlertingV2Rule_emptySuccessBodyIsError(t *testing.T) {
 	t.Parallel()
 
