@@ -130,7 +130,7 @@ resource "elasticstack_kibana_alerting_v2_rule" "cpu_high" {
 
 Required:
 
-- `name` (String) Rule name. Must be unique within the space.
+- `name` (String) Rule name. It does not have to be unique.
 
 Optional:
 

@@ -20,7 +20,7 @@
 
 - [x] 3.1 Add attribute-level validators for every bound in the spec's Schema section (enums, lengths, list sizes and non-empty collections, integer ranges, id pattern, durations, artifact `id` uniqueness). Verify with plan-only `ExpectError` test steps that run without `TF_ACC`.
 - [x] 3.2 Implement `ValidateConfig` with the `recovery` and `no_data` variant contracts (`segment` iff `condition`, `query` iff `query`, no `query` with `ignore`, each depending on the discriminator's value) and the seven cross-field rules from the spec (state_transition and routing_tags only for alert rules, alert rules need both lifecycle objects and signal rules neither, condition recovery needs a breach clause, non-ignore no-data needs breach or presence query, manual recovery forbids a recovering phase, phase thresholds and operator), each skipped on unknown inputs. Verify with unit tests for known and unknown inputs and plan-only `ExpectError` steps for each spec scenario.
-- [x] 3.3 Verify a rejected `no_data.strategy = "alert"` at plan time and a tolerated `alert` on read with a unit test, and verify the server-side ES|QL, duplicate-name 409, and deployment-minimum-interval errors surface the server message in acceptance steps.
+- [x] 3.3 Verify a rejected `no_data.strategy = "alert"` at plan time and a tolerated `alert` on read with a unit test, and verify the server-side ES|QL and deployment-minimum-interval errors surface the server message in acceptance steps.
 
 ## 4. Rule failure modes and non-default spaces behave as specified
 

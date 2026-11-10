@@ -91,7 +91,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Required:            true,
 				Attributes: map[string]schema.Attribute{
 					"name": schema.StringAttribute{
-						MarkdownDescription: "Rule name. Must be unique within the space.",
+						MarkdownDescription: "Rule name. It does not have to be unique.",
 						Required:            true,
 						Validators:          []validator.String{stringvalidator.LengthBetween(1, 256)},
 					},
