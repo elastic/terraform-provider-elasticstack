@@ -23,6 +23,8 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alerting_v2/utils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
@@ -40,6 +42,9 @@ const (
 	minScheduleEvery = "5s"
 
 	queryAttribute = "query"
+
+	operatorAnd = "and"
+	operatorOr  = "or"
 )
 
 func getSchema(_ context.Context) schema.Schema {
@@ -91,19 +96,22 @@ func getSchema(_ context.Context) schema.Schema {
 						Validators:          []validator.String{stringvalidator.LengthBetween(1, 256)},
 					},
 					"description": schema.StringAttribute{
-						MarkdownDescription: "Human-readable description of the rule.",
+						MarkdownDescription: "Human-readable description of the rule. 1-1024 characters.",
 						Optional:            true,
+						Validators:          []validator.String{stringvalidator.LengthBetween(1, 1024)},
 					},
 					"tags": schema.ListAttribute{
-						MarkdownDescription: "Tags for categorisation, for example `[\"production\", \"infra\"]`. Stored in the configured order.",
+						MarkdownDescription: "Tags for categorisation, for example `[\"production\", \"infra\"]`. Stored in the configured order. 1-20 items of 1-128 characters.",
 						Optional:            true,
 						ElementType:         types.StringType,
+						Validators:          tagListValidators(),
 					},
 					"routing_tags": schema.ListAttribute{
 						MarkdownDescription: "Routing tags that link alerts from this rule to action policies: a policy applies when its `matcher.tags` contains at least one of them. " +
-							"Only allowed when `kind` is `alert`.",
+							"Only allowed when `kind` is `alert`. 1-20 items of 1-128 characters.",
 						Optional:    true,
 						ElementType: types.StringType,
+						Validators:  tagListValidators(),
 					},
 				},
 			},
@@ -131,15 +139,16 @@ func getSchema(_ context.Context) schema.Schema {
 					"base": schema.StringAttribute{
 						MarkdownDescription: "ES|QL query that specifies the data to evaluate. Must include a `FROM` clause. Kibana applies the time filter from `schedule.lookback` using `time_field`.",
 						Required:            true,
-						Validators:          []validator.String{stringvalidator.LengthBetween(1, 10000)},
+						Validators:          esqlValidators(),
 					},
 					"breach": schema.SingleNestedAttribute{
 						MarkdownDescription: "Optional ES|QL clause appended to `query.base` that decides which rows breach. When omitted, every row returned by `query.base` is a match.",
 						Optional:            true,
 						Attributes: map[string]schema.Attribute{
 							"segment": schema.StringAttribute{
-								MarkdownDescription: "ES|QL clause appended to `query.base`, for example `WHERE avg_cpu > 0.85`. Must not include a `FROM` clause.",
+								MarkdownDescription: "ES|QL clause appended to `query.base`, for example `WHERE avg_cpu > 0.85`. Must not include a `FROM` clause. 1-10000 characters.",
 								Required:            true,
+								Validators:          esqlValidators(),
 							},
 						},
 					},
@@ -158,12 +167,14 @@ func getSchema(_ context.Context) schema.Schema {
 						)},
 					},
 					"segment": schema.StringAttribute{
-						MarkdownDescription: "ES|QL clause appended to `query.base`, for example `WHERE avg_cpu < 0.60`. Required when `strategy` is `condition` and not allowed otherwise.",
+						MarkdownDescription: "ES|QL clause appended to `query.base`, for example `WHERE avg_cpu < 0.60`. Required when `strategy` is `condition` and not allowed otherwise. 1-10000 characters.",
 						Optional:            true,
+						Validators:          esqlValidators(),
 					},
 					queryAttribute: schema.StringAttribute{
-						MarkdownDescription: "Independent ES|QL query, including its own `FROM` clause. Required when `strategy` is `query` and not allowed otherwise.",
+						MarkdownDescription: "Independent ES|QL query, including its own `FROM` clause. Required when `strategy` is `query` and not allowed otherwise. 1-10000 characters.",
 						Optional:            true,
+						Validators:          esqlValidators(),
 					},
 				},
 			},
@@ -180,8 +191,9 @@ func getSchema(_ context.Context) schema.Schema {
 						)},
 					},
 					queryAttribute: schema.StringAttribute{
-						MarkdownDescription: "Optional ES|QL query that checks whether a group has data. Not allowed when `strategy` is `ignore`.",
+						MarkdownDescription: "Optional ES|QL query that checks whether a group has data. Not allowed when `strategy` is `ignore`. 1-10000 characters.",
 						Optional:            true,
+						Validators:          esqlValidators(),
 					},
 				},
 			},
@@ -198,24 +210,37 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"fields": schema.ListAttribute{
-						MarkdownDescription: "Fields to group alerts by, for example `[\"host.name\", \"service.name\"]`. Should match the `BY` fields of the ES|QL query. Stored in the configured order.",
-						Required:            true,
-						ElementType:         types.StringType,
+						MarkdownDescription: "Fields to group alerts by, for example `[\"host.name\", \"service.name\"]`. Should match the `BY` fields of the ES|QL query. " +
+							"Stored in the configured order. 1-16 items of 1-256 characters.",
+						Required:    true,
+						ElementType: types.StringType,
+						Validators: []validator.List{
+							nonEmptyListValidator(),
+							listvalidator.SizeAtMost(16),
+							listvalidator.ValueStringsAre(stringvalidator.LengthBetween(1, 256)),
+						},
 					},
 				},
 			},
 			"artifacts": schema.ListNestedAttribute{
-				MarkdownDescription: "Objects attached to the rule, such as a runbook or a dashboard. Each `id` must be unique within the rule.",
+				MarkdownDescription: "Objects attached to the rule, such as a runbook or a dashboard. 1-100 items. Each `id` must be unique within the rule.",
 				Optional:            true,
+				Validators: []validator.List{
+					nonEmptyListValidator(),
+					listvalidator.SizeAtMost(100),
+					artifactIDsUniqueValidator(),
+				},
 				NestedObject: schema.NestedAttributeObject{
 					Attributes: map[string]schema.Attribute{
 						"id": schema.StringAttribute{
-							MarkdownDescription: "Artifact identifier, unique within the rule.",
+							MarkdownDescription: "Artifact identifier, unique within the rule. 1-150 characters.",
 							Required:            true,
+							Validators:          []validator.String{stringvalidator.LengthBetween(1, 150)},
 						},
 						"type": schema.StringAttribute{
-							MarkdownDescription: "Artifact type, for example `runbook` or `dashboard`. Known types are validated server-side against their expected `data` shape.",
+							MarkdownDescription: "Artifact type, for example `runbook` or `dashboard`. 1-128 characters. Known types are validated server-side against their expected `data` shape.",
 							Required:            true,
+							Validators:          []validator.String{stringvalidator.LengthBetween(1, 128)},
 						},
 						"data": schema.StringAttribute{
 							MarkdownDescription: "Artifact payload as a JSON object string with at most 32 top-level keys. A `runbook` carries `content` and a `dashboard` carries `dashboard_id`. " +
@@ -250,8 +275,9 @@ func stateTransitionPhaseAttribute(phase, targetStatus, events string) schema.Si
 		Optional:            true,
 		Attributes: map[string]schema.Attribute{
 			"count": schema.Int64Attribute{
-				MarkdownDescription: "Consecutive " + events + " the alert spends in `" + phase + "` before it becomes `" + targetStatus + "` on the next one. `0` transitions on the first.",
+				MarkdownDescription: "Consecutive " + events + " the alert spends in `" + phase + "` before it becomes `" + targetStatus + "` on the next one. `0` transitions on the first. 0-1000.",
 				Optional:            true,
+				Validators:          []validator.Int64{int64validator.Between(0, 1000)},
 			},
 			"timeframe": schema.StringAttribute{
 				MarkdownDescription: "Duration the condition must hold, for example `5m`, in the same duration grammar as `schedule.every`. At most `365d`.",
@@ -261,7 +287,25 @@ func stateTransitionPhaseAttribute(phase, targetStatus, events string) schema.Si
 			"operator": schema.StringAttribute{
 				MarkdownDescription: "How `count` and `timeframe` combine when both are set: `and` requires both, `or` requires either. Only allowed when both are set.",
 				Optional:            true,
+				Validators:          []validator.String{stringvalidator.OneOf(operatorAnd, operatorOr)},
 			},
 		},
 	}
+}
+
+// tagListValidators bounds metadata.tags and metadata.routing_tags: 1-20
+// items of 1-128 characters, never an empty list.
+func tagListValidators() []validator.List {
+	return []validator.List{
+		nonEmptyListValidator(),
+		listvalidator.SizeAtMost(20),
+		listvalidator.ValueStringsAre(stringvalidator.LengthBetween(1, 128)),
+	}
+}
+
+// esqlValidators bounds every ES|QL string (query.base, query.breach.segment,
+// recovery.segment, recovery.query, no_data.query) to 1-10000 characters.
+// The provider never parses ES|QL; syntax errors surface from the server.
+func esqlValidators() []validator.String {
+	return []validator.String{stringvalidator.LengthBetween(1, 10000)}
 }

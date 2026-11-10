@@ -1,8 +1,3 @@
-variable "name" {
-  description = "Unique rule name"
-  type        = string
-}
-
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
@@ -12,7 +7,8 @@ resource "elasticstack_kibana_alerting_v2_rule" "test" {
   kind = "alert"
 
   metadata = {
-    name = var.name
+    name         = "validation"
+    routing_tags = []
   }
 
   schedule = {
@@ -20,7 +16,7 @@ resource "elasticstack_kibana_alerting_v2_rule" "test" {
   }
 
   query = {
-    base = "FROM logs-* | STATS count = COUNT(*) BY host.name | WHERE count > 100"
+    base = "FROM logs-* | STATS count = COUNT(*) BY host.name"
   }
 
   recovery = {
@@ -30,12 +26,4 @@ resource "elasticstack_kibana_alerting_v2_rule" "test" {
   no_data = {
     strategy = "ignore"
   }
-
-  artifacts = [
-    {
-      id   = "rb"
-      type = "runbook"
-      data = "not json"
-    },
-  ]
 }

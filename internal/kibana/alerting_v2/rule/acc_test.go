@@ -296,28 +296,36 @@ func TestAccResourceAlertingV2Rule_enabledToggle(t *testing.T) {
 	})
 }
 
-func TestAccResourceAlertingV2Rule_artifactDataMustBeObject(t *testing.T) {
+// Server-side rejections the provider does not pre-empt: ES|QL syntax, the
+// deployment's minimum schedule interval (1m by default, above the schema's
+// 5s floor), and type-specific artifact data. Each surfaces the server's code
+// and message, and nothing is created.
+func TestAccResourceAlertingV2Rule_serverErrors(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minAlertingV2RuleAPISupport, versionutils.FlavorAny)
 
-	configVariables := config.Variables{"name": config.StringVariable("tf-acc-" + uuid.New().String()[:8])}
-	mustBeObject := regexp.MustCompile(`(?s)expected value to be a JSON object.*data = jsonencode\(\["a"\]\)`)
-	// jsontypes.Normalized rejects malformed JSON during config decoding, before attribute validators run.
-	notJSON := regexp.MustCompile(`(?s)data = "not json".*not valid JSON`)
+	_, _, configVariables := ruleTestVariables()
 
 	resource.Test(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkAlertingV2RuleDestroy,
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("array"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_esql"),
 				ConfigVariables:          configVariables,
-				ExpectError:              mustBeObject,
+				ExpectError:              regexp.MustCompile(`(?s)HTTP 400 BAD_REQUEST.*query\.base: Invalid ES\|QL query`),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("not_json"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("below_deployment_minimum"),
 				ConfigVariables:          configVariables,
-				ExpectError:              notJSON,
+				ExpectError:              regexp.MustCompile(`(?s)HTTP 400 SCHEDULE_INTERVAL_TOO_SHORT.*"10s" is shorter than the allowed\s+minimum`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_artifact_data"),
+				ConfigVariables:          configVariables,
+				ExpectError:              regexp.MustCompile(`(?s)HTTP 400 INVALID_ARTIFACT_DATA.*Artifact "rb" of type "runbook" has invalid data`),
 			},
 		},
 	})

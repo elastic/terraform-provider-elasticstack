@@ -106,7 +106,7 @@ resource "elasticstack_kibana_alerting_v2_rule" "cpu_high" {
 
 ### Optional
 
-- `artifacts` (Attributes List) Objects attached to the rule, such as a runbook or a dashboard. Each `id` must be unique within the rule. (see [below for nested schema](#nestedatt--artifacts))
+- `artifacts` (Attributes List) Objects attached to the rule, such as a runbook or a dashboard. 1-100 items. Each `id` must be unique within the rule. (see [below for nested schema](#nestedatt--artifacts))
 - `enabled` (Boolean) Whether the rule is enabled. Always sent, so a rule is created in or replaced into the configured state in one request.
 - `grouping` (Attributes) Grouping configuration. When omitted, every row is its own alert group. (see [below for nested schema](#nestedatt--grouping))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
@@ -134,9 +134,9 @@ Required:
 
 Optional:
 
-- `description` (String) Human-readable description of the rule.
-- `routing_tags` (List of String) Routing tags that link alerts from this rule to action policies: a policy applies when its `matcher.tags` contains at least one of them. Only allowed when `kind` is `alert`.
-- `tags` (List of String) Tags for categorisation, for example `["production", "infra"]`. Stored in the configured order.
+- `description` (String) Human-readable description of the rule. 1-1024 characters.
+- `routing_tags` (List of String) Routing tags that link alerts from this rule to action policies: a policy applies when its `matcher.tags` contains at least one of them. Only allowed when `kind` is `alert`. 1-20 items of 1-128 characters.
+- `tags` (List of String) Tags for categorisation, for example `["production", "infra"]`. Stored in the configured order. 1-20 items of 1-128 characters.
 
 
 <a id="nestedatt--query"></a>
@@ -155,7 +155,7 @@ Optional:
 
 Required:
 
-- `segment` (String) ES|QL clause appended to `query.base`, for example `WHERE avg_cpu > 0.85`. Must not include a `FROM` clause.
+- `segment` (String) ES|QL clause appended to `query.base`, for example `WHERE avg_cpu > 0.85`. Must not include a `FROM` clause. 1-10000 characters.
 
 
 
@@ -177,8 +177,8 @@ Optional:
 Required:
 
 - `data` (String) Artifact payload as a JSON object string with at most 32 top-level keys. A `runbook` carries `content` and a `dashboard` carries `dashboard_id`. Semantically equal JSON produces no diff.
-- `id` (String) Artifact identifier, unique within the rule.
-- `type` (String) Artifact type, for example `runbook` or `dashboard`. Known types are validated server-side against their expected `data` shape.
+- `id` (String) Artifact identifier, unique within the rule. 1-150 characters.
+- `type` (String) Artifact type, for example `runbook` or `dashboard`. 1-128 characters. Known types are validated server-side against their expected `data` shape.
 
 
 <a id="nestedatt--grouping"></a>
@@ -186,7 +186,7 @@ Required:
 
 Required:
 
-- `fields` (List of String) Fields to group alerts by, for example `["host.name", "service.name"]`. Should match the `BY` fields of the ES|QL query. Stored in the configured order.
+- `fields` (List of String) Fields to group alerts by, for example `["host.name", "service.name"]`. Should match the `BY` fields of the ES|QL query. Stored in the configured order. 1-16 items of 1-256 characters.
 
 
 <a id="nestedblock--kibana_connection"></a>
@@ -213,7 +213,7 @@ Required:
 
 Optional:
 
-- `query` (String) Optional ES|QL query that checks whether a group has data. Not allowed when `strategy` is `ignore`.
+- `query` (String) Optional ES|QL query that checks whether a group has data. Not allowed when `strategy` is `ignore`. 1-10000 characters.
 
 
 <a id="nestedatt--recovery"></a>
@@ -225,8 +225,8 @@ Required:
 
 Optional:
 
-- `query` (String) Independent ES|QL query, including its own `FROM` clause. Required when `strategy` is `query` and not allowed otherwise.
-- `segment` (String) ES|QL clause appended to `query.base`, for example `WHERE avg_cpu < 0.60`. Required when `strategy` is `condition` and not allowed otherwise.
+- `query` (String) Independent ES|QL query, including its own `FROM` clause. Required when `strategy` is `query` and not allowed otherwise. 1-10000 characters.
+- `segment` (String) ES|QL clause appended to `query.base`, for example `WHERE avg_cpu < 0.60`. Required when `strategy` is `condition` and not allowed otherwise. 1-10000 characters.
 
 
 <a id="nestedatt--state_transition"></a>
@@ -242,7 +242,7 @@ Optional:
 
 Optional:
 
-- `count` (Number) Consecutive matches the alert spends in `pending` before it becomes `active` on the next one. `0` transitions on the first.
+- `count` (Number) Consecutive matches the alert spends in `pending` before it becomes `active` on the next one. `0` transitions on the first. 0-1000.
 - `operator` (String) How `count` and `timeframe` combine when both are set: `and` requires both, `or` requires either. Only allowed when both are set.
 - `timeframe` (String) Duration the condition must hold, for example `5m`, in the same duration grammar as `schedule.every`. At most `365d`.
 
@@ -252,7 +252,7 @@ Optional:
 
 Optional:
 
-- `count` (Number) Consecutive recoveries the alert spends in `recovering` before it becomes `inactive` on the next one. `0` transitions on the first.
+- `count` (Number) Consecutive recoveries the alert spends in `recovering` before it becomes `inactive` on the next one. `0` transitions on the first. 0-1000.
 - `operator` (String) How `count` and `timeframe` combine when both are set: `and` requires both, `or` requires either. Only allowed when both are set.
 - `timeframe` (String) Duration the condition must hold, for example `5m`, in the same duration grammar as `schedule.every`. At most `365d`.
 
