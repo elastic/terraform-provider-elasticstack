@@ -25,8 +25,8 @@ component instead of reusing `Cases_string_array` unmodified.
 
 #### Scenario: Reused array component preserves maxItems
 
-- **GIVEN** the target spec's inline `Cases_attachment_type_filter` array branch has the same `maxItems`
-  bound as `Cases_string_array`
+- **GIVEN** the target spec's inline `Cases_attachment_type_filter` array branch has the same item schema
+  and array constraints (including `minItems`, `maxItems`, and `uniqueItems`) as `Cases_string_array`
 - **WHEN** the transform runs
 - **THEN** the parameter SHALL reference `Cases_string_array` and SHALL NOT alter its `maxItems` value
 
@@ -40,22 +40,23 @@ component instead of reusing `Cases_string_array` unmodified.
 
 ### Requirement: Schema-name-dependent transforms fail loudly when their source node is missing
 
-A transform that sets a value at a hardcoded component schema path (for example `fixSloFloatFormats` and
-`fixSloResponseArtifacts`) SHALL be covered by a regeneration-time guard that fails
-`make -C generated/kbapi all` when the downloaded spec does not already contain the node the transform
-targets, rather than allowing the transform to silently create an unused path with no build or test
-failure.
+A regeneration-time guard SHALL verify the existing source schema/property nodes used by
+`fixCasesAttachmentTypeFilterParameter`, `fixSloFloatFormats`, and `fixSloResponseArtifacts`. It SHALL fail
+`make -C generated/kbapi all` with a diagnostic identifying any missing source node.
+For numeric overrides, the source node is the existing numeric property schema, not the `format` key
+being added. For artifacts injection, the source nodes are the existing response `properties` map and
+referenced artifacts component, not the `properties.artifacts` property being added.
 
-#### Scenario: Guard fails on a renamed target path
+#### Scenario: Guard fails on a renamed source path
 
-- **GIVEN** a schema-name-dependent transform targets a component path that does not exist in the
-  just-downloaded spec (for example because the upstream schema renamed or restructured that component)
+- **GIVEN** a required source schema/property path does not exist in the just-downloaded spec
 - **WHEN** `make -C generated/kbapi all` runs
-- **THEN** the `make` invocation SHALL fail with a diagnostic identifying the missing path
+- **THEN** the `make` invocation SHALL fail with a diagnostic identifying the missing source path
 - **AND** the transform SHALL NOT silently succeed while having no effect
 
-#### Scenario: Guard passes when the target path exists
+#### Scenario: Guard passes when source nodes exist but output leaves are absent
 
-- **GIVEN** every schema-name-dependent transform's target path exists in the downloaded spec
+- **GIVEN** all required source schema/property nodes exist in the downloaded spec
+- **AND** the `format` keys or response `artifacts` property to be added are absent
 - **WHEN** `make -C generated/kbapi all` runs
 - **THEN** the guard SHALL NOT fail the build
