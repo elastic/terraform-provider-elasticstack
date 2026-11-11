@@ -57,7 +57,8 @@ func getSchema(_ context.Context) schema.Schema {
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"rule_id": schema.StringAttribute{
-				MarkdownDescription: "Identifier of the rule within the space: 1-150 characters of letters, digits, underscores, or hyphens. A UUID is generated when omitted. Changing it replaces the resource.",
+				MarkdownDescription: "Identifier of the rule within the space: 1-150 characters of letters, digits, underscores, or hyphens. A UUID is generated when omitted. Changing it forces a new resource. " +
+					"Re-using the id of a deleted rule is allowed but discouraged: execution history, change history, and alerts recorded under it are retained and attributed to the new rule. Ids appear in URLs and logs, so keep them free of sensitive data.",
 				Optional:            true,
 				Computed:            true,
 				Validators:          []validator.String{utils.EntityIDValidator()},
@@ -68,7 +69,7 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			"space_id": kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly(),
 			"kind": schema.StringAttribute{
-				MarkdownDescription: "Whether the rule creates alerts (`alert`) or only stores matching events (`signal`). The API treats it as immutable, so changing it replaces the resource.",
+				MarkdownDescription: "Whether the rule creates alerts (`alert`) or only stores matching events (`signal`). Immutable: changing it forces a new resource, so Terraform destroys the rule and creates a new one.",
 				Required:            true,
 				Validators:          []validator.String{stringvalidator.OneOf(kindAlert, kindSignal)},
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
@@ -80,7 +81,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Default:             booldefault.StaticBool(true),
 			},
 			"time_field": schema.StringAttribute{
-				MarkdownDescription: "Document field Kibana uses with `schedule.lookback` to time-filter `query.base`. Defaults to `@timestamp`.",
+				MarkdownDescription: "Document field Kibana uses with `schedule.lookback` to time-filter `query.base`. Defaults to `@timestamp`. 1-256 characters.",
 				Optional:            true,
 				Computed:            true,
 				Default:             stringdefault.StaticString(defaultTimeField),
@@ -91,7 +92,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Required:            true,
 				Attributes: map[string]schema.Attribute{
 					"name": schema.StringAttribute{
-						MarkdownDescription: "Rule name.",
+						MarkdownDescription: "Rule name. 1-256 characters.",
 						Required:            true,
 						Validators:          []validator.String{stringvalidator.LengthBetween(1, 256)},
 					},
@@ -137,12 +138,12 @@ func getSchema(_ context.Context) schema.Schema {
 				Required:            true,
 				Attributes: map[string]schema.Attribute{
 					"base": schema.StringAttribute{
-						MarkdownDescription: "ES|QL query that specifies the data to evaluate. Must include a `FROM` clause. Kibana applies the time filter from `schedule.lookback` using `time_field`.",
+						MarkdownDescription: "ES|QL query that specifies the data to evaluate. Must include a `FROM` clause. Kibana applies the time filter from `schedule.lookback` using `time_field`. 1-10000 characters.",
 						Required:            true,
 						Validators:          esqlValidators(),
 					},
 					"breach": schema.SingleNestedAttribute{
-						MarkdownDescription: "Optional ES|QL clause appended to `query.base` that decides which rows breach. When omitted, every row returned by `query.base` is a match.",
+						MarkdownDescription: "Optional ES|QL clause appended to `query.base` that decides which rows breach. When omitted, every row returned by `query.base` is a match, and a `no_data` strategy other than `ignore` then requires `no_data.query`.",
 						Optional:            true,
 						Attributes: map[string]schema.Attribute{
 							"segment": schema.StringAttribute{
@@ -159,8 +160,8 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"strategy": schema.StringAttribute{
-						MarkdownDescription: "Recovery strategy: `no_breach` recovers when the group no longer breaches, `condition` when `query.base` plus `segment` returns the group, " +
-							"`query` when the separate `query` returns the group, and `manual` never recovers automatically.",
+						MarkdownDescription: "Recovery strategy: `no_breach` recovers when the group no longer appears in the breach results, `condition` when `query.base` plus `segment` returns the group (requires `query.breach`), " +
+							"`query` when the separate `query` returns the group, and `manual` never recovers automatically (the alert is closed by a user action and `state_transition.recovering` has no effect).",
 						Required: true,
 						Validators: []validator.String{stringvalidator.OneOf(
 							recoveryStrategyNoBreach, recoveryStrategyCondition, recoveryStrategyQuery, recoveryStrategyManual,
@@ -179,7 +180,8 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"no_data": schema.SingleNestedAttribute{
-				MarkdownDescription: "What the rule does when a group has no data. Required when `kind` is `alert` and not allowed when `kind` is `signal`.",
+				MarkdownDescription: "What the rule does when a group has no data. Required when `kind` is `alert` and not allowed when `kind` is `signal`. " +
+					"Any strategy other than `ignore` requires either `query.breach` or `no_data.query`, so a group with no data can be told apart from one that stopped breaching.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"strategy": schema.StringAttribute{
@@ -191,7 +193,7 @@ func getSchema(_ context.Context) schema.Schema {
 						)},
 					},
 					queryAttribute: schema.StringAttribute{
-						MarkdownDescription: "Optional ES|QL query that checks whether a group has data. Not allowed when `strategy` is `ignore`. 1-10000 characters.",
+						MarkdownDescription: "Optional ES|QL query that checks whether a group has data. When omitted, `query.base` is used as the presence query, which then requires `query.breach`. Not allowed when `strategy` is `ignore`. 1-10000 characters.",
 						Optional:            true,
 						Validators:          esqlValidators(),
 					},
@@ -206,7 +208,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"grouping": schema.SingleNestedAttribute{
-				MarkdownDescription: "Grouping configuration. When omitted, every row is its own alert group.",
+				MarkdownDescription: "Grouping configuration. When omitted, the rule is a single series: every row the query returns belongs to the same alert group.",
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"fields": schema.ListAttribute{
@@ -223,7 +225,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"artifacts": schema.ListNestedAttribute{
-				MarkdownDescription: "Objects attached to the rule, such as a runbook or a dashboard. 1-100 items. Each `id` must be unique within the rule.",
+				MarkdownDescription: "Objects attached to the rule, such as a runbook or a dashboard. 1-100 items. Each `id` must be unique within the rule. Known types are validated server-side against their `data` shape; unknown types are stored as given.",
 				Optional:            true,
 				Validators: []validator.List{
 					nonEmptyListValidator(),
@@ -253,7 +255,7 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"version": schema.Int64Attribute{
-				MarkdownDescription: "Configuration revision of the rule, incremented by the server on every change.",
+				MarkdownDescription: "Monotonically increasing configuration revision, incremented by the server on every change and stamped on generated rule events as `rule.version`.",
 				Computed:            true,
 			},
 			"created_at": schema.StringAttribute{
@@ -270,8 +272,12 @@ func getSchema(_ context.Context) schema.Schema {
 }
 
 func stateTransitionPhaseAttribute(phase, targetStatus, events string) schema.SingleNestedAttribute {
+	description := "How long an alert stays `" + phase + "` before it becomes `" + targetStatus + "`."
+	if phase == "recovering" {
+		description += " Has no effect when `recovery.strategy` is `manual`."
+	}
 	return schema.SingleNestedAttribute{
-		MarkdownDescription: "How long an alert stays `" + phase + "` before it becomes `" + targetStatus + "`.",
+		MarkdownDescription: description,
 		Optional:            true,
 		Attributes: map[string]schema.Attribute{
 			"count": schema.Int64Attribute{
