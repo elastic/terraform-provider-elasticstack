@@ -57,11 +57,13 @@ func getSchema(_ context.Context) schema.Schema {
 				PlanModifiers:       []planmodifier.String{stringplanmodifier.UseStateForUnknown()},
 			},
 			"rule_id": schema.StringAttribute{
-				MarkdownDescription: "Identifier of the rule within the space: 1-150 characters of letters, digits, underscores, or hyphens. A UUID is generated when omitted. Changing it forces a new resource. " +
-					"Re-using the id of a deleted rule is allowed but discouraged: execution history, change history, and alerts recorded under it are retained and attributed to the new rule. Ids appear in URLs and logs, so keep them free of sensitive data.",
-				Optional:            true,
-				Computed:            true,
-				Validators:          []validator.String{utils.EntityIDValidator()},
+				MarkdownDescription: "Identifier of the rule within the space: 1-150 characters of letters, digits, underscores, or hyphens. A UUID is generated when omitted. " +
+					"Changing it forces a new resource. " +
+					"Re-using the id of a deleted rule is allowed but discouraged: execution history, change history, and alerts recorded under it are retained and attributed to the new rule. " +
+					"Ids appear in URLs and logs, so keep them free of sensitive data.",
+				Optional:   true,
+				Computed:   true,
+				Validators: []validator.String{utils.EntityIDValidator()},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
@@ -69,10 +71,11 @@ func getSchema(_ context.Context) schema.Schema {
 			},
 			"space_id": kbschema.ResourceSpaceIDAttributeRequiresReplaceOnly(),
 			"kind": schema.StringAttribute{
-				MarkdownDescription: "Whether the rule creates alerts (`alert`) or only stores matching events (`signal`). Immutable: changing it forces a new resource, so Terraform destroys the rule and creates a new one.",
-				Required:            true,
-				Validators:          []validator.String{stringvalidator.OneOf(kindAlert, kindSignal)},
-				PlanModifiers:       []planmodifier.String{stringplanmodifier.RequiresReplace()},
+				MarkdownDescription: "Whether the rule creates alerts (`alert`) or only stores matching events (`signal`). " +
+					"Immutable: changing it forces a new resource, so Terraform destroys the rule and creates a new one.",
+				Required:      true,
+				Validators:    []validator.String{stringvalidator.OneOf(kindAlert, kindSignal)},
+				PlanModifiers: []planmodifier.String{stringplanmodifier.RequiresReplace()},
 			},
 			"enabled": schema.BoolAttribute{
 				MarkdownDescription: "Whether the rule is enabled. Always sent, so a rule is created in or replaced into the configured state in one request.",
@@ -138,13 +141,15 @@ func getSchema(_ context.Context) schema.Schema {
 				Required:            true,
 				Attributes: map[string]schema.Attribute{
 					"base": schema.StringAttribute{
-						MarkdownDescription: "ES|QL query that specifies the data to evaluate. Must include a `FROM` clause. Kibana applies the time filter from `schedule.lookback` using `time_field`. 1-10000 characters.",
-						Required:            true,
-						Validators:          esqlValidators(),
+						MarkdownDescription: "ES|QL query that specifies the data to evaluate. Must include a `FROM` clause. Kibana applies the time filter from `schedule.lookback` using `time_field`. " +
+							"1-10000 characters.",
+						Required:   true,
+						Validators: esqlValidators(),
 					},
 					"breach": schema.SingleNestedAttribute{
-						MarkdownDescription: "Optional ES|QL clause appended to `query.base` that decides which rows breach. When omitted, every row returned by `query.base` is a match, and a `no_data` strategy other than `ignore` then requires `no_data.query`.",
-						Optional:            true,
+						MarkdownDescription: "Optional ES|QL clause appended to `query.base` that decides which rows breach. " +
+							"When omitted, every row returned by `query.base` is a match, and a `no_data` strategy other than `ignore` then requires `no_data.query`.",
+						Optional: true,
 						Attributes: map[string]schema.Attribute{
 							"segment": schema.StringAttribute{
 								MarkdownDescription: "ES|QL clause appended to `query.base`, for example `WHERE avg_cpu > 0.85`. Must not include a `FROM` clause. 1-10000 characters.",
@@ -182,7 +187,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"no_data": schema.SingleNestedAttribute{
 				MarkdownDescription: "What the rule does when a group has no data. Required when `kind` is `alert` and not allowed when `kind` is `signal`. " +
 					"Any strategy other than `ignore` requires either `query.breach` or `no_data.query`, so a group with no data can be told apart from one that stopped breaching.",
-				Optional:            true,
+				Optional: true,
 				Attributes: map[string]schema.Attribute{
 					"strategy": schema.StringAttribute{
 						MarkdownDescription: "No-data strategy: `ignore` does not check for missing data, `keep_last` holds the alert's current status, " +
@@ -193,9 +198,10 @@ func getSchema(_ context.Context) schema.Schema {
 						)},
 					},
 					queryAttribute: schema.StringAttribute{
-						MarkdownDescription: "Optional ES|QL query that checks whether a group has data. When omitted, `query.base` is used as the presence query, which then requires `query.breach`. Not allowed when `strategy` is `ignore`. 1-10000 characters.",
-						Optional:            true,
-						Validators:          esqlValidators(),
+						MarkdownDescription: "Optional ES|QL query that checks whether a group has data. When omitted, `query.base` is used as the presence query, which then requires `query.breach`. " +
+							"Not allowed when `strategy` is `ignore`. 1-10000 characters.",
+						Optional:   true,
+						Validators: esqlValidators(),
 					},
 				},
 			},
@@ -225,8 +231,9 @@ func getSchema(_ context.Context) schema.Schema {
 				},
 			},
 			"artifacts": schema.ListNestedAttribute{
-				MarkdownDescription: "Objects attached to the rule, such as a runbook or a dashboard. 1-100 items. Each `id` must be unique within the rule. Known types are validated server-side against their `data` shape; unknown types are stored as given.",
-				Optional:            true,
+				MarkdownDescription: "Objects attached to the rule, such as a runbook or a dashboard. 1-100 items. Each `id` must be unique within the rule. " +
+					"Known types are validated server-side against their `data` shape; unknown types are stored as given.",
+				Optional: true,
 				Validators: []validator.List{
 					nonEmptyListValidator(),
 					listvalidator.SizeAtMost(100),
