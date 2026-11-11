@@ -173,7 +173,9 @@ func (u *UpdateAPIModel) BuildFromPlan(ctx context.Context, plan, state *TFModel
 	var diags fwdiags.Diagnostics
 	hasChanges := false
 
-	if !plan.Description.Equal(state.Description) && !plan.Description.IsNull() {
+	if !plan.Description.Equal(state.Description) && !plan.Description.IsUnknown() {
+		// A null plan means description was removed from the configuration.
+		// Send an empty string so Elasticsearch clears it; read maps "" to null.
 		u.Description = new(plan.Description.ValueString())
 		hasChanges = true
 	}
