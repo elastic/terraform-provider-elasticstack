@@ -165,7 +165,8 @@ func getSchema(_ context.Context) schema.Schema {
 				Optional:            true,
 				Attributes: map[string]schema.Attribute{
 					"strategy": schema.StringAttribute{
-						MarkdownDescription: "Recovery strategy: `no_breach` recovers when the group no longer appears in the breach results, `condition` when `query.base` plus `segment` returns the group (requires `query.breach`), " +
+						MarkdownDescription: "Recovery strategy: `no_breach` recovers when the group no longer appears in the breach results, " +
+							"`condition` when `query.base` plus `segment` returns the group (requires `query.breach`), " +
 							"`query` when the separate `query` returns the group, and `manual` never recovers automatically (the alert is closed by a user action and `state_transition.recovering` has no effect).",
 						Required: true,
 						Validators: []validator.String{stringvalidator.OneOf(
