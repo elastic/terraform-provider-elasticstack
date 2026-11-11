@@ -20,10 +20,10 @@
       `enabled` unchanged (known false→false, known true→true) does not trigger; `enabled` changing in
       either direction (false→true and true→false) triggers; a planned `enabled` that is unknown
       triggers conservatively (does not panic or silently skip).
-- [ ] 2.2 Add a case asserting the predicate reads the plan, not the config — construct inputs where
-      config/default-resolution and plan disagree (e.g. config omits `enabled` while state is `false`
-      and plan resolves to `true`) and confirm the predicate's decision matches the plan-based
-      comparison, not a config vs. state comparison.
+- [ ] 2.2 Add a modifier-adapter test with config `enabled` omitted, state `enabled = true`,
+      default-resolved plan `enabled = true`, and a known `scheduled_task_id`. Assert that the
+      modifier preserves the known task ID. Exercise the adapter's attribute reads, not only the
+      pure helper, so reading config instead of plan makes this regression test fail.
 
 ## 3. Acceptance coverage for the enable/disable transition
 
