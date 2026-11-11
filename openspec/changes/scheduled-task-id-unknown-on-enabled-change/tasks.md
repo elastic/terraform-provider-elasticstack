@@ -41,8 +41,9 @@
          entirely (falls back to `booldefault.StaticBool(true)`) from the prior `true` state; assert no
          diff and that `scheduled_task_id` is not spuriously unknowned — the regression case for the
          plan-vs-config predicate choice.
-      4. "disable again" step: config with `enabled = false`; assert `enabled = "false"` and that a
-         following plan is diff-free.
+      4. "disable again" step: config with `enabled = false`; use `ConfigPlanChecks.PreApply` with
+         `plancheck.ExpectUnknownValue` to assert `scheduled_task_id` is unknown in the disabling plan;
+         assert `enabled = "false"` after apply and that a following plan is diff-free.
 - [ ] 3.2 Add a second test (or additional steps) covering enabling via config omission rather than an
       explicit `true`: "create" step with `enabled = false`, then an "enable-via-omission" step that
       drops the `enabled` line entirely from the `false` state (so the default `true` takes effect);
