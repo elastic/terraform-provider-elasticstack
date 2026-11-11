@@ -20,10 +20,12 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   interval    = "5m"
   index       = ["winlogbeat-*"]
 
-  tiebreaker_field = "@timestamp"
-  author           = ["Test Author"]
-  tags             = ["test", "eql", "automation"]
-  license          = "Elastic License v2"
+  tiebreaker_field        = "@timestamp"
+  event_category_override = "event.kind"
+  timestamp_field         = "@timestamp"
+  author                  = ["Test Author"]
+  tags                    = ["test", "eql", "automation"]
+  license                 = "Elastic License v2"
 
   rule_name_override                   = "Updated Custom EQL Rule Name"
   timestamp_override                   = "process.end"
