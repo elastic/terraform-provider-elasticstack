@@ -404,13 +404,19 @@ The resource SHALL store `created_at`, `created_by`, `updated_at`, and `updated_
 
 ### Requirement: Delete uses composite id (REQ-031)
 
-On delete, the resource SHALL parse the composite `id` from state to obtain `space_id` and `item_uuid`, then SHALL call the delete exception list item API using `item_uuid` as the item identifier scoped to `space_id`.
+On delete, the resource SHALL parse the composite `id` from state to obtain `space_id` and `item_uuid`, then SHALL call the delete exception list item API using `item_uuid` as the item identifier scoped to `space_id`. When `namespace_type` is known in state, the resource SHALL include it in the delete request, because the API defaults it to `single` and reports an agnostic item as not found — which delete treats as already deleted — when it is omitted.
 
 #### Scenario: Delete uses resource id from composite
 
 - GIVEN state with `id = "my-space/<uuid>"`
 - WHEN delete runs
 - THEN the delete API call SHALL use `<uuid>` as the item id and be scoped to `my-space`
+
+#### Scenario: Delete of an agnostic item sends namespace_type
+
+- GIVEN state with `namespace_type = "agnostic"`
+- WHEN delete runs
+- THEN the delete API call SHALL include `namespace_type=agnostic` and the item SHALL no longer exist in Kibana
 
 ### Requirement: `required_comments` schema and validation (REQ-025a)
 
