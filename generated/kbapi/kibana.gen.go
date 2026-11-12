@@ -88377,6 +88377,11 @@ type GetFleetUninstallTokensParams struct {
 	Page *float32 `form:"page,omitempty" json:"page,omitempty"`
 }
 
+// PostKibanaSettingsJSONBody defines parameters for PostKibanaSettings.
+type PostKibanaSettingsJSONBody struct {
+	Changes map[string]interface{} `json:"changes"`
+}
+
 // GetLinksParams defines parameters for GetLinks.
 type GetLinksParams struct {
 	// Page The page of results to return.
@@ -96350,6 +96355,9 @@ type PutFleetSettingsJSONRequestBody PutFleetSettingsJSONBody
 
 // PutFleetSpaceSettingsJSONRequestBody defines body for PutFleetSpaceSettings for application/json ContentType.
 type PutFleetSpaceSettingsJSONRequestBody PutFleetSpaceSettingsJSONBody
+
+// PostKibanaSettingsJSONRequestBody defines body for PostKibanaSettings for application/json ContentType.
+type PostKibanaSettingsJSONRequestBody PostKibanaSettingsJSONBody
 
 // PostLinksJSONRequestBody defines body for PostLinks for application/json ContentType.
 type PostLinksJSONRequestBody PostLinksJSONBody
@@ -185773,6 +185781,14 @@ type ClientInterface interface {
 	// GetFleetUninstallTokensUninstalltokenid request
 	GetFleetUninstallTokensUninstalltokenid(ctx context.Context, uninstallTokenId string, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetKibanaSettings request
+	GetKibanaSettings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PostKibanaSettingsWithBody request with any body
+	PostKibanaSettingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	PostKibanaSettings(ctx context.Context, body PostKibanaSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// GetLinks request
 	GetLinks(ctx context.Context, params *GetLinksParams, reqEditors ...RequestEditorFn) (*http.Response, error)
 
@@ -195220,6 +195236,42 @@ func (c *Client) PostFleetUninstallTokensAgentpolicyidRotate(ctx context.Context
 
 func (c *Client) GetFleetUninstallTokensUninstalltokenid(ctx context.Context, uninstallTokenId string, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetFleetUninstallTokensUninstalltokenidRequest(c.Server, uninstallTokenId)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) GetKibanaSettings(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetKibanaSettingsRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostKibanaSettingsWithBody(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostKibanaSettingsRequestWithBody(c.Server, contentType, body)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PostKibanaSettings(ctx context.Context, body PostKibanaSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPostKibanaSettingsRequest(c.Server, body)
 	if err != nil {
 		return nil, err
 	}
@@ -224853,6 +224905,73 @@ func NewGetFleetUninstallTokensUninstalltokenidRequest(server string, uninstallT
 	return req, nil
 }
 
+// NewGetKibanaSettingsRequest generates requests for GetKibanaSettings
+func NewGetKibanaSettingsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/kibana/settings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// NewPostKibanaSettingsRequest calls the generic PostKibanaSettings builder with application/json body
+func NewPostKibanaSettingsRequest(server string, body PostKibanaSettingsJSONRequestBody) (*http.Request, error) {
+	var bodyReader io.Reader
+	buf, err := json.Marshal(body)
+	if err != nil {
+		return nil, err
+	}
+	bodyReader = bytes.NewReader(buf)
+	return NewPostKibanaSettingsRequestWithBody(server, "application/json", bodyReader)
+}
+
+// NewPostKibanaSettingsRequestWithBody generates requests for PostKibanaSettings with any type of body
+func NewPostKibanaSettingsRequestWithBody(server string, contentType string, body io.Reader) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/kibana/settings")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodPost, queryURL.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Add("Content-Type", contentType)
+
+	return req, nil
+}
+
 // NewGetLinksRequest generates requests for GetLinks
 func NewGetLinksRequest(server string, params *GetLinksParams) (*http.Request, error) {
 	var err error
@@ -242814,6 +242933,14 @@ type ClientWithResponsesInterface interface {
 
 	// GetFleetUninstallTokensUninstalltokenidWithResponse request
 	GetFleetUninstallTokensUninstalltokenidWithResponse(ctx context.Context, uninstallTokenId string, reqEditors ...RequestEditorFn) (*GetFleetUninstallTokensUninstalltokenidResponse, error)
+
+	// GetKibanaSettingsWithResponse request
+	GetKibanaSettingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetKibanaSettingsResponse, error)
+
+	// PostKibanaSettingsWithBodyWithResponse request with any body
+	PostKibanaSettingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostKibanaSettingsResponse, error)
+
+	PostKibanaSettingsWithResponse(ctx context.Context, body PostKibanaSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostKibanaSettingsResponse, error)
 
 	// GetLinksWithResponse request
 	GetLinksWithResponse(ctx context.Context, params *GetLinksParams, reqEditors ...RequestEditorFn) (*GetLinksResponse, error)
@@ -262954,6 +263081,76 @@ func (r GetFleetUninstallTokensUninstalltokenidResponse) ContentType() string {
 	return ""
 }
 
+type GetKibanaSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Settings map[string]struct {
+			IsOverridden *bool       `json:"isOverridden,omitempty"`
+			UserValue    interface{} `json:"userValue"`
+		} `json:"settings"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r GetKibanaSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetKibanaSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetKibanaSettingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
+type PostKibanaSettingsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *struct {
+		Settings map[string]struct {
+			IsOverridden *bool       `json:"isOverridden,omitempty"`
+			UserValue    interface{} `json:"userValue"`
+		} `json:"settings"`
+	}
+}
+
+// Status returns HTTPResponse.Status
+func (r PostKibanaSettingsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PostKibanaSettingsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r PostKibanaSettingsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type GetLinksResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -278394,6 +278591,32 @@ func (c *ClientWithResponses) GetFleetUninstallTokensUninstalltokenidWithRespons
 		return nil, err
 	}
 	return ParseGetFleetUninstallTokensUninstalltokenidResponse(rsp)
+}
+
+// GetKibanaSettingsWithResponse request returning *GetKibanaSettingsResponse
+func (c *ClientWithResponses) GetKibanaSettingsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetKibanaSettingsResponse, error) {
+	rsp, err := c.GetKibanaSettings(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetKibanaSettingsResponse(rsp)
+}
+
+// PostKibanaSettingsWithBodyWithResponse request with arbitrary body returning *PostKibanaSettingsResponse
+func (c *ClientWithResponses) PostKibanaSettingsWithBodyWithResponse(ctx context.Context, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*PostKibanaSettingsResponse, error) {
+	rsp, err := c.PostKibanaSettingsWithBody(ctx, contentType, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostKibanaSettingsResponse(rsp)
+}
+
+func (c *ClientWithResponses) PostKibanaSettingsWithResponse(ctx context.Context, body PostKibanaSettingsJSONRequestBody, reqEditors ...RequestEditorFn) (*PostKibanaSettingsResponse, error) {
+	rsp, err := c.PostKibanaSettings(ctx, body, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePostKibanaSettingsResponse(rsp)
 }
 
 // GetLinksWithResponse request returning *GetLinksResponse
@@ -303083,6 +303306,68 @@ func ParseGetFleetUninstallTokensUninstalltokenidResponse(rsp *http.Response) (*
 			return nil, err
 		}
 		response.JSON400 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParseGetKibanaSettingsResponse parses an HTTP response from a GetKibanaSettingsWithResponse call
+func ParseGetKibanaSettingsResponse(rsp *http.Response) (*GetKibanaSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetKibanaSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Settings map[string]struct {
+				IsOverridden *bool       `json:"isOverridden,omitempty"`
+				UserValue    interface{} `json:"userValue"`
+			} `json:"settings"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePostKibanaSettingsResponse parses an HTTP response from a PostKibanaSettingsWithResponse call
+func ParsePostKibanaSettingsResponse(rsp *http.Response) (*PostKibanaSettingsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PostKibanaSettingsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest struct {
+			Settings map[string]struct {
+				IsOverridden *bool       `json:"isOverridden,omitempty"`
+				UserValue    interface{} `json:"userValue"`
+			} `json:"settings"`
+		}
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
 
 	}
 
