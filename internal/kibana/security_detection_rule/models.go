@@ -82,7 +82,9 @@ type Data struct {
 	Revision  types.Int64  `tfsdk:"revision"`
 
 	// EQL-specific fields
-	TiebreakerField types.String `tfsdk:"tiebreaker_field"`
+	TiebreakerField       types.String `tfsdk:"tiebreaker_field"`
+	EventCategoryOverride types.String `tfsdk:"event_category_override"`
+	TimestampField        types.String `tfsdk:"timestamp_field"`
 
 	// Machine Learning-specific fields
 	AnomalyThreshold     types.Int64 `tfsdk:"anomaly_threshold"`
@@ -648,6 +650,12 @@ func (d *Data) initializeTypeSpecificFieldsToDefaults() {
 	// EQL-specific fields
 	if !typeutils.IsKnown(d.TiebreakerField) {
 		d.TiebreakerField = types.StringNull()
+	}
+	if !typeutils.IsKnown(d.EventCategoryOverride) {
+		d.EventCategoryOverride = types.StringNull()
+	}
+	if !typeutils.IsKnown(d.TimestampField) {
+		d.TimestampField = types.StringNull()
 	}
 
 	// Machine Learning-specific fields

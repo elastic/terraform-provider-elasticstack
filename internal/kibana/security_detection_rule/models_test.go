@@ -19,6 +19,7 @@ package securitydetectionrule
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -2618,4 +2619,215 @@ func TestData_GetResourceID(t *testing.T) {
 		d := Data{ID: types.StringNull(), RuleID: types.StringValue("configured-rule-id")}
 		require.Equal(t, "configured-rule-id", d.GetResourceID().ValueString())
 	})
+}
+
+func TestInitializeTypeSpecificFieldsToDefaults_nullsUnknownEqlFields(t *testing.T) {
+	d := Data{
+		TiebreakerField:       types.StringUnknown(),
+		EventCategoryOverride: types.StringUnknown(),
+		TimestampField:        types.StringUnknown(),
+	}
+
+	d.initializeTypeSpecificFieldsToDefaults()
+
+	require.Equal(t, types.StringNull(), d.TiebreakerField)
+	require.Equal(t, types.StringNull(), d.EventCategoryOverride)
+	require.Equal(t, types.StringNull(), d.TimestampField)
+}
+
+type eqlOptionalFieldsRequestCase struct {
+	name                      string
+	tiebreakerField           types.String
+	eventCategoryOverride     types.String
+	timestampField            types.String
+	wantTiebreakerField       *string
+	wantEventCategoryOverride *string
+	wantTimestampField        *string
+}
+
+var eqlOptionalFieldsRequestCases = []eqlOptionalFieldsRequestCase{
+	{
+		name:                      "sends set values",
+		tiebreakerField:           types.StringValue("event.sequence"),
+		eventCategoryOverride:     types.StringValue("event.type"),
+		timestampField:            types.StringValue("event.ingested"),
+		wantTiebreakerField:       new("event.sequence"),
+		wantEventCategoryOverride: new("event.type"),
+		wantTimestampField:        new("event.ingested"),
+	},
+	{
+		name:                  "omits null values",
+		tiebreakerField:       types.StringNull(),
+		eventCategoryOverride: types.StringNull(),
+		timestampField:        types.StringNull(),
+	},
+}
+
+func (tt eqlOptionalFieldsRequestCase) eqlRuleData() Data {
+	return Data{
+		ID:                    types.StringValue(fmt.Sprintf("default/%s", uuid.New().String())),
+		Name:                  types.StringValue("EQL Test Rule"),
+		Type:                  types.StringValue("eql"),
+		Query:                 types.StringValue("process where process.name == \"cmd.exe\""),
+		RiskScore:             types.Int64Value(60),
+		Severity:              types.StringValue("medium"),
+		Description:           types.StringValue("EQL rule description"),
+		TiebreakerField:       tt.tiebreakerField,
+		EventCategoryOverride: tt.eventCategoryOverride,
+		TimestampField:        tt.timestampField,
+	}
+}
+
+func TestToEqlRuleCreateProps_optionalFields(t *testing.T) {
+	ctx := context.Background()
+
+	for _, tt := range eqlOptionalFieldsRequestCases {
+		t.Run(tt.name, func(t *testing.T) {
+			createProps, diags := toEqlRuleCreateProps(ctx, tt.eqlRuleData())
+			require.Empty(t, diags)
+
+			eqlRule, err := createProps.AsSecurityDetectionsAPIEqlRuleCreateProps()
+			require.NoError(t, err)
+			require.Equal(t, tt.wantTiebreakerField, eqlRule.TiebreakerField)
+			require.Equal(t, tt.wantEventCategoryOverride, eqlRule.EventCategoryOverride)
+			require.Equal(t, tt.wantTimestampField, eqlRule.TimestampField)
+		})
+	}
+}
+
+func TestToEqlRuleUpdateProps_optionalFields(t *testing.T) {
+	ctx := context.Background()
+
+	for _, tt := range eqlOptionalFieldsRequestCases {
+		t.Run(tt.name, func(t *testing.T) {
+			updateProps, diags := toEqlRuleUpdateProps(ctx, tt.eqlRuleData())
+			require.Empty(t, diags)
+
+			eqlRule, err := updateProps.AsSecurityDetectionsAPIEqlRuleUpdateProps()
+			require.NoError(t, err)
+			require.Equal(t, tt.wantTiebreakerField, eqlRule.TiebreakerField)
+			require.Equal(t, tt.wantEventCategoryOverride, eqlRule.EventCategoryOverride)
+			require.Equal(t, tt.wantTimestampField, eqlRule.TimestampField)
+		})
+	}
+}
+
+func TestUpdateFromEqlRule_optionalFields(t *testing.T) {
+	ctx := context.Background()
+
+	tests := []struct {
+		name                      string
+		prior                     Data
+		tiebreakerField           *string
+		eventCategoryOverride     *string
+		timestampField            *string
+		wantTiebreakerField       types.String
+		wantEventCategoryOverride types.String
+		wantTimestampField        types.String
+	}{
+		{
+			name: "reads values set in Kibana into null prior state",
+			prior: Data{
+				SpaceID:               types.StringValue("default"),
+				TiebreakerField:       types.StringNull(),
+				EventCategoryOverride: types.StringNull(),
+				TimestampField:        types.StringNull(),
+			},
+			tiebreakerField:           new("event.sequence"),
+			eventCategoryOverride:     new("event.type"),
+			timestampField:            new("event.ingested"),
+			wantTiebreakerField:       types.StringValue("event.sequence"),
+			wantEventCategoryOverride: types.StringValue("event.type"),
+			wantTimestampField:        types.StringValue("event.ingested"),
+		},
+		{
+			name: "maps fields absent in Kibana to null over prior values",
+			prior: Data{
+				SpaceID:               types.StringValue("default"),
+				TiebreakerField:       types.StringValue("event.sequence"),
+				EventCategoryOverride: types.StringValue("event.type"),
+				TimestampField:        types.StringValue("event.ingested"),
+			},
+			wantTiebreakerField:       types.StringNull(),
+			wantEventCategoryOverride: types.StringNull(),
+			wantTimestampField:        types.StringNull(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rule := kbapi.SecurityDetectionsAPIEqlRule{
+				Id:                    uuid.MustParse("12345678-1234-1234-1234-123456789012"),
+				RuleId:                "test-eql-rule",
+				Name:                  "Test EQL Rule",
+				Type:                  "eql",
+				Query:                 "process where process.name == \"cmd.exe\"",
+				Language:              "eql",
+				RiskScore:             80,
+				Severity:              "high",
+				Version:               1,
+				Description:           "Test EQL rule description",
+				From:                  "now-6m",
+				To:                    "now",
+				Interval:              "5m",
+				TiebreakerField:       tt.tiebreakerField,
+				EventCategoryOverride: tt.eventCategoryOverride,
+				TimestampField:        tt.timestampField,
+			}
+			data := tt.prior
+
+			diags := updateFromEqlRule(ctx, &rule, &data)
+			require.Empty(t, diags)
+
+			require.Equal(t, tt.wantTiebreakerField, data.TiebreakerField)
+			require.Equal(t, tt.wantEventCategoryOverride, data.EventCategoryOverride)
+			require.Equal(t, tt.wantTimestampField, data.TimestampField)
+		})
+	}
+}
+
+func TestNonEqlRuleRequestsOmitEqlOptionalFields(t *testing.T) {
+	ctx := context.Background()
+	data := Data{
+		ID:                    types.StringValue(fmt.Sprintf("default/%s", uuid.New().String())),
+		Type:                  types.StringValue("query"),
+		Name:                  types.StringValue("Test Query Rule"),
+		Description:           types.StringValue("Test description"),
+		Query:                 types.StringValue("user.name:test"),
+		Language:              types.StringValue("kuery"),
+		RiskScore:             types.Int64Value(75),
+		Severity:              types.StringValue("medium"),
+		EventCategoryOverride: types.StringValue("event.type"),
+		TiebreakerField:       types.StringValue("event.sequence"),
+		TimestampField:        types.StringValue("event.ingested"),
+	}
+
+	tests := []struct {
+		name         string
+		buildRequest func() (any, diag.Diagnostics)
+	}{
+		{
+			name:         "create request",
+			buildRequest: func() (any, diag.Diagnostics) { return data.toCreateProps(ctx) },
+		},
+		{
+			name:         "update request",
+			buildRequest: func() (any, diag.Diagnostics) { return data.toUpdateProps(ctx) },
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request, diags := tt.buildRequest()
+			require.Empty(t, diags)
+
+			body, err := json.Marshal(request)
+			require.NoError(t, err)
+			var fields map[string]json.RawMessage
+			require.NoError(t, json.Unmarshal(body, &fields))
+			require.NotContains(t, fields, "event_category_override")
+			require.NotContains(t, fields, "tiebreaker_field")
+			require.NotContains(t, fields, "timestamp_field")
+		})
+	}
 }
