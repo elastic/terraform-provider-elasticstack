@@ -50,7 +50,7 @@ func TestExceptionItemDeleteParams(t *testing.T) {
 			params := exceptionItemDeleteParams("item-uuid", tt.namespaceType)
 
 			require.NotNil(t, params.Id)
-			require.Equal(t, "item-uuid", string(*params.Id))
+			require.Equal(t, "item-uuid", *params.Id)
 			if tt.expected == "" {
 				require.Nil(t, params.NamespaceType, "an unknown namespace_type must not be sent")
 				return

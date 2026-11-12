@@ -91,7 +91,13 @@ The resource SHALL manage exception items through the Kibana Security Exceptions
 
 ### Requirement: API error surfacing (REQ-005)
 
-For create and update, when the API returns an empty successful body where item data is required, the resource SHALL surface an error diagnostic to Terraform. Delete SHALL surface all API errors.
+For create and update, when the API returns an empty successful body where item data is required, the resource SHALL surface an error diagnostic to Terraform. Delete SHALL surface all API errors except a not-found response (HTTP 404), which SHALL be treated as an already-completed deletion so that destroying an item removed outside Terraform succeeds. Delete relies on REQ-031 to address the item in its own namespace, so a not-found response means the item is genuinely absent rather than looked for in the wrong namespace.
+
+#### Scenario: Delete of an item already removed outside Terraform
+
+- GIVEN the delete API returns HTTP 404 for a request that carries the item's `namespace_type`
+- WHEN delete runs
+- THEN the resource SHALL report success and SHALL NOT surface an error diagnostic
 
 #### Scenario: Empty create response
 
