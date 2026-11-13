@@ -91,7 +91,13 @@ The resource SHALL manage exception items through the Kibana Security Exceptions
 
 ### Requirement: API error surfacing (REQ-005)
 
-For create and update, when the API returns an empty successful body where item data is required, the resource SHALL surface an error diagnostic to Terraform. Delete SHALL surface all API errors.
+For create and update, when the API returns an empty successful body where item data is required, the resource SHALL surface an error diagnostic to Terraform. Delete SHALL surface all API errors except a not-found response (HTTP 404), which SHALL be treated as an already-completed deletion so that destroying an item removed outside Terraform succeeds. Delete relies on REQ-031 to address the item in its own namespace, so a not-found response means the item is genuinely absent rather than looked for in the wrong namespace.
+
+#### Scenario: Delete of an item already removed outside Terraform
+
+- GIVEN the delete API returns HTTP 404 for a request that carries the item's `namespace_type`
+- WHEN delete runs
+- THEN the resource SHALL report success and SHALL NOT surface an error diagnostic
 
 #### Scenario: Empty create response
 
@@ -404,13 +410,19 @@ The resource SHALL store `created_at`, `created_by`, `updated_at`, and `updated_
 
 ### Requirement: Delete uses composite id (REQ-031)
 
-On delete, the resource SHALL parse the composite `id` from state to obtain `space_id` and `item_uuid`, then SHALL call the delete exception list item API using `item_uuid` as the item identifier scoped to `space_id`.
+On delete, the resource SHALL parse the composite `id` from state to obtain `space_id` and `item_uuid`, then SHALL call the delete exception list item API using `item_uuid` as the item identifier scoped to `space_id`. When `namespace_type` is known in state, the resource SHALL include it in the delete request, because the API defaults it to `single` and reports an agnostic item as not found — which delete treats as already deleted — when it is omitted.
 
 #### Scenario: Delete uses resource id from composite
 
 - GIVEN state with `id = "my-space/<uuid>"`
 - WHEN delete runs
 - THEN the delete API call SHALL use `<uuid>` as the item id and be scoped to `my-space`
+
+#### Scenario: Delete of an agnostic item sends namespace_type
+
+- GIVEN state with `namespace_type = "agnostic"`
+- WHEN delete runs
+- THEN the delete API call SHALL include `namespace_type=agnostic` and the item SHALL no longer exist in Kibana
 
 ### Requirement: `required_comments` schema and validation (REQ-025a)
 

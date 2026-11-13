@@ -342,6 +342,70 @@ func TestAccResourceExceptionItemNamespaceType_Agnostic(t *testing.T) {
 	})
 }
 
+// A delete that omits namespace_type gets a 404 for an agnostic item, which the
+// provider reports as a successful delete while the item stays in Kibana. The
+// item is removed from the config while its list remains, so a cascading list
+// delete cannot hide the orphaned item.
+func TestAccResourceExceptionItemNamespaceType_AgnosticDelete(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
+	listID := fmt.Sprintf("test-exception-list-agnostic-del-%s", uuid.New().String()[:8])
+	itemID := fmt.Sprintf("test-exception-item-agnostic-del-%s", uuid.New().String()[:8])
+
+	configVars := config.Variables{
+		"list_id": config.StringVariable(listID),
+		"item_id": config.StringVariable(itemID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_create"),
+				ConfigVariables:          configVars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "item_id", itemID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "namespace_type", "agnostic"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agnostic_item_removed"),
+				ConfigVariables:          configVars,
+				Check:                    checkAgnosticExceptionItemGone(itemID),
+			},
+		},
+	})
+}
+
+// checkAgnosticExceptionItemGone asserts the agnostic item is really absent from
+// Kibana, not just absent from Terraform state.
+func checkAgnosticExceptionItemGone(itemID string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		humanID := itemID
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType("agnostic")
+		item, diags := kibanaoapi.GetExceptionListItem(context.Background(), client.GetKibanaOapiClient(), "default", &kbapi.ReadExceptionListItemParams{
+			ItemId:        &humanID,
+			NamespaceType: &nsType,
+		})
+		if diags.HasError() {
+			return diagutil.FwDiagsAsError(diags)
+		}
+
+		if item != nil {
+			return fmt.Errorf("agnostic exception item (%s) still exists after delete", itemID)
+		}
+		return nil
+	}
+}
+
 func TestAccResourceExceptionItemEntryType_Match(t *testing.T) {
 	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
 
