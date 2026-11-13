@@ -41,11 +41,17 @@ func GetPackagePolicy(ctx context.Context, client *Client, id string, spaceID st
 	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.PackagePolicy { return &resp.JSON200.Item })
 }
 
-// GetDefendPackagePolicy reads a specific Elastic Defend package policy from
-// the Fleet API without requesting the simplified format. This preserves the
-// typed input shape, input config payloads, and the top-level version token
-// required for subsequent update operations.
+// GetDefendPackagePolicy reads a specific Elastic Defend package policy. See
+// GetPackagePolicyTyped.
 func GetDefendPackagePolicy(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	return GetPackagePolicyTyped(ctx, client, id, spaceID)
+}
+
+// GetPackagePolicyTyped reads a specific package policy from the Fleet API
+// without requesting the simplified format. This preserves the typed input
+// shape, input and stream config payloads, and the top-level version token
+// required for subsequent update operations.
+func GetPackagePolicyTyped(ctx context.Context, client *Client, id string, spaceID string) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	resp, err := client.API.GetFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, nil, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
@@ -118,11 +124,18 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 	})
 }
 
-// UpdateDefendPackagePolicy updates an existing Elastic Defend package policy
-// using the typed-input request body without requesting the simplified format.
-// The request body must include the top-level "version" token from the last
-// successful read so Kibana can perform optimistic concurrency control.
+// UpdateDefendPackagePolicy updates an existing Elastic Defend package policy.
+// See UpdatePackagePolicyTyped.
 func UpdateDefendPackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyUpdateRequestTypedInputs) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	return UpdatePackagePolicyTyped(ctx, client, id, spaceID, req)
+}
+
+// UpdatePackagePolicyTyped updates an existing package policy using the
+// typed-input request body without requesting the simplified format. Kibana
+// merges the body over the stored policy, so fields left unset are kept. The
+// request body should include the top-level "version" token from the last
+// successful read so Kibana can perform optimistic concurrency control.
+func UpdatePackagePolicyTyped(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyUpdateRequestTypedInputs) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	var unionReq kbapi.PackagePolicyUpdateRequest
 	if err := unionReq.FromPackagePolicyUpdateRequestTypedInputs(req); err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
