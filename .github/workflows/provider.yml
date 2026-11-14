@@ -137,6 +137,7 @@ jobs:
     outputs:
       versions: ${{ steps.load.outputs.versions }}
       flags: ${{ steps.load.outputs.flags }}
+      entries: ${{ steps.load.outputs.entries }}
       has_packages: ${{ steps.targeted.outputs.has_packages }}
       shards: ${{ steps.targeted.outputs.shards }}
       packages_0: ${{ steps.targeted.outputs.packages_0 }}
@@ -151,8 +152,6 @@ jobs:
         with:
           go-version-file: "go.mod"
           cache: true
-      - id: load
-        run: go run ./scripts/version-matrix load-matrix
       # Preparation boundary: the targeted shard plan is computed once here,
       # before the matrix jobs fan out, instead of per matrix job.
       - id: targeted
@@ -161,9 +160,14 @@ jobs:
         run: ./.github/scripts/targeted-testacc-compute.sh
         env:
           EVENT_NAME: ${{ github.event_name }}
+      - id: load
+        run: go run ./scripts/version-matrix load-matrix --event="$EVENT_NAME" --shards="$SHARDS"
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          SHARDS: ${{ steps.targeted.outputs.shards }}
 
   test:
-    name: Matrix Acceptance Test
+    name: Matrix Acceptance Test (${{ matrix.version }}, ${{ matrix.suite }}, shard ${{ matrix.shard }})
     needs:
       - classify
       - build
@@ -182,8 +186,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: ${{ fromJson(needs['load-matrix'].outputs.versions) }}
-        shard: ${{ fromJson(needs['load-matrix'].outputs.shards) }}
+        include: ${{ fromJson(needs['load-matrix'].outputs.entries) }}
     steps:
       # A zero-package pull-request plan keeps one no-op job per stack
       # version (so provider changes never skip the test job) while every
@@ -286,13 +289,11 @@ jobs:
         timeout-minutes: 60
         continue-on-error: ${{ endsWith(matrix.version, '-SNAPSHOT') }}
         run: |
-          # The prepared plan assigned this shard its final package list;
-          # no re-sharding happens here. Pull requests run the targeted
-          # list, everything else runs the fixed full-suite shards.
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
             make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"
           else
-            make testacc ACCTEST_TOTAL_SHARDS=2 \
+            make testacc ACCTEST_SUITE=${{ matrix.suite }} \
+              ACCTEST_TOTAL_SHARDS=${{ matrix.total_shards }} \
               ACCTEST_SHARD_INDEX=${{ matrix.shard }}
           fi
         env:
