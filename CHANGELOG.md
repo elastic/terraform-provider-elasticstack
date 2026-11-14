@@ -1,3 +1,9 @@
+## [Unreleased]
+
+### Changes
+
+- Add `event_category_override` and `timestamp_field` to EQL rules in `elasticstack_kibana_security_detection_rule`. ([#5477](https://github.com/elastic/terraform-provider-elasticstack/pull/5477))
+
 ## [0.17.0] - 2026-11-10
 
 ### Breaking changes
