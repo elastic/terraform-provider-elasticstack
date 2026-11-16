@@ -19,8 +19,11 @@ package rule
 
 import (
 	"context"
+	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
@@ -33,47 +36,84 @@ import (
 // attribute unknown as soon as the proposed state differs from the prior
 // state, so the prior data is restored here and, when nothing else changed,
 // so are version and updated_at.
+//
+// It operates on the artifacts list as framework values rather than decoding
+// the whole Model: a wholly-unknown nested object or artifact element (for
+// example one derived from another resource's not-yet-known value) cannot
+// decode into a Go struct, so a whole-plan Get would fail with a
+// value-conversion error. Unknown elements are left untouched.
 func (r *Resource) ModifyPlan(ctx context.Context, req resource.ModifyPlanRequest, resp *resource.ModifyPlanResponse) {
 	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() {
 		return
 	}
 
-	var plannedArtifacts types.List
+	var plannedArtifacts, stateArtifacts types.List
 	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, artifactsPath, &plannedArtifacts)...)
-	if resp.Diagnostics.HasError() || !typeutils.IsKnown(plannedArtifacts) {
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, artifactsPath, &stateArtifacts)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !typeutils.IsKnown(plannedArtifacts) || !typeutils.IsKnown(stateArtifacts) {
 		return
 	}
 
-	var plan, state Model
-	resp.Diagnostics.Append(req.Plan.Get(ctx, &plan)...)
-	resp.Diagnostics.Append(req.State.Get(ctx, &state)...)
-	if resp.Diagnostics.HasError() || len(plan.Artifacts) != len(state.Artifacts) {
+	planElems := plannedArtifacts.Elements()
+	stateElems := stateArtifacts.Elements()
+	if len(planElems) != len(stateElems) {
 		return
 	}
 
 	restored := false
-	for i := range plan.Artifacts {
-		if !plan.Artifacts[i].Data.IsUnknown() && !state.Artifacts[i].Data.IsNull() {
-			equal, diags := state.Artifacts[i].Data.StringSemanticEquals(ctx, plan.Artifacts[i].Data)
-			resp.Diagnostics.Append(diags...)
-			if equal && !plan.Artifacts[i].Data.Equal(state.Artifacts[i].Data) {
-				plan.Artifacts[i].Data = state.Artifacts[i].Data
-				restored = true
-			}
+	newElems := make([]attr.Value, len(planElems))
+	copy(newElems, planElems)
+	for i := range planElems {
+		planObj, planOK := planElems[i].(types.Object)
+		stateObj, stateOK := stateElems[i].(types.Object)
+		if !planOK || !stateOK || planObj.IsUnknown() || stateObj.IsUnknown() {
+			continue
+		}
+		planData, planOK := planObj.Attributes()["data"].(jsontypes.Normalized)
+		stateData, stateOK := stateObj.Attributes()["data"].(jsontypes.Normalized)
+		if !planOK || !stateOK || planData.IsUnknown() || stateData.IsNull() {
+			continue
+		}
+		equal, diags := stateData.StringSemanticEquals(ctx, planData)
+		resp.Diagnostics.Append(diags...)
+		if equal && !planData.Equal(stateData) {
+			attrs := maps.Clone(planObj.Attributes())
+			attrs["data"] = stateData
+			restoredObj, objDiags := types.ObjectValue(planObj.AttributeTypes(ctx), attrs)
+			resp.Diagnostics.Append(objDiags...)
+			newElems[i] = restoredObj
+			restored = true
 		}
 	}
 	if !restored || resp.Diagnostics.HasError() {
 		return
 	}
 
-	resp.Diagnostics.Append(resp.Plan.Set(ctx, plan)...)
+	restoredArtifacts, listDiags := types.ListValue(plannedArtifacts.ElementType(ctx), newElems)
+	resp.Diagnostics.Append(listDiags...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	resp.Diagnostics.Append(resp.Plan.SetAttribute(ctx, artifactsPath, restoredArtifacts)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}
 
+	// When the reformat was the only change, the server-owned version and
+	// updated_at keep their prior values too, so the plan is a true no-op.
+	var stateVersion types.Int64
+	var stateUpdatedAt types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("version"), &stateVersion)...)
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("updated_at"), &stateUpdatedAt)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 	candidate := tfsdk.Plan{Schema: resp.Plan.Schema, Raw: resp.Plan.Raw}
-	resp.Diagnostics.Append(candidate.SetAttribute(ctx, path.Root("version"), state.Version)...)
-	resp.Diagnostics.Append(candidate.SetAttribute(ctx, path.Root("updated_at"), state.UpdatedAt)...)
+	resp.Diagnostics.Append(candidate.SetAttribute(ctx, path.Root("version"), stateVersion)...)
+	resp.Diagnostics.Append(candidate.SetAttribute(ctx, path.Root("updated_at"), stateUpdatedAt)...)
 	if resp.Diagnostics.HasError() {
 		return
 	}

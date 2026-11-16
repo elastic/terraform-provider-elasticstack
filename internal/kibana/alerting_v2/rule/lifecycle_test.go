@@ -220,6 +220,27 @@ func TestCreateRule_putAnsweringReplacedIsAnError(t *testing.T) {
 	require.Contains(t, diags[0].Detail(), "replaced")
 }
 
+func TestCreateRule_putErrorCarriesCompositeID(t *testing.T) {
+	t.Parallel()
+
+	// The rule is created server-side (201) but the body is empty, so the
+	// client errors. The generated id must reach the user so the orphaned rule
+	// can be imported instead of recreated.
+	client, _ := newScriptedClient(t, map[string][]scriptedResponse{
+		"GET /s/team-a/api/alerting/v2/rules/my-rule": {{status: http.StatusNotFound, body: `{"code":"RULE_NOT_FOUND","error":"Not Found","message":"gone"}`}},
+		"PUT /s/team-a/api/alerting/v2/rules/my-rule": {{status: http.StatusCreated, body: ""}},
+	})
+
+	_, diags := createRule(context.Background(), client, entitycore.KibanaWriteRequest[Model]{
+		Plan:    minimalPlan("my-rule"),
+		SpaceID: "team-a",
+		WriteID: "my-rule",
+	})
+
+	require.True(t, diags.HasError())
+	require.Contains(t, diags[0].Detail(), "team-a/my-rule")
+}
+
 func TestCreateRule_generatesUUIDWhenRuleIDOmitted(t *testing.T) {
 	t.Parallel()
 

@@ -74,7 +74,12 @@ func putRule(ctx context.Context, client *clients.KibanaScopedClient, spaceID, r
 	}
 
 	created, putDiags := kibanaoapi.PutAlertingV2Rule(ctx, client.GetKibanaOapiClient(), spaceID, ruleID, body)
-	diags.Append(putDiags...)
+	// Prefix the write diagnostics with the composite id, as readRule does.
+	// A PUT that reaches the server but returns an empty or malformed body
+	// errors here after the rule was created; without the id (which may be a
+	// generated UUID) the user cannot import the orphan, and a retry creates a
+	// second rule.
+	diags.Append(withCompositeID(putDiags, spaceID, ruleID)...)
 	if diags.HasError() {
 		return false, plan, diags
 	}

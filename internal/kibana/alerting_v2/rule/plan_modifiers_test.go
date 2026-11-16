@@ -189,3 +189,44 @@ func TestResource_modifyPlan_realChangesKeepVersionUnknown(t *testing.T) {
 		})
 	}
 }
+
+// Regression: a wholly-unknown nested object or artifact element must not make
+// ModifyPlan fail with a value-conversion error from decoding the whole plan.
+func TestResource_modifyPlan_toleratesUnknownNestedValues(t *testing.T) {
+	t.Parallel()
+
+	root := rootObjectType(t)
+	reformatted := "{\n  \"content\": \"# Steps\"\n}\n"
+	state := ruleObject(t, attrValues{"artifacts": artifactsVal(t, `{"content":"# Steps"}`)})
+
+	t.Run("whole nested object unknown until apply", func(t *testing.T) {
+		t.Parallel()
+		recType, _ := root.AttributeTypes["recovery"].(tftypes.Object)
+		plan := ruleObject(t, attrValues{
+			"artifacts":  artifactsVal(t, reformatted),
+			"recovery":   tftypes.NewValue(recType, tftypes.UnknownValue),
+			"version":    tftypes.NewValue(tftypes.Number, tftypes.UnknownValue),
+			"updated_at": tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		})
+
+		resp := modifyPlan(t, plan, state)
+
+		require.False(t, resp.Diagnostics.HasError(), "unexpected diagnostics: %v", resp.Diagnostics)
+	})
+
+	t.Run("artifact element unknown until apply", func(t *testing.T) {
+		t.Parallel()
+		listType, _ := root.AttributeTypes["artifacts"].(tftypes.List)
+		unknownElem := tftypes.NewValue(listType.ElementType, tftypes.UnknownValue)
+		plan := ruleObject(t, attrValues{
+			"artifacts":  tftypes.NewValue(listType, []tftypes.Value{unknownElem}),
+			"version":    tftypes.NewValue(tftypes.Number, tftypes.UnknownValue),
+			"updated_at": tftypes.NewValue(tftypes.String, tftypes.UnknownValue),
+		})
+
+		resp := modifyPlan(t, plan, state)
+
+		require.False(t, resp.Diagnostics.HasError(), "unexpected diagnostics: %v", resp.Diagnostics)
+		require.True(t, resp.Plan.Raw.Equal(plan), "unknown element must be left untouched")
+	})
+}
