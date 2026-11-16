@@ -61,7 +61,15 @@ func withCompositeID(in diag.Diagnostics, spaceID, resourceID string) diag.Diagn
 			out = append(out, d)
 			continue
 		}
-		out = append(out, diag.NewErrorDiagnostic(d.Summary(), "Rule \""+importID+"\": "+d.Detail()))
+		detail := "Rule \"" + importID + "\": " + d.Detail()
+		// Preserve the attribute path when the diagnostic carries one (e.g. a
+		// marshal failure on artifacts[i].data), so the user still sees which
+		// attribute is at fault rather than a path-less error.
+		if withPath, ok := d.(diag.DiagnosticWithPath); ok {
+			out = append(out, diag.NewAttributeErrorDiagnostic(withPath.Path(), d.Summary(), detail))
+			continue
+		}
+		out = append(out, diag.NewErrorDiagnostic(d.Summary(), detail))
 	}
 	return out
 }

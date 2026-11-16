@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/google/uuid"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -326,6 +327,23 @@ func TestWithCompositeID_prefixesErrorsAndKeepsWarnings(t *testing.T) {
 	require.Equal(t, in[0], out[0])
 	require.Equal(t, "failed", out[1].Summary())
 	require.Equal(t, `Rule "team-a/my-rule": boom`, out[1].Detail())
+}
+
+func TestWithCompositeID_preservesAttributePath(t *testing.T) {
+	t.Parallel()
+
+	attrPath := path.Root("artifacts").AtListIndex(0).AtName("data")
+	in := diag.Diagnostics{
+		diag.NewAttributeErrorDiagnostic(attrPath, "marshal failure", "boom"),
+	}
+
+	out := withCompositeID(in, "team-a", "my-rule")
+
+	require.Len(t, out, 1)
+	withPath, ok := out[0].(diag.DiagnosticWithPath)
+	require.True(t, ok, "composite-id wrap must keep the attribute path")
+	require.Equal(t, attrPath, withPath.Path())
+	require.Equal(t, `Rule "team-a/my-rule": boom`, out[0].Detail())
 }
 
 func TestReadRule_mappingErrorDiagnosticsCarryCompositeID(t *testing.T) {
