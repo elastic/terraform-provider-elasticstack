@@ -1,0 +1,94 @@
+{
+  "paths": {
+    "/api/kibana/settings": {
+      "get": {
+        "operationId": "get-kibana-settings",
+        "responses": {
+          "200": {
+            "description": "The user-set advanced settings of the space.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "settings": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "userValue": {},
+                          "isOverridden": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "userValue"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "settings"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "post-kibana-settings",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "changes": {
+                    "type": "object",
+                    "additionalProperties": true
+                  }
+                },
+                "required": [
+                  "changes"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The user-set advanced settings of the space after the changes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "settings": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "userValue": {},
+                          "isOverridden": {
+                            "type": "boolean"
+                          }
+                        },
+                        "required": [
+                          "userValue"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "settings"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

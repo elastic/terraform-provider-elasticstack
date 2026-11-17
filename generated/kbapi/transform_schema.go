@@ -589,6 +589,7 @@ type TransformFunc func(schema *Schema)
 
 var transformers = []TransformFunc{
 	injectDashboardAPIPaths,
+	injectAdvancedSettingsAPIPaths,
 	transformRemoveKbnXsrf,
 	transformRemoveApiVersionParam,
 	transformSimplifyContentType,
@@ -634,6 +635,21 @@ func injectDashboardAPIPaths(schema *Schema) {
 		log.Fatalf("failed to unmarshal dashboard-paths.json: %v", err)
 	}
 	for path, pathInfo := range dashboardPaths.Paths {
+		schema.Paths[path] = pathInfo
+	}
+}
+
+//go:embed advanced-settings-paths.json
+var advancedSettingsPathsJSON string
+
+// injectAdvancedSettingsAPIPaths adds the advanced settings HTTP paths, which
+// the upstream Kibana OpenAPI export does not describe.
+func injectAdvancedSettingsAPIPaths(schema *Schema) {
+	var advancedSettingsPaths Schema
+	if err := yaml.Unmarshal([]byte(advancedSettingsPathsJSON), &advancedSettingsPaths); err != nil {
+		log.Fatalf("failed to unmarshal advanced-settings-paths.json: %v", err)
+	}
+	for path, pathInfo := range advancedSettingsPaths.Paths {
 		schema.Paths[path] = pathInfo
 	}
 }
