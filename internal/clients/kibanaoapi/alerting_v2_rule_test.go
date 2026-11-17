@@ -228,6 +228,9 @@ func TestPutAlertingV2Rule_emptySuccessBodyIsError(t *testing.T) {
 			_, diags := kibanaoapi.PutAlertingV2Rule(context.Background(), client, "default", "my-rule", minimalPutRuleBody())
 
 			require.True(t, diags.HasError())
+			// The diagnostic must report the actual status code: a created
+			// (201) rule reported as 200 would misdescribe the server outcome.
+			require.Contains(t, diags[0].Detail(), "API returned "+name)
 		})
 	}
 }

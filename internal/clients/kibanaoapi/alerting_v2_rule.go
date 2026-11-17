@@ -57,10 +57,10 @@ func PutAlertingV2Rule(ctx context.Context, client *Client, spaceID, ruleID stri
 
 	switch resp.StatusCode() {
 	case http.StatusCreated:
-		_, diags = diagutil.UnwrapJSON200(resp.JSON201, "alerting v2 rule")
+		_, diags = diagutil.UnwrapJSONStatus(resp.JSON201, "alerting v2 rule", http.StatusCreated)
 		return true, diags
 	case http.StatusOK:
-		_, diags = diagutil.UnwrapJSON200(resp.JSON200, "alerting v2 rule")
+		_, diags = diagutil.UnwrapJSONStatus(resp.JSON200, "alerting v2 rule", http.StatusOK)
 		return false, diags
 	default:
 		return false, alertingV2ErrorDiagnostics(resp.StatusCode(), resp.Body)
