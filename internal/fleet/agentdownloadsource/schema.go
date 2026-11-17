@@ -20,6 +20,7 @@ package agentdownloadsource
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/sslcore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	listvalidator "github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	stringvalidator "github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -37,7 +38,17 @@ const spaceIDsDescription = "The Kibana space IDs where this download source is 
 
 const (
 	attrDefault = "default"
+
+	// keyAttributeName is the shared name of the ssl private-key attribute and
+	// the headers header-name attribute; golangci requires a constant at three
+	// occurrences.
+	keyAttributeName = "key"
+
+	sslAtLeastOneSubattrSummary = "Empty ssl configuration"
+	sslAtLeastOneSubattrMessage = "At least one of certificate_authorities, certificate, key, or key_wo must be set."
 )
+
+var sslSubattrNames = []string{"certificate_authorities", "certificate", keyAttributeName, "key_wo"}
 
 func getSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
@@ -81,7 +92,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: "SSL/TLS configuration for the download source host.",
 				Optional:    true,
 				Validators: []validator.Object{
-					sslAtLeastOneSubattrValidator{},
+					sslcore.AtLeastOneSubattrValidator(sslSubattrNames, sslAtLeastOneSubattrSummary, sslAtLeastOneSubattrMessage),
 				},
 				Attributes: map[string]schema.Attribute{
 					"certificate_authorities": schema.ListAttribute{

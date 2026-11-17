@@ -21,6 +21,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/sslcore"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -115,7 +116,7 @@ func Test_sslAtLeastOneSubattrValidator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var resp validator.ObjectResponse
-			sslAtLeastOneSubattrValidator{}.ValidateObject(ctx, validator.ObjectRequest{
+			sslcore.AtLeastOneSubattrValidator(sslSubattrNames, sslAtLeastOneSubattrSummary, sslAtLeastOneSubattrMessage).ValidateObject(ctx, validator.ObjectRequest{
 				ConfigValue: tt.obj,
 				Path:        path.Root("ssl"),
 			}, &resp)
