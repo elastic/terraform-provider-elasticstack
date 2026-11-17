@@ -115,7 +115,7 @@ func Test_sslAtLeastOneSubattrValidator(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var resp validator.ObjectResponse
-			sslAtLeastOneSubattrValidator{}.ValidateObject(ctx, validator.ObjectRequest{
+			sslAtLeastOneSubattrValidator().ValidateObject(ctx, validator.ObjectRequest{
 				ConfigValue: tt.obj,
 				Path:        path.Root("ssl"),
 			}, &resp)

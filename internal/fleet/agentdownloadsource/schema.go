@@ -81,7 +81,7 @@ func getSchema(_ context.Context) schema.Schema {
 				Description: "SSL/TLS configuration for the download source host.",
 				Optional:    true,
 				Validators: []validator.Object{
-					sslAtLeastOneSubattrValidator{},
+					sslAtLeastOneSubattrValidator(),
 				},
 				Attributes: map[string]schema.Attribute{
 					"certificate_authorities": schema.ListAttribute{
