@@ -110,7 +110,8 @@ func getSchemaV3() schema.Schema {
 			},
 			attrOutputID: schema.StringAttribute{
 				Description: "The ID of the output to send data to. When not specified, the default output of the agent policy will be used. " +
-					"Removing `output_id` from configuration does not clear it on the server; the previously assigned output is retained and state remains null.",
+					"When `output_id` is not configured, it remains null in state. Removing it from configuration does not clear it on the server on Kibana 9.0 and later; " +
+					"the previously assigned output is retained. Earlier versions clear an output that is not configured, including one assigned outside Terraform, on the next update.",
 				Optional: true,
 			},
 			attrAdditionalDatastreamsPermissions: schema.ListAttribute{

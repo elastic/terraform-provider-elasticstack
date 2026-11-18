@@ -172,9 +172,9 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 	model.Description = types.StringPointerValue(data.Description)
 	model.IntegrationName = types.StringValue(data.Package.Name)
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
-	// The Fleet update API treats an omitted output_id as "preserve the existing
-	// value", so an output_id set outside Terraform (e.g. in the Kibana UI, even
-	// as an empty string) keeps being returned by the API. When output_id is not
+	// From 9.0.0 the Fleet update API treats an omitted output_id as "preserve
+	// the existing value", so an output_id set outside Terraform (e.g. in the
+	// Kibana UI, even as an empty string) keeps being returned by the API. When output_id is not
 	// configured (null), keep it null in state; writing the API value would fail
 	// with "Provider produced inconsistent result after apply: .output_id: was
 	// null, but now ...". On import there is no configuration yet, so take the

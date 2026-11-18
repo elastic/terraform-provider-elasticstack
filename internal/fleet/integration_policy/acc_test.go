@@ -52,6 +52,10 @@ var (
 	minVersionSpaceIDs             = version.Must(version.NewVersion("9.1.0"))
 	minVersionGCPPubSub            = version.Must(version.NewVersion("8.13.0"))
 
+	// From 9.0.0, Fleet keeps a package policy's output_id when an update omits it;
+	// earlier versions clear it.
+	minVersionFleetKeepsOmittedOutputID = version.Must(version.NewVersion("9.0.0"))
+
 	minVersionAdditionalDatastreamsPermissions = version.Must(version.NewVersion("9.1.0"))
 )
 
@@ -1369,6 +1373,20 @@ func checkPackagePolicyOutputIDOnServer(want string) resource.TestCheckFunc {
 	}
 }
 
+// outputIDAfterOmittingUpdate returns the output_id Fleet is expected to hold
+// after an update that omits output_id, when outputID was assigned before it:
+// 9.0.0 and later (and serverless) keep it, earlier versions clear it.
+func outputIDAfterOmittingUpdate(t *testing.T, outputID string) string {
+	t.Helper()
+
+	keeps, err := versionutils.CheckIfVersionIsSupported(minVersionFleetKeepsOmittedOutputID)()
+	require.NoError(t, err)
+	if keeps {
+		return outputID
+	}
+	return ""
+}
+
 // setPackagePolicyOutputIDOutsideTerraform assigns outputID to the package
 // policy through the Fleet API, as a user would in the Kibana UI.
 func setPackagePolicyOutputIDOutsideTerraform(t *testing.T, policyID, agentPolicyID, name, outputID string) {
@@ -1388,15 +1406,16 @@ func setPackagePolicyOutputIDOutsideTerraform(t *testing.T, policyID, agentPolic
 
 // TestAccResourceIntegrationPolicy_outputIDSetOutsideTerraform covers an output
 // assigned to the policy outside Terraform (e.g. in the Kibana UI) while
-// output_id is not configured: apply must succeed, state must stay null and the
-// server must keep the assigned output. It also covers an empty-string
-// output_id on the server.
+// output_id is not configured: apply must succeed and state must stay null.
+// From 9.0.0 the server keeps the assigned output; earlier versions clear it.
+// It also covers an empty-string output_id on the server.
 func TestAccResourceIntegrationPolicy_outputIDSetOutsideTerraform(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionOutputID, versionutils.FlavorAny)
 
 	const resourceName = "elasticstack_fleet_integration_policy.test_policy"
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	outputID := policyName + "-output"
+	outputIDAfterUpdate := outputIDAfterOmittingUpdate(t, outputID)
 	vars := func(description string) config.Variables {
 		return config.Variables{
 			"policy_name": config.StringVariable(policyName),
@@ -1435,7 +1454,7 @@ func TestAccResourceIntegrationPolicy_outputIDSetOutsideTerraform(t *testing.T) 
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceName, "description", "updated"),
 					resource.TestCheckNoResourceAttr(resourceName, "output_id"),
-					checkPackagePolicyOutputIDOnServer(outputID),
+					checkPackagePolicyOutputIDOnServer(outputIDAfterUpdate),
 				),
 			},
 			{
@@ -1456,15 +1475,16 @@ func TestAccResourceIntegrationPolicy_outputIDSetOutsideTerraform(t *testing.T) 
 }
 
 // TestAccResourceIntegrationPolicy_outputIDRemoved covers importing a policy
-// with an output assigned, and removing a configured output_id: Fleet keeps an
-// omitted output_id, so the apply succeeds, state becomes null and the
-// previously assigned output is retained on the server.
+// with an output assigned, and removing a configured output_id: the apply
+// succeeds and state becomes null. From 9.0.0 Fleet keeps the omitted
+// output_id on the server; earlier versions clear it.
 func TestAccResourceIntegrationPolicy_outputIDRemoved(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionOutputID, versionutils.FlavorAny)
 
 	const resourceName = "elasticstack_fleet_integration_policy.test_policy"
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 	outputID := policyName + "-output"
+	outputIDAfterUpdate := outputIDAfterOmittingUpdate(t, outputID)
 	vars := config.Variables{"policy_name": config.StringVariable(policyName)}
 
 	// Not parallel: the shared "system" package is uninstalled by other tests' destroy.
@@ -1499,7 +1519,7 @@ func TestAccResourceIntegrationPolicy_outputIDRemoved(t *testing.T) {
 				ConfigVariables:          vars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckNoResourceAttr(resourceName, "output_id"),
-					checkPackagePolicyOutputIDOnServer(outputID),
+					checkPackagePolicyOutputIDOnServer(outputIDAfterUpdate),
 				),
 			},
 		},
