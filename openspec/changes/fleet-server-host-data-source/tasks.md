@@ -17,10 +17,10 @@
 - [x] 3.2 Add `examples/data-sources/elasticstack_fleet_server_host/data-source.tf` and put it on the `TestAccExamples_planOnly` skip list
 - [x] 3.3 Generate `docs/data-sources/fleet_server_host.md`
 
-## 4. Acceptance tests (`internal/fleet/serverhostds/acc_test.go`)
+## 4. Acceptance tests (`internal/fleet/serverhostds/acc_test.go`, except 4.2)
 
 - [x] 4.1 Lookup by `host_id`, then an update of the host and a lookup by `name` on the same data source
-- [x] 4.2 Lookup by `default = true`, and `default` reported as `true` on a lookup by `host_id`
+- [x] 4.2 Lookup by `default = true`, and `default` reported as `true` on a lookup by `host_id`. This test is `TestAccDataSourceFleetServerHost_default` in `internal/fleet/serverhost/acc_test.go`: it changes the stack-wide default host, so it has to run in the same package as the resource test that does the same, where non-parallel tests are serialized
 - [x] 4.3 `proxy_id` (8.7.1)
 - [x] 4.4 `ssl` with all exposed fields and with `certificate` only; `ssl.key` is never in state (9.1.0)
 - [x] 4.5 `space_id` omitted, set to the host's space and set to another space all return the host (9.1.0)

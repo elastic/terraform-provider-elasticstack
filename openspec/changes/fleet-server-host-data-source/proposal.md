@@ -32,7 +32,7 @@ _None — this extends the existing `fleet-server-host` capability._
 - New client helper `ListFleetServerHosts` in `internal/clients/fleet/fleet_server_host.go`.
 - Provider registration in `provider/plugin_framework.go`.
 - Docs and example: `docs/data-sources/fleet_server_host.md`, `examples/data-sources/elasticstack_fleet_server_host/data-source.tf`. The example is on the `TestAccExamples_planOnly` skip list because its lookups need hosts that already exist.
-- Tests: unit tests for the client helper and the read function; acceptance tests in `internal/fleet/serverhostds/acc_test.go`.
+- Tests: unit tests for the client helper and the read function; acceptance tests in `internal/fleet/serverhostds/acc_test.go`, and the lookup by `default` in `internal/fleet/serverhost/acc_test.go`, next to the resource test that also changes the default host.
 - The `elasticstack_fleet_server_host` resource is not changed.
 
 ## Out of Scope

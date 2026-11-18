@@ -100,32 +100,6 @@ func TestAccDataSourceFleetServerHost(t *testing.T) {
 	})
 }
 
-// Not parallel: the default Fleet server host is a single flag for the whole stack.
-func TestAccDataSourceFleetServerHostDefault(t *testing.T) {
-	versionutils.SkipIfUnsupported(t, minVersionFleetServerHost, versionutils.FlavorAny)
-
-	suffix := randomSuffix()
-
-	resource.Test(t, resource.TestCase{
-		PreCheck:     func() { acctest.PreCheck(t) },
-		CheckDestroy: checkFleetServerHostDestroy,
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
-				ConfigVariables:          suffixVariables(suffix),
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrPair(dataSourceName, "id", resourceName, "host_id"),
-					resource.TestCheckResourceAttrPair(dataSourceName, "host_id", resourceName, "host_id"),
-					resource.TestCheckResourceAttr(dataSourceName, "name", "Data Source Default Server Host "+suffix),
-					resource.TestCheckResourceAttr(dataSourceName, "default", "true"),
-					resource.TestCheckResourceAttr("data.elasticstack_fleet_server_host.by_id", "default", "true"),
-				),
-			},
-		},
-	})
-}
-
 func TestAccDataSourceFleetServerHostProxyID(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionFleetServerHostProxy, versionutils.FlavorAny)
 
