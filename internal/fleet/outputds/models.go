@@ -19,10 +19,10 @@ package outputds
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -31,19 +31,22 @@ import (
 
 type outputModel struct {
 	entitycore.KibanaConnectionField
-	ID      types.String `tfsdk:"id"`
-	SpaceID types.String `tfsdk:"space_id"`
-	Outputs types.List   `tfsdk:"outputs"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
+	Outputs types.List `tfsdk:"outputs"`
 }
 
-func (model *outputModel) populateFromAPI(ctx context.Context, unions []kbapi.OutputUnion) (diags diag.Diagnostics) {
-	model.ID = types.StringValue("outputs")
-	model.Outputs = typeutils.SliceToListType(ctx, unions, getOutputItemElemType(ctx), path.Root("outputs"), &diags,
+func (m outputModel) GetID() types.String         { return m.ID }
+func (m outputModel) GetResourceID() types.String { return types.StringValue("outputs") }
+
+func (m *outputModel) populateFromAPI(ctx context.Context, unions []kbapi.OutputUnion) (diags diag.Diagnostics) {
+	m.ID = types.StringValue("outputs")
+	m.Outputs = typeutils.SliceToListType(ctx, unions, getOutputItemElemType(ctx), path.Root("outputs"), &diags,
 		func(union kbapi.OutputUnion, meta typeutils.ListMeta) outputItemModel {
-			model := outputItemModel{}
-			diags := model.populateFromAPI(ctx, &union)
+			item := outputItemModel{}
+			diags := item.populateFromAPI(ctx, &union)
 			meta.Diags.Append(diags...)
-			return model
+			return item
 		})
 
 	return
@@ -61,31 +64,13 @@ type outputItemModel struct {
 	ConfigYaml           types.String `tfsdk:"config_yaml"`
 }
 
-func (model *outputItemModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
-	if union == nil {
-		return
-	}
-
-	output, err := union.ValueByDiscriminator()
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return
-	}
-
-	switch output := output.(type) {
-	case kbapi.KibanaHTTPAPIsOutputResponseElasticsearch:
-		diags.Append(model.fromAPIElasticsearchModel(ctx, &output)...)
-	case kbapi.KibanaHTTPAPIsOutputResponseLogstash:
-		diags.Append(model.fromAPILogstashModel(ctx, &output)...)
-	case kbapi.KibanaHTTPAPIsOutputResponseKafka:
-		diags.Append(model.fromAPIKafkaModel(ctx, &output)...)
-	case kbapi.KibanaHTTPAPIsOutputResponseRemoteElasticsearch:
-		diags.Append(model.fromAPIRemoteElasticsearchModel(ctx, &output)...)
-	default:
-		diags.AddError(fmt.Sprintf("unhandled output type: %T", output), "")
-	}
-
-	return
+func (model *outputItemModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) diag.Diagnostics {
+	return fleet.DispatchOutputUnion(ctx, union, fleet.OutputUnionHandlers{
+		Elasticsearch:       model.fromAPIElasticsearchModel,
+		Logstash:            model.fromAPILogstashModel,
+		Kafka:               model.fromAPIKafkaModel,
+		RemoteElasticsearch: model.fromAPIRemoteElasticsearchModel,
+	})
 }
 
 // outputAPICommonData holds the fields shared across all output API types so

@@ -24,29 +24,29 @@ import "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 // Returns "" if vizType is not one of the supported Lens chart kinds.
 func TerraformChartBlockKey(vizType string) string {
 	switch vizType {
-	case string(kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanelTypeXy):
+	case string(kbapi.KibanaHTTPAPIsVisXyChartNoESQLByValuePanelTypeXy):
 		return "xy_chart_config"
-	case string(kbapi.KibanaHTTPAPIsDatatableNoESQLByValuePanelTypeDataTable):
+	case string(kbapi.KibanaHTTPAPIsVisDatatableNoESQLByValuePanelTypeDataTable):
 		return "datatable_config"
-	case string(kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanelTypeTagCloud):
+	case string(kbapi.KibanaHTTPAPIsVisTagcloudNoESQLByValuePanelTypeTagCloud):
 		return "tagcloud_config"
-	case string(kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap):
+	case string(kbapi.KibanaHTTPAPIsVisRegionMapNoESQLByValuePanelTypeRegionMap):
 		return "region_map_config"
-	case string(kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie):
+	case string(kbapi.KibanaHTTPAPIsVisPieNoESQLByValuePanelTypePie):
 		return "pie_chart_config"
-	case string(kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanelTypeMetric):
+	case string(kbapi.KibanaHTTPAPIsVisMetricNoESQLByValuePanelTypeMetric):
 		return "metric_chart_config"
 	case string(kbapi.LegacyMetric):
 		return "legacy_metric_config"
-	case string(kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanelTypeGauge):
+	case string(kbapi.KibanaHTTPAPIsVisGaugeNoESQLByValuePanelTypeGauge):
 		return "gauge_config"
-	case string(kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap):
+	case string(kbapi.KibanaHTTPAPIsVisHeatmapNoESQLByValuePanelTypeHeatmap):
 		return "heatmap_config"
-	case string(kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanelTypeMosaic):
+	case string(kbapi.KibanaHTTPAPIsVisMosaicNoESQLByValuePanelTypeMosaic):
 		return "mosaic_config"
-	case string(kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanelTypeTreemap):
+	case string(kbapi.KibanaHTTPAPIsVisTreemapNoESQLByValuePanelTypeTreemap):
 		return "treemap_config"
-	case string(kbapi.KibanaHTTPAPIsWaffleNoESQLByValuePanelTypeWaffle):
+	case string(kbapi.KibanaHTTPAPIsVisWaffleNoESQLByValuePanelTypeWaffle):
 		return "waffle_config"
 	default:
 		return ""

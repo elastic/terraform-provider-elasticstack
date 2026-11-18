@@ -43,6 +43,7 @@ const (
 	attrExclude                  = "exclude"
 	attrFixedInterval            = "fixed_interval"
 	attrForceMergeIndex          = "force_merge_index"
+	attrForceMergeOnClone        = "force_merge_on_clone"
 	attrInclude                  = "include"
 	attrMaxAge                   = "max_age"
 	attrMaxPrimaryShardDocs      = "max_primary_shard_docs"

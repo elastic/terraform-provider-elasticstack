@@ -55,7 +55,7 @@ func PopulateLensChartBaseFromAPI(
 	datasetBytes []byte,
 	datasetErr error,
 	dataSourceJSONFieldName string,
-	filters *kbapi.KibanaHTTPAPIsLensPanelFilters,
+	filters *kbapi.KibanaHTTPAPIsVisPanelFilters,
 	diags *diag.Diagnostics,
 ) (models.LensChartBaseTFModel, bool) {
 	base := models.LensChartBaseTFModel{

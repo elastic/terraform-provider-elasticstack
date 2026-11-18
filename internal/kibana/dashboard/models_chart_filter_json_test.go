@@ -30,20 +30,20 @@ import (
 
 func Test_chartFilterJSONModel_roundTrip_xyChart(t *testing.T) {
 	raw := `{"type":"condition","condition":{"field":"host.name","operator":"is","value":"staging"}}`
-	var item kbapi.KibanaHTTPAPIsLensPanelFilters_Item
+	var item kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema
 	require.NoError(t, json.Unmarshal([]byte(raw), &item))
 
 	m := models.ChartFilterJSONModel{}
 	diags := lenscommon.ChartFilterJSONPopulateFromAPIItem(&m, item)
 	require.False(t, diags.HasError())
 
-	var out kbapi.KibanaHTTPAPIsLensPanelFilters_Item
+	var out kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema
 	diags = lenscommon.DecodeChartFilterJSON(m.FilterJSON, &out)
 	require.False(t, diags.HasError())
 
 	cond, err := out.AsKibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeConditionFilterSchema()
 	require.NoError(t, err)
-	require.Equal(t, kbapi.Condition, cond.Type)
+	require.Equal(t, kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeConditionFilterSchemaTypeCondition, cond.Type)
 	isCond, err := cond.Condition.AsKibanaHTTPAPIsKbnAsCodeFiltersSchemaConditionIs()
 	require.NoError(t, err)
 	require.Equal(t, "host.name", isCond.Field)
@@ -53,7 +53,7 @@ func Test_chartFilterJSONModel_roundTrip_xyChart(t *testing.T) {
 }
 
 func Test_decodeChartFilterJSON_rejects_empty(t *testing.T) {
-	var item kbapi.KibanaHTTPAPIsLensPanelFilters_Item
+	var item kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema
 	diags := lenscommon.DecodeChartFilterJSON(jsontypes.NewNormalizedNull(), &item)
 	require.True(t, diags.HasError())
 }

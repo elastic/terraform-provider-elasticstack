@@ -33,35 +33,30 @@ import (
 
 func (m ExceptionListModel) GetID() types.String { return m.ID }
 func (m ExceptionListModel) GetResourceID() types.String {
-	if compID, _ := clients.CompositeIDFromStr(m.ID.ValueString()); compID != nil {
-		return types.StringValue(compID.ResourceID)
-	}
-	return types.StringValue("")
+	return clients.ResourceIDFromComposite(m.ID, types.StringValue(""))
 }
-func (m ExceptionListModel) GetSpaceID() types.String        { return m.SpaceID }
-func (m ExceptionListModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 var _ entitycore.KibanaResourceModel = ExceptionListModel{}
 
 type ExceptionListModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String         `tfsdk:"id"`
-	KibanaConnection types.List           `tfsdk:"kibana_connection"`
-	SpaceID          types.String         `tfsdk:"space_id"`
-	ListID           types.String         `tfsdk:"list_id"`
-	Name             types.String         `tfsdk:"name"`
-	Description      types.String         `tfsdk:"description"`
-	Type             types.String         `tfsdk:"type"`
-	NamespaceType    types.String         `tfsdk:"namespace_type"`
-	OsTypes          types.Set            `tfsdk:"os_types"`
-	Tags             types.Set            `tfsdk:"tags"`
-	Meta             jsontypes.Normalized `tfsdk:"meta"`
-	CreatedAt        types.String         `tfsdk:"created_at"`
-	CreatedBy        types.String         `tfsdk:"created_by"`
-	UpdatedAt        types.String         `tfsdk:"updated_at"`
-	UpdatedBy        types.String         `tfsdk:"updated_by"`
-	Immutable        types.Bool           `tfsdk:"immutable"`
-	TieBreakerID     types.String         `tfsdk:"tie_breaker_id"`
+	entitycore.KibanaConnectionField
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
+	ListID        types.String         `tfsdk:"list_id"`
+	Name          types.String         `tfsdk:"name"`
+	Description   types.String         `tfsdk:"description"`
+	Type          types.String         `tfsdk:"type"`
+	NamespaceType types.String         `tfsdk:"namespace_type"`
+	OsTypes       types.Set            `tfsdk:"os_types"`
+	Tags          types.Set            `tfsdk:"tags"`
+	Meta          jsontypes.Normalized `tfsdk:"meta"`
+	CreatedAt     types.String         `tfsdk:"created_at"`
+	CreatedBy     types.String         `tfsdk:"created_by"`
+	UpdatedAt     types.String         `tfsdk:"updated_at"`
+	UpdatedBy     types.String         `tfsdk:"updated_by"`
+	Immutable     types.Bool           `tfsdk:"immutable"`
+	TieBreakerID  types.String         `tfsdk:"tie_breaker_id"`
 }
 
 type exceptionListOptionalFields struct {
@@ -189,26 +184,14 @@ func (m *ExceptionListModel) fromAPI(ctx context.Context, apiList *kbapi.Securit
 	m.UpdatedBy = types.StringValue(apiList.UpdatedBy)
 
 	// Set optional os_types
-	if apiList.OsTypes != nil && len(*apiList.OsTypes) > 0 {
-		set, d := types.SetValueFrom(ctx, types.StringType, apiList.OsTypes)
-		diags.Append(d...)
-		m.OsTypes = set
-	} else if m.OsTypes.IsUnknown() {
-		m.OsTypes = types.SetNull(types.StringType)
-	}
+	osTypes, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, apiList.OsTypes, m.OsTypes)
+	diags.Append(d...)
+	m.OsTypes = osTypes
 
 	// Set optional tags
-	if apiList.Tags != nil && len(*apiList.Tags) > 0 {
-		set, d := types.SetValueFrom(ctx, types.StringType, *apiList.Tags)
-		diags.Append(d...)
-		m.Tags = set
-	} else if m.Tags.IsUnknown() {
-		// Same as os_types above (fixed in #1740): only collapse to null when
-		// the plan value was Unknown. Preserving a Known-empty Set avoids
-		// "produced inconsistent result after apply: .tags: was null, but now
-		// ..." when config sets `tags = []`.
-		m.Tags = types.SetNull(types.StringType)
-	}
+	tags, d := typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, apiList.Tags, m.Tags)
+	diags.Append(d...)
+	m.Tags = tags
 
 	// Set optional meta
 	m.Meta = typeutils.MarshalToNormalized(apiList.Meta, path.Root("meta"), &diags)

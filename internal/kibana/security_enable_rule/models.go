@@ -27,29 +27,25 @@ import (
 
 type enableRuleModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	SpaceID          types.String `tfsdk:"space_id"`
+	entitycore.KibanaConnectionField
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	Key              types.String `tfsdk:"key"`
 	Value            types.String `tfsdk:"value"`
 	DisableOnDestroy types.Bool   `tfsdk:"disable_on_destroy"`
 	AllRulesEnabled  types.Bool   `tfsdk:"all_rules_enabled"`
 }
 
-func (m enableRuleModel) GetID() types.String             { return m.ID }
-func (m enableRuleModel) GetResourceID() types.String     { return m.Key }
-func (m enableRuleModel) GetSpaceID() types.String        { return m.SpaceID }
-func (m enableRuleModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m enableRuleModel) GetID() types.String         { return m.ID }
+func (m enableRuleModel) GetResourceID() types.String { return m.Key }
 
 var _ entitycore.KibanaResourceModel = enableRuleModel{}
 
 var minSupportedVersion = version.Must(version.NewVersion("8.11.0"))
 
 func (m enableRuleModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minSupportedVersion,
-			ErrorMessage: "Security detection rules bulk actions are not supported until Elastic Stack v8.11.0. Upgrade the target server to use this resource",
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*minSupportedVersion,
+		"Security detection rules bulk actions are not supported until Elastic Stack v8.11.0. Upgrade the target server to use this resource",
+	), nil
 }

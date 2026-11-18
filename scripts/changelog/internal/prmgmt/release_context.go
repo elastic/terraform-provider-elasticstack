@@ -76,15 +76,3 @@ type ReleaseContext struct {
 	semver.PreviousTagResult
 	CompareRange string
 }
-
-// BuildReleaseContext mirrors changelog-release-context.js buildReleaseContext.
-func BuildReleaseContext(eventName, headBranch string, tags []semver.Tag) ReleaseContext {
-	rm := ResolveReleaseMode(eventName, headBranch)
-	prev := semver.SelectPreviousTag(tags, rm.Mode, rm.TargetVersion)
-	cr := semver.BuildCompareRange(prev.PreviousTag)
-	return ReleaseContext{
-		ReleaseModeResolution: rm,
-		PreviousTagResult:     prev,
-		CompareRange:          cr,
-	}
-}

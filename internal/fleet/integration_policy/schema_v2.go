@@ -21,7 +21,9 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/debugutils"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -35,7 +37,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -61,8 +62,8 @@ type integrationPolicyInputStreamModelV2 struct {
 // V2→V3 state upgrader can decode prior state. It differs from the live model
 // only by the presence of the now-removed `enabled` attribute.
 type integrationPolicyModelV2 struct {
+	entitycore.KibanaConnectionField
 	ID                 types.String  `tfsdk:"id"`
-	KibanaConnection   types.List    `tfsdk:"kibana_connection"`
 	PolicyID           types.String  `tfsdk:"policy_id"`
 	Name               types.String  `tfsdk:"name"`
 	Namespace          types.String  `tfsdk:"namespace"`
@@ -129,7 +130,7 @@ func getSchemaV2() schema.Schema {
 			attrIntegrationVersion: schema.StringAttribute{Required: true},
 			attrOutputID:           schema.StringAttribute{Optional: true},
 			attrVarsJSON: schema.StringAttribute{
-				CustomType: policyshape.NewVarsJSONType(lookupCachedPackageInfo),
+				CustomType: policyshape.NewVarsJSONType(policyshape.LookupPackageInfo),
 				Computed:   true,
 				Optional:   true,
 				Sensitive:  varsAreSensitive,
@@ -137,14 +138,7 @@ func getSchemaV2() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			attrSpaceIDs: schema.SetAttribute{
-				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
-				},
-			},
+			attrSpaceIDs: kbschema.SpaceIDsAttribute(""),
 			"inputs": schema.MapNestedAttribute{
 				CustomType: NewInputsType(NewInputType(getInputsAttributeTypesV2())),
 				Computed:   true,
@@ -284,6 +278,9 @@ func upgradeV2ToV3(ctx context.Context, req resource.UpgradeStateRequest, resp *
 		Inputs:             inputs,
 		VarsJSON:           prior.VarsJSON,
 		SpaceIDs:           prior.SpaceIDs,
+
+		// V2 state predates the attribute, so there is nothing to carry over.
+		AdditionalDatastreamsPermissions: types.ListNull(types.StringType),
 	}
 
 	if prior.KibanaConnection.IsNull() || prior.KibanaConnection.IsUnknown() {

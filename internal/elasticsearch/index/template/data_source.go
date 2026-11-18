@@ -19,7 +19,6 @@ package template
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -27,7 +26,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 // templateDataSourceModel mirrors Model without entitycore.ResourceTimeoutsField:
@@ -47,6 +45,9 @@ type templateDataSourceModel struct {
 	DataStream                      types.Object         `tfsdk:"data_stream"`
 	Template                        types.Object         `tfsdk:"template"`
 }
+
+func (m templateDataSourceModel) GetID() types.String         { return m.ID }
+func (m templateDataSourceModel) GetResourceID() types.String { return m.Name }
 
 func (m templateDataSourceModel) toModel() Model {
 	return Model{
@@ -86,36 +87,33 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[templateDataSourceModel](
 		entitycore.ComponentElasticsearch,
 		"index_template",
-		getDataSourceSchema,
-		readDataSource,
+		entitycore.ElasticsearchDataSourceOptions[templateDataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readDataSource,
+		},
 	)
 }
 
-func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config templateDataSourceModel) (templateDataSourceModel, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	name := config.Name.ValueString()
-
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, resourceID string, config templateDataSourceModel) (templateDataSourceModel, bool, diag.Diagnostics) {
 	// For the data source there is no prior state: pass config as the prior so that
 	// ElasticsearchConnection and any alias reference values come from configuration.
-	out, found, diags := readIndexTemplate(ctx, esClient, name, config.toModel())
+	out, found, diags := readIndexTemplate(ctx, esClient, resourceID, config.toModel())
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	if !found {
-		tflog.Info(ctx, fmt.Sprintf(`Index template "%s" not found; leaving data source attributes unset (legacy SDK behavior)`, name))
-		return config, diags
+		return config, false, diags
 	}
 
-	id, idDiags := esClient.ID(ctx, name)
+	id, idDiags := esClient.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	out.ElasticsearchConnection = config.ElasticsearchConnection
-	out.Name = types.StringValue(name)
+	out.Name = types.StringValue(resourceID)
 	out.ID = types.StringValue(id.String())
 
-	return templateDataSourceModelFromModel(out), diags
+	return templateDataSourceModelFromModel(out), true, diags
 }

@@ -8,7 +8,7 @@ on:
     - cron: daily
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v7.0.0
+      uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
         fetch-depth: 1
@@ -39,15 +39,29 @@ safe-outputs:
     max: 3
 
 timeout-minutes: 15
+model: "anthropic/claude-sonnet-5"
 engine:
   id: claude
-  model: "llm-gateway/claude-sonnet-4-6"
   args:
     - "--effort"
     - "high"
   env:
-    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
-    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+    ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
+    ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+# Disable the per-run AI Credits budget guard. The OpenRouter model slug
+# "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
+# pricing table. gh-aw's models.providers frontmatter override does not
+# propagate to apiProxy.defaultAiCreditsPricing
+# (see https://github.com/github/gh-aw/issues/47365, fix pending in
+# https://github.com/github/gh-aw/pull/47571), so with the guard active the
+# proxy could reject every request with HTTP 400 (unknown_model_ai_credits).
+# Setting -1 omits maxAiCredits from the generated AWF config, letting the
+# agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
+# still applies.
+max-ai-credits: -1
+# The daily guardrail is also disabled: it fails closed ("Daily AIC accounting
+# record could not be resolved") when prior runs lack resolvable AIC usage.
+max-daily-ai-credits: -1
 if: >-
   needs.pre_activation.outputs.issue_slots_available != '0'
 jobs:
@@ -294,6 +308,6 @@ GitHub issue titles are limited to **256 characters total**, including the
   redundantly in the title. The title field is plain text.
 
 ## Dispatch
-After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once to dispatch the `code-factory` workflow for each created issue.
+After creating all issues for this run (or if no issues were created), call the `dispatch_code_factory` safe output tool once with `dispatch: true` to dispatch the `code-factory` workflow for each created issue.
 
 **Objective**: Improve code quality by identifying and reporting meaningful code duplication that impacts maintainability. Focus on actionable findings that enable automated or manual refactoring.

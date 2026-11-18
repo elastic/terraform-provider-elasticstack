@@ -104,5 +104,3 @@ func LookupHandler(panelType string) iface.Handler {
 }
 
 func AllHandlers() []iface.Handler { return panelHandlers }
-
-func ConfigNames() []string { return derivedPanelConfigNames }

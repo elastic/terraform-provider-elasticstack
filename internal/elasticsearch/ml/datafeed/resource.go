@@ -18,9 +18,6 @@
 package datafeed
 
 import (
-	"context"
-
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,6 +31,7 @@ var (
 
 type datafeedResource struct {
 	*entitycore.ElasticsearchResource[Datafeed]
+	*entitycore.CompositeIDImporter
 }
 
 func newDatafeedResource() *datafeedResource {
@@ -45,24 +43,10 @@ func newDatafeedResource() *datafeedResource {
 			Create: createDatafeed,
 			Update: updateDatafeed,
 		}),
+		CompositeIDImporter: entitycore.NewCompositeIDImporter(path.Root("id"), path.Root(attrDatafeedID)),
 	}
 }
 
 func NewDatafeedResource() resource.Resource {
 	return newDatafeedResource()
-}
-
-func (r *datafeedResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
-
-	compID, compIDDiags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(compIDDiags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	datafeedID := compID.ResourceID
-
-	// Set the datafeed_id attribute
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root(attrDatafeedID), datafeedID)...)
 }

@@ -19,6 +19,8 @@ package datastreamlifecycle
 
 import (
 	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -29,6 +31,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
+
+const attrName = "name"
 
 // getSchemaFactory returns the schema for the data stream lifecycle resource
 // without the elasticsearch_connection block; the envelope injects that block.
@@ -41,9 +45,10 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 				Computed:    true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
+					idSetUnknownIfNameChanged(),
 				},
 			},
-			"name": schema.StringAttribute{
+			attrName: schema.StringAttribute{
 				Description: "Name of the data stream. Supports wildcards.",
 				Required:    true,
 				PlanModifiers: []planmodifier.String{
@@ -93,5 +98,5 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 }
 
 func downsamplingElementType(ctx context.Context) attr.Type {
-	return getSchemaFactory(ctx).Attributes["downsampling"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getSchemaFactory(ctx).Attributes["downsampling"].GetType())
 }

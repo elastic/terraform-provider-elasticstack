@@ -26,9 +26,11 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to          = "now"
   interval    = "5m"
 
-  tiebreaker_field = "@timestamp"
-  data_view_id     = elasticstack_kibana_data_view.test.data_view.id
-  namespace        = "eql-namespace"
+  tiebreaker_field        = "@timestamp"
+  event_category_override = "event.type"
+  timestamp_field         = "event.ingested"
+  data_view_id            = elasticstack_kibana_data_view.test.data_view.id
+  namespace               = "eql-namespace"
 
   rule_name_override                   = "Custom EQL Rule Name"
   timestamp_override                   = "process.start"

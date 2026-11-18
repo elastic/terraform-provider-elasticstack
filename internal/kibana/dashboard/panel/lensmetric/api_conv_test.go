@@ -30,25 +30,17 @@ import (
 func TestMetricChartConfigUsesESQL(t *testing.T) {
 	t.Run("detects esql data source", func(t *testing.T) {
 		m := &models.MetricChartConfigModel{
-			MetricChartCoreTFModel: models.MetricChartCoreTFModel{
-				LensChartBaseTFModel: models.LensChartBaseTFModel{
-					DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM logs-* | STATS c = COUNT(*)"}`),
-				},
-			},
+			DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM logs-* | STATS c = COUNT(*)"}`),
 		}
 		assert.True(t, metricChartConfigUsesESQL(m))
 	})
 
 	t.Run("data view spec is not esql", func(t *testing.T) {
 		m := &models.MetricChartConfigModel{
-			MetricChartCoreTFModel: models.MetricChartCoreTFModel{
-				LensChartBaseTFModel: models.LensChartBaseTFModel{
-					DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"logs-*"}`),
-				},
-				Query: &models.FilterSimpleModel{
-					Language:   types.StringValue("kql"),
-					Expression: types.StringValue(""),
-				},
+			DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"data_view_spec","index_pattern":"logs-*"}`),
+			Query: &models.FilterSimpleModel{
+				Language:   types.StringValue("kql"),
+				Expression: types.StringValue(""),
 			},
 		}
 		assert.False(t, metricChartConfigUsesESQL(m))
@@ -57,14 +49,10 @@ func TestMetricChartConfigUsesESQL(t *testing.T) {
 
 func TestMetricChartConfigToAPI_ESQLDataSource(t *testing.T) {
 	m := &models.MetricChartConfigModel{
-		MetricChartCoreTFModel: models.MetricChartCoreTFModel{
-			LensChartBaseTFModel: models.LensChartBaseTFModel{
-				DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM kibana_sample_data_logs | STATS requests = COUNT(*)"}`),
-			},
-			Query: &models.FilterSimpleModel{
-				Language:   types.StringValue("kql"),
-				Expression: types.StringValue(""),
-			},
+		DataSourceJSON: jsontypes.NewNormalizedValue(`{"type":"esql","query":"FROM kibana_sample_data_logs | STATS requests = COUNT(*)"}`),
+		Query: &models.FilterSimpleModel{
+			Language:   types.StringValue("kql"),
+			Expression: types.StringValue(""),
 		},
 	}
 	require.True(t, metricChartConfigUsesESQL(m), "ES|QL routing must not depend on query being unset")

@@ -27,33 +27,32 @@ import (
 // tfModel is the Plugin Framework model for the transform resource.
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	Name                    types.String         `tfsdk:"name"`
-	Description             types.String         `tfsdk:"description"`
-	Source                  *tfModelSource       `tfsdk:"source"`
-	Destination             *tfModelDestination  `tfsdk:"destination"`
-	Pivot                   jsontypes.Normalized `tfsdk:"pivot"`
-	Latest                  jsontypes.Normalized `tfsdk:"latest"`
-	Frequency               types.String         `tfsdk:"frequency"`
-	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
-	RetentionPolicy         *tfModelRetention    `tfsdk:"retention_policy"`
-	Sync                    *tfModelSync         `tfsdk:"sync"`
-	AlignCheckpoints        types.Bool           `tfsdk:"align_checkpoints"`
-	DatesAsEpochMillis      types.Bool           `tfsdk:"dates_as_epoch_millis"`
-	DeduceMappings          types.Bool           `tfsdk:"deduce_mappings"`
-	DocsPerSecond           types.Float64        `tfsdk:"docs_per_second"`
-	MaxPageSearchSize       types.Int64          `tfsdk:"max_page_search_size"`
-	NumFailureRetries       types.Int64          `tfsdk:"num_failure_retries"`
-	Unattended              types.Bool           `tfsdk:"unattended"`
-	DeferValidation         types.Bool           `tfsdk:"defer_validation"`
-	Timeout                 customtypes.Duration `tfsdk:"timeout"`
-	Enabled                 types.Bool           `tfsdk:"enabled"`
+	entitycore.ElasticsearchConnectionField
+	ID                 types.String         `tfsdk:"id"`
+	Name               types.String         `tfsdk:"name"`
+	Description        types.String         `tfsdk:"description"`
+	Source             *tfModelSource       `tfsdk:"source"`
+	Destination        *tfModelDestination  `tfsdk:"destination"`
+	Pivot              jsontypes.Normalized `tfsdk:"pivot"`
+	Latest             jsontypes.Normalized `tfsdk:"latest"`
+	Frequency          types.String         `tfsdk:"frequency"`
+	Metadata           jsontypes.Normalized `tfsdk:"metadata"`
+	RetentionPolicy    *tfModelRetention    `tfsdk:"retention_policy"`
+	Sync               *tfModelSync         `tfsdk:"sync"`
+	AlignCheckpoints   types.Bool           `tfsdk:"align_checkpoints"`
+	DatesAsEpochMillis types.Bool           `tfsdk:"dates_as_epoch_millis"`
+	DeduceMappings     types.Bool           `tfsdk:"deduce_mappings"`
+	DocsPerSecond      types.Float64        `tfsdk:"docs_per_second"`
+	MaxPageSearchSize  types.Int64          `tfsdk:"max_page_search_size"`
+	NumFailureRetries  types.Int64          `tfsdk:"num_failure_retries"`
+	Unattended         types.Bool           `tfsdk:"unattended"`
+	DeferValidation    types.Bool           `tfsdk:"defer_validation"`
+	Timeout            customtypes.Duration `tfsdk:"timeout"`
+	Enabled            types.Bool           `tfsdk:"enabled"`
 }
 
-func (m tfModel) GetID() types.String                    { return m.ID }
-func (m tfModel) GetResourceID() types.String            { return m.Name }
-func (m tfModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }
+func (m tfModel) GetID() types.String         { return m.ID }
+func (m tfModel) GetResourceID() types.String { return m.Name }
 
 // tfModelSource holds the transform source block.
 type tfModelSource struct {

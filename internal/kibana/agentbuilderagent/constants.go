@@ -20,12 +20,14 @@ package agentbuilderagent
 // Terraform schema attribute keys reused across the resource and data
 // source schemas for the Agent Builder agent.
 const (
-	attrAgentID      = "agent_id"
-	attrSpaceID      = "space_id"
-	attrName         = "name"
-	attrDescription  = "description"
-	attrAvatarColor  = "avatar_color"
-	attrAvatarSymbol = "avatar_symbol"
-	attrLabels       = "labels"
-	attrTools        = "tools"
+	attrAgentID       = "agent_id"
+	attrSpaceID       = "space_id"
+	attrName          = "name"
+	attrDescription   = "description"
+	attrAvatarColor   = "avatar_color"
+	attrAvatarSymbol  = "avatar_symbol"
+	attrLabels        = "labels"
+	attrTools         = "tools"
+	attrAccessControl = "access_control"
+	attrAccessMode    = "access_mode"
 )

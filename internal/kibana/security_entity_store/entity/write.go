@@ -26,6 +26,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -50,7 +51,7 @@ func writeEntity(
 		}
 	}
 
-	spaceID := NormalizeSpaceID(plan.SpaceID)
+	spaceID := clients.EffectiveSpaceIDFromValue(plan.SpaceID)
 	entityType := plan.EntityType.ValueString()
 	entityID := plan.EntityID.ValueString()
 
@@ -73,7 +74,7 @@ func writeEntity(
 		}
 	} else {
 		force := false
-		if !plan.Force.IsNull() && !plan.Force.IsUnknown() {
+		if typeutils.IsKnown(plan.Force) {
 			force = plan.Force.ValueBool()
 		}
 

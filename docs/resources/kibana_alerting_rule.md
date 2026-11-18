@@ -4,6 +4,7 @@ page_title: "elasticstack_kibana_alerting_rule Resource - terraform-provider-ela
 subcategory: "Kibana"
 description: |-
   Creates a Kibana rule. See the create rule API documentation https://www.elastic.co/guide/en/kibana/master/create-rule-api.html for more details.
+  Execution status and date are available from the elasticstack_kibana_alerting_rules ../data-sources/kibana_alerting_rules data source.
   NOTE: api_key authentication is only supported for alerting rule resources from version 8.8.0 of the Elastic stack. Using an api_key will result in an error message like:
   
   Could not create API key - Unsupported scheme "ApiKey" for granting API Key
@@ -12,6 +13,8 @@ description: |-
 # elasticstack_kibana_alerting_rule (Resource)
 
 Creates a Kibana rule. See the [create rule API documentation](https://www.elastic.co/guide/en/kibana/master/create-rule-api.html) for more details.
+
+Execution status and date are available from the [`elasticstack_kibana_alerting_rules`](../data-sources/kibana_alerting_rules) data source.
 
 **NOTE:** `api_key` authentication is only supported for alerting rule resources from version 8.8.0 of the Elastic stack. Using an `api_key` will result in an error message like:
 
@@ -63,6 +66,7 @@ resource "elasticstack_kibana_alerting_rule" "example" {
 
 - `actions` (Block List) An action that runs under defined conditions. (see [below for nested schema](#nestedblock--actions))
 - `alert_delay` (Number) A number that indicates how many consecutive runs need to meet the rule conditions for an alert to occur.
+- `artifacts` (Attributes) Linked assets for the alerting rule: an investigation guide and/or references to related dashboards, so that runbooks and context are co-located with the alert configuration as code. At least one of `investigation_guide` or `dashboards` must be set. Requires Elastic Stack 9.1 or higher to write; on stacks older than 9.5.0 the Kibana GET API does not return artifacts (elastic/kibana#247279), so `terraform import` will not populate this attribute and external changes to artifacts made outside Terraform will not be detected by refresh. Omitting this attribute does not clear artifacts already stored on the rule in Kibana. (see [below for nested schema](#nestedatt--artifacts))
 - `enabled` (Boolean) Indicates if you want to run the rule on an interval basis.
 - `flapping` (Attributes) Rule-level [flapping detection](https://www.elastic.co/guide/en/kibana/master/alerting-settings.html) (Kibana **8.16** or higher). When this object is set in configuration, `look_back_window` and `status_change_threshold` are required. The optional `enabled` attribute is supported only from **Elastic Stack 9.3** onward; configuring it against an older stack returns an error. When `flapping` is omitted from configuration on update, Terraform retains the previous value, so existing server-side flapping settings are not cleared by that omission. (see [below for nested schema](#nestedatt--flapping))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
@@ -78,8 +82,6 @@ Kibana cannot clear this deprecated rule-level value via the update API: once se
 ### Read-Only
 
 - `id` (String) Generated ID for the alerting rule.
-- `last_execution_date` (String) Date of the last execution of this rule.
-- `last_execution_status` (String) Status of the last execution of this rule.
 - `scheduled_task_id` (String) ID of the scheduled task that will execute the alert.
 
 <a id="nestedblock--actions"></a>
@@ -127,6 +129,36 @@ Optional:
 
 
 
+<a id="nestedatt--artifacts"></a>
+### Nested Schema for `artifacts`
+
+Optional:
+
+- `dashboards` (Attributes List) A list of Kibana dashboards linked to the rule, each referenced by its saved-object `id`. Links related dashboards alongside the alert configuration as code. Requires Elastic Stack 9.1 or higher to write; the linked ids round-trip from the API and `terraform import` populates them only on 9.5.0+ (elastic/kibana#247279). Order is significant (this is an ordered list). (see [below for nested schema](#nestedatt--artifacts--dashboards))
+- `investigation_guide` (Attributes) An investigation guide attached to the rule. Provide the guide either inline via `content`, or from a local file via `content_path` (in which case the provider tracks a SHA-256 `checksum` of the file to detect external changes). Exactly one of `content` or `content_path` must be set. Requires Elastic Stack 9.1 or higher to write; inline-`content` round-trips from the API and `terraform import` require 9.5.0+ (elastic/kibana#247279). (see [below for nested schema](#nestedatt--artifacts--investigation_guide))
+
+<a id="nestedatt--artifacts--dashboards"></a>
+### Nested Schema for `artifacts.dashboards`
+
+Required:
+
+- `id` (String) The Kibana dashboard saved-object id.
+
+
+<a id="nestedatt--artifacts--investigation_guide"></a>
+### Nested Schema for `artifacts.investigation_guide`
+
+Optional:
+
+- `content` (String) Inline investigation guide content (Markdown). Mutually exclusive with `content_path`.
+- `content_path` (String) Path to a local file whose contents are used as the investigation guide. The provider computes a SHA-256 `checksum` of the file at plan time to detect external changes. Mutually exclusive with `content`.
+
+Read-Only:
+
+- `checksum` (String) SHA-256 checksum of the file at `content_path`, used to detect drift. Computed; not user-settable.
+
+
+
 <a id="nestedatt--flapping"></a>
 ### Nested Schema for `flapping`
 
@@ -146,6 +178,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

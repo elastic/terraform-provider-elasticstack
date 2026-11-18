@@ -571,7 +571,7 @@ func TestAccDataSourceOsquerySavedQuery_NotFound(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"saved_query_id": config.StringVariable(missingID),
 				},
-				ExpectError: regexp.MustCompile(`Osquery saved query not found`),
+				ExpectError: regexp.MustCompile(`kibana_osquery_saved_query not found`),
 			},
 		},
 	})

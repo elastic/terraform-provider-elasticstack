@@ -1,0 +1,132 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package entitycore
+
+import (
+	"context"
+	"testing"
+
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
+	"github.com/stretchr/testify/require"
+)
+
+type versionRequirementsTestModel struct {
+	requirements []VersionRequirement
+}
+
+func (m versionRequirementsTestModel) GetVersionRequirements(context.Context) ([]VersionRequirement, diag.Diagnostics) {
+	return m.requirements, nil
+}
+
+type versionRequirementsTestClient struct {
+	version *version.Version
+}
+
+func (c versionRequirementsTestClient) EnforceMinVersion(_ context.Context, minVersion *version.Version) (bool, diag.Diagnostics) {
+	return !c.version.LessThan(minVersion), nil
+}
+
+func (c versionRequirementsTestClient) EnforceVersionCheck(_ context.Context, check func(*version.Version) bool) (bool, diag.Diagnostics) {
+	return check(c.version), nil
+}
+
+func TestEnforceVersionRequirementsAttributePath(t *testing.T) {
+	t.Parallel()
+
+	model := versionRequirementsTestModel{requirements: []VersionRequirement{
+		NewAttributeVersionRequirement(
+			path.Root("feature"),
+			*version.Must(version.NewVersion("9.1.0")),
+			"feature requires 9.1.0",
+		),
+	}}
+
+	diags := EnforceVersionRequirements(
+		context.Background(),
+		versionRequirementsTestClient{version: version.Must(version.NewVersion("9.0.0"))},
+		model,
+	)
+	require.True(t, diags.HasError())
+	require.Equal(t, "Unsupported server version", diags[0].Summary())
+	withPath, ok := diags[0].(diag.DiagnosticWithPath)
+	require.True(t, ok)
+	require.Equal(t, path.Root("feature"), withPath.Path())
+}
+
+func TestSingleVersionRequirement(t *testing.T) {
+	t.Parallel()
+
+	minVersion := *version.Must(version.NewVersion("8.13.0"))
+	reqs := SingleVersionRequirement(minVersion, "This resource requires stack version 8.13.0 or higher.")
+
+	require.Len(t, reqs, 1)
+	require.Equal(t, minVersion, reqs[0].MinVersion)
+	require.Equal(t, "This resource requires stack version 8.13.0 or higher.", reqs[0].ErrorMessage)
+	require.Nil(t, reqs[0].AttributePath)
+	require.Nil(t, reqs[0].VersionCheck)
+}
+
+func TestAppendVersionRequirementIf(t *testing.T) {
+	t.Parallel()
+
+	minVersion := version.Must(version.NewVersion("8.15.0"))
+
+	var reqs []VersionRequirement
+	reqs = AppendVersionRequirementIf(reqs, false, minVersion, "unused requires %s", minVersion.String())
+	require.Empty(t, reqs)
+
+	reqs = AppendVersionRequirementIf(reqs, true, minVersion, "feature requires %s or higher", minVersion.String())
+	require.Len(t, reqs, 1)
+	require.Equal(t, *minVersion, reqs[0].MinVersion)
+	require.Equal(t, "feature requires 8.15.0 or higher", reqs[0].ErrorMessage)
+	require.Nil(t, reqs[0].AttributePath)
+	require.Nil(t, reqs[0].VersionCheck)
+
+	otherVersion := version.Must(version.NewVersion("9.0.0"))
+	reqs = AppendVersionRequirementIf(reqs, true, otherVersion, "other requires %s", otherVersion.String())
+	require.Len(t, reqs, 2)
+	require.Equal(t, *otherVersion, reqs[1].MinVersion)
+	require.Equal(t, "other requires 9.0.0", reqs[1].ErrorMessage)
+}
+
+func TestEnforceVersionRequirementsCustomCheck(t *testing.T) {
+	t.Parallel()
+
+	check := func(v *version.Version) bool {
+		return v.Equal(version.Must(version.NewVersion("8.19.0"))) || !v.LessThan(version.Must(version.NewVersion("9.1.0")))
+	}
+	model := versionRequirementsTestModel{requirements: []VersionRequirement{
+		NewAttributeVersionCheckRequirement(path.Root("feature"), check, "unsupported"),
+	}}
+
+	unsupported := EnforceVersionRequirements(
+		context.Background(),
+		versionRequirementsTestClient{version: version.Must(version.NewVersion("9.0.0"))},
+		model,
+	)
+	require.True(t, unsupported.HasError())
+
+	supported := EnforceVersionRequirements(
+		context.Background(),
+		versionRequirementsTestClient{version: version.Must(version.NewVersion("9.1.0"))},
+		model,
+	)
+	require.False(t, supported.HasError())
+}

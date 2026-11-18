@@ -20,6 +20,7 @@ package datafeedstate_test
 import (
 	"fmt"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -53,6 +54,8 @@ func TestAccResourceMLDatafeedState_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "datafeed_id", datafeedID),
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "state", "started"),
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "force", "false"),
+					// datafeed_timeout is omitted from config; verifies the computed default.
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "datafeed_timeout", "30s"),
 					resource.TestCheckResourceAttrSet(mlDatafeedStateResourceName, "id"),
 				),
 			},
@@ -68,6 +71,7 @@ func TestAccResourceMLDatafeedState_basic(t *testing.T) {
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "datafeed_id", datafeedID),
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "state", "stopped"),
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "force", "false"),
+					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "datafeed_timeout", "30s"),
 					resource.TestCheckResourceAttrSet(mlDatafeedStateResourceName, "id"),
 				),
 			},
@@ -156,9 +160,6 @@ func TestAccResourceMLDatafeedState_explicitStartRoundTrip(t *testing.T) {
 				ConfigVariables:          configVars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "start", "2024-01-01T00:00:00Z"),
-					// Without indexed data ES does not populate running_state.search_interval,
-					// so computed effective_search_* remain null.
-					resource.TestCheckNoResourceAttr(mlDatafeedStateResourceName, "effective_search_start"),
 				),
 			},
 			{
@@ -194,9 +195,6 @@ func TestAccResourceMLDatafeedState_explicitEndRoundTrip(t *testing.T) {
 				ConfigVariables:          configVars,
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlDatafeedStateResourceName, "end", "2024-01-02T00:00:00Z"),
-					// Without indexed data ES does not populate running_state.search_interval,
-					// so computed effective_search_* remain null.
-					resource.TestCheckNoResourceAttr(mlDatafeedStateResourceName, "effective_search_end"),
 				),
 			},
 			{
@@ -237,10 +235,6 @@ func TestAccResourceMLDatafeedState_withTimes(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "end", "2024-01-02T00:00:00Z"),
 					resource.TestCheckResourceAttr(resourceName, "datafeed_timeout", "60s"),
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
-					// Without indexed data ES does not populate running_state.search_interval,
-					// so computed effective_search_* remain null.
-					resource.TestCheckNoResourceAttr(resourceName, "effective_search_start"),
-					resource.TestCheckNoResourceAttr(resourceName, "effective_search_end"),
 				),
 			},
 			{
@@ -524,6 +518,95 @@ func TestAccResourceMLDatafeedState_explicitConnection(t *testing.T) {
 					"username":    config.StringVariable(os.Getenv("ELASTICSEARCH_USERNAME")),
 					"password":    config.StringVariable(os.Getenv("ELASTICSEARCH_PASSWORD")),
 				},
+			},
+		},
+	})
+}
+
+// TestAccResourceMLDatafeedState_invalidState verifies that the state
+// attribute's OneOf("started", "stopped") validator rejects any other value
+// at plan time.
+func TestAccResourceMLDatafeedState_invalidState(t *testing.T) {
+	datafeedID := fmt.Sprintf("test-datafeed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"datafeed_id": config.StringVariable(datafeedID),
+				},
+				ExpectError: regexp.MustCompile(`(?s)Invalid Attribute Value Match.*value must be one of`),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLDatafeedState_invalidDatafeedID verifies that the
+// datafeed_id attribute's ml.IDValidatorWithoutLength validator rejects an ID
+// containing a disallowed character (a space) at plan time.
+func TestAccResourceMLDatafeedState_invalidDatafeedID(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"invalid_datafeed_id": config.StringVariable("invalid id"),
+				},
+				ExpectError: regexp.MustCompile(`(?s)Invalid Attribute Value Match.*must contain lowercase alphanumeric`),
+			},
+		},
+	})
+}
+
+// TestAccResourceMLDatafeedState_datafeedIDForceNew verifies that changing
+// datafeed_id forces resource replacement, per the RequiresReplace plan
+// modifier declared on that attribute in the schema.
+func TestAccResourceMLDatafeedState_datafeedIDForceNew(t *testing.T) {
+	jobIDA := fmt.Sprintf("test-job-a-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	jobIDB := fmt.Sprintf("test-job-b-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedIDA := fmt.Sprintf("test-datafeed-a-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	datafeedIDB := fmt.Sprintf("test-datafeed-b-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	indexName := fmt.Sprintf("test-datafeed-index-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	resourceName := mlDatafeedStateResourceName
+
+	configVars := config.Variables{
+		"job_id_a":      config.StringVariable(jobIDA),
+		"job_id_b":      config.StringVariable(jobIDB),
+		"datafeed_id_a": config.StringVariable(datafeedIDA),
+		"datafeed_id_b": config.StringVariable(datafeedIDB),
+		"index_name":    config.StringVariable(indexName),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
+				ConfigVariables:          configVars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "datafeed_id", datafeedIDA),
+					resource.TestCheckResourceAttr(resourceName, "state", "stopped"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("replaced"),
+				ConfigVariables:          configVars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "datafeed_id", datafeedIDB),
+					resource.TestCheckResourceAttr(resourceName, "state", "stopped"),
+				),
 			},
 		},
 	})

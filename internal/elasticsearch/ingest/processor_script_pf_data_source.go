@@ -69,14 +69,6 @@ func (m *processorScriptModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorScriptDataSource returns a PF data source for the script processor.
 func NewProcessorScriptDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		"lang": schema.StringAttribute{
 			Description: "Script language.",
 			Optional:    true,

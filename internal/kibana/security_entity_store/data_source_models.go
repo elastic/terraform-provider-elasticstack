@@ -22,19 +22,18 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type dsModel struct {
 	entitycore.KibanaConnectionField
-	SpaceID           types.String         `tfsdk:"space_id"`
-	IncludeComponents types.Bool           `tfsdk:"include_components"`
-	Installed         types.Bool           `tfsdk:"installed"`
-	OverallStatus     types.String         `tfsdk:"overall_status"`
-	Engines           types.List           `tfsdk:"engines"`
-	StatusJSON        jsontypes.Normalized `tfsdk:"status_json"`
+	entitycore.SpaceIDField
+	IncludeComponents types.Bool      `tfsdk:"include_components"`
+	Installed         types.Bool      `tfsdk:"installed"`
+	OverallStatus     types.String    `tfsdk:"overall_status"`
+	Engines           types.List      `tfsdk:"engines"`
+	StatusJSON        StatusJSONValue `tfsdk:"status_json"`
 }
 
 type engineModel struct {
@@ -60,11 +59,18 @@ type engineComponentModel struct {
 	Health    types.String `tfsdk:"health"`
 }
 
+// entityStoreStatusResourceID is the fixed identity used by the singleton
+// status data source, which has no configurable lookup key and no id attribute.
+const entityStoreStatusResourceID = "entity_store_status"
+
+func (dsModel) GetID() types.String         { return types.StringNull() }
+func (dsModel) GetResourceID() types.String { return types.StringValue(entityStoreStatusResourceID) }
+
 var _ entitycore.WithVersionRequirements = (*dsModel)(nil)
 
 func (*dsModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion:   *MinVersion,
-		ErrorMessage: fmt.Sprintf("elasticstack_kibana_security_entity_store_status is supported only for Kibana v%s and above", MinVersion.String()),
-	}}, nil
+	return entitycore.SingleVersionRequirement(
+		*MinVersion,
+		fmt.Sprintf("elasticstack_kibana_security_entity_store_status is supported only for Kibana v%s and above", MinVersion.String()),
+	), nil
 }

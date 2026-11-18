@@ -20,8 +20,8 @@ package customtypes
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
@@ -87,18 +87,8 @@ func (v JSONWithDefaultsValue[TModel]) WithDefaults() (JSONWithDefaultsValue[TMo
 // StringSemanticEquals returns true if the given value is semantically equal to the current value.
 // The comparison will ignore any default values present in one value, but unset in the other.
 func (v JSONWithDefaultsValue[TModel]) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	newValue, ok := newValuable.(JSONWithDefaultsValue[TModel])
+	newValue, ok, diags := typeutils.AssertSameType(v, newValuable)
 	if !ok {
-		diags.AddError(
-			"Semantic Equality Check Error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
-		)
-
 		return false, diags
 	}
 
@@ -123,6 +113,21 @@ func (v JSONWithDefaultsValue[TModel]) StringSemanticEquals(ctx context.Context,
 	}
 
 	return thisWithDefaults.Normalized.StringSemanticEquals(ctx, thatWithDefaults.Normalized)
+}
+
+// Equal returns true if the given value is a JSONWithDefaultsValue with the
+// same underlying value. Without this override the embedded
+// jsontypes.Normalized.Equal is used, which asserts the other value to
+// jsontypes.Normalized and therefore never matches a JSONWithDefaultsValue,
+// not even null against null. The framework's semantic equality pass then
+// writes the value back into a state the resource has just removed, which
+// keeps deleted resources in state.
+func (v JSONWithDefaultsValue[TModel]) Equal(o attr.Value) bool {
+	other, ok := o.(JSONWithDefaultsValue[TModel])
+	if !ok {
+		return false
+	}
+	return v.Normalized.Equal(other.Normalized)
 }
 
 // NewJSONWithDefaultsNull creates a JSONWithDefaultsValue with a null value.

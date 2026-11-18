@@ -1,9 +1,14 @@
+variable "name" {
+  description = "The role mapping name"
+  type        = string
+}
+
 provider "elasticstack" {
   elasticsearch {}
 }
 
 resource "elasticstack_elasticsearch_security_role_mapping" "test" {
-  name    = "data_source_test"
+  name    = var.name
   enabled = false
   roles   = ["admin", "user"]
 

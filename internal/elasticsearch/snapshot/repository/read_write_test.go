@@ -32,19 +32,15 @@ func TestExtractSettings(t *testing.T) {
 	ctx := context.Background()
 
 	fsObj, _ := types.ObjectValueFrom(ctx, fsAttrTypes(), FsSettings{
-		CommonSettings: CommonSettings{
-			Compress: types.BoolValue(true),
-		},
-		CommonStdSettings: CommonStdSettings{MaxNumberOfSnapshots: types.Int64Value(500)},
-		Location:          types.StringValue("/tmp"),
+		Compress:             types.BoolValue(true),
+		MaxNumberOfSnapshots: types.Int64Value(500),
+		Location:             types.StringValue("/tmp"),
 	})
 
 	urlObj, _ := types.ObjectValueFrom(ctx, urlAttrTypes(), URLSettings{
-		CommonSettings: CommonSettings{
-			Compress: types.BoolValue(true),
-		},
-		CommonStdSettings: CommonStdSettings{MaxNumberOfSnapshots: types.Int64Value(500)},
-		URL:               types.StringValue("file:///tmp"),
+		Compress:             types.BoolValue(true),
+		MaxNumberOfSnapshots: types.Int64Value(500),
+		URL:                  types.StringValue("file:///tmp"),
 	})
 
 	cases := []struct {
@@ -102,15 +98,13 @@ func TestFsToSettingsDefaults(t *testing.T) {
 	t.Parallel()
 
 	fs := FsSettings{
-		CommonSettings: CommonSettings{
-			ChunkSize:              types.StringNull(),
-			Compress:               types.BoolValue(true),
-			MaxSnapshotBytesPerSec: types.StringNull(),
-			MaxRestoreBytesPerSec:  types.StringNull(),
-			Readonly:               types.BoolValue(false),
-		},
-		CommonStdSettings: CommonStdSettings{MaxNumberOfSnapshots: types.Int64Value(500)},
-		Location:          types.StringValue("/tmp"),
+		ChunkSize:              types.StringNull(),
+		Compress:               types.BoolValue(true),
+		MaxSnapshotBytesPerSec: types.StringNull(),
+		MaxRestoreBytesPerSec:  types.StringNull(),
+		Readonly:               types.BoolValue(false),
+		MaxNumberOfSnapshots:   types.Int64Value(500),
+		Location:               types.StringValue("/tmp"),
 	}
 
 	m := fsToSettings(fs)
@@ -126,10 +120,8 @@ func TestS3ToSettingsWithDefaults(t *testing.T) {
 	t.Parallel()
 
 	s3 := S3Settings{
-		CommonSettings: CommonSettings{
-			Compress: types.BoolValue(true),
-			Readonly: types.BoolValue(false),
-		},
+		Compress:             types.BoolValue(true),
+		Readonly:             types.BoolValue(false),
 		Bucket:               types.StringValue("mybucket"),
 		Endpoint:             types.StringNull(),
 		Client:               types.StringValue("default"),
@@ -152,16 +144,49 @@ func TestS3ToSettingsWithDefaults(t *testing.T) {
 	require.Equal(t, "standard", m["storage_class"])
 	require.NotContains(t, m, "endpoint")
 	require.NotContains(t, m, "base_path")
+	require.Equal(t, false, m["disable_chunked_encoding"])
+	require.Equal(t, false, m["always_sign_requests"])
+}
+
+func TestS3ToSettingsChunkedEncodingFlags(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name string
+		set  func(*S3Settings)
+		want map[string]any
+	}{
+		{
+			name: "disable_chunked_encoding true",
+			set:  func(s *S3Settings) { s.DisableChunkedEncoding = types.BoolValue(true) },
+			want: map[string]any{settingDisableChunkedEncoding: true},
+		},
+		{
+			name: "always_sign_requests true",
+			set:  func(s *S3Settings) { s.AlwaysSignRequests = types.BoolValue(true) },
+			want: map[string]any{settingAlwaysSignRequests: true},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			s3 := s3SettingsForWrite()
+			tc.set(&s3)
+			m := s3ToSettings(s3)
+			for key, want := range tc.want {
+				require.Equal(t, want, m[key])
+			}
+		})
+	}
 }
 
 func TestS3ToSettingsWithEndpoint(t *testing.T) {
 	t.Parallel()
 
 	s3 := S3Settings{
-		CommonSettings: CommonSettings{
-			Compress: types.BoolValue(true),
-			Readonly: types.BoolValue(false),
-		},
+		Compress:             types.BoolValue(true),
+		Readonly:             types.BoolValue(false),
 		Bucket:               types.StringValue("mybucket"),
 		Endpoint:             types.StringValue("https://minio.example.com:9000"),
 		Client:               types.StringValue("default"),
@@ -247,6 +272,43 @@ func TestSettingsToS3StateInheritance(t *testing.T) {
 			wantPathStyleAccess: false,
 		},
 		{
+			name: "ES omits endpoint, prior endpoint unknown (read after create/update)",
+			apiSettings: map[string]any{
+				"bucket": "api-bucket",
+			},
+			stateS3: s3SettingsForState(
+				types.StringUnknown(),
+				types.BoolValue(false),
+			),
+			wantEndpoint:        types.StringNull(),
+			wantPathStyleAccess: false,
+		},
+		{
+			name: "ES echoes endpoint, prior endpoint unknown",
+			apiSettings: map[string]any{
+				"bucket":   "api-bucket",
+				"endpoint": "https://api.example",
+			},
+			stateS3: s3SettingsForState(
+				types.StringUnknown(),
+				types.BoolValue(false),
+			),
+			wantEndpoint:        types.StringValue("https://api.example"),
+			wantPathStyleAccess: false,
+		},
+		{
+			name: "ES omits path_style_access, prior path_style_access unknown",
+			apiSettings: map[string]any{
+				"bucket": "api-bucket",
+			},
+			stateS3: s3SettingsForState(
+				types.StringNull(),
+				types.BoolUnknown(),
+			),
+			wantEndpoint:        types.StringNull(),
+			wantPathStyleAccess: false,
+		},
+		{
 			name: "ES echoes endpoint but not path_style_access",
 			apiSettings: map[string]any{
 				"bucket":   "api-bucket",
@@ -286,17 +348,105 @@ func TestSettingsToS3StateInheritance(t *testing.T) {
 			} else {
 				require.Equal(t, tc.wantEndpoint.ValueString(), got.Endpoint.ValueString())
 			}
-			require.Equal(t, tc.wantPathStyleAccess, got.PathStyleAccess.ValueBool())
+			require.Equal(t, types.BoolValue(tc.wantPathStyleAccess), got.PathStyleAccess)
 		})
+	}
+}
+
+func TestSettingsToS3ChunkedEncodingFlags(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	cases := []struct {
+		name                       string
+		apiSettings                map[string]any
+		state                      S3Settings
+		stateNull                  bool
+		wantDisableChunkedEncoding bool
+		wantAlwaysSignRequests     bool
+	}{
+		{
+			name: "API omits both, prior state true",
+			apiSettings: map[string]any{
+				"bucket": "api-bucket",
+			},
+			state: func() S3Settings {
+				s := s3SettingsForState(types.StringNull(), types.BoolValue(false))
+				s.DisableChunkedEncoding = types.BoolValue(true)
+				s.AlwaysSignRequests = types.BoolValue(true)
+				return s
+			}(),
+			wantDisableChunkedEncoding: false,
+			wantAlwaysSignRequests:     false,
+		},
+		{
+			name: "API bool true wins over prior false",
+			apiSettings: map[string]any{
+				"bucket":                   "api-bucket",
+				"disable_chunked_encoding": true,
+				"always_sign_requests":     true,
+			},
+			state:                      s3SettingsForState(types.StringNull(), types.BoolValue(false)),
+			wantDisableChunkedEncoding: true,
+			wantAlwaysSignRequests:     true,
+		},
+		{
+			name: "API string values are parsed",
+			apiSettings: map[string]any{
+				"bucket":                   "api-bucket",
+				"disable_chunked_encoding": "true",
+				"always_sign_requests":     "false",
+			},
+			stateNull:                  true,
+			wantDisableChunkedEncoding: true,
+			wantAlwaysSignRequests:     false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			repo := &esclients.SnapshotRepositoryInfo{
+				Type:     "s3",
+				Settings: tc.apiSettings,
+			}
+			state := Data{}
+			if !tc.stateNull {
+				state.S3 = mustS3Object(ctx, t, tc.state)
+			}
+
+			result, diags := settingsToS3(ctx, repo, state)
+			require.False(t, diags.HasError(), diags.Errors())
+
+			var got S3Settings
+			require.False(t, result.As(ctx, &got, basetypes.ObjectAsOptions{}).HasError())
+			require.Equal(t, tc.wantDisableChunkedEncoding, got.DisableChunkedEncoding.ValueBool())
+			require.Equal(t, tc.wantAlwaysSignRequests, got.AlwaysSignRequests.ValueBool())
+		})
+	}
+}
+
+func s3SettingsForWrite() S3Settings {
+	return S3Settings{
+		Compress:             types.BoolValue(true),
+		Readonly:             types.BoolValue(false),
+		Bucket:               types.StringValue("mybucket"),
+		Endpoint:             types.StringNull(),
+		Client:               types.StringValue("default"),
+		BasePath:             types.StringNull(),
+		ServerSideEncryption: types.BoolValue(false),
+		BufferSize:           types.StringNull(),
+		CannedACL:            types.StringValue("private"),
+		StorageClass:         types.StringValue("standard"),
+		PathStyleAccess:      types.BoolValue(false),
 	}
 }
 
 func s3SettingsForState(endpoint types.String, pathStyleAccess types.Bool) S3Settings {
 	return S3Settings{
-		CommonSettings: CommonSettings{
-			Compress: types.BoolValue(true),
-			Readonly: types.BoolValue(false),
-		},
+		Compress:             types.BoolValue(true),
+		Readonly:             types.BoolValue(false),
 		Bucket:               types.StringValue("state-bucket"),
 		Endpoint:             endpoint,
 		Client:               types.StringValue("default"),

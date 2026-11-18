@@ -68,23 +68,9 @@ func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kb
 
 // ValidatePanelConfig enforces presence of data_view_id and metric_field for aiops_change_point_chart panels.
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
-	var out diag.Diagnostics
-	flat, obj, cfgPath, skip, diags := panelkit.ResolveConfigBlock(attrs, attrPath, panelType+"_config",
+	return panelkit.ValidateRequiredStringFields(attrs, attrPath, panelType+"_config",
 		"Missing AIOps change point chart panel configuration",
 		"AIOps change point chart panels require `aiops_change_point_chart_config`.",
+		"Invalid AIOps change point chart configuration",
 		"data_view_id", "metric_field")
-	out.Append(diags...)
-	if skip {
-		return out
-	}
-
-	if deferred, d := panelkit.ValidateRequiredStringField(attrs, obj, flat, cfgPath, "data_view_id",
-		"Invalid AIOps change point chart configuration", "`data_view_id` is required."); !deferred {
-		out.Append(d...)
-	}
-	if deferred, d := panelkit.ValidateRequiredStringField(attrs, obj, flat, cfgPath, "metric_field",
-		"Invalid AIOps change point chart configuration", "`metric_field` is required."); !deferred {
-		out.Append(d...)
-	}
-	return out
 }

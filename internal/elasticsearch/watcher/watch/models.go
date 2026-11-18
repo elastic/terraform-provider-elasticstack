@@ -25,6 +25,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -34,22 +35,21 @@ import (
 // Data is the Terraform state/plan model for the watch resource.
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	WatchID                 types.String         `tfsdk:"watch_id"`
-	Active                  types.Bool           `tfsdk:"active"`
-	Trigger                 jsontypes.Normalized `tfsdk:"trigger"`
-	Input                   jsontypes.Normalized `tfsdk:"input"`
-	Condition               jsontypes.Normalized `tfsdk:"condition"`
-	Actions                 jsontypes.Normalized `tfsdk:"actions"`
-	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
-	Transform               jsontypes.Normalized `tfsdk:"transform"`
-	ThrottlePeriodInMillis  types.Int64          `tfsdk:"throttle_period_in_millis"`
+	entitycore.ElasticsearchConnectionField
+	ID                     types.String                                      `tfsdk:"id"`
+	WatchID                types.String                                      `tfsdk:"watch_id"`
+	Active                 types.Bool                                        `tfsdk:"active"`
+	Trigger                jsontypes.Normalized                              `tfsdk:"trigger"`
+	Input                  customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"input"`
+	Condition              customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"condition"`
+	Actions                customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"actions"`
+	Metadata               jsontypes.Normalized                              `tfsdk:"metadata"`
+	Transform              customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"transform"`
+	ThrottlePeriodInMillis types.Int64                                       `tfsdk:"throttle_period_in_millis"`
 }
 
-func (d Data) GetID() types.String                    { return d.ID }
-func (d Data) GetResourceID() types.String            { return d.WatchID }
-func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+func (d Data) GetID() types.String         { return d.ID }
+func (d Data) GetResourceID() types.String { return d.WatchID }
 
 // toPutModel converts the Terraform state into a models.PutWatch for the API.
 func (d *Data) toPutModel(_ context.Context) (*models.PutWatch, diag.Diagnostics) {
@@ -119,7 +119,7 @@ func marshalCompact(v any) (string, error) {
 // and priorInput are the actions and input JSON from Terraform plan or state;
 // redacted string leaves from the API are replaced with prior non-redacted
 // values at the same paths when present.
-func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions, priorInput jsontypes.Normalized) diag.Diagnostics {
+func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions, priorInput customtypes.JSONWithDefaultsValue[map[string]any]) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	d.WatchID = types.StringValue(watch.WatchID)
@@ -137,7 +137,7 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions
 	d.Trigger = jsontypes.NewNormalizedValue(trigger)
 
 	if watch.Body.Input == nil {
-		d.Input = jsontypes.NewNormalizedValue(`{"none":{}}`)
+		d.Input = watcherJSONValue(`{"none":{}}`)
 	} else {
 		var mergedInput any = watch.Body.Input
 		if typeutils.IsKnown(priorInput) {
@@ -155,22 +155,22 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling input: %s", err))
 			return diags
 		}
-		d.Input = jsontypes.NewNormalizedValue(input)
+		d.Input = watcherJSONValue(input)
 	}
 
 	if watch.Body.Condition == nil {
-		d.Condition = jsontypes.NewNormalizedValue(`{"always":{}}`)
+		d.Condition = watcherJSONValue(`{"always":{}}`)
 	} else {
 		condition, err := marshalCompact(watch.Body.Condition)
 		if err != nil {
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling condition: %s", err))
 			return diags
 		}
-		d.Condition = jsontypes.NewNormalizedValue(condition)
+		d.Condition = watcherJSONValue(condition)
 	}
 
 	if watch.Body.Actions == nil {
-		d.Actions = jsontypes.NewNormalizedValue(`{}`)
+		d.Actions = watcherJSONValue(`{}`)
 	} else {
 		mergedActions := watch.Body.Actions
 		if typeutils.IsKnown(priorActions) {
@@ -188,7 +188,7 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling actions: %s", err))
 			return diags
 		}
-		d.Actions = jsontypes.NewNormalizedValue(actions)
+		d.Actions = watcherJSONValue(actions)
 	}
 
 	if len(watch.Body.Metadata) == 0 {
@@ -212,9 +212,9 @@ func (d *Data) fromAPIModel(_ context.Context, watch *models.Watch, priorActions
 			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling transform: %s", err))
 			return diags
 		}
-		d.Transform = jsontypes.NewNormalizedValue(transform)
+		d.Transform = watcherJSONValue(transform)
 	} else {
-		d.Transform = jsontypes.NewNormalizedNull()
+		d.Transform = watcherJSONNull()
 	}
 
 	d.ThrottlePeriodInMillis = types.Int64Value(int64(watch.Body.ThrottlePeriodInMillis))

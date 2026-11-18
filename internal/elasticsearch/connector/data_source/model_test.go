@@ -71,62 +71,6 @@ func TestDataSourceSchemaFactory_containsREQ010RuntimeTelemetryAttributes(t *tes
 	}
 }
 
-func TestMarshalConnectorJSONField(t *testing.T) {
-	t.Parallel()
-
-	t.Run("nil any", func(t *testing.T) {
-		t.Parallel()
-		var diags diag.Diagnostics
-		got := marshalConnectorJSONField("filtering", nil, &diags)
-		require.True(t, got.IsNull())
-		require.False(t, diags.HasError())
-	})
-
-	t.Run("typed nil map", func(t *testing.T) {
-		t.Parallel()
-		var m map[string]any
-		var diags diag.Diagnostics
-		got := marshalConnectorJSONField("configuration", m, &diags)
-		require.True(t, got.IsNull(), "typed nil map must not become NormalizedValue(\"null\")")
-		require.False(t, diags.HasError())
-	})
-
-	t.Run("typed nil slice", func(t *testing.T) {
-		t.Parallel()
-		var s []estypes.FilteringConfig
-		var diags diag.Diagnostics
-		got := marshalConnectorJSONField("filtering", s, &diags)
-		require.True(t, got.IsNull())
-		require.False(t, diags.HasError())
-	})
-
-	t.Run("non-empty map", func(t *testing.T) {
-		t.Parallel()
-		var diags diag.Diagnostics
-		got := marshalConnectorJSONField("configuration", map[string]int{"a": 1}, &diags)
-		require.False(t, got.IsNull())
-		require.Equal(t, `{"a":1}`, got.ValueString())
-		require.False(t, diags.HasError())
-	})
-
-	t.Run("non-empty slice", func(t *testing.T) {
-		t.Parallel()
-		var diags diag.Diagnostics
-		got := marshalConnectorJSONField("filtering", []int{1, 2}, &diags)
-		require.False(t, got.IsNull())
-		require.Equal(t, "[1,2]", got.ValueString())
-		require.False(t, diags.HasError())
-	})
-
-	t.Run("marshal error", func(t *testing.T) {
-		t.Parallel()
-		var diags diag.Diagnostics
-		got := marshalConnectorJSONField("filtering", make(chan int), &diags)
-		require.True(t, got.IsNull())
-		require.True(t, diags.HasError())
-	})
-}
-
 func TestMarshalConnectorRawJSONField(t *testing.T) {
 	t.Parallel()
 

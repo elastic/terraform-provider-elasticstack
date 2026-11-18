@@ -73,14 +73,6 @@ func (m *processorJSONModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorJSONDataSource returns a PF data source for the json processor.
 func NewProcessorJSONDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to be parsed.",
 			Required:    true,

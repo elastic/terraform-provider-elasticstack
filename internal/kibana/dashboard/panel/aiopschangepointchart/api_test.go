@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
@@ -186,7 +187,7 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 		AggregationFunction: &agg,
 		SplitField:          new("host.name"),
 		Partitions:          &[]string{"host-a", "host-b"},
-		MaxSeriesToPlot:     new(float32(6)),
+		MaxSeriesToPlot:     new(6),
 		ViewType:            &vt,
 	}
 
@@ -202,18 +203,7 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 			TimeRange:           nil,
 		},
 	}
-	pm := &models.PanelModel{
-		AiopsChangePointChartConfig: &models.AiopsChangePointChartConfigModel{
-			DataViewID:          stringVal("metrics-*"),
-			MetricField:         stringVal("system.cpu.total.pct"),
-			AggregationFunction: stringNull(),
-			SplitField:          stringNull(),
-			Partitions:          types.SetNull(types.StringType),
-			MaxSeriesToPlot:     float32Null(),
-			ViewType:            stringNull(),
-			TimeRange:           nil,
-		},
-	}
+	pm := &models.PanelModel{}
 
 	diags := aiopschangepointchart.PopulateFromAPI(pm, prior, api)
 	require.False(t, diags.HasError(), "%s", diags)
@@ -254,6 +244,10 @@ func TestPopulateFromAPI_import(t *testing.T) {
 	require.Nil(t, cfg.TimeRange)
 }
 
+// TestPopulateFromAPI_typeChangeRecovery verifies that when the panel at this index was
+// previously a different type (prior.AiopsChangePointChartConfig is nil, e.g. prior held a
+// different type's config), there is no null intent to honor and the config is rebuilt entirely
+// from the API, including TimeRange.
 func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	t.Parallel()
 
@@ -269,16 +263,9 @@ func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 		TimeRange:           &tr,
 	}
 
-	// pm has no config (panel type changed away from this type in the plan)
-	// but prior still has the config block with known optional fields.
 	pm := &models.PanelModel{}
 	prior := &models.PanelModel{
-		AiopsChangePointChartConfig: &models.AiopsChangePointChartConfigModel{
-			DataViewID:          stringVal("old-dv"),
-			MetricField:         stringVal("old.field"),
-			AggregationFunction: stringVal("sum"),
-			ViewType:            stringVal("bar"),
-		},
+		Type: types.StringValue("ml_anomaly_charts"),
 	}
 
 	diags := aiopschangepointchart.PopulateFromAPI(pm, prior, api)
@@ -286,10 +273,8 @@ func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 
 	cfg := pm.AiopsChangePointChartConfig
 	require.NotNil(t, cfg, "type-change path should populate config from API")
-	// Required fields always come from the API.
 	require.Equal(t, "logs-*", cfg.DataViewID.ValueString())
 	require.Equal(t, "system.memory.used.pct", cfg.MetricField.ValueString())
-	// Optional fields that were known in prior are updated from API.
 	require.Equal(t, "avg", cfg.AggregationFunction.ValueString())
 	require.Equal(t, "charts", cfg.ViewType.ValueString())
 	require.NotNil(t, cfg.TimeRange)
@@ -314,13 +299,7 @@ func TestPopulateFromAPI_partitionsOrderInsensitive(t *testing.T) {
 			Partitions:  stringSet("host-a", "host-b", "host-c"),
 		},
 	}
-	pm := &models.PanelModel{
-		AiopsChangePointChartConfig: &models.AiopsChangePointChartConfigModel{
-			DataViewID:  stringVal("metrics-*"),
-			MetricField: stringVal("system.cpu.total.pct"),
-			Partitions:  stringSet("host-a", "host-b", "host-c"),
-		},
-	}
+	pm := &models.PanelModel{}
 
 	diags := aiopschangepointchart.PopulateFromAPI(pm, prior, api)
 	require.False(t, diags.HasError(), "%s", diags)
@@ -344,12 +323,49 @@ func TestToAPI_rejectsConfigJSON(t *testing.T) {
 			DataViewID:  stringVal("metrics-*"),
 			MetricField: stringVal("system.cpu.total.pct"),
 		},
-	}
-	pm.ConfigJSON = configJSONSet("{}")
+
+		ConfigJSON: configJSONSet("{}")}
 
 	_, diags := aiopschangepointchart.Handler{}.ToAPI(pm, nil)
 	require.True(t, diags.HasError(), "expected config_json conflict error")
 	require.Contains(t, diagSummary(diags), "config_json")
+}
+
+func TestValidatePanelConfig(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	t.Run("rejects missing config block", func(t *testing.T) {
+		diags := aiopschangepointchart.Handler{}.ValidatePanelConfig(ctx, map[string]attr.Value{}, path.Empty())
+		require.True(t, diags.HasError())
+		require.Equal(t, "Missing AIOps change point chart panel configuration", diags[0].Summary())
+	})
+
+	t.Run("rejects missing data_view_id and metric_field", func(t *testing.T) {
+		attrs := map[string]attr.Value{
+			"aiops_change_point_chart_config": types.ObjectValueMust(
+				map[string]attr.Type{"data_view_id": types.StringType, "metric_field": types.StringType},
+				map[string]attr.Value{"data_view_id": types.StringNull(), "metric_field": types.StringNull()},
+			),
+		}
+		diags := aiopschangepointchart.Handler{}.ValidatePanelConfig(ctx, attrs, path.Empty())
+		require.True(t, diags.HasError())
+		require.Len(t, diags.Errors(), 2)
+		for _, d := range diags.Errors() {
+			require.Equal(t, "Invalid AIOps change point chart configuration", d.Summary())
+		}
+	})
+
+	t.Run("accepts valid config", func(t *testing.T) {
+		attrs := map[string]attr.Value{
+			"aiops_change_point_chart_config": types.ObjectValueMust(
+				map[string]attr.Type{"data_view_id": types.StringType, "metric_field": types.StringType},
+				map[string]attr.Value{"data_view_id": stringVal("metrics-*"), "metric_field": stringVal("system.cpu.total.pct")},
+			),
+		}
+		diags := aiopschangepointchart.Handler{}.ValidatePanelConfig(ctx, attrs, path.Empty())
+		require.False(t, diags.HasError())
+	})
 }
 
 func TestRoundtrip_viaHandler(t *testing.T) {

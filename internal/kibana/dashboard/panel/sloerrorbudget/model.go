@@ -55,8 +55,6 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	var priorSloInstanceID types.String
 	if prior != nil && prior.SloErrorBudgetConfig != nil {
 		priorSloInstanceID = prior.SloErrorBudgetConfig.SloInstanceID
-	} else if prior == nil {
-		priorSloInstanceID = types.StringValue("*")
 	}
 
 	if existing == nil {
@@ -68,22 +66,23 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 	}
 
 	existing.SloID = types.StringValue(apiConfig.SloId)
+	existing.SloInstanceID = panelkit.PreserveSloInstanceID(apiConfig.SloInstanceId, prior != nil, priorSloInstanceID)
 
-	if typeutils.IsKnown(priorSloInstanceID) && apiConfig.SloInstanceId != nil && *apiConfig.SloInstanceId != "*" {
-		existing.SloInstanceID = types.StringValue(*apiConfig.SloInstanceId)
-	}
-
-	if (prior == nil || typeutils.IsKnown(existing.Title)) && apiConfig.Title != nil {
-		existing.Title = types.StringValue(*apiConfig.Title)
-	}
-	if (prior == nil || typeutils.IsKnown(existing.Description)) && apiConfig.Description != nil {
-		existing.Description = types.StringValue(*apiConfig.Description)
-	}
-	if (prior == nil || typeutils.IsKnown(existing.HideTitle)) && apiConfig.HideTitle != nil {
-		existing.HideTitle = types.BoolValue(*apiConfig.HideTitle)
-	}
-	if (prior == nil || typeutils.IsKnown(existing.HideBorder)) && apiConfig.HideBorder != nil {
-		existing.HideBorder = types.BoolValue(*apiConfig.HideBorder)
+	existing.Title = types.StringPointerValue(apiConfig.Title)
+	existing.Description = types.StringPointerValue(apiConfig.Description)
+	existing.HideTitle = types.BoolPointerValue(apiConfig.HideTitle)
+	existing.HideBorder = types.BoolPointerValue(apiConfig.HideBorder)
+	if prior != nil && prior.SloErrorBudgetConfig != nil {
+		panelkit.NullPreservePresentationFromPrior(
+			prior.SloErrorBudgetConfig.Title,
+			prior.SloErrorBudgetConfig.Description,
+			prior.SloErrorBudgetConfig.HideTitle,
+			prior.SloErrorBudgetConfig.HideBorder,
+			&existing.Title,
+			&existing.Description,
+			&existing.HideTitle,
+			&existing.HideBorder,
+		)
 	}
 
 	if apiConfig.Drilldowns != nil {
@@ -92,36 +91,32 @@ func PopulateFromAPI(pm *models.PanelModel, prior *models.PanelModel, apiConfig 
 			priorDrilldowns = prior.SloErrorBudgetConfig.Drilldowns
 		}
 
-		newDrilldowns := make([]models.URLDrilldownModel, 0, len(*apiConfig.Drilldowns))
-		for i, d := range *apiConfig.Drilldowns {
-			dm := models.URLDrilldownModel{
-				URL:   types.StringValue(d.Url),
-				Label: types.StringValue(d.Label),
-			}
-
-			if d.EncodeUrl != nil {
-				priorEncodeURL := types.BoolNull()
-				if i < len(priorDrilldowns) {
-					priorEncodeURL = priorDrilldowns[i].EncodeURL
-				}
-				if typeutils.IsKnown(priorEncodeURL) || !*d.EncodeUrl {
-					dm.EncodeURL = types.BoolValue(*d.EncodeUrl)
-				}
-			}
-
-			if d.OpenInNewTab != nil {
-				priorOpenInNewTab := types.BoolNull()
-				if i < len(priorDrilldowns) {
-					priorOpenInNewTab = priorDrilldowns[i].OpenInNewTab
-				}
-				if typeutils.IsKnown(priorOpenInNewTab) || !*d.OpenInNewTab {
-					dm.OpenInNewTab = types.BoolValue(*d.OpenInNewTab)
-				}
-			}
-
-			newDrilldowns = append(newDrilldowns, dm)
-		}
-		existing.Drilldowns = newDrilldowns
+		existing.Drilldowns = readSloErrorBudgetDrilldownsFromAPI(apiConfig.Drilldowns, priorDrilldowns)
 	}
 	return nil
+}
+
+type sloErrorBudgetAPIDrilldown = struct {
+	EncodeUrl    *bool                                                         `json:"encode_url,omitempty"` //nolint:revive
+	Label        string                                                        `json:"label"`
+	OpenInNewTab *bool                                                         `json:"open_in_new_tab,omitempty"`
+	Trigger      kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsTrigger `json:"trigger"`
+	Type         kbapi.KibanaHTTPAPIsSloErrorBudgetEmbeddableDrilldownsType    `json:"type"`
+	Url          string                                                        `json:"url"` //nolint:revive
+}
+
+func readSloErrorBudgetDrilldownsFromAPI(
+	apiDrilldowns *[]sloErrorBudgetAPIDrilldown,
+	priorDrilldowns []models.URLDrilldownModel,
+) []models.URLDrilldownModel {
+	items := panelkit.BuildURLDrilldownItems(apiDrilldowns, func(d sloErrorBudgetAPIDrilldown) panelkit.URLDrilldownAPIItemData {
+		return panelkit.URLDrilldownAPIItem(d.Url, d.Label, d.EncodeUrl, d.OpenInNewTab)
+	})
+	// This embeddable defaults open_in_new_tab to true (see schema). The shared
+	// helper's built-in default is false, so import must override it or a Kibana
+	// 9.4+/9.5 response of true is written into state and ImportStateVerify drifts.
+	openInNewTabDefault := true
+	return panelkit.ReadURLDrilldownsFromAPI(items, priorDrilldowns, panelkit.URLDrilldownImportDefaults{
+		OpenInNewTab: &openInNewTabDefault,
+	})
 }

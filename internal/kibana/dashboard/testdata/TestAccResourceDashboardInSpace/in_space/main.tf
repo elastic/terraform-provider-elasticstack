@@ -25,7 +25,7 @@ resource "elasticstack_kibana_dashboard" "test_space" {
     value = 60000
   }
   query = {
-    language = "kql"
-    text     = ""
+    language   = "kql"
+    expression = ""
   }
 }

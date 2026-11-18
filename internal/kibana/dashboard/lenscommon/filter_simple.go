@@ -24,16 +24,16 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-// FilterSimpleFromAPI maps kbapi.KibanaHTTPAPIsFilterSimple into FilterSimpleModel.
-func FilterSimpleFromAPI(m *models.FilterSimpleModel, apiQuery *kbapi.KibanaHTTPAPIsFilterSimple) {
+// FilterSimpleFromAPI maps kbapi.KibanaHTTPAPIsVisFilterSimple into FilterSimpleModel.
+func FilterSimpleFromAPI(m *models.FilterSimpleModel, apiQuery *kbapi.KibanaHTTPAPIsVisFilterSimple) {
 	if apiQuery == nil {
 		m.Expression = types.StringValue("")
-		m.Language = types.StringValue(string(kbapi.KibanaHTTPAPIsFilterSimpleLanguageKql))
+		m.Language = types.StringValue(string(kbapi.KibanaHTTPAPIsVisFilterSimpleLanguageKql))
 		return
 	}
 	m.Expression = types.StringValue(apiQuery.Expression)
 	if apiQuery.Language == nil {
-		m.Language = types.StringValue(string(kbapi.KibanaHTTPAPIsFilterSimpleLanguageKql))
+		m.Language = types.StringValue(string(kbapi.KibanaHTTPAPIsVisFilterSimpleLanguageKql))
 		return
 	}
 	m.Language = typeutils.StringishPointerValue(apiQuery.Language)
@@ -49,17 +49,17 @@ func ConfigUsesESQL(query *models.FilterSimpleModel) bool {
 	return query.Expression.IsNull() && query.Language.IsNull()
 }
 
-// FilterSimpleToAPI maps FilterSimpleModel into kbapi.KibanaHTTPAPIsFilterSimple.
-func FilterSimpleToAPI(m *models.FilterSimpleModel) *kbapi.KibanaHTTPAPIsFilterSimple {
+// FilterSimpleToAPI maps FilterSimpleModel into kbapi.KibanaHTTPAPIsVisFilterSimple.
+func FilterSimpleToAPI(m *models.FilterSimpleModel) *kbapi.KibanaHTTPAPIsVisFilterSimple {
 	if m == nil {
 		return nil
 	}
 
-	query := &kbapi.KibanaHTTPAPIsFilterSimple{
+	query := &kbapi.KibanaHTTPAPIsVisFilterSimple{
 		Expression: m.Expression.ValueString(),
 	}
 	if typeutils.IsKnown(m.Language) {
-		lang := kbapi.KibanaHTTPAPIsFilterSimpleLanguage(m.Language.ValueString())
+		lang := kbapi.KibanaHTTPAPIsVisFilterSimpleLanguage(m.Language.ValueString())
 		query.Language = &lang
 	}
 	return query

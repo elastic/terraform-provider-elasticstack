@@ -21,6 +21,7 @@ import (
 	"context"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -54,8 +55,8 @@ func (kqlObjectFormMeaningful) ValidateObject(_ context.Context, req validator.O
 	if hasFilters && filters.IsUnknown() {
 		return
 	}
-	kqlNonBlank := hasKq && !kq.IsNull() && !kq.IsUnknown() && strings.TrimSpace(kq.ValueString()) != ""
-	filtersNonEmpty := hasFilters && !filters.IsNull() && !filters.IsUnknown() && len(filters.Elements()) > 0
+	kqlNonBlank := hasKq && typeutils.IsKnown(kq) && strings.TrimSpace(kq.ValueString()) != ""
+	filtersNonEmpty := hasFilters && typeutils.IsKnown(filters) && len(filters.Elements()) > 0
 	if kqlNonBlank || filtersNonEmpty {
 		return
 	}

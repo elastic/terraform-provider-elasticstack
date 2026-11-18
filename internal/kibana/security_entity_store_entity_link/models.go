@@ -41,8 +41,8 @@ var minKibanaEntityStoreResolutionVersion = version.Must(version.NewVersion("9.1
 type entityLinkModel struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
-	ID                  types.String         `tfsdk:"id"`
-	SpaceID             types.String         `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	TargetID            types.String         `tfsdk:"target_id"`
 	EntityIDs           types.Set            `tfsdk:"entity_ids"`
 	ResolutionGroupJSON jsontypes.Normalized `tfsdk:"resolution_group_json"`
@@ -50,22 +50,19 @@ type entityLinkModel struct {
 
 func (model entityLinkModel) GetID() types.String         { return model.ID }
 func (model entityLinkModel) GetResourceID() types.String { return model.TargetID }
-func (model entityLinkModel) GetSpaceID() types.String    { return model.SpaceID }
 
 func (model entityLinkModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minKibanaEntityStoreResolutionVersion,
-			ErrorMessage: fmt.Sprintf("Security Entity Store resolution links require Elastic Stack v%s or later.", minKibanaEntityStoreResolutionVersion),
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*minKibanaEntityStoreResolutionVersion,
+		fmt.Sprintf("Security Entity Store resolution links require Elastic Stack v%s or later.", minKibanaEntityStoreResolutionVersion),
+	), nil
 }
 
 // populateFromAPI updates the model from a parsed resolution group response.
 func (model *entityLinkModel) populateFromAPI(ctx context.Context, spaceID string, payload map[string]any) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: model.TargetID.ValueString()}).String())
+	model.ID = clients.CompositeIDValue(spaceID, model.TargetID.ValueString())
 	model.SpaceID = types.StringValue(spaceID)
 
 	normalised, err := json.Marshal(payload)

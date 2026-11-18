@@ -187,48 +187,15 @@ func calendarEventWireFromTFModel(m *CalendarEventTFModel) (calendarEventWire, f
 	return w, diags
 }
 
-func optionalBoolPtrEqual(a, b *bool) bool {
-	switch {
-	case a == nil && b == nil:
-		return true
-	case a == nil || b == nil:
-		return false
-	default:
-		return *a == *b
-	}
-}
-
 // optionalBoolPtrEqualLenientMLCalendarBool compares optional ML calendar booleans for POST/list identity.
 // Elasticsearch may omit JSON false values; POST echoes may include server defaults (typically true) while
-// Terraform leaves unconfigured attributes unset (nil in the plan wire).
+// Terraform leaves unconfigured attributes unset (nil in the plan wire). Either side being omitted (nil) is
+// therefore treated as compatible with whatever concrete value the other side has.
 func optionalBoolPtrEqualLenientMLCalendarBool(a, b *bool) bool {
-	if optionalBoolPtrEqual(a, b) {
+	if typeutils.PtrEqual(a, b) {
 		return true
 	}
-	if a != nil && !*a && b == nil {
-		return true
-	}
-	if b != nil && !*b && a == nil {
-		return true
-	}
-	if a != nil && *a && b == nil {
-		return true
-	}
-	if b != nil && *b && a == nil {
-		return true
-	}
-	return false
-}
-
-func optionalStringPtrEqual(a, b *string) bool {
-	switch {
-	case a == nil && b == nil:
-		return true
-	case a == nil || b == nil:
-		return false
-	default:
-		return *a == *b
-	}
+	return typeutils.PtrEqualOrOmitted(a, typeutils.Deref(b)) || typeutils.PtrEqualOrOmitted(b, typeutils.Deref(a))
 }
 
 func calendarEventWireTimesMillis(w *calendarEventWire) (startMs, endMs int64, ok bool) {
@@ -269,7 +236,7 @@ func calendarEventMatchesPlanWire(ev, plan calendarEventWire) bool {
 	if errPl != nil {
 		return false
 	}
-	if !optionalStringPtrEqual(evFT, plFT) {
+	if !typeutils.PtrEqual(evFT, plFT) {
 		return false
 	}
 	return true

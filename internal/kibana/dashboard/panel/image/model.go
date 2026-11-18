@@ -67,7 +67,7 @@ func BuildConfig(pm *models.PanelModel, panel *kbapi.KibanaHTTPAPIsKbnDashboardP
 		}
 	case cfg.Src.URL != nil:
 		src1 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc1{
-			Type: kbapi.Url,
+			Type: kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc1TypeUrl,
 			Url:  cfg.Src.URL.URL.ValueString(),
 		}
 		if err := img.Src.FromKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc1(src1); err != nil {
@@ -217,7 +217,7 @@ func panelSrcFromAPI(src kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImage_Config_I
 		return out
 	}
 	src1, err := src.AsKibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc1()
-	if err == nil && src1.Type == kbapi.Url {
+	if err == nil && src1.Type == kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeImageConfigImageConfigSrc1TypeUrl {
 		out.URL = &models.ImagePanelSrcURLModel{
 			URL: types.StringValue(src1.Url),
 		}

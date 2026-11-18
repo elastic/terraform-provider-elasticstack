@@ -60,5 +60,12 @@ func createAlertingRule(
 	m.RuleID = types.StringValue(createdRule.RuleID)
 	m.SpaceID = types.StringValue(req.SpaceID)
 
+	// Record the concrete investigation-guide checksum (file-based content)
+	// before read-after-write, which preserves it since the API returns no checksum.
+	diags.Append(m.applyInvestigationGuideChecksum(ctx)...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[alertingRuleModel]{}, diags
+	}
+
 	return entitycore.KibanaWriteResult[alertingRuleModel]{Model: m}, diags
 }

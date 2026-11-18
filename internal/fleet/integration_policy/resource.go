@@ -20,12 +20,10 @@ package integrationpolicy
 import (
 	"context"
 	"fmt"
-	"sync"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	fleetpkg "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -43,6 +41,12 @@ var (
 var (
 	MinVersionPolicyIDs = version.Must(version.NewVersion("8.15.0"))
 	MinVersionOutputID  = version.Must(version.NewVersion("8.16.0"))
+
+	// MinVersionAdditionalDatastreamsPermissions is the minimum Kibana version
+	// that accepts `additional_datastreams_permissions` on the package policy
+	// API. The field landed in 9.1.0 (elastic/kibana#210452) and was not
+	// backported, so there is no 8.x variant to accommodate.
+	MinVersionAdditionalDatastreamsPermissions = version.Must(version.NewVersion("9.1.0"))
 )
 
 // MinVersionCondition is the minimum Kibana version that accepts the
@@ -58,13 +62,13 @@ var MinVersionCondition = policyshape.MinVersionCondition
 
 type integrationPolicyResource struct {
 	*entitycore.ResourceBase
-	*fleetpkg.SpaceImporter
+	*entitycore.SpaceImporter
 }
 
 func newIntegrationPolicyResource() *integrationPolicyResource {
 	return &integrationPolicyResource{
 		ResourceBase:  entitycore.NewResourceBase(entitycore.ComponentFleet, "integration_policy"),
-		SpaceImporter: fleetpkg.NewSpaceImporter(path.Root("policy_id")),
+		SpaceImporter: entitycore.NewSpaceImporter(path.Root("policy_id")),
 	}
 }
 
@@ -82,34 +86,10 @@ func (r *integrationPolicyResource) UpgradeState(context.Context) map[int64]reso
 	}
 }
 
-var knownPackages sync.Map
-
-func getPackageCacheKey(name, version string) string {
-	return policyshape.PackageCacheKey(name, version)
-}
-
-// lookupCachedPackageInfo adapts the knownPackages cache to
-// policyshape.PackageInfoLookupFunc, so VarsJSONType's default-population
-// logic (owned by the shared policyshape package) can read from this
-// resource's package-info cache without policyshape owning any cache state
-// itself. cacheKey is already a policyshape.PackageCacheKey (i.e. the
-// "<name>-<version>" string produced by getPackageCacheKey).
-func lookupCachedPackageInfo(cacheKey string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool) {
-	value, ok := knownPackages.Load(cacheKey)
-	if !ok {
-		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
-	}
-	pkg, ok := value.(kbapi.KibanaHTTPAPIsGetPackageInfo)
-	if !ok {
-		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
-	}
-	return pkg, true
-}
-
 func getPackageInfo(ctx context.Context, client *fleet.Client, name, version, spaceID string) (*kbapi.KibanaHTTPAPIsGetPackageInfo, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if pkg, ok := getCachedPackageInfo(name, version); ok {
+	if pkg, ok := policyshape.LookupPackageInfo(policyshape.PackageCacheKey(name, version)); ok {
 		return &pkg, diags
 	}
 
@@ -140,18 +120,6 @@ func getPackageInfo(ctx context.Context, client *fleet.Client, name, version, sp
 		)
 		return nil, diags
 	}
-	knownPackages.Store(getPackageCacheKey(name, version), *pkg)
+	policyshape.StorePackageInfo(policyshape.PackageCacheKey(name, version), *pkg)
 	return pkg, diags
-}
-
-func getCachedPackageInfo(name, version string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool) {
-	value, ok := knownPackages.Load(getPackageCacheKey(name, version))
-	if !ok {
-		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
-	}
-	pkg, ok := value.(kbapi.KibanaHTTPAPIsGetPackageInfo)
-	if !ok {
-		return kbapi.KibanaHTTPAPIsGetPackageInfo{}, false
-	}
-	return pkg, true
 }

@@ -273,6 +273,7 @@ resource "elasticstack_fleet_output" "logstash" {
 - `kafka` (Attributes) Kafka-specific configuration. (see [below for nested schema](#nestedatt--kafka))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `output_id` (String) Unique identifier of the output. When omitted, Fleet auto-generates an ID. When set, the value must be 1-255 characters and must not contain path separators ("/"), traversal sequences (".."), or reserved keys ("__proto__", "constructor", "prototype"). Invalid explicit values fail at plan time.
+- `preset` (String) Performance tuning preset for elasticsearch and remote_elasticsearch outputs. One of `balanced`, `custom`, `latency`, `scale`, `throughput`. When omitted, the current preset is kept unless `type` or `config_yaml` changes. Otherwise Fleet may select it: `custom` when `config_yaml` contains performance tuning keys (such as `bulk_max_size` or `worker`) and `balanced` otherwise. Removing `preset` from the configuration does not reset it; set it explicitly to change it. `balanced` cannot be used when `config_yaml` contains performance tuning keys.
 - `service_token` (String, Sensitive) Service token for remote Elasticsearch outputs.
 - `space_ids` (Set of String) The Kibana space IDs where this output is available. When set, the output will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.
 - `ssl` (Attributes) SSL configuration. (see [below for nested schema](#nestedatt--ssl))
@@ -362,6 +363,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

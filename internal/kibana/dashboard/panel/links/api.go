@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -32,32 +31,17 @@ import (
 )
 
 // Handler implements iface.Handler for Kibana `links` dashboard panels.
-type Handler struct{}
-
-func (Handler) PanelType() string                  { return panelType }
-func (Handler) SchemaAttribute() schema.Attribute  { return SchemaAttribute() }
-func (Handler) ClassifyJSON(_ map[string]any) bool { return false }
-func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
-	return config
+type Handler struct {
+	panelkit.NoopHandlerBase
 }
 
-func (Handler) PinnedHandler() iface.PinnedHandler { return nil }
-
-func (Handler) AlignStateFromPlan(_ context.Context, _, _ *models.PanelModel) {}
+func (Handler) PanelType() string                 { return panelType }
+func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 
 // ValidatePanelConfig ensures that `links_config` is present for links panels.
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
-	var diags diag.Diagnostics
-	if panelkit.AttrConcreteSet(attrs["links_config"]) || panelkit.AttrUnknown(attrs["links_config"]) {
-		return diags
-	}
-
-	diags.AddAttributeError(
-		attrPath.AtName("links_config"),
-		"Missing links panel configuration",
-		"Links panels require `links_config`.",
-	)
-	return diags
+	return panelkit.ValidateConfigBlockPresent(attrs, "links_config", attrPath.AtName("links_config"),
+		"Missing links panel configuration", "Links panels require `links_config`.")
 }
 
 // FromAPI populates Terraform panel state from a links panel API item.

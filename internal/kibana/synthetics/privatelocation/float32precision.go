@@ -22,6 +22,7 @@ import (
 	"fmt"
 	"math"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -91,14 +92,6 @@ func NewFloat32PrecisionValue(v float64) Float32PrecisionValue {
 	return Float32PrecisionValue{Float64Value: basetypes.NewFloat64Value(v)}
 }
 
-func NewFloat32PrecisionNull() Float32PrecisionValue {
-	return Float32PrecisionValue{Float64Value: basetypes.NewFloat64Null()}
-}
-
-func NewFloat32PrecisionUnknown() Float32PrecisionValue {
-	return Float32PrecisionValue{Float64Value: basetypes.NewFloat64Unknown()}
-}
-
 func (v Float32PrecisionValue) Type(_ context.Context) attr.Type {
 	return Float32PrecisionType{}
 }
@@ -107,17 +100,8 @@ func (v Float32PrecisionValue) Type(_ context.Context) attr.Type {
 // precision. This prevents spurious plan diffs when the Kibana API returns a
 // float32-degraded representation of the user-supplied float64 value.
 func (v Float32PrecisionValue) Float64SemanticEquals(_ context.Context, newValuable basetypes.Float64Valuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	newValue, ok := newValuable.(Float32PrecisionValue)
+	newValue, ok, diags := typeutils.AssertSameType(v, newValuable)
 	if !ok {
-		diags.AddError(
-			"Semantic Equality Check Error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
-		)
 		return false, diags
 	}
 

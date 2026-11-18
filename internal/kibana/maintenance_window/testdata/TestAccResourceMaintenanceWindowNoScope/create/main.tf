@@ -9,7 +9,6 @@ resource "elasticstack_kibana_maintenance_window" "test_maintenance_window" {
   custom_schedule = {
     start    = "1999-02-02T05:00:00.200Z"
     duration = "1d"
-    timezone = "Asia/Taipei"
 
     recurring = {
       every       = "1w"

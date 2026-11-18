@@ -184,7 +184,8 @@ The authored `code-factory` issue-intake workflow SHALL configure `safe-outputs.
 - **THEN** the generated workflow outputs SHALL preserve the `am` PR patch transport configured by the authored workflow source
 
 ### Requirement: Implementation agent can run acceptance tests against the Elastic Stack
-The `code-factory` workflow SHALL import `shared/elastic-stack.md` so that the Elastic Stack (Elasticsearch and Kibana) is provisioned and reachable from within the AWF agentic sandbox. The agent prompt SHALL describe the test environment using the proxy ports (`9201` for Elasticsearch, `5602` for Kibana) accessed via `host.docker.internal`, and SHALL instruct the agent that acceptance tests are runnable.
+
+The `code-factory` workflow SHALL import `shared/elastic-stack.md` so that the Elastic Stack (Elasticsearch and Kibana) is provisioned and reachable from within the AWF agentic sandbox. The agent prompt SHALL describe the test environment using the proxy ports (`9201` for Elasticsearch, `5602` for Kibana) accessed via `host.docker.internal`, and SHALL instruct the agent that acceptance tests are runnable. The workflow SHALL disable the Terraform CLI's checkpoint telemetry call (`CHECKPOINT_DISABLE=1`) for acceptance-test invocations, so the embedded `terraform` binary used by `terraform-plugin-testing` does not attempt an outbound call to `checkpointapi.hashicorp.com` that the AWF sandbox's egress firewall would otherwise block.
 
 #### Scenario: Agent runs acceptance tests against the live stack
 - **WHEN** the implementation agent reaches the acceptance test verification step
@@ -195,6 +196,11 @@ The `code-factory` workflow SHALL import `shared/elastic-stack.md` so that the E
 - **WHEN** the implementation agent reads the test environment instructions in the agent prompt
 - **THEN** the prompt SHALL describe the Elastic Stack as provisioned and reachable via `host.docker.internal` on its proxy ports (`9201` for Elasticsearch, `5602` for Kibana)
 - **AND** the prompt SHALL NOT state that acceptance tests are blocked by a network policy issue
+
+#### Scenario: Agent's acceptance-test invocation disables Terraform checkpoint telemetry
+- **WHEN** the implementation agent runs `TF_ACC=1 go test ...` against the provisioned Elastic Stack
+- **THEN** `CHECKPOINT_DISABLE` SHALL be set to `1` in the agent's environment for that invocation
+- **AND** the AWF sandbox's egress firewall SHALL NOT report `checkpointapi.hashicorp.com` as a blocked domain for that run
 
 ### Requirement: Implementation agent can discover the Terraform CLI
 The `code-factory` workflow SHALL import `shared/setup-dev.md`, which stages the Terraform binary into the workspace so the agentic sandbox can execute it. The agent SHALL be able to run `terraform --version` and `terraform` subcommands during verification.

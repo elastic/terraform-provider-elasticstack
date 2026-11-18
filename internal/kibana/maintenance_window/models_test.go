@@ -33,7 +33,7 @@ var modelWithAllFields = Model{
 	Title:   types.StringValue("test response"),
 	Enabled: types.BoolValue(true),
 
-	CustomSchedule: Schedule{
+	CustomSchedule: &Schedule{
 		Start:    types.StringValue("1993-01-01T05:00:00.200Z"),
 		Duration: kibanacustomtypes.NewAlertingDurationValue("13d"),
 		Timezone: types.StringValue("America/Martinique"),
@@ -59,7 +59,7 @@ var modelOccurrencesNoScope = Model{
 	Title:   types.StringValue("test response"),
 	Enabled: types.BoolValue(true),
 
-	CustomSchedule: Schedule{
+	CustomSchedule: &Schedule{
 		Start:    types.StringValue("1993-01-01T05:00:00.200Z"),
 		Duration: kibanacustomtypes.NewAlertingDurationValue("13d"),
 		Timezone: types.StringNull(),
@@ -124,7 +124,8 @@ func TestMaintenanceWindowFromAPI(t *testing.T) {
 				},
 				Scope: &kbapi.KibanaHTTPAPIsMaintenanceWindowScope{
 					Alerting: struct {
-						Query struct {
+						Enabled *bool `json:"enabled,omitempty"`
+						Query   struct {
 							Kql string `json:"kql"`
 						} `json:"query"`
 					}{

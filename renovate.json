@@ -30,6 +30,28 @@
       ],
       "depNameTemplate": "golangci/golangci-lint",
       "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^Makefile$/"
+      ],
+      "matchStrings": [
+        "GOLANGCI_LINT_VERSION := (?<currentValue>v?\\d+\\.\\d+\\.\\d+)\\n"
+      ],
+      "depNameTemplate": "golangci/golangci-lint",
+      "datasourceTemplate": "github-releases"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": [
+        "/^Makefile$/"
+      ],
+      "matchStrings": [
+        "GORELEASER_VERSION := (?<currentValue>v?\\d+\\.\\d+\\.\\d+)\\n"
+      ],
+      "depNameTemplate": "goreleaser/goreleaser",
+      "datasourceTemplate": "github-releases"
     }
   ],
   "postUpgradeTasks": {
@@ -56,6 +78,12 @@
       ],
       "matchDepNames": [
         "golangci/golangci-lint"
+      ]
+    },
+    {
+      "groupName": "goreleaser",
+      "matchDepNames": [
+        "goreleaser/goreleaser"
       ]
     }
   ],

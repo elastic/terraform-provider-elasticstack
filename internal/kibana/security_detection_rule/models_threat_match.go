@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,13 +33,11 @@ type ThreatMatchRuleProcessor struct {
 
 func newThreatMatchRuleProcessor() ThreatMatchRuleProcessor {
 	return ThreatMatchRuleProcessor{
-		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIThreatMatchRule]{
-			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIThreatMatchRule, d *Data) diag.Diagnostics {
-				return d.updateFromThreatMatchRule(ctx, v)
-			},
-			idFn: func(v kbapi.SecurityDetectionsAPIThreatMatchRule) string {
-				return v.Id.String()
-			},
+		updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIThreatMatchRule, d *Data) diag.Diagnostics {
+			return d.updateFromThreatMatchRule(ctx, v)
+		},
+		idFn: func(v kbapi.SecurityDetectionsAPIThreatMatchRule) string {
+			return v.Id.String()
 		},
 	}
 }
@@ -92,42 +89,7 @@ func (d Data) toThreatMatchRuleCreateProps(ctx context.Context) (kbapi.SecurityD
 		threatMatchRule.ThreatFilters = apiThreatFilters
 	}
 
-	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:                           &threatMatchRule.Actions,
-		ResponseActions:                   &threatMatchRule.ResponseActions,
-		RuleID:                            &threatMatchRule.RuleId,
-		Enabled:                           &threatMatchRule.Enabled,
-		From:                              &threatMatchRule.From,
-		To:                                &threatMatchRule.To,
-		Interval:                          &threatMatchRule.Interval,
-		Index:                             &threatMatchRule.Index,
-		Author:                            &threatMatchRule.Author,
-		Tags:                              &threatMatchRule.Tags,
-		FalsePositives:                    &threatMatchRule.FalsePositives,
-		References:                        &threatMatchRule.References,
-		License:                           &threatMatchRule.License,
-		Note:                              &threatMatchRule.Note,
-		Setup:                             &threatMatchRule.Setup,
-		MaxSignals:                        &threatMatchRule.MaxSignals,
-		Version:                           &threatMatchRule.Version,
-		ExceptionsList:                    &threatMatchRule.ExceptionsList,
-		AlertSuppression:                  &threatMatchRule.AlertSuppression,
-		RiskScoreMapping:                  &threatMatchRule.RiskScoreMapping,
-		SeverityMapping:                   &threatMatchRule.SeverityMapping,
-		RelatedIntegrations:               &threatMatchRule.RelatedIntegrations,
-		RequiredFields:                    &threatMatchRule.RequiredFields,
-		BuildingBlockType:                 &threatMatchRule.BuildingBlockType,
-		DataViewID:                        &threatMatchRule.DataViewId,
-		Namespace:                         &threatMatchRule.Namespace,
-		RuleNameOverride:                  &threatMatchRule.RuleNameOverride,
-		TimestampOverride:                 &threatMatchRule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: &threatMatchRule.TimestampOverrideFallbackDisabled,
-		InvestigationFields:               &threatMatchRule.InvestigationFields,
-		Filters:                           &threatMatchRule.Filters,
-		Threat:                            &threatMatchRule.Threat,
-		TimelineID:                        &threatMatchRule.TimelineId,
-		TimelineTitle:                     &threatMatchRule.TimelineTitle,
-	}, &diags)
+	d.setCommonCreateProps(ctx, buildCommonRuleProps(&threatMatchRule), &diags)
 
 	// Set threat-specific fields
 	if typeutils.IsKnown(d.ThreatQuery) {
@@ -216,42 +178,7 @@ func (d Data) toThreatMatchRuleUpdateProps(ctx context.Context) (kbapi.SecurityD
 		threatMatchRule.ThreatFilters = apiThreatFilters
 	}
 
-	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:                           &threatMatchRule.Actions,
-		ResponseActions:                   &threatMatchRule.ResponseActions,
-		RuleID:                            &threatMatchRule.RuleId,
-		Enabled:                           &threatMatchRule.Enabled,
-		From:                              &threatMatchRule.From,
-		To:                                &threatMatchRule.To,
-		Interval:                          &threatMatchRule.Interval,
-		Index:                             &threatMatchRule.Index,
-		Author:                            &threatMatchRule.Author,
-		Tags:                              &threatMatchRule.Tags,
-		FalsePositives:                    &threatMatchRule.FalsePositives,
-		References:                        &threatMatchRule.References,
-		License:                           &threatMatchRule.License,
-		Note:                              &threatMatchRule.Note,
-		InvestigationFields:               &threatMatchRule.InvestigationFields,
-		Setup:                             &threatMatchRule.Setup,
-		MaxSignals:                        &threatMatchRule.MaxSignals,
-		Version:                           &threatMatchRule.Version,
-		ExceptionsList:                    &threatMatchRule.ExceptionsList,
-		AlertSuppression:                  &threatMatchRule.AlertSuppression,
-		RiskScoreMapping:                  &threatMatchRule.RiskScoreMapping,
-		SeverityMapping:                   &threatMatchRule.SeverityMapping,
-		RelatedIntegrations:               &threatMatchRule.RelatedIntegrations,
-		RequiredFields:                    &threatMatchRule.RequiredFields,
-		BuildingBlockType:                 &threatMatchRule.BuildingBlockType,
-		DataViewID:                        &threatMatchRule.DataViewId,
-		Namespace:                         &threatMatchRule.Namespace,
-		RuleNameOverride:                  &threatMatchRule.RuleNameOverride,
-		TimestampOverride:                 &threatMatchRule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: &threatMatchRule.TimestampOverrideFallbackDisabled,
-		Filters:                           &threatMatchRule.Filters,
-		Threat:                            &threatMatchRule.Threat,
-		TimelineID:                        &threatMatchRule.TimelineId,
-		TimelineTitle:                     &threatMatchRule.TimelineTitle,
-	}, &diags)
+	d.setCommonUpdateProps(ctx, buildCommonRuleProps(&threatMatchRule), &diags)
 
 	// Set threat-specific fields
 	if typeutils.IsKnown(d.ThreatQuery) {
@@ -296,52 +223,7 @@ func (d Data) toThreatMatchRuleUpdateProps(ctx context.Context) (kbapi.SecurityD
 func (d *Data) updateFromThreatMatchRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIThreatMatchRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, commonAPIRuleFields{
-		ResourceID:                        rule.Id.String(),
-		RuleID:                            rule.RuleId,
-		Name:                              rule.Name,
-		Type:                              string(rule.Type),
-		Enabled:                           rule.Enabled,
-		From:                              rule.From,
-		To:                                rule.To,
-		Interval:                          rule.Interval,
-		Description:                       rule.Description,
-		RiskScore:                         int64(rule.RiskScore),
-		Severity:                          string(rule.Severity),
-		MaxSignals:                        int64(rule.MaxSignals),
-		Version:                           int64(rule.Version),
-		Revision:                          int64(rule.Revision),
-		CreatedAt:                         rule.CreatedAt,
-		CreatedBy:                         rule.CreatedBy,
-		UpdatedAt:                         rule.UpdatedAt,
-		UpdatedBy:                         rule.UpdatedBy,
-		TimelineID:                        rule.TimelineId,
-		TimelineTitle:                     rule.TimelineTitle,
-		DataViewID:                        rule.DataViewId,
-		Namespace:                         rule.Namespace,
-		RuleNameOverride:                  rule.RuleNameOverride,
-		TimestampOverride:                 rule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: rule.TimestampOverrideFallbackDisabled,
-		BuildingBlockType:                 rule.BuildingBlockType,
-		License:                           rule.License,
-		Note:                              rule.Note,
-		Setup:                             rule.Setup,
-		Index:                             rule.Index,
-		Author:                            rule.Author,
-		Tags:                              rule.Tags,
-		FalsePositives:                    rule.FalsePositives,
-		References:                        rule.References,
-		Actions:                           rule.Actions,
-		ExceptionsList:                    rule.ExceptionsList,
-		RiskScoreMapping:                  rule.RiskScoreMapping,
-		InvestigationFields:               rule.InvestigationFields,
-		Threat:                            rule.Threat,
-		SeverityMapping:                   rule.SeverityMapping,
-		RelatedIntegrations:               rule.RelatedIntegrations,
-		RequiredFields:                    rule.RequiredFields,
-		AlertSuppression:                  rule.AlertSuppression,
-		ResponseActions:                   rule.ResponseActions,
-	})...)
+	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, buildCommonAPIRuleFields(rule.Id.String(), rule))...)
 
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))
@@ -353,7 +235,7 @@ func (d *Data) updateFromThreatMatchRule(ctx context.Context, rule *kbapi.Securi
 	if len(rule.ThreatIndex) > 0 {
 		d.ThreatIndex = typeutils.ListValueFrom(ctx, rule.ThreatIndex, types.StringType, path.Root("threat_index"), &diags)
 	} else {
-		d.ThreatIndex = types.ListValueMust(types.StringType, []attr.Value{})
+		d.ThreatIndex = typeutils.StringsToListMust(nil)
 	}
 
 	d.ThreatIndicatorPath = typeutils.StringishPointerValue(rule.ThreatIndicatorPath)

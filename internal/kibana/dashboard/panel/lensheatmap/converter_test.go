@@ -32,7 +32,7 @@ import (
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsVisHeatmapNoESQLByValuePanelTypeHeatmap), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -47,15 +47,15 @@ func TestConverter_HandlesBlocks(t *testing.T) {
 func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	ctx := context.Background()
 	var c converter
-	query := kbapi.KibanaHTTPAPIsFilterSimple{
+	query := kbapi.KibanaHTTPAPIsVisFilterSimple{
 		Expression: "status:200",
-		Language: func() *kbapi.KibanaHTTPAPIsFilterSimpleLanguage {
-			lang := kbapi.KibanaHTTPAPIsFilterSimpleLanguage("kql")
+		Language: func() *kbapi.KibanaHTTPAPIsVisFilterSimpleLanguage {
+			lang := kbapi.KibanaHTTPAPIsVisFilterSimpleLanguage("kql")
 			return &lang
 		}(),
 	}
 	xOrientation := kbapi.KibanaHTTPAPIsVisApiOrientation("horizontal")
-	xAxis := kbapi.KibanaHTTPAPIsHeatmapXAxis{
+	xAxis := kbapi.KibanaHTTPAPIsVisHeatmapXAxis{
 		Labels: &struct {
 			Orientation *kbapi.KibanaHTTPAPIsVisApiOrientation `json:"orientation,omitempty"`
 			Visible     *bool                                  `json:"visible,omitempty"`
@@ -71,7 +71,7 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 			Visible: new(true),
 		},
 	}
-	yAxisConfig := kbapi.KibanaHTTPAPIsHeatmapYAxis{
+	yAxisConfig := kbapi.KibanaHTTPAPIsVisHeatmapYAxis{
 		Labels: &struct {
 			Visible *bool `json:"visible,omitempty"`
 		}{
@@ -85,32 +85,32 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 			Visible: new(true),
 		},
 	}
-	cells := kbapi.KibanaHTTPAPIsHeatmapCells{
+	cells := kbapi.KibanaHTTPAPIsVisHeatmapCells{
 		Labels: &struct {
 			Visible *bool `json:"visible,omitempty"`
 		}{
 			Visible: new(true),
 		},
 	}
-	legendSize := kbapi.KibanaHTTPAPIsLegendSizeM
-	heatmap := kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel{
-		Type:                kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap,
+	legendSize := kbapi.KibanaHTTPAPIsVisLegendSizeM
+	heatmap := kbapi.KibanaHTTPAPIsVisHeatmapNoESQLByValuePanel{
+		Type:                kbapi.KibanaHTTPAPIsVisHeatmapNoESQLByValuePanelTypeHeatmap,
 		Title:               new("Test Heatmap"),
 		Description:         new("Heatmap description"),
 		IgnoreGlobalFilters: new(true),
 		Sampling:            new(float32(0.5)),
 		Query:               &query,
-		Axis: &kbapi.KibanaHTTPAPIsHeatmapAxes{
+		Axis: &kbapi.KibanaHTTPAPIsVisHeatmapAxes{
 			X: &xAxis,
 			Y: &yAxisConfig,
 		},
-		Styling: &kbapi.KibanaHTTPAPIsHeatmapStyling{
+		Styling: &kbapi.KibanaHTTPAPIsVisHeatmapStyling{
 			Cells: &cells,
 		},
-		Legend: &kbapi.KibanaHTTPAPIsHeatmapLegend{
+		Legend: &kbapi.KibanaHTTPAPIsVisHeatmapLegend{
 			Size: &legendSize,
-			Visibility: func() *kbapi.KibanaHTTPAPIsHeatmapLegendVisibility {
-				visibility := kbapi.KibanaHTTPAPIsHeatmapLegendVisibilityVisible
+			Visibility: func() *kbapi.KibanaHTTPAPIsVisHeatmapLegendVisibility {
+				visibility := kbapi.KibanaHTTPAPIsVisHeatmapLegendVisibilityVisible
 				return &visibility
 			}(),
 			TruncateAfterLines: new(float32(4)),
@@ -120,17 +120,17 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"dataView","id":"metrics-*"}`), &heatmap.DataSource))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"count"}`), &heatmap.Metric))
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kql"}}]}`), &heatmap.X))
-	var yAxis kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanel_Y
+	var yAxis kbapi.KibanaHTTPAPIsVisHeatmapNoESQLByValuePanel_Y
 	require.NoError(t, json.Unmarshal([]byte(`{"operation":"filters","filters":[{"label":"All","filter":{"query":"*","language":"kql"}}]}`), &yAxis))
 	heatmap.Y = &yAxis
 
-	var fItem kbapi.KibanaHTTPAPIsLensPanelFilters_Item
+	var fItem kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema
 	require.NoError(t, json.Unmarshal([]byte(`{"type":"condition","condition":{"field":"status","operator":"is","value":"200"}}`), &fItem))
-	filters := kbapi.KibanaHTTPAPIsLensPanelFilters{fItem}
+	filters := kbapi.KibanaHTTPAPIsVisPanelFilters{fItem}
 	heatmap.Filters = &filters
 
 	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsHeatmapNoESQLByValuePanel(heatmap))
+	require.NoError(t, attrs.FromKibanaHTTPAPIsVisHeatmapNoESQLByValuePanel(heatmap))
 
 	blocks := &models.LensByValueChartBlocks{}
 	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
@@ -139,9 +139,9 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	heatmapRoundTrip, err := attrs2.AsKibanaHTTPAPIsHeatmapNoESQLByValuePanel()
+	heatmapRoundTrip, err := attrs2.AsKibanaHTTPAPIsVisHeatmapNoESQLByValuePanel()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsHeatmapNoESQLByValuePanelTypeHeatmap, heatmapRoundTrip.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsVisHeatmapNoESQLByValuePanelTypeHeatmap, heatmapRoundTrip.Type)
 	require.NotNil(t, heatmapRoundTrip.Title)
 	assert.Equal(t, "Test Heatmap", *heatmapRoundTrip.Title)
 	require.NotNil(t, heatmapRoundTrip.Query)
@@ -170,11 +170,11 @@ func TestConverter_roundTrip_ESQL_heatmap(t *testing.T) {
 		"x": {"column":"host","format":{"type":"number"},"operation":"value"},
 		"y": {"column":"service","format":{"type":"number"},"operation":"value"}
 	}`
-	var heatmap kbapi.KibanaHTTPAPIsHeatmapESQLByValuePanel
+	var heatmap kbapi.KibanaHTTPAPIsVisHeatmapESQLByValuePanel
 	require.NoError(t, json.Unmarshal([]byte(esqlJSON), &heatmap))
 
 	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsHeatmapESQLByValuePanel(heatmap))
+	require.NoError(t, attrs.FromKibanaHTTPAPIsVisHeatmapESQLByValuePanel(heatmap))
 
 	blocks := &models.LensByValueChartBlocks{}
 	diags := c.PopulateFromAttributes(ctx, blocks, attrs)
@@ -186,9 +186,9 @@ func TestConverter_roundTrip_ESQL_heatmap(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	out, err := attrs2.AsKibanaHTTPAPIsHeatmapESQLByValuePanel()
+	out, err := attrs2.AsKibanaHTTPAPIsVisHeatmapESQLByValuePanel()
 	require.NoError(t, err)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsHeatmapESQLByValuePanelTypeHeatmap, out.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsVisHeatmapESQLByValuePanelTypeHeatmap, out.Type)
 	require.NotNil(t, out.Title)
 	assert.Equal(t, "Heatmap ESQL RT", *out.Title)
 	assert.Equal(t, "host", out.X.Column)
@@ -227,8 +227,8 @@ func Test_heatmapAxesFromAPI_preservesPriorWhenAPIDropsAxis(t *testing.T) {
 	}
 
 	t.Run("api.Y nil preserves prior.Y", func(t *testing.T) {
-		api := &kbapi.KibanaHTTPAPIsHeatmapAxes{
-			X: &kbapi.KibanaHTTPAPIsHeatmapXAxis{},
+		api := &kbapi.KibanaHTTPAPIsVisHeatmapAxes{
+			X: &kbapi.KibanaHTTPAPIsVisHeatmapXAxis{},
 		}
 		got := &models.HeatmapAxesModel{}
 		diags := heatmapAxesFromAPI(got, api, prior)
@@ -238,8 +238,8 @@ func Test_heatmapAxesFromAPI_preservesPriorWhenAPIDropsAxis(t *testing.T) {
 	})
 
 	t.Run("api.X nil preserves prior.X", func(t *testing.T) {
-		api := &kbapi.KibanaHTTPAPIsHeatmapAxes{
-			Y: &kbapi.KibanaHTTPAPIsHeatmapYAxis{},
+		api := &kbapi.KibanaHTTPAPIsVisHeatmapAxes{
+			Y: &kbapi.KibanaHTTPAPIsVisHeatmapYAxis{},
 		}
 		got := &models.HeatmapAxesModel{}
 		diags := heatmapAxesFromAPI(got, api, prior)

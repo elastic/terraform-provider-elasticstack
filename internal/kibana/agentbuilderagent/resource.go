@@ -20,6 +20,7 @@ package agentbuilderagent
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -43,7 +44,7 @@ func newAgentResource() *AgentResource {
 			entitycore.KibanaResourceOptions[agentModel]{
 				Schema: getResourceSchema,
 				Read:   readAgent,
-				Delete: deleteAgent,
+				Delete: entitycore.SimpleKibanaDelete[agentModel](kibanaoapi.DeleteAgent),
 				Create: createAgent,
 				Update: updateAgent,
 			},

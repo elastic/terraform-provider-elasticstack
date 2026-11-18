@@ -159,18 +159,7 @@ func GetStream(ctx context.Context, client *Client, spaceID string, name string)
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		var streamResp StreamResponse
-		if jsonErr := json.Unmarshal(resp.Body, &streamResp); jsonErr != nil {
-			return nil, diagutil.FrameworkDiagFromError(jsonErr)
-		}
-		return &streamResp, nil
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
-	}
+	return HandleGetRawResponse[StreamResponse](resp.StatusCode(), resp.Body)
 }
 
 // UpsertStream creates or updates a stream via PUT /api/streams/{name}.
@@ -195,16 +184,14 @@ func UpsertStream(ctx context.Context, client *Client, spaceID string, name stri
 		if err != nil {
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
-		switch resp.StatusCode() {
-		case http.StatusOK:
-			var streamResp StreamResponse
-			if jsonErr := json.Unmarshal(resp.Body, &streamResp); jsonErr != nil {
-				return nil, resp.StatusCode(), diagutil.FrameworkDiagFromError(jsonErr)
-			}
-			return &streamResp, resp.StatusCode(), nil
-		default:
-			return nil, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); diags.HasError() {
+			return nil, resp.StatusCode(), diags
 		}
+		var streamResp StreamResponse
+		if jsonErr := json.Unmarshal(resp.Body, &streamResp); jsonErr != nil {
+			return nil, resp.StatusCode(), diagutil.FrameworkDiagFromError(jsonErr)
+		}
+		return &streamResp, resp.StatusCode(), nil
 	})
 }
 
@@ -220,12 +207,10 @@ func DeleteStream(ctx context.Context, client *Client, spaceID string, name stri
 		if err != nil {
 			return struct{}{}, 0, diagutil.FrameworkDiagFromError(err)
 		}
-		switch resp.StatusCode() {
-		case http.StatusOK, http.StatusNoContent, http.StatusNotFound:
-			return struct{}{}, resp.StatusCode(), nil
-		default:
-			return struct{}{}, resp.StatusCode(), diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent, http.StatusNotFound); diags.HasError() {
+			return struct{}{}, resp.StatusCode(), diags
 		}
+		return struct{}{}, resp.StatusCode(), nil
 	})
 	return diags
 }

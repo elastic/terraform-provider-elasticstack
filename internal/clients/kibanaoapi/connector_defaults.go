@@ -218,7 +218,7 @@ func connectorConfigWithDefaultsCasesWebhook(plan string) (string, error) {
 			c.HasAuth = new(true)
 		}
 		if c.UpdateIncidentMethod == nil {
-			c.UpdateIncidentMethod = new(kbapi.CasesWebhookConfigUpdateIncidentMethodPut)
+			c.UpdateIncidentMethod = new(kbapi.CasesWebhookConfigUpdateIncidentMethod("put"))
 		}
 		if c.CreateCommentMethod == nil {
 			c.CreateCommentMethod = new(kbapi.CasesWebhookConfigCreateCommentMethodPut)

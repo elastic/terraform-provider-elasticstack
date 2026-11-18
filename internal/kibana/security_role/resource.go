@@ -20,10 +20,19 @@ package security_role
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
+
+// deleteRoleAPI adapts [kibanaoapi.DeleteSecurityRole], which has no
+// space-scoping concept, to the (spaceID, resourceID) signature expected by
+// [entitycore.SimpleKibanaDelete].
+func deleteRoleAPI(ctx context.Context, client *kibanaoapi.Client, _, resourceID string) diag.Diagnostics {
+	return kibanaoapi.DeleteSecurityRole(ctx, client, resourceID)
+}
 
 var (
 	_ resource.Resource                     = newResource()
@@ -45,7 +54,7 @@ func newResource() *Resource {
 			entitycore.KibanaResourceOptions[resourceModel]{
 				Schema: getResourceSchema,
 				Read:   readRoleResource,
-				Delete: deleteRole,
+				Delete: entitycore.SimpleKibanaDelete[resourceModel](deleteRoleAPI),
 				Create: createRole,
 				Update: updateRole,
 			},

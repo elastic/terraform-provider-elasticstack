@@ -95,7 +95,7 @@ func PopulateFilterJSONFromMarshaled(item any, out *jsontypes.Normalized) diag.D
 }
 
 // PopulateFiltersFromAPI converts kbapi lens panel filters into Terraform models, appending errors to diags.
-func PopulateFiltersFromAPI(filters *kbapi.KibanaHTTPAPIsLensPanelFilters, diags *diag.Diagnostics) []models.ChartFilterJSONModel {
+func PopulateFiltersFromAPI(filters *kbapi.KibanaHTTPAPIsVisPanelFilters, diags *diag.Diagnostics) []models.ChartFilterJSONModel {
 	if filters == nil || len(*filters) == 0 {
 		return nil
 	}
@@ -112,15 +112,15 @@ func PopulateFiltersFromAPI(filters *kbapi.KibanaHTTPAPIsLensPanelFilters, diags
 }
 
 // BuildFiltersForAPI converts model filters into the kbapi pointer-to-slice; returns a non-nil empty slice when filters is empty.
-func BuildFiltersForAPI(filters []models.ChartFilterJSONModel, diags *diag.Diagnostics) *kbapi.KibanaHTTPAPIsLensPanelFilters {
+func BuildFiltersForAPI(filters []models.ChartFilterJSONModel, diags *diag.Diagnostics) *kbapi.KibanaHTTPAPIsVisPanelFilters {
 	if len(filters) == 0 {
-		empty := kbapi.KibanaHTTPAPIsLensPanelFilters{}
+		empty := kbapi.KibanaHTTPAPIsVisPanelFilters{}
 		return &empty
 	}
 
-	items := make(kbapi.KibanaHTTPAPIsLensPanelFilters, 0, len(filters))
+	items := make(kbapi.KibanaHTTPAPIsVisPanelFilters, 0, len(filters))
 	for _, f := range filters {
-		var item kbapi.KibanaHTTPAPIsLensPanelFilters_Item
+		var item kbapi.KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema
 		fd := DecodeChartFilterJSON(f.FilterJSON, &item)
 		diags.Append(fd...)
 		if !fd.HasError() {
@@ -128,4 +128,29 @@ func BuildFiltersForAPI(filters []models.ChartFilterJSONModel, diags *diag.Diagn
 		}
 	}
 	return &items
+}
+
+// DecodeNormalizedJSONSlice unmarshals a list of normalized JSON strings into dest,
+// which must be a pointer to a slice (including slices of anonymous generated structs).
+func DecodeNormalizedJSONSlice(values []jsontypes.Normalized, dest any) diag.Diagnostics {
+	var diags diag.Diagnostics
+	raw := make([]json.RawMessage, 0, len(values))
+	for _, n := range values {
+		if !typeutils.IsKnown(n) {
+			continue
+		}
+		raw = append(raw, json.RawMessage(n.ValueString()))
+	}
+	if len(raw) == 0 {
+		return diags
+	}
+	b, err := json.Marshal(raw)
+	if err != nil {
+		diags.AddError("Failed to encode JSON array", err.Error())
+		return diags
+	}
+	if err := json.Unmarshal(b, dest); err != nil {
+		diags.AddError("Failed to decode JSON array", err.Error())
+	}
+	return diags
 }

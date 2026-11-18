@@ -42,8 +42,8 @@ var _ entitycore.WithVersionRequirements = Model{}
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
 func (Model) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion:   *connector.MinSupportedVersion,
-		ErrorMessage: "elasticstack_elasticsearch_connector_sync_job_create requires Elasticsearch 8.16.0 or later (connector sync job APIs).",
-	}}, nil
+	return entitycore.SingleVersionRequirement(
+		*connector.MinSupportedVersion,
+		"elasticstack_elasticsearch_connector_sync_job_create requires Elasticsearch 8.16.0 or later (connector sync job APIs).",
+	), nil
 }

@@ -20,7 +20,9 @@ package agentbuilderskill
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -42,8 +44,8 @@ func newSkillResource() *SkillResource {
 			"agentbuilder_skill",
 			entitycore.KibanaResourceOptions[skillModel]{
 				Schema: getResourceSchema,
-				Read:   readSkill,
-				Delete: deleteSkill,
+				Read:   entitycore.SimpleKibanaRead[skillModel, models.Skill](kibanaoapi.GetSkill, (*skillModel).populateFromAPI),
+				Delete: entitycore.SimpleKibanaDelete[skillModel](kibanaoapi.DeleteSkill),
 				Create: createSkill,
 				Update: updateSkill,
 			},

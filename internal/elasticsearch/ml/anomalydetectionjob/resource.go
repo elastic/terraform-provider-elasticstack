@@ -21,7 +21,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -36,6 +35,7 @@ var (
 
 type anomalyDetectionJobResource struct {
 	*entitycore.ElasticsearchResource[TFModel]
+	*entitycore.CompositeIDImporter
 }
 
 func newAnomalyDetectionJobResource() *anomalyDetectionJobResource {
@@ -50,6 +50,8 @@ func newAnomalyDetectionJobResource() *anomalyDetectionJobResource {
 				Delete: 20 * time.Minute,
 			},
 		}),
+		// Import is intentionally sparse: only IDs are set. Everything else is populated by Read().
+		CompositeIDImporter: entitycore.NewCompositeIDImporter(path.Root("id"), path.Root("job_id")),
 	}
 }
 
@@ -65,16 +67,4 @@ func (r *anomalyDetectionJobResource) ValidateConfig(ctx context.Context, req re
 		return
 	}
 	resp.Diagnostics.Append(validateConfigCustomRules(ctx, &config)...)
-}
-
-func (r *anomalyDetectionJobResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	// Import is intentionally sparse: only IDs are set. Everything else is populated by Read().
-	compID, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if resp.Diagnostics.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), req.ID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("job_id"), compID.ResourceID)...)
 }

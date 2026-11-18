@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	elasticsearch "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -31,8 +32,7 @@ func deleteTrainedModelAlias(ctx context.Context, client *clients.ElasticsearchS
 	var diags fwdiags.Diagnostics
 
 	alias := resourceID
-	if alias == "" {
-		diags.AddError("Invalid resource ID", "model_alias cannot be empty")
+	if diags := ml.RequireNonEmptyID(alias, "model_alias"); diags.HasError() {
 		return diags
 	}
 

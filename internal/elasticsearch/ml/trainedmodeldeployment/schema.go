@@ -20,6 +20,7 @@ package trainedmodeldeployment
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -37,13 +38,7 @@ func GetSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: resourceDescription,
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				MarkdownDescription: "Internal identifier of the resource in the format `<cluster_uuid>/<deployment_id>`.",
-				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
+			"id": entitycore.IDAttribute(),
 			"model_id": schema.StringAttribute{
 				MarkdownDescription: "The unique identifier of the trained model to deploy.",
 				Required:            true,

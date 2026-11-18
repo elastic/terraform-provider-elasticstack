@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -47,11 +46,11 @@ func readEntityStore(
 		return model, true, flattenDiags
 	}
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}).String())
+	model.ID = clients.CompositeIDValue(spaceID, resourceID)
 	model.SpaceID = types.StringValue(spaceID)
 	model.EntityTypes = entityTypes
 	model.Started = types.BoolValue(started)
 	model.LogExtraction = logExtraction
-	model.StatusJSON = jsontypes.NewNormalizedValue(string(rawBody))
+	model.StatusJSON = NewStatusJSONValue(string(rawBody))
 	return model, true, append(diags, flattenDiags...)
 }

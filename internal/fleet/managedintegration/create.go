@@ -73,7 +73,7 @@ func createManagedIntegration(
 	}
 
 	plan.PolicyID = types.StringValue(item.Id)
-	plan.ID = types.StringValue((&clients.CompositeID{ClusterID: req.SpaceID, ResourceID: item.Id}).String())
+	plan.ID = clients.CompositeIDValue(req.SpaceID, item.Id)
 
 	return entitycore.KibanaWriteResult[managedIntegrationModel]{Model: plan}, diags
 }

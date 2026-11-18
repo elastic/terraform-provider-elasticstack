@@ -17,7 +17,7 @@ resource "elasticstack_elasticsearch_ml_anomaly_detection_job" "test" {
         over_field_name = "clientip"
         custom_rules = [
           {
-            actions = ["skip_result"]
+            actions = ["skip_result", "skip_model_update"]
             conditions = [
               {
                 applies_to = "actual"

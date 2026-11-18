@@ -95,36 +95,6 @@ func ClearConfig(pm *models.PanelModel, blockName string) {
 	fv.Set(reflect.Zero(fv.Type()))
 }
 
-// SetConfig assigns cfg to pm's typed field keyed by blockName. cfg must be assignable to that field type.
-// A nil cfg clears the field when the field is pointer-like or otherwise zeroable.
-func SetConfig(pm *models.PanelModel, blockName string, cfg any) {
-	if pm == nil {
-		return
-	}
-	idx, ok := panelModelTfsdkFieldIndex[blockName]
-	if !ok {
-		unknownPanelBlockPanic(blockName)
-	}
-	fv := reflect.ValueOf(pm).Elem().Field(idx)
-	if !fv.CanSet() {
-		return
-	}
-	if cfg == nil {
-		fv.Set(reflect.Zero(fv.Type()))
-		return
-	}
-	cv := reflect.ValueOf(cfg)
-	if cv.Type().AssignableTo(fv.Type()) {
-		fv.Set(cv)
-		return
-	}
-	if cv.Type().ConvertibleTo(fv.Type()) {
-		fv.Set(cv.Convert(fv.Type()))
-		return
-	}
-	panic(fmt.Sprintf("panelkit.SetConfig: value type %s not assignable to field %s (%s)", cv.Type(), blockName, fv.Type()))
-}
-
 // EnsureMutableTypedConfig allocates *T for pm's pointer-backed config block at blockName when it is nil.
 func EnsureMutableTypedConfig(pm *models.PanelModel, blockName string) {
 	if pm == nil {

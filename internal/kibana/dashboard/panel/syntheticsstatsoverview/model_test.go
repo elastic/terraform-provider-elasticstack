@@ -238,19 +238,22 @@ func Test_populateSyntheticsStatsOverviewFromAPI_import_withFields(t *testing.T)
 	assert.Equal(t, types.BoolValue(false), cfg.HideBorder)
 }
 
-// Test: prior state has no block (nil) — nil intent preserved.
-func Test_populateSyntheticsStatsOverviewFromAPI_nilBlock_preservesNilIntent(t *testing.T) {
+// Test: when the panel at this index was previously a different type
+// (prior.SyntheticsStatsOverviewConfig is nil, e.g. prior held a different type's config), there is
+// no null intent to honor and the config is rebuilt entirely from the API.
+func Test_populateSyntheticsStatsOverviewFromAPI_typeChangeRecovery(t *testing.T) {
 	pm := &models.PanelModel{}
-	tfPanel := &models.PanelModel{} // no SyntheticsStatsOverviewConfig
+	tfPanel := &models.PanelModel{Type: types.StringValue("ml_anomaly_charts")}
 
 	panel := makeSyntheticsAPIConfig()
-	title := "Should not appear"
+	title := "Should appear"
 	panel.Config.Title = &title
 
 	diag := PopulateFromAPI(pm, tfPanel, panel)
 	require.False(t, diag.HasError(), "%v", diag)
 
-	assert.Nil(t, pm.SyntheticsStatsOverviewConfig, "block should remain nil when prior state had no config block")
+	require.NotNil(t, pm.SyntheticsStatsOverviewConfig, "type-change path should populate config from API")
+	assert.Equal(t, "Should appear", pm.SyntheticsStatsOverviewConfig.Title.ValueString())
 }
 
 // Test: null-preservation for optional string fields.
@@ -261,7 +264,9 @@ func Test_populateSyntheticsStatsOverviewFromAPI_nullPreservation_strings(t *tes
 		HideTitle:   types.BoolNull(),
 		HideBorder:  types.BoolNull(),
 	}
-	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	// pm always arrives zero-valued in production (dashboardMapPanelFromAPI never shallow-copies
+	// the plan into pm); tfPanel below carries the actual prior null intent.
+	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	panel := makeSyntheticsAPIConfig()
@@ -285,7 +290,9 @@ func Test_populateSyntheticsStatsOverviewFromAPI_explicitFields_roundTrip(t *tes
 		HideTitle:   types.BoolValue(false),
 		HideBorder:  types.BoolValue(true),
 	}
-	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	// pm always arrives zero-valued in production (dashboardMapPanelFromAPI never shallow-copies
+	// the plan into pm); tfPanel below carries the actual prior null intent.
+	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	panel := makeSyntheticsAPIConfig()
@@ -321,7 +328,9 @@ func Test_populateSyntheticsStatsOverviewFromAPI_drilldowns_nullPreservation(t *
 			},
 		},
 	}
-	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	// pm always arrives zero-valued in production (dashboardMapPanelFromAPI never shallow-copies
+	// the plan into pm); tfPanel below carries the actual prior null intent.
+	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	panel := makeSyntheticsAPIConfig()
@@ -450,7 +459,9 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyAPIConfig_nilsBloc
 			},
 		},
 	}
-	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	// pm always arrives zero-valued in production (dashboardMapPanelFromAPI never shallow-copies
+	// the plan into pm); tfPanel below carries the actual prior null intent.
+	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	// API returns completely empty config (no title, no description, no drilldowns, no filters).
@@ -474,7 +485,9 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_emptyFilters_clearsBloc
 			},
 		},
 	}
-	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	// pm always arrives zero-valued in production (dashboardMapPanelFromAPI never shallow-copies
+	// the plan into pm); tfPanel below carries the actual prior null intent.
+	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	panel := makeSyntheticsAPIConfig()
@@ -520,7 +533,9 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_allNilConfig_nilsBlock(
 			},
 		},
 	}
-	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	// pm always arrives zero-valued in production (dashboardMapPanelFromAPI never shallow-copies
+	// the plan into pm); tfPanel below carries the actual prior null intent.
+	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	panel := makeSyntheticsAPIConfig()
@@ -546,7 +561,9 @@ func Test_populateSyntheticsStatsOverviewFromAPI_refresh_nilFiltersWithOtherConf
 			},
 		},
 	}
-	pm := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
+	// pm always arrives zero-valued in production (dashboardMapPanelFromAPI never shallow-copies
+	// the plan into pm); tfPanel below carries the actual prior null intent.
+	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{SyntheticsStatsOverviewConfig: existing}
 
 	panel := makeSyntheticsAPIConfig()

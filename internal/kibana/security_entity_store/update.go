@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	entity "github.com/elastic/terraform-provider-elasticstack/internal/kibana/security_entity_store/entity"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -37,7 +36,7 @@ func updateEntityStore(
 ) (entitycore.KibanaWriteResult[tfModel], diag.Diagnostics) {
 	plan := req.Plan
 	prior := *req.Prior
-	spaceID := entity.NormalizeSpaceID(plan.SpaceID)
+	spaceID := clients.EffectiveSpaceIDFromValue(plan.SpaceID)
 
 	added, removed, diags := diffEntityTypes(ctx, prior.EntityTypes, plan.EntityTypes)
 	if diags.HasError() {
@@ -96,6 +95,6 @@ func updateEntityStore(
 	}
 
 	plan.SpaceID = types.StringValue(spaceID)
-	plan.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}).String())
+	plan.ID = clients.CompositeIDValue(spaceID, resourceID)
 	return entitycore.KibanaWriteResult[tfModel]{Model: plan}, nil
 }

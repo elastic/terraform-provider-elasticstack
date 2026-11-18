@@ -38,7 +38,7 @@ func legacyMetricConfigFromAPINoESQL(
 	ctx context.Context,
 	m *models.LegacyMetricConfigModel,
 	prior *models.LegacyMetricConfigModel,
-	api kbapi.KibanaHTTPAPIsLegacyMetricNoESQLByValuePanel,
+	api kbapi.KibanaHTTPAPIsVisLegacyMetricNoESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	datasetBytes, datasetErr := api.DataSource.MarshalJSON()
@@ -54,7 +54,7 @@ func legacyMetricConfigFromAPINoESQL(
 	m.Query = &models.FilterSimpleModel{}
 	lenscommon.FilterSimpleFromAPI(m.Query, api.Query)
 
-	metricBytes, err := api.Metric.MarshalJSON()
+	metricBytes, err := json.Marshal(api.Metric)
 	mv, ok := lenscommon.MarshalToJSONWithDefaults(metricBytes, err, "metric", lenscommon.PopulateLegacyMetricMetricDefaults, &diags)
 	if !ok {
 		return diags
@@ -85,7 +85,7 @@ func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel) (lenscommon.VisB
 
 	switch datasetType {
 	case datasetTypeDataViewReference, datasetTypeDataViewSpec:
-		api := kbapi.KibanaHTTPAPIsLegacyMetricNoESQLByValuePanel{
+		api := kbapi.KibanaHTTPAPIsVisLegacyMetricNoESQLByValuePanel{
 			Type: kbapi.LegacyMetric,
 		}
 
@@ -122,11 +122,11 @@ func legacyMetricConfigToAPI(m *models.LegacyMetricConfigModel) (lenscommon.VisB
 			return result, diags
 		}
 
-		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsLegacyMetricNoESQLByValuePanel_Drilldowns_Item](
+		diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsVisLegacyMetricNoESQLByValuePanel_Drilldowns_Item](
 			writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 		)...)
 
-		if err := result.FromKibanaHTTPAPIsLegacyMetricNoESQLByValuePanel(api); err != nil {
+		if err := result.FromKibanaHTTPAPIsVisLegacyMetricNoESQLByValuePanel(api); err != nil {
 			diags.AddError("Failed to marshal legacy metric", err.Error())
 		}
 		return result, diags

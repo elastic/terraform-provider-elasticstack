@@ -1,0 +1,1 @@
+A list of Kibana dashboards linked to the rule, each referenced by its saved-object `id`. Links related dashboards alongside the alert configuration as code. Requires Elastic Stack 9.1 or higher to write; the linked ids round-trip from the API and `terraform import` populates them only on 9.5.0+ (elastic/kibana#247279). Order is significant (this is an ordered list).

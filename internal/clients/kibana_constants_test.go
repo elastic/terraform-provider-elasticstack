@@ -20,6 +20,7 @@ package clients
 import (
 	"testing"
 
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -27,4 +28,11 @@ func TestEffectiveSpaceID(t *testing.T) {
 	assert.Equal(t, DefaultSpaceID, EffectiveSpaceID(""), "empty string should return default space ID")
 	assert.Equal(t, "production", EffectiveSpaceID("production"), "non-empty string should be returned as-is")
 	assert.Equal(t, DefaultSpaceID, EffectiveSpaceID(DefaultSpaceID), "default space ID should pass through unchanged")
+}
+
+func TestEffectiveSpaceIDFromValue(t *testing.T) {
+	assert.Equal(t, "production", EffectiveSpaceIDFromValue(types.StringValue("production")), "known non-empty value should be returned as-is")
+	assert.Equal(t, DefaultSpaceID, EffectiveSpaceIDFromValue(types.StringValue("")), "known empty value should resolve to the default space ID")
+	assert.Equal(t, DefaultSpaceID, EffectiveSpaceIDFromValue(types.StringNull()), "null value should resolve to the default space ID")
+	assert.Equal(t, DefaultSpaceID, EffectiveSpaceIDFromValue(types.StringUnknown()), "unknown value should resolve to the default space ID")
 }

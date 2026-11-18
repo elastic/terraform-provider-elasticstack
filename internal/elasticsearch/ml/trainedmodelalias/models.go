@@ -24,15 +24,13 @@ import (
 
 type TFModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String `tfsdk:"id"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
-	ModelAlias              types.String `tfsdk:"model_alias"`
-	ModelID                 types.String `tfsdk:"model_id"`
-	Reassign                types.Bool   `tfsdk:"reassign"`
+	entitycore.ElasticsearchConnectionField
+	ID         types.String `tfsdk:"id"`
+	ModelAlias types.String `tfsdk:"model_alias"`
+	ModelID    types.String `tfsdk:"model_id"`
+	Reassign   types.Bool   `tfsdk:"reassign"`
 }
 
 func (m TFModel) GetID() types.String { return m.ID }
 
 func (m TFModel) GetResourceID() types.String { return m.ModelAlias }
-
-func (m TFModel) GetElasticsearchConnection() types.List { return m.ElasticsearchConnection }

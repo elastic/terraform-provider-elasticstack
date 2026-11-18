@@ -22,19 +22,6 @@ import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashb
 func populateMosaicLensAttributes(attrs map[string]any) map[string]any {
 	lenscommon.PopulatePartitionLensAttributes(attrs)
 
-	if groupBreakdownBy, ok := attrs["group_breakdown_by"].([]any); ok {
-		groupBreakdownMaps := make([]map[string]any, 0, len(groupBreakdownBy))
-		for _, g := range groupBreakdownBy {
-			if m, ok := g.(map[string]any); ok {
-				groupBreakdownMaps = append(groupBreakdownMaps, m)
-			}
-		}
-		populated := lenscommon.PopulatePartitionGroupByDefaults(groupBreakdownMaps)
-		for i := range groupBreakdownBy {
-			if i < len(populated) {
-				groupBreakdownBy[i] = populated[i]
-			}
-		}
-	}
+	lenscommon.PopulateMapSliceDefaultsBatch(attrs, "group_breakdown_by", lenscommon.PopulatePartitionGroupByDefaults)
 	return attrs
 }

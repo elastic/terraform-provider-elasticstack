@@ -34,19 +34,18 @@ import (
 
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String                                      `tfsdk:"id"`
-	ElasticsearchConnection types.List                                        `tfsdk:"elasticsearch_connection"`
-	InferenceID             types.String                                      `tfsdk:"inference_id"`
-	TaskType                types.String                                      `tfsdk:"task_type"`
-	Service                 types.String                                      `tfsdk:"service"`
-	ServiceSettings         jsontypes.Normalized                              `tfsdk:"service_settings"`
-	TaskSettings            jsontypes.Normalized                              `tfsdk:"task_settings"`
-	ChunkingSettings        customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"chunking_settings"`
+	entitycore.ElasticsearchConnectionField
+	ID               types.String                                      `tfsdk:"id"`
+	InferenceID      types.String                                      `tfsdk:"inference_id"`
+	TaskType         types.String                                      `tfsdk:"task_type"`
+	Service          types.String                                      `tfsdk:"service"`
+	ServiceSettings  jsontypes.Normalized                              `tfsdk:"service_settings"`
+	TaskSettings     jsontypes.Normalized                              `tfsdk:"task_settings"`
+	ChunkingSettings customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"chunking_settings"`
 }
 
-func (data Data) GetID() types.String                    { return data.ID }
-func (data Data) GetResourceID() types.String            { return data.InferenceID }
-func (data Data) GetElasticsearchConnection() types.List { return data.ElasticsearchConnection }
+func (data Data) GetID() types.String         { return data.ID }
+func (data Data) GetResourceID() types.String { return data.InferenceID }
 
 func (data *Data) toAPIModel(_ context.Context) (*estypes.InferenceEndpoint, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -55,7 +54,7 @@ func (data *Data) toAPIModel(_ context.Context) (*estypes.InferenceEndpoint, dia
 		Service: data.Service.ValueString(),
 	}
 
-	if !data.ServiceSettings.IsNull() && !data.ServiceSettings.IsUnknown() {
+	if typeutils.IsKnown(data.ServiceSettings) {
 		var ss map[string]any
 		if err := json.Unmarshal([]byte(data.ServiceSettings.ValueString()), &ss); err != nil {
 			diags.AddError("Invalid service_settings JSON", fmt.Sprintf("Error parsing service_settings: %s", err))
@@ -69,7 +68,7 @@ func (data *Data) toAPIModel(_ context.Context) (*estypes.InferenceEndpoint, dia
 		endpoint.ServiceSettings = b
 	}
 
-	if !data.TaskSettings.IsNull() && !data.TaskSettings.IsUnknown() {
+	if typeutils.IsKnown(data.TaskSettings) {
 		var ts map[string]any
 		if err := json.Unmarshal([]byte(data.TaskSettings.ValueString()), &ts); err != nil {
 			diags.AddError("Invalid task_settings JSON", fmt.Sprintf("Error parsing task_settings: %s", err))
@@ -83,7 +82,7 @@ func (data *Data) toAPIModel(_ context.Context) (*estypes.InferenceEndpoint, dia
 		endpoint.TaskSettings = b
 	}
 
-	if !data.ChunkingSettings.IsNull() && !data.ChunkingSettings.IsUnknown() {
+	if typeutils.IsKnown(data.ChunkingSettings) {
 		var cs map[string]any
 		if err := json.Unmarshal([]byte(data.ChunkingSettings.ValueString()), &cs); err != nil {
 			diags.AddError("Invalid chunking_settings JSON", fmt.Sprintf("Error parsing chunking_settings: %s", err))
@@ -127,7 +126,7 @@ func (data *Data) fromAPIModel(_ context.Context, endpoint *estypes.InferenceEnd
 	// the user never set are dropped — those are server-applied defaults and should not
 	// cause drift. If a key the user set disagrees with what the API returns, that is a
 	// real drift and will surface on the next plan.
-	if !data.TaskSettings.IsNull() && !data.TaskSettings.IsUnknown() {
+	if typeutils.IsKnown(data.TaskSettings) {
 		var stateTS map[string]any
 		if err := json.Unmarshal([]byte(data.TaskSettings.ValueString()), &stateTS); err != nil {
 			diags.AddError("Invalid task_settings JSON", fmt.Sprintf("Error parsing task_settings: %s", err))
@@ -148,7 +147,7 @@ func (data *Data) fromAPIModel(_ context.Context, endpoint *estypes.InferenceEnd
 		}
 	}
 
-	if !data.ChunkingSettings.IsNull() && !data.ChunkingSettings.IsUnknown() {
+	if typeutils.IsKnown(data.ChunkingSettings) {
 		if endpoint.ChunkingSettings != nil {
 			b, err := json.Marshal(endpoint.ChunkingSettings)
 			if err != nil {

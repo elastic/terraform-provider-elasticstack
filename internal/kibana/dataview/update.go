@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
@@ -69,10 +70,10 @@ func updateDataView(
 
 	if !diags.HasError() {
 		var oldNS, newNS []string
-		if !stateInner.Namespaces.IsNull() && !stateInner.Namespaces.IsUnknown() {
+		if typeutils.IsKnown(stateInner.Namespaces) {
 			diags.Append(stateInner.Namespaces.ElementsAs(ctx, &oldNS, false)...)
 		}
-		if !planInner.Namespaces.IsNull() && !planInner.Namespaces.IsUnknown() {
+		if typeutils.IsKnown(planInner.Namespaces) {
 			diags.Append(planInner.Namespaces.ElementsAs(ctx, &newNS, false)...)
 		}
 

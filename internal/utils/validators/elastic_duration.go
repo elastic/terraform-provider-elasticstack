@@ -21,6 +21,8 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
 
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
@@ -67,4 +69,76 @@ func (v elasticDurationValidator) ValidateString(_ context.Context, req validato
 			fmt.Sprintf("%q is not a valid Elastic time-unit duration", s),
 		)
 	}
+}
+
+// matchUnitDuration reports whether s is one or more digits followed by a
+// single unit character drawn from units. units is treated as a set of
+// literal characters (not a regular expression), so empty or
+// metacharacter-containing values cannot panic.
+func matchUnitDuration(s, units string) bool {
+	if len(s) < 2 {
+		return false
+	}
+	unit := s[len(s)-1]
+	if !strings.ContainsRune(units, rune(unit)) {
+		return false
+	}
+	for i := range len(s) - 1 {
+		if s[i] < '0' || s[i] > '9' {
+			return false
+		}
+	}
+	return true
+}
+
+// DurationWithUnits returns a Plugin Framework string validator that accepts
+// a non-negative integer followed by a single unit character drawn from units
+// (e.g. units="mhd" accepts "0m", "5m", "3h", "6d"). message is used as the
+// validation failure detail. Null and unknown values are skipped.
+func DurationWithUnits(units string, message string) validator.String {
+	return unitDurationValidator{units: units, message: message}
+}
+
+type unitDurationValidator struct {
+	units   string
+	message string
+}
+
+var _ validator.String = unitDurationValidator{}
+
+func (v unitDurationValidator) Description(_ context.Context) string {
+	return v.message
+}
+
+func (v unitDurationValidator) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (v unitDurationValidator) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	val := req.ConfigValue
+	if val.IsNull() || val.IsUnknown() {
+		return
+	}
+	if !matchUnitDuration(val.ValueString(), v.units) {
+		resp.Diagnostics.AddAttributeError(req.Path, "Invalid Attribute Value", v.message)
+	}
+}
+
+// ParseUnitDuration parses a "digits + unit letter" duration string such as
+// "5m" or "30s" into its numeric value and unit, validating that unit is one
+// of the characters in units. It is the parsing counterpart to
+// DurationWithUnits, for callers that need the decomposed value rather than
+// just a validation pass/fail. Invalid input is always reported via err;
+// units is never compiled as a regular expression.
+func ParseUnitDuration(s string, units string) (value int, unit string, err error) {
+	if !matchUnitDuration(s, units) {
+		return 0, "", fmt.Errorf("%q does not match the required format: digits followed by one of [%s]", s, units)
+	}
+	numeric := s[:len(s)-1]
+	unit = s[len(s)-1:]
+	value, err = strconv.Atoi(numeric)
+	if err != nil {
+		return 0, "", fmt.Errorf("failed to parse duration value %q: %w", numeric, err)
+	}
+	return value, unit, nil
 }

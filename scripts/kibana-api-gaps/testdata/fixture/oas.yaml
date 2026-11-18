@@ -1,0 +1,91 @@
+openapi: 3.0.3
+info: {title: fixture, version: "1"}
+paths:
+  /api/widgets:
+    post:
+      operationId: createWidget
+      parameters:
+        - {name: dry_run, in: query, schema: {type: boolean}}
+        - {name: verbose, in: query, schema: {type: boolean}}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Widget'
+      responses: {"200": {description: ok}}
+  /api/widgets/{id}:
+    get:
+      operationId: getWidget
+      parameters:
+        - {name: id, in: path, required: true, schema: {type: string}}
+      responses: {"200": {description: ok}}
+  /api/blobs:
+    post:
+      operationId: createBlob
+      requestBody:
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - {$ref: '#/components/schemas/BlobText'}
+                - {$ref: '#/components/schemas/BlobNumber'}
+      responses: {"200": {description: ok}}
+  /api/gadgets:
+    post:
+      deprecated: true
+      x-state: Added in 9.1.0
+      operationId: createGadget
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                size: {type: integer}
+      responses: {"200": {description: ok}}
+components:
+  schemas:
+    Label:
+      type: object
+      required: [key]
+      properties:
+        key: {type: string}
+        value: {type: string, description: label value}
+    Settings:
+      type: object
+      properties:
+        mode: {type: string, enum: [fast, slow]}
+        retries: {type: integer}
+    SourceA:
+      type: object
+      properties:
+        a: {type: string}
+    SourceB:
+      type: object
+      properties:
+        b: {type: string}
+    BlobText:
+      type: object
+      properties:
+        text: {type: string}
+    BlobNumber:
+      type: object
+      properties:
+        number: {type: integer}
+    Widget:
+      type: object
+      required: [name]
+      properties:
+        id: {type: string, readOnly: true}
+        name: {type: string}
+        description: {type: string, x-state: Generally available in 8.15.0}
+        legacy: {type: string, deprecated: true}
+        labels:
+          type: array
+          items: {$ref: '#/components/schemas/Label'}
+        settings: {$ref: '#/components/schemas/Settings'}
+        config: {type: object, additionalProperties: true}
+        source:
+          oneOf:
+            - $ref: '#/components/schemas/SourceA'
+            - $ref: '#/components/schemas/SourceB'

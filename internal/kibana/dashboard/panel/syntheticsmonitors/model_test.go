@@ -288,7 +288,7 @@ func Test_populateSyntheticsMonitorsFromAPI_emptyAPIFilters_nullPreservation(t *
 	existing := &models.SyntheticsMonitorsConfigModel{
 		Filters: nil, // practitioner wrote synthetics_monitors_config = {}
 	}
-	pm := &models.PanelModel{SyntheticsMonitorsConfig: existing}
+	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{SyntheticsMonitorsConfig: existing}
 
 	// API returns present but empty filters struct
@@ -331,7 +331,7 @@ func Test_populateSyntheticsMonitorsFromAPI_filtersRoundTrip(t *testing.T) {
 			},
 		},
 	}
-	pm := &models.PanelModel{SyntheticsMonitorsConfig: existing}
+	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{SyntheticsMonitorsConfig: existing}
 
 	apiPanel := makeSyntheticsPanel()
@@ -379,7 +379,7 @@ func Test_populateSyntheticsMonitorsFromAPI_filtersRoundTrip(t *testing.T) {
 func Test_populateSyntheticsMonitorsFromAPI_emptyFiltersBlock_preserved(t *testing.T) {
 	emptyFilters := &models.SyntheticsFiltersModel{} // all slices nil
 	existing := &models.SyntheticsMonitorsConfigModel{Filters: emptyFilters}
-	pm := &models.PanelModel{SyntheticsMonitorsConfig: existing}
+	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{SyntheticsMonitorsConfig: existing}
 
 	// API returns an empty filters struct (all dimensions absent).
@@ -417,7 +417,7 @@ func Test_populateSyntheticsMonitorsFromAPI_emptyFiltersBlock_preserved(t *testi
 // Prior state had config with no filters; API returns nil filters → keep filters nil.
 func Test_populateSyntheticsMonitorsFromAPI_apiNilFilters_preservesNilFilters(t *testing.T) {
 	existing := &models.SyntheticsMonitorsConfigModel{Filters: nil}
-	pm := &models.PanelModel{SyntheticsMonitorsConfig: existing}
+	pm := &models.PanelModel{}
 	tfPanel := &models.PanelModel{SyntheticsMonitorsConfig: existing}
 
 	diag := PopulateFromAPI(pm, tfPanel, makeSyntheticsPanel())
@@ -425,4 +425,32 @@ func Test_populateSyntheticsMonitorsFromAPI_apiNilFilters_preservesNilFilters(t 
 
 	require.NotNil(t, pm.SyntheticsMonitorsConfig)
 	assert.Nil(t, pm.SyntheticsMonitorsConfig.Filters)
+}
+
+// Same-type update: Kibana 9.5.0 GA returns a concrete default for the `view` enum field instead
+// of omitting it, unlike earlier stack versions. A prior config that left `view` unset must still
+// see it as null after Read/apply, matching the calling convention where pm always arrives
+// zero-valued (dashboardMapPanelFromAPI never shallow-copies the plan into pm). Known fields
+// (title) must still refresh from the API.
+func Test_populateSyntheticsMonitorsFromAPI_sameTypeUpdate_viewNullPreserved(t *testing.T) {
+	pm := &models.PanelModel{}
+	existing := &models.SyntheticsMonitorsConfigModel{
+		Title: types.StringValue("Synthetics Monitors"),
+		View:  types.StringNull(),
+	}
+	tfPanel := &models.PanelModel{SyntheticsMonitorsConfig: existing}
+
+	apiPanel := makeSyntheticsPanel()
+	title := "Synthetics Monitors"
+	view := kbapi.CompactView
+	apiPanel.Config.Title = &title
+	apiPanel.Config.View = &view
+
+	diag := PopulateFromAPI(pm, tfPanel, apiPanel)
+	require.False(t, diag.HasError(), "%v", diag)
+
+	require.NotNil(t, pm.SyntheticsMonitorsConfig)
+	assert.Equal(t, "Synthetics Monitors", pm.SyntheticsMonitorsConfig.Title.ValueString())
+	assert.True(t, pm.SyntheticsMonitorsConfig.View.IsNull(),
+		"view should remain null when prior state had not set it, even though the API now returns a concrete default")
 }

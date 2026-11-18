@@ -21,6 +21,8 @@ import (
 	"context"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/follow"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/followinfo"
+	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/getautofollowpattern"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/putautofollowpattern"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/resumefollow"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -40,12 +42,11 @@ func CreateFollowerIndex(ctx context.Context, apiClient *clients.ElasticsearchSc
 
 func GetFollowerIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, indexName string) (*types.FollowerIndex, fwdiags.Diagnostics) {
 	typedClient := apiClient.GetESClient()
-	res, err := typedClient.Ccr.FollowInfo(indexName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
-		return nil, diagutil.FrameworkDiagFromError(err)
+	res, diags := CallOrNotFound(func() (*followinfo.Response, error) {
+		return typedClient.Ccr.FollowInfo(indexName).Do(ctx)
+	}, "Unable to get follower index")
+	if diags.HasError() || res == nil {
+		return nil, diags
 	}
 	if len(res.FollowerIndices) > 0 {
 		return &res.FollowerIndices[0], nil
@@ -56,13 +57,7 @@ func GetFollowerIndex(ctx context.Context, apiClient *clients.ElasticsearchScope
 func PauseFollowerIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, indexName string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Ccr.PauseFollow(indexName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DeleteWithNotFoundAsSuccess(err, "Unable to pause follower index")
 }
 
 func ResumeFollowerIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, indexName string, req *resumefollow.Request) fwdiags.Diagnostics {
@@ -77,37 +72,19 @@ func ResumeFollowerIndex(ctx context.Context, apiClient *clients.ElasticsearchSc
 func CloseIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, indexName string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.Close(indexName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DeleteWithNotFoundAsSuccess(err, "Unable to close index")
 }
 
 func UnfollowIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, indexName string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Ccr.Unfollow(indexName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DeleteWithNotFoundAsSuccess(err, "Unable to unfollow index")
 }
 
 func OpenIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, indexName string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.Open(indexName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DeleteWithNotFoundAsSuccess(err, "Unable to open index")
 }
 
 func PutAutoFollowPattern(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string, req *putautofollowpattern.Request) fwdiags.Diagnostics {
@@ -121,12 +98,11 @@ func PutAutoFollowPattern(ctx context.Context, apiClient *clients.ElasticsearchS
 
 func GetAutoFollowPattern(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (*types.AutoFollowPatternSummary, fwdiags.Diagnostics) {
 	typedClient := apiClient.GetESClient()
-	res, err := typedClient.Ccr.GetAutoFollowPattern().Name(name).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
-		return nil, diagutil.FrameworkDiagFromError(err)
+	res, diags := CallOrNotFound(func() (*getautofollowpattern.Response, error) {
+		return typedClient.Ccr.GetAutoFollowPattern().Name(name).Do(ctx)
+	}, "Unable to get auto-follow pattern")
+	if diags.HasError() || res == nil {
+		return nil, diags
 	}
 	if len(res.Patterns) > 0 {
 		return &res.Patterns[0].Pattern, nil
@@ -155,11 +131,5 @@ func ResumeAutoFollowPattern(ctx context.Context, apiClient *clients.Elasticsear
 func DeleteAutoFollowPattern(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Ccr.DeleteAutoFollowPattern(name).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete auto-follow pattern")
 }

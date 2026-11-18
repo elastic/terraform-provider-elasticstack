@@ -163,7 +163,11 @@ func TestBuildConfig_allOptional(t *testing.T) {
 func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 	t.Parallel()
 
-	mtr := kbapi.KibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange("1_week")
+	// Kibana 9.5.0 GA returns concrete defaults for these enum fields instead of omitting them,
+	// unlike earlier stack versions. A prior config that left them unset must still see them as
+	// null after Read/apply, matching the calling convention where pm always arrives zero-valued
+	// (dashboardMapPanelFromAPI never shallow-copies the plan into pm).
+	mtr := kbapi.KibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange("no_minimum")
 	rsm := kbapi.KibanaHTTPAPIsAiopsPatternAnalysisRandomSamplerMode("on_automatic")
 	api := kbapi.KibanaHTTPAPIsAiopsPatternAnalysis{
 		DataViewId:               "logs-*",
@@ -183,16 +187,7 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 			TimeRange:                nil,
 		},
 	}
-	pm := &models.PanelModel{
-		AiopsPatternAnalysisConfig: &models.AiopsPatternAnalysisConfigModel{
-			DataViewID:               stringVal("logs-*"),
-			FieldName:                stringVal("message"),
-			MinimumTimeRange:         stringNull(),
-			RandomSamplerMode:        stringNull(),
-			RandomSamplerProbability: float32Null(),
-			TimeRange:                nil,
-		},
-	}
+	pm := &models.PanelModel{}
 	diags := aiopspatternanalysis.PopulateFromAPI(pm, prior, api)
 	require.False(t, diags.HasError(), "%s", diags)
 
@@ -203,6 +198,31 @@ func TestPopulateFromAPI_nullPreservation(t *testing.T) {
 	require.True(t, cfg.RandomSamplerMode.IsNull())
 	require.True(t, cfg.RandomSamplerProbability.IsNull())
 	require.Nil(t, cfg.TimeRange)
+}
+
+func TestPopulateFromAPI_sameTypeUpdateRefreshesKnownFields(t *testing.T) {
+	t.Parallel()
+
+	mtr := kbapi.KibanaHTTPAPIsAiopsPatternAnalysisMinimumTimeRange("1_month")
+	api := kbapi.KibanaHTTPAPIsAiopsPatternAnalysis{
+		DataViewId:       "logs-*",
+		FieldName:        "message",
+		MinimumTimeRange: &mtr,
+	}
+
+	prior := &models.PanelModel{
+		AiopsPatternAnalysisConfig: &models.AiopsPatternAnalysisConfigModel{
+			DataViewID:       stringVal("logs-*"),
+			FieldName:        stringVal("message"),
+			MinimumTimeRange: stringVal("1_week"),
+		},
+	}
+	pm := &models.PanelModel{}
+	diags := aiopspatternanalysis.PopulateFromAPI(pm, prior, api)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	cfg := pm.AiopsPatternAnalysisConfig
+	require.Equal(t, "1_month", cfg.MinimumTimeRange.ValueString())
 }
 
 func TestPopulateFromAPI_import(t *testing.T) {
@@ -228,8 +248,10 @@ func TestPopulateFromAPI_import(t *testing.T) {
 	require.Nil(t, cfg.TimeRange)
 }
 
-// TestPopulateFromAPI_typeChangeRecovery verifies the type-change path (pm has no config but
-// prior does) rebuilds config entirely from the API, including TimeRange.
+// TestPopulateFromAPI_typeChangeRecovery verifies that when the panel at this index was
+// previously a different type (prior.AiopsPatternAnalysisConfig is nil, e.g. prior held a
+// different type's config), there is no null intent to honor and the config is rebuilt entirely
+// from the API, including TimeRange.
 func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	t.Parallel()
 
@@ -243,14 +265,9 @@ func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 		TimeRange:        &tr,
 	}
 
-	// pm has no config (panel type changed away from this type in the plan)
-	// but prior still has the config block.
 	pm := &models.PanelModel{}
 	prior := &models.PanelModel{
-		AiopsPatternAnalysisConfig: &models.AiopsPatternAnalysisConfigModel{
-			DataViewID: stringVal("old-dv"),
-			FieldName:  stringVal("old.field"),
-		},
+		Type: types.StringValue("ml_anomaly_charts"),
 	}
 
 	diags := aiopspatternanalysis.PopulateFromAPI(pm, prior, api)
@@ -276,8 +293,8 @@ func TestToAPI_rejectsConfigJSON(t *testing.T) {
 			DataViewID: stringVal("logs-*"),
 			FieldName:  stringVal("message"),
 		},
-	}
-	pm.ConfigJSON = configJSONSet("{}")
+
+		ConfigJSON: configJSONSet("{}")}
 
 	_, diags := aiopspatternanalysis.Handler{}.ToAPI(pm, nil)
 	require.True(t, diags.HasError(), "expected config_json conflict error")

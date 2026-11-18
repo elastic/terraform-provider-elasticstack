@@ -19,6 +19,7 @@ package anomalydetectionjob
 
 import (
 	"context"
+	"encoding/json"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
@@ -89,4 +90,105 @@ func TestUpdateAPIModel_BuildFromPlan_partialBodyWhenDescriptionChanges(t *testi
 	require.Nil(t, u.Groups)
 	require.Nil(t, u.ModelPlotConfig)
 	require.Nil(t, u.AnalysisLimits)
+}
+
+func TestUpdateAPIModel_BuildFromPlan_emptyCustomSettingsSendsEmptyObject(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	prior := baselineTFModelForBuildFromPlan(ctx, t)
+	prior.CustomSettings = jsontypes.NewNormalizedValue(`{"created_by":"advanced-wizard"}`)
+
+	plan := prior
+	plan.CustomSettings = jsontypes.NewNormalizedValue("{}")
+
+	var u UpdateAPIModel
+	hasChanges, diags := u.BuildFromPlan(ctx, &plan, &prior)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.True(t, hasChanges)
+	require.JSONEq(t, "{}", string(u.CustomSettings))
+
+	body, err := json.Marshal(u)
+	require.NoError(t, err)
+	require.Contains(t, string(body), `"custom_settings":{}`)
+}
+
+func TestUpdateAPIModel_BuildFromPlan_nullCustomSettingsIsOmitted(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	prior := baselineTFModelForBuildFromPlan(ctx, t)
+	prior.CustomSettings = jsontypes.NewNormalizedValue(`{"created_by":"advanced-wizard"}`)
+
+	plan := prior
+	plan.CustomSettings = jsontypes.NewNormalizedNull()
+
+	var u UpdateAPIModel
+	hasChanges, diags := u.BuildFromPlan(ctx, &plan, &prior)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.False(t, hasChanges)
+	require.Nil(t, u.CustomSettings)
+
+	body, err := json.Marshal(u)
+	require.NoError(t, err)
+	require.NotContains(t, string(body), "custom_settings")
+}
+
+func TestUpdateAPIModel_BuildFromPlan_jsonNullCustomSettingsIsOmitted(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	prior := baselineTFModelForBuildFromPlan(ctx, t)
+	prior.CustomSettings = jsontypes.NewNormalizedValue(`{"created_by":"advanced-wizard"}`)
+
+	plan := prior
+	plan.CustomSettings = jsontypes.NewNormalizedValue("null")
+
+	var u UpdateAPIModel
+	hasChanges, diags := u.BuildFromPlan(ctx, &plan, &prior)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.False(t, hasChanges)
+	require.Nil(t, u.CustomSettings)
+
+	body, err := json.Marshal(u)
+	require.NoError(t, err)
+	require.NotContains(t, string(body), "custom_settings")
+}
+
+func TestUpdateAPIModel_BuildFromPlan_nonEmptyCustomSettingsReplacesBag(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	prior := baselineTFModelForBuildFromPlan(ctx, t)
+	prior.CustomSettings = jsontypes.NewNormalizedValue(`{"department":"ops","created_by":"advanced-wizard"}`)
+
+	plan := prior
+	plan.CustomSettings = jsontypes.NewNormalizedValue(`{"department":"ops"}`)
+
+	var u UpdateAPIModel
+	hasChanges, diags := u.BuildFromPlan(ctx, &plan, &prior)
+	require.False(t, diags.HasError(), "%v", diags)
+	require.True(t, hasChanges)
+	require.JSONEq(t, `{"department":"ops"}`, string(u.CustomSettings))
+
+	body, err := json.Marshal(u)
+	require.NoError(t, err)
+	var decoded map[string]any
+	require.NoError(t, json.Unmarshal(body, &decoded))
+	require.Equal(t, map[string]any{"department": "ops"}, decoded["custom_settings"])
+}
+
+func TestAPIModel_toPutJobRequest_emptyCustomSettingsSendsEmptyObject(t *testing.T) {
+	t.Parallel()
+
+	a := APIModel{
+		JobID: "job-unit-test",
+		AnalysisConfig: AnalysisConfigAPIModel{
+			BucketSpan: "15m",
+			Detectors:  []DetectorAPIModel{{Function: "count"}},
+		},
+		DataDescription: DataDescriptionAPIModel{
+			TimeField: "@timestamp",
+		},
+		CustomSettings: map[string]any{},
+	}
+
+	req := a.toPutJobRequest()
+	require.JSONEq(t, "{}", string(req.CustomSettings))
 }

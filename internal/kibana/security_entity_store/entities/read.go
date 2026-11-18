@@ -37,61 +37,63 @@ import (
 func readEntityStoreEntitiesDataSource(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
+	_ string,
+	spaceID string,
 	model dsModel,
-) (dsModel, diag.Diagnostics) {
-	spaceID := entity.NormalizeSpaceID(model.SpaceID)
+) (dsModel, bool, diag.Diagnostics) {
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
 	params := &kbapi.GetSecurityEntityStoreEntitiesParams{}
 	var diags diag.Diagnostics
 
-	if !model.EntityID.IsNull() && !model.EntityID.IsUnknown() && model.EntityID.ValueString() != "" {
+	if typeutils.IsKnown(model.EntityID) && model.EntityID.ValueString() != "" {
 		filter := fmt.Sprintf(`entity.id:%s`, entity.QuoteKQLString(model.EntityID.ValueString()))
 		params.Filter = &filter
-	} else if !model.Filter.IsNull() && !model.Filter.IsUnknown() {
+	} else if typeutils.IsKnown(model.Filter) {
 		f := model.Filter.ValueString()
 		params.Filter = &f
 	}
 
-	if !model.Size.IsNull() && !model.Size.IsUnknown() {
+	if typeutils.IsKnown(model.Size) {
 		params.Size = typeutils.OptionalInt(model.Size)
 	}
-	if !model.SearchAfter.IsNull() && !model.SearchAfter.IsUnknown() {
+	if typeutils.IsKnown(model.SearchAfter) {
 		sa := model.SearchAfter.ValueString()
 		params.SearchAfter = &sa
 	}
-	if !model.Source.IsNull() && !model.Source.IsUnknown() {
+	if typeutils.IsKnown(model.Source) {
 		src := typeutils.ListTypeToSliceString(ctx, model.Source, path.Root("source"), &diags)
 		if diags.HasError() {
-			return model, diags
+			return model, false, diags
 		}
 		params.Source = &src
 	}
-	if !model.Fields.IsNull() && !model.Fields.IsUnknown() {
+	if typeutils.IsKnown(model.Fields) {
 		f := typeutils.ListTypeToSliceString(ctx, model.Fields, path.Root("fields"), &diags)
 		if diags.HasError() {
-			return model, diags
+			return model, false, diags
 		}
 		params.Fields = &f
 	}
-	if !model.SortField.IsNull() && !model.SortField.IsUnknown() {
+	if typeutils.IsKnown(model.SortField) {
 		sf := model.SortField.ValueString()
 		params.SortField = &sf
 	}
-	if !model.SortOrder.IsNull() && !model.SortOrder.IsUnknown() {
+	if typeutils.IsKnown(model.SortOrder) {
 		so := kbapi.GetSecurityEntityStoreEntitiesParamsSortOrder(model.SortOrder.ValueString())
 		params.SortOrder = &so
 	}
-	if !model.Page.IsNull() && !model.Page.IsUnknown() {
+	if typeutils.IsKnown(model.Page) {
 		params.Page = typeutils.OptionalInt(model.Page)
 	}
-	if !model.PerPage.IsNull() && !model.PerPage.IsUnknown() {
+	if typeutils.IsKnown(model.PerPage) {
 		params.PerPage = typeutils.OptionalInt(model.PerPage)
 	}
-	if !model.FilterQuery.IsNull() && !model.FilterQuery.IsUnknown() {
+	if typeutils.IsKnown(model.FilterQuery) {
 		fq := model.FilterQuery.ValueString()
 		params.FilterQuery = &fq
 	}
-	if !model.EntityTypes.IsNull() && !model.EntityTypes.IsUnknown() {
+	if typeutils.IsKnown(model.EntityTypes) {
 		entityTypes := expandEntityTypesSet(model.EntityTypes)
 		params.EntityTypes = &entityTypes
 	}
@@ -99,19 +101,19 @@ func readEntityStoreEntitiesDataSource(
 	var resp *kbapi.GetSecurityEntityStoreEntitiesResponse
 	resp, diags = kibanaoapi.ListSecurityEntityStoreEntities(ctx, client.GetKibanaOapiClient(), spaceID, params)
 	if diags.HasError() {
-		return model, diags
+		return model, false, diags
 	}
 
 	// Normalize JSON for results_json
 	var raw any
 	if err := json.Unmarshal(resp.Body, &raw); err != nil {
-		return model, diag.Diagnostics{
+		return model, false, diag.Diagnostics{
 			diag.NewErrorDiagnostic("Failed to parse response", err.Error()),
 		}
 	}
 	normalizedBytes, err := json.Marshal(raw)
 	if err != nil {
-		return model, diag.Diagnostics{
+		return model, false, diag.Diagnostics{
 			diag.NewErrorDiagnostic("Failed to normalize response", err.Error()),
 		}
 	}
@@ -123,7 +125,7 @@ func readEntityStoreEntitiesDataSource(
 	// Build typed items list from the API response
 	rawMap, ok := raw.(map[string]any)
 	if !ok {
-		return model, diag.Diagnostics{
+		return model, false, diag.Diagnostics{
 			diag.NewErrorDiagnostic("Failed to parse response", "expected object"),
 		}
 	}
@@ -134,7 +136,7 @@ func readEntityStoreEntitiesDataSource(
 		if doc, ok := e.(map[string]any); ok {
 			item := entity.APIBodyToItem(ctx, doc, &diags)
 			if diags.HasError() {
-				return model, diags
+				return model, false, diags
 			}
 			items = append(items, item)
 		}
@@ -143,18 +145,18 @@ func readEntityStoreEntitiesDataSource(
 	diags.Append(d...)
 	model.Items = itemsList
 
-	return model, nil
+	return model, true, nil
 }
 
 func expandEntityTypesSet(s types.Set) []kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes {
 	if s.IsNull() || s.IsUnknown() {
 		return nil
 	}
-	result := make([]kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes, 0, len(s.Elements()))
-	for _, v := range s.Elements() {
-		if str, ok := v.(types.String); ok {
-			result = append(result, kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes(str.ValueString()))
-		}
+	var diags diag.Diagnostics
+	strs := typeutils.StringElements(s, &diags)
+	result := make([]kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes, 0, len(strs))
+	for _, str := range strs {
+		result = append(result, kbapi.GetSecurityEntityStoreEntitiesParamsEntityTypes(str))
 	}
 	return result
 }

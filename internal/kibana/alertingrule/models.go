@@ -31,61 +31,29 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // alertingRuleModel is the Terraform model for an alerting rule.
 type alertingRuleModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                  types.String                       `tfsdk:"id"`
-	KibanaConnection    types.List                         `tfsdk:"kibana_connection"`
-	RuleID              types.String                       `tfsdk:"rule_id"`
-	SpaceID             types.String                       `tfsdk:"space_id"`
-	Name                types.String                       `tfsdk:"name"`
-	Consumer            types.String                       `tfsdk:"consumer"`
-	NotifyWhen          types.String                       `tfsdk:"notify_when"`
-	Params              jsontypes.Normalized               `tfsdk:"params"`
-	RuleTypeID          types.String                       `tfsdk:"rule_type_id"`
-	Interval            kibanacustomtypes.AlertingDuration `tfsdk:"interval"`
-	Enabled             types.Bool                         `tfsdk:"enabled"`
-	Tags                types.Set                          `tfsdk:"tags"`
-	Throttle            kibanacustomtypes.AlertingDuration `tfsdk:"throttle"`
-	ScheduledTaskID     types.String                       `tfsdk:"scheduled_task_id"`
-	LastExecutionStatus types.String                       `tfsdk:"last_execution_status"`
-	LastExecutionDate   types.String                       `tfsdk:"last_execution_date"`
-	AlertDelay          types.Int64                        `tfsdk:"alert_delay"`
-	Flapping            types.Object                       `tfsdk:"flapping"`
-	Actions             types.List                         `tfsdk:"actions"`
-}
-
-// actionModel is the Terraform model for a rule action.
-type actionModel struct {
-	Group        types.String         `tfsdk:"group"`
-	ID           types.String         `tfsdk:"id"`
-	Params       jsontypes.Normalized `tfsdk:"params"`
-	Frequency    types.Object         `tfsdk:"frequency"`
-	AlertsFilter types.Object         `tfsdk:"alerts_filter"`
-}
-
-// frequencyModel is the Terraform model for action frequency.
-type frequencyModel struct {
-	Summary    types.Bool                         `tfsdk:"summary"`
-	NotifyWhen types.String                       `tfsdk:"notify_when"`
-	Throttle   kibanacustomtypes.AlertingDuration `tfsdk:"throttle"`
-}
-
-// alertsFilterModel is the Terraform model for action alerts filter.
-type alertsFilterModel struct {
-	Kql       types.String `tfsdk:"kql"`
-	Timeframe types.Object `tfsdk:"timeframe"`
-}
-
-// timeframeModel is the Terraform model for alerts filter timeframe.
-type timeframeModel struct {
-	Days       types.List   `tfsdk:"days"`
-	Timezone   types.String `tfsdk:"timezone"`
-	HoursStart types.String `tfsdk:"hours_start"`
-	HoursEnd   types.String `tfsdk:"hours_end"`
+	entitycore.KibanaConnectionField
+	ID     types.String `tfsdk:"id"`
+	RuleID types.String `tfsdk:"rule_id"`
+	entitycore.SpaceIDField
+	Name            types.String                       `tfsdk:"name"`
+	Consumer        types.String                       `tfsdk:"consumer"`
+	NotifyWhen      types.String                       `tfsdk:"notify_when"`
+	Params          jsontypes.Normalized               `tfsdk:"params"`
+	RuleTypeID      types.String                       `tfsdk:"rule_type_id"`
+	Interval        kibanacustomtypes.AlertingDuration `tfsdk:"interval"`
+	Enabled         types.Bool                         `tfsdk:"enabled"`
+	Tags            types.Set                          `tfsdk:"tags"`
+	Throttle        kibanacustomtypes.AlertingDuration `tfsdk:"throttle"`
+	ScheduledTaskID types.String                       `tfsdk:"scheduled_task_id"`
+	AlertDelay      types.Int64                        `tfsdk:"alert_delay"`
+	Flapping        types.Object                       `tfsdk:"flapping"`
+	Artifacts       types.Object                       `tfsdk:"artifacts"`
+	Actions         types.List                         `tfsdk:"actions"`
 }
 
 // flappingModel is the Terraform model for rule-level flapping detection.
@@ -166,15 +134,6 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 		m.ScheduledTaskID = types.StringNull()
 	}
 
-	// Execution status
-	m.LastExecutionStatus = types.StringPointerValue(rule.ExecutionStatus.Status)
-
-	if rule.ExecutionStatus.LastExecutionDate != nil {
-		m.LastExecutionDate = types.StringValue(rule.ExecutionStatus.LastExecutionDate.Format("2006-01-02 15:04:05.999 -0700 MST"))
-	} else {
-		m.LastExecutionDate = types.StringNull()
-	}
-
 	// Alert delay - update if API returns a value, or resolve unknown to null
 	// (preserves existing known value when API doesn't return this field on re-reads)
 	if rule.AlertDelay != nil {
@@ -188,13 +147,19 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 		fm := flappingModel{
 			LookBackWindow:        types.Int64Value(rule.Flapping.LookBackWindow),
 			StatusChangeThreshold: types.Int64Value(rule.Flapping.StatusChangeThreshold),
-		}
-		fm.Enabled = types.BoolPointerValue(rule.Flapping.Enabled)
+
+			Enabled: types.BoolPointerValue(rule.Flapping.Enabled)}
 		flObj, d := types.ObjectValueFrom(ctx, getFlappingAttrTypes(), fm)
 		diags.Append(d...)
 		m.Flapping = flObj
 	} else if m.Flapping.IsUnknown() {
 		m.Flapping = types.ObjectNull(getFlappingAttrTypes())
+	}
+
+	// Artifacts (investigation guide)
+	diags.Append(m.populateArtifactsFromAPI(ctx, rule)...)
+	if diags.HasError() {
+		return diags
 	}
 
 	// Actions
@@ -209,116 +174,6 @@ func (m *alertingRuleModel) populateFromAPI(ctx context.Context, rule *models.Al
 	return diags
 }
 
-// normalizeRuleParamsForState strips API-returned params keys that the user
-// never specified. Kibana injects server-side defaults (e.g. aggType, groupBy)
-// into the response even when the user's config omitted them. Without this,
-// Terraform sees the extra keys as drift and produces "inconsistent result
-// after apply" errors. The approach is generic: any key present in the API
-// response but absent from the user's prior state params is removed.
-func normalizeRuleParamsForState(apiParams map[string]any, previousParams jsontypes.Normalized) (map[string]any, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	if apiParams == nil {
-		return apiParams, diags
-	}
-
-	priorParams, d := parsePriorParams(previousParams)
-	diags.Append(d...)
-	if diags.HasError() {
-		return apiParams, diags
-	}
-	if priorParams == nil {
-		// No prior state to compare against (first create); keep everything.
-		return apiParams, diags
-	}
-
-	normalized, ok := removeInjectedDefaultsRecursive(apiParams, priorParams).(map[string]any)
-	if !ok {
-		// Defensive fallback: params are expected to be a JSON object, but if we
-		// can't reconcile shapes, keep everything to avoid accidental data loss.
-		return apiParams, diags
-	}
-
-	return normalized, diags
-}
-
-// parsePriorParams returns the decoded params JSON from the previous Terraform
-// state, or nil if there is no usable prior state.
-func parsePriorParams(previousParams jsontypes.Normalized) (map[string]any, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	if !typeutils.IsKnown(previousParams) || previousParams.IsNull() {
-		return nil, diags
-	}
-
-	var prior map[string]any
-	diags.Append(previousParams.Unmarshal(&prior)...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	return prior, diags
-}
-
-// removeInjectedDefaultsRecursive removes API-injected keys at any nesting level.
-//
-// It walks the API params structure and removes keys that are present in the API
-// payload but absent from the corresponding object in the prior state params.
-//
-// NOTE: This function assumes the prior state params represent what the user
-// configured (i.e. prior-state keys are a subset of configured keys). It only
-// iterates keys present in the API payload; therefore, keys present in the prior
-// state but missing from the API response will not be preserved in the output.
-//
-//   - For JSON objects (map[string]interface{}), keys not present in the prior
-//     object are dropped, and shared keys are recursed into.
-//   - For JSON arrays ([]interface{}), elements are matched by index when the prior
-//     is also an array; element values are recursed into when there is a matching
-//     prior element, otherwise the element is kept as-is (defensive fallback).
-//   - For scalars, the API value is returned unchanged.
-func removeInjectedDefaultsRecursive(api any, prior any) any {
-	switch apiTyped := api.(type) {
-	case map[string]any:
-		priorMap, ok := prior.(map[string]any)
-		if !ok {
-			// Can't compare nested keys without a prior object; keep as-is.
-			return apiTyped
-		}
-
-		out := make(map[string]any, len(apiTyped))
-		for k, v := range apiTyped {
-			priorV, exists := priorMap[k]
-			if !exists {
-				// API injected this key but user never had it — drop it.
-				continue
-			}
-			out[k] = removeInjectedDefaultsRecursive(v, priorV)
-		}
-		return out
-
-	case []any:
-		priorSlice, ok := prior.([]any)
-		if !ok {
-			// Can't compare element structure without a prior array; keep as-is.
-			return apiTyped
-		}
-
-		out := make([]any, len(apiTyped))
-		for i, v := range apiTyped {
-			if i < len(priorSlice) {
-				out[i] = removeInjectedDefaultsRecursive(v, priorSlice[i])
-			} else {
-				// Defensive fallback: no matching prior element; keep.
-				out[i] = v
-			}
-		}
-		return out
-
-	default:
-		return api
-	}
-}
-
 // Version thresholds for feature support
 var (
 	frequencyMinSupportedVersion       = version.Must(version.NewVersion("8.6.0"))
@@ -326,12 +181,11 @@ var (
 	alertDelayMinSupportedVersion      = version.Must(version.NewVersion("8.13.0"))
 	flappingMinSupportedVersion        = version.Must(version.NewVersion("8.16.0"))
 	flappingEnabledMinSupportedVersion = version.Must(version.NewVersion("9.3.0"))
+	artifactsMinSupportedVersion       = version.Must(version.NewVersion("9.1.0"))
 )
 
-func (m alertingRuleModel) GetID() types.String             { return m.ID }
-func (m alertingRuleModel) GetResourceID() types.String     { return m.RuleID }
-func (m alertingRuleModel) GetSpaceID() types.String        { return m.SpaceID }
-func (m alertingRuleModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m alertingRuleModel) GetID() types.String         { return m.ID }
+func (m alertingRuleModel) GetResourceID() types.String { return m.RuleID }
 
 var _ entitycore.KibanaResourceModel = alertingRuleModel{}
 
@@ -350,17 +204,17 @@ func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entity
 		var hasFrequency, hasAlertsFilter bool
 		for _, action := range actions {
 			if !hasFrequency && typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
-				reqs = append(reqs, entitycore.VersionRequirement{
-					MinVersion:   *frequencyMinSupportedVersion,
-					ErrorMessage: "actions.frequency is only supported for Kibana v8.6 or higher",
-				})
+				reqs = append(reqs, entitycore.SingleVersionRequirement(
+					*frequencyMinSupportedVersion,
+					"actions.frequency is only supported for Kibana v8.6 or higher",
+				)...)
 				hasFrequency = true
 			}
 			if !hasAlertsFilter && typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
-				reqs = append(reqs, entitycore.VersionRequirement{
-					MinVersion:   *alertsFilterMinSupportedVersion,
-					ErrorMessage: "actions.alerts_filter is only supported for Kibana v8.9 or higher",
-				})
+				reqs = append(reqs, entitycore.SingleVersionRequirement(
+					*alertsFilterMinSupportedVersion,
+					"actions.alerts_filter is only supported for Kibana v8.9 or higher",
+				)...)
 				hasAlertsFilter = true
 			}
 			if hasFrequency && hasAlertsFilter {
@@ -371,31 +225,38 @@ func (m alertingRuleModel) GetVersionRequirements(ctx context.Context) ([]entity
 
 	// 8.13.0 when AlertDelay is set
 	if typeutils.IsKnown(m.AlertDelay) && !m.AlertDelay.IsNull() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *alertDelayMinSupportedVersion,
-			ErrorMessage: "alert_delay is only supported for Kibana v8.13 or higher",
-		})
+		reqs = append(reqs, entitycore.SingleVersionRequirement(
+			*alertDelayMinSupportedVersion,
+			"alert_delay is only supported for Kibana v8.13 or higher",
+		)...)
 	}
 
 	// 8.16.0 when Flapping is set
 	if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *flappingMinSupportedVersion,
-			ErrorMessage: "flapping is only supported for Kibana v8.16 or higher",
-		})
+		reqs = append(reqs, entitycore.SingleVersionRequirement(
+			*flappingMinSupportedVersion,
+			"flapping is only supported for Kibana v8.16 or higher",
+		)...)
 
-		var fm flappingModel
-		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
+		fm := typeutils.ObjectTypeAs[flappingModel](ctx, m.Flapping, path.Root("flapping"), &diags)
 		if diags.HasError() {
 			return nil, diags
 		}
 		// 9.3.0 when Flapping.Enabled is set
 		if typeutils.IsKnown(fm.Enabled) && !fm.Enabled.IsNull() {
-			reqs = append(reqs, entitycore.VersionRequirement{
-				MinVersion:   *flappingEnabledMinSupportedVersion,
-				ErrorMessage: "flapping.enabled is only supported for Elastic Stack 9.3 or higher",
-			})
+			reqs = append(reqs, entitycore.SingleVersionRequirement(
+				*flappingEnabledMinSupportedVersion,
+				"flapping.enabled is only supported for Elastic Stack 9.3 or higher",
+			)...)
 		}
+	}
+
+	// 9.1.0 when Artifacts (investigation guide) is set
+	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+		reqs = append(reqs, entitycore.SingleVersionRequirement(
+			*artifactsMinSupportedVersion,
+			"artifacts (investigation guide / dashboards) is only supported for Elastic Stack 9.1 or higher",
+		)...)
 	}
 
 	return reqs, diags
@@ -480,8 +341,7 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule,
 
 	// Flapping
 	if typeutils.IsKnown(m.Flapping) && !m.Flapping.IsNull() {
-		var fm flappingModel
-		diags.Append(m.Flapping.As(ctx, &fm, basetypes.ObjectAsOptions{})...)
+		fm := typeutils.ObjectTypeAs[flappingModel](ctx, m.Flapping, path.Root("flapping"), &diags)
 		if diags.HasError() {
 			return models.AlertingRule{}, diags
 		}
@@ -494,6 +354,16 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule,
 		}
 	}
 
+	// Artifacts (investigation guide)
+	if typeutils.IsKnown(m.Artifacts) && !m.Artifacts.IsNull() {
+		artifacts, d := m.artifactsToAPI(ctx)
+		diags.Append(d...)
+		if diags.HasError() {
+			return models.AlertingRule{}, diags
+		}
+		rule.Artifacts = artifacts
+	}
+
 	// Actions
 	if typeutils.IsKnown(m.Actions) && !m.Actions.IsNull() {
 		actions, d := convertActionsToAPI(ctx, m.Actions)
@@ -502,159 +372,4 @@ func (m alertingRuleModel) toAPIModel(ctx context.Context) (models.AlertingRule,
 	}
 
 	return rule, diags
-}
-
-// convertActionsFromAPI converts API actions to Terraform list.
-func convertActionsFromAPI(ctx context.Context, apiActions []models.AlertingRuleAction) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	actions := make([]actionModel, 0, len(apiActions))
-
-	for _, apiAction := range apiActions {
-		action := actionModel{
-			Group: types.StringValue(apiAction.Group),
-			ID:    types.StringValue(apiAction.ID),
-		}
-
-		// Params as JSON
-		paramsJSON, err := json.Marshal(apiAction.Params)
-		if err != nil {
-			diags.AddError("Failed to marshal action params", err.Error())
-			continue
-		}
-		action.Params = jsontypes.NewNormalizedValue(string(paramsJSON))
-
-		// Frequency - convert to single object
-		if apiAction.Frequency != nil {
-			freq := frequencyModel{
-				Summary:    types.BoolValue(apiAction.Frequency.Summary),
-				NotifyWhen: types.StringValue(apiAction.Frequency.NotifyWhen),
-				Throttle:   kibanacustomtypes.NewAlertingDurationPointerValue(apiAction.Frequency.Throttle),
-			}
-			freqObj, d := types.ObjectValueFrom(ctx, getFrequencyAttrTypes(), freq)
-			diags.Append(d...)
-			action.Frequency = freqObj
-		} else {
-			action.Frequency = types.ObjectNull(getFrequencyAttrTypes())
-		}
-
-		// Alerts filter - convert to single object
-		if apiAction.AlertsFilter != nil {
-			filter := alertsFilterModel{}
-
-			filter.Kql = types.StringPointerValue(apiAction.AlertsFilter.Kql)
-
-			if apiAction.AlertsFilter.Timeframe != nil {
-				tf := apiAction.AlertsFilter.Timeframe
-				days := make([]int64, len(tf.Days))
-				for i, d := range tf.Days {
-					days[i] = int64(d)
-				}
-				daysList, d := types.ListValueFrom(ctx, types.Int64Type, days)
-				diags.Append(d...)
-
-				timeframe := timeframeModel{
-					Days:       daysList,
-					Timezone:   types.StringValue(tf.Timezone),
-					HoursStart: types.StringValue(tf.HoursStart),
-					HoursEnd:   types.StringValue(tf.HoursEnd),
-				}
-				tfObj, d := types.ObjectValueFrom(ctx, getTimeframeAttrTypes(), timeframe)
-				diags.Append(d...)
-				filter.Timeframe = tfObj
-			} else {
-				filter.Timeframe = types.ObjectNull(getTimeframeAttrTypes())
-			}
-
-			filterObj, d := types.ObjectValueFrom(ctx, getAlertsFilterAttrTypes(), filter)
-			diags.Append(d...)
-			action.AlertsFilter = filterObj
-		} else {
-			action.AlertsFilter = types.ObjectNull(getAlertsFilterAttrTypes())
-		}
-
-		actions = append(actions, action)
-	}
-
-	actionsList, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getActionsAttrTypes()}, actions)
-	diags.Append(d...)
-	return actionsList, diags
-}
-
-// convertActionsToAPI converts Terraform actions list to API actions.
-func convertActionsToAPI(ctx context.Context, actionsList types.List) ([]models.AlertingRuleAction, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	if !typeutils.IsKnown(actionsList) {
-		return nil, diags
-	}
-
-	var actions []actionModel
-	diags.Append(actionsList.ElementsAs(ctx, &actions, false)...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	apiActions := make([]models.AlertingRuleAction, 0, len(actions))
-	for i, action := range actions {
-		apiAction := models.AlertingRuleAction{
-			Group: action.Group.ValueString(),
-			ID:    action.ID.ValueString(),
-		}
-
-		// Params from JSON
-		if params := typeutils.NormalizedTypeToMap[any](action.Params, path.Root("actions").AtListIndex(i).AtName("params"), &diags); params != nil {
-			apiAction.Params = params
-		}
-
-		// Frequency - extract from object
-		if typeutils.IsKnown(action.Frequency) && !action.Frequency.IsNull() {
-			var freq frequencyModel
-			diags.Append(action.Frequency.As(ctx, &freq, basetypes.ObjectAsOptions{})...)
-			// Only create Frequency if both required fields are present
-			if typeutils.IsKnown(freq.Summary) && typeutils.IsKnown(freq.NotifyWhen) {
-				apiAction.Frequency = &models.ActionFrequency{
-					Summary:    freq.Summary.ValueBool(),
-					NotifyWhen: freq.NotifyWhen.ValueString(),
-				}
-				if typeutils.IsKnown(freq.Throttle) && freq.Throttle.ValueString() != "" {
-					apiAction.Frequency.Throttle = freq.Throttle.ValueStringPointer()
-				}
-			}
-		}
-
-		// Alerts filter - extract from object
-		if typeutils.IsKnown(action.AlertsFilter) && !action.AlertsFilter.IsNull() {
-			var filter alertsFilterModel
-			diags.Append(action.AlertsFilter.As(ctx, &filter, basetypes.ObjectAsOptions{})...)
-			apiAction.AlertsFilter = &models.ActionAlertsFilter{}
-
-			if typeutils.IsKnown(filter.Kql) {
-				kql := filter.Kql.ValueString()
-				apiAction.AlertsFilter.Kql = &kql
-			}
-
-			if typeutils.IsKnown(filter.Timeframe) && !filter.Timeframe.IsNull() {
-				var tf timeframeModel
-				diags.Append(filter.Timeframe.As(ctx, &tf, basetypes.ObjectAsOptions{})...)
-				var days []int64
-				diags.Append(tf.Days.ElementsAs(ctx, &days, false)...)
-
-				int32Days := make([]int32, len(days))
-				for j, d := range days {
-					int32Days[j] = int32(d)
-				}
-
-				apiAction.AlertsFilter.Timeframe = &models.AlertsFilterTimeframe{
-					Days:       int32Days,
-					Timezone:   tf.Timezone.ValueString(),
-					HoursStart: tf.HoursStart.ValueString(),
-					HoursEnd:   tf.HoursEnd.ValueString(),
-				}
-			}
-		}
-
-		apiActions = append(apiActions, apiAction)
-	}
-
-	return apiActions, diags
 }

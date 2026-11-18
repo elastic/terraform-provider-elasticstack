@@ -27,7 +27,9 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[tagsDataSourceModel](
 		entitycore.ComponentKibana,
 		"tags",
-		getDataSourceSchema,
-		readTagsDataSource,
+		entitycore.KibanaDataSourceOptions[tagsDataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readTagsDataSource,
+		},
 	)
 }

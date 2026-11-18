@@ -25,21 +25,20 @@ import (
 // Data holds the Terraform state for the snapshot repository resource.
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String `tfsdk:"id"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
-	Name                    types.String `tfsdk:"name"`
-	Verify                  types.Bool   `tfsdk:"verify"`
-	Fs                      types.Object `tfsdk:"fs"`
-	URL                     types.Object `tfsdk:"url"`
-	Azure                   types.Object `tfsdk:"azure"`
-	Gcs                     types.Object `tfsdk:"gcs"`
-	S3                      types.Object `tfsdk:"s3"`
-	Hdfs                    types.Object `tfsdk:"hdfs"`
+	entitycore.ElasticsearchConnectionField
+	ID     types.String `tfsdk:"id"`
+	Name   types.String `tfsdk:"name"`
+	Verify types.Bool   `tfsdk:"verify"`
+	Fs     types.Object `tfsdk:"fs"`
+	URL    types.Object `tfsdk:"url"`
+	Azure  types.Object `tfsdk:"azure"`
+	Gcs    types.Object `tfsdk:"gcs"`
+	S3     types.Object `tfsdk:"s3"`
+	Hdfs   types.Object `tfsdk:"hdfs"`
 }
 
-func (d Data) GetID() types.String                    { return d.ID }
-func (d Data) GetResourceID() types.String            { return d.Name }
-func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+func (d Data) GetID() types.String         { return d.ID }
+func (d Data) GetResourceID() types.String { return d.Name }
 
 // CommonSettings holds fields shared across most repository types.
 type CommonSettings struct {
@@ -91,15 +90,17 @@ type AzureSettings struct {
 // S3Settings is used for the `s3` block.
 type S3Settings struct {
 	CommonSettings
-	Bucket               types.String `tfsdk:"bucket"`
-	Endpoint             types.String `tfsdk:"endpoint"`
-	Client               types.String `tfsdk:"client"`
-	BasePath             types.String `tfsdk:"base_path"`
-	ServerSideEncryption types.Bool   `tfsdk:"server_side_encryption"`
-	BufferSize           types.String `tfsdk:"buffer_size"`
-	CannedACL            types.String `tfsdk:"canned_acl"`
-	StorageClass         types.String `tfsdk:"storage_class"`
-	PathStyleAccess      types.Bool   `tfsdk:"path_style_access"`
+	Bucket                 types.String `tfsdk:"bucket"`
+	Endpoint               types.String `tfsdk:"endpoint"`
+	Client                 types.String `tfsdk:"client"`
+	BasePath               types.String `tfsdk:"base_path"`
+	ServerSideEncryption   types.Bool   `tfsdk:"server_side_encryption"`
+	BufferSize             types.String `tfsdk:"buffer_size"`
+	CannedACL              types.String `tfsdk:"canned_acl"`
+	StorageClass           types.String `tfsdk:"storage_class"`
+	PathStyleAccess        types.Bool   `tfsdk:"path_style_access"`
+	DisableChunkedEncoding types.Bool   `tfsdk:"disable_chunked_encoding"`
+	AlwaysSignRequests     types.Bool   `tfsdk:"always_sign_requests"`
 }
 
 // HdfsSettings is used for the `hdfs` block.

@@ -20,6 +20,7 @@ package monitor
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-validators/resourcevalidator"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -39,7 +40,7 @@ func newResource() *Resource {
 			entitycore.KibanaResourceOptions[tfModelV0]{
 				Schema: monitorSchema,
 				Read:   readMonitor,
-				Delete: deleteMonitor,
+				Delete: entitycore.SimpleKibanaDelete[tfModelV0](kibanaoapi.DeleteMonitor),
 				Create: createMonitor,
 				Update: updateMonitor,
 			},

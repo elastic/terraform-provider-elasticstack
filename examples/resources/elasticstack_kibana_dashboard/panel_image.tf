@@ -8,7 +8,7 @@ resource "elasticstack_kibana_dashboard" "image_drilldown_target" {
   description      = "Target dashboard for the image panel dashboard drilldown"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 }
 
 resource "elasticstack_kibana_dashboard" "with_image_panel" {
@@ -16,7 +16,7 @@ resource "elasticstack_kibana_dashboard" "with_image_panel" {
   description      = "Typed image panel: URL source, object_fit, dashboard + URL drilldowns"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [{
     type = "image"

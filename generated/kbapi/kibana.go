@@ -68,4 +68,17 @@
 
 package kbapi
 
+// DashboardFilters_Item is the dashboard filter union item. Upstream now
+// publishes this as kbn-as-code-filters-schema_asCodeFilterSchema.
+type DashboardFilters_Item = KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema
+
+// KibanaHTTPAPIsLensPanelFilters_Item is the Lens panel filter item. Upstream
+// now $refs asCodeFilterSchema instead of an inline filters union.
+type KibanaHTTPAPIsLensPanelFilters_Item = KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema
+
+// Discover session tab filters and SLO group-overview filters now $ref
+// asCodeFilterSchema instead of an inline union item type.
+type KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_0_Tabs_0_Filters_Item = KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema
+type KibanaHTTPAPIsSloGroupOverviewEmbeddable_GroupFilters_Filters_Item = KibanaHTTPAPIsKbnAsCodeFiltersSchemaAsCodeFilterSchema
+
 //go:generate make clean all

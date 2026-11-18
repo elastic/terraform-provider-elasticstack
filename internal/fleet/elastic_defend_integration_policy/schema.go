@@ -18,6 +18,7 @@
 package elasticdefendintegrationpolicy
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -25,9 +26,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -48,12 +49,16 @@ func resourceSchema() schema.Schema {
 				},
 			},
 			"policy_id": schema.StringAttribute{
-				Description: "Unique identifier of the Elastic Defend integration policy. Used as the import key.",
-				Computed:    true,
-				Optional:    true,
+				Description: "Unique identifier of the Elastic Defend integration policy. Used as the import key. " +
+					"When set, the policy is created with this ID; otherwise Kibana assigns one. Changing it forces replacement.",
+				Computed: true,
+				Optional: true,
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
+				},
+				Validators: []validator.String{
+					stringvalidator.LengthAtLeast(1),
 				},
 			},
 			"name": schema.StringAttribute{
@@ -80,6 +85,17 @@ func resourceSchema() schema.Schema {
 					listvalidator.SizeAtLeast(1),
 				},
 			},
+			"additional_datastreams_permissions": schema.ListAttribute{
+				Description: "Additional data stream permissions granted to the integration policy, for example `logs-nginx-*`. " +
+					"Requires Elastic Stack >= 9.1.0. Removing this attribute from configuration does not revoke previously " +
+					"granted permissions on the server; set it to `[]` to clear them.",
+				ElementType: types.StringType,
+				Optional:    true,
+				Computed:    true,
+				PlanModifiers: []planmodifier.List{
+					listplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"description": schema.StringAttribute{
 				Description: "The description of the integration policy.",
 				Optional:    true,
@@ -98,17 +114,9 @@ func resourceSchema() schema.Schema {
 				Description: "The version of the Elastic Defend integration package.",
 				Required:    true,
 			},
-			"space_ids": schema.SetAttribute{
-				Description: "The Kibana space IDs where this integration policy is available. " +
-					"When set, must match the space_ids of the referenced agent policy. " +
-					"If not set, will be inherited from the agent policy.",
-				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
-				},
-			},
+			"space_ids": kbschema.SpaceIDsAttribute("The Kibana space IDs where this integration policy is available. " +
+				"When set, must match the space_ids of the referenced agent policy. " +
+				"If not set, will be inherited from the agent policy."),
 			attrPreset: schema.StringAttribute{
 				Description: "Elastic Defend preset configuration. Maps to `endpointConfig.preset` in the Defend API. " +
 					"Common values include `\"NGAv1\"`, `\"NGAV\"`, `\"dataCollection\"`, `\"EDRComplete\"`, `\"EDREssential\"`.",
@@ -171,7 +179,7 @@ func protectionModeSchema(description string) schema.SingleNestedAttribute {
 		Default:     objectdefault.StaticValue(protectionModeDefaultValue()),
 		Attributes: map[string]schema.Attribute{
 			attrMode: schema.StringAttribute{
-				Description: "Protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
+				Description: descProtectionMode,
 				Computed:    true,
 				Default:     stringdefault.StaticString("off"),
 				Optional:    true,
@@ -180,7 +188,7 @@ func protectionModeSchema(description string) schema.SingleNestedAttribute {
 				},
 			},
 			attrSupported: schema.BoolAttribute{
-				Description: "Whether this protection is supported on the platform.",
+				Description: descProtectionSupported,
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 				Optional:    true,
@@ -197,7 +205,7 @@ func behaviorProtectionSchema(description string) schema.SingleNestedAttribute {
 		Default:     objectdefault.StaticValue(behaviorProtectionDefaultValue()),
 		Attributes: map[string]schema.Attribute{
 			attrMode: schema.StringAttribute{
-				Description: "Protection mode. Valid values: `\"off\"`, `\"detect\"`, `\"prevent\"`.",
+				Description: descProtectionMode,
 				Computed:    true,
 				Default:     stringdefault.StaticString("off"),
 				Optional:    true,
@@ -206,7 +214,7 @@ func behaviorProtectionSchema(description string) schema.SingleNestedAttribute {
 				},
 			},
 			attrSupported: schema.BoolAttribute{
-				Description: "Whether this protection is supported on the platform.",
+				Description: descProtectionSupported,
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 				Optional:    true,
@@ -216,6 +224,56 @@ func behaviorProtectionSchema(description string) schema.SingleNestedAttribute {
 				Computed:    true,
 				Default:     booldefault.StaticBool(false),
 				Optional:    true,
+			},
+		},
+	}
+}
+
+func memoryProtectionSchema(description string) schema.SingleNestedAttribute {
+	return schema.SingleNestedAttribute{
+		Computed:    true,
+		Optional:    true,
+		Description: description,
+		Default:     objectdefault.StaticValue(memoryProtectionDefaultValue()),
+		Attributes: map[string]schema.Attribute{
+			attrMode: schema.StringAttribute{
+				Description: descProtectionMode,
+				Computed:    true,
+				Default:     stringdefault.StaticString("off"),
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("off", "detect", "prevent"),
+				},
+			},
+			attrSupported: schema.BoolAttribute{
+				Description: descProtectionSupported,
+				Computed:    true,
+				Default:     booldefault.StaticBool(true),
+				Optional:    true,
+			},
+			attrCustomYara: schema.BoolAttribute{
+				Description: "Whether custom YARA signatures are enabled for memory protection.",
+				Optional:    true,
+			},
+		},
+	}
+}
+
+func deviceControlSchema(description string) schema.SingleNestedAttribute {
+	return schema.SingleNestedAttribute{
+		Description: description,
+		Optional:    true,
+		Attributes: map[string]schema.Attribute{
+			attrEnabled: schema.BoolAttribute{
+				Description: "Whether device control is enabled.",
+				Optional:    true,
+			},
+			attrUsbStorage: schema.StringAttribute{
+				Description: "Access level for USB storage devices. Valid values: `\"audit\"`, `\"read_only\"`, `\"no_execute\"`, `\"deny_all\"`.",
+				Optional:    true,
+				Validators: []validator.String{
+					stringvalidator.OneOf("audit", "read_only", "no_execute", "deny_all"),
+				},
 			},
 		},
 	}
@@ -232,6 +290,14 @@ func protectionModeDefaultValue() types.Object {
 	return types.ObjectValueMust(protectionModeAttrTypes(), map[string]attr.Value{
 		attrMode:      types.StringValue("off"),
 		attrSupported: types.BoolValue(true),
+	})
+}
+
+func memoryProtectionDefaultValue() types.Object {
+	return types.ObjectValueMust(memoryProtectionAttrTypes(), map[string]attr.Value{
+		attrMode:       types.StringValue("off"),
+		attrSupported:  types.BoolValue(true),
+		attrCustomYara: types.BoolNull(),
 	})
 }
 
@@ -268,6 +334,7 @@ func windowsPopupDefaultValue() types.Object {
 		attrRansomware:         popupItemDefaultValue(),
 		attrMemoryProtection:   popupItemDefaultValue(),
 		attrBehaviorProtection: popupItemDefaultValue(),
+		attrDeviceControl:      popupItemDefaultValue(),
 	})
 }
 
@@ -292,24 +359,28 @@ func windowsPolicySchema() schema.Attribute {
 						Description: descCollectFileEvents,
 						Optional:    true,
 					},
-					"dll_and_driver_load": schema.BoolAttribute{
+					attrDllAndDriverLoad: schema.BoolAttribute{
 						Description: "Collect DLL and driver load events.",
 						Optional:    true,
 					},
-					"dns": schema.BoolAttribute{
-						Description: "Collect DNS events.",
+					attrDNS: schema.BoolAttribute{
+						Description: descCollectDNSEvents,
 						Optional:    true,
 					},
-					"registry": schema.BoolAttribute{
+					attrRegistry: schema.BoolAttribute{
 						Description: "Collect registry events.",
 						Optional:    true,
 					},
-					"security": schema.BoolAttribute{
+					attrSecurity: schema.BoolAttribute{
 						Description: "Collect security events.",
 						Optional:    true,
 					},
-					"authentication": schema.BoolAttribute{
+					attrAuthentication: schema.BoolAttribute{
 						Description: "Collect authentication events.",
+						Optional:    true,
+					},
+					attrCredentialAccess: schema.BoolAttribute{
+						Description: "Collect credential access events.",
 						Optional:    true,
 					},
 				},
@@ -330,7 +401,7 @@ func windowsPolicySchema() schema.Attribute {
 						Optional:    true,
 					},
 					attrOnWriteScan: schema.BoolAttribute{
-						Description: "Whether on-write scan is enabled.",
+						Description: descOnWriteScan,
 						Optional:    true,
 					},
 					attrNotifyUser: schema.BoolAttribute{
@@ -340,8 +411,9 @@ func windowsPolicySchema() schema.Attribute {
 				},
 			},
 			attrRansomware:         protectionModeSchema("Windows ransomware protection settings."),
-			attrMemoryProtection:   protectionModeSchema("Windows memory protection settings."),
+			attrMemoryProtection:   memoryProtectionSchema("Windows memory protection settings."),
 			attrBehaviorProtection: behaviorProtectionSchema("Windows behavior protection settings."),
+			attrDeviceControl:      deviceControlSchema("Windows device control settings."),
 			attrPopup: schema.SingleNestedAttribute{
 				Description: "Windows popup notification settings.",
 				Computed:    true,
@@ -352,6 +424,7 @@ func windowsPolicySchema() schema.Attribute {
 					attrRansomware:         popupItemSchema(),
 					attrMemoryProtection:   popupItemSchema(),
 					attrBehaviorProtection: popupItemSchema(),
+					attrDeviceControl:      popupItemSchema(),
 				},
 			},
 			attrLogging: schema.SingleNestedAttribute{
@@ -367,7 +440,7 @@ func windowsPolicySchema() schema.Attribute {
 					},
 				},
 			},
-			"antivirus_registration": schema.SingleNestedAttribute{
+			attrAntivirusRegistration: schema.SingleNestedAttribute{
 				Description: "Windows antivirus registration settings.",
 				Computed:    true,
 				Optional:    true,
@@ -390,7 +463,7 @@ func windowsPolicySchema() schema.Attribute {
 					},
 				},
 			},
-			"attack_surface_reduction": schema.SingleNestedAttribute{
+			attrAttackSurfaceReduction: schema.SingleNestedAttribute{
 				Description: "Windows attack surface reduction settings.",
 				Computed:    true,
 				Optional:    true,
@@ -437,6 +510,14 @@ func macPolicySchema() schema.Attribute {
 						Description: descCollectFileEvents,
 						Optional:    true,
 					},
+					attrDNS: schema.BoolAttribute{
+						Description: descCollectDNSEvents,
+						Optional:    true,
+					},
+					attrSecurity: schema.BoolAttribute{
+						Description: "Collect security events.",
+						Optional:    true,
+					},
 				},
 			},
 			attrMalware: schema.SingleNestedAttribute{
@@ -455,7 +536,7 @@ func macPolicySchema() schema.Attribute {
 						Optional:    true,
 					},
 					attrOnWriteScan: schema.BoolAttribute{
-						Description: "Whether on-write scan is enabled.",
+						Description: descOnWriteScan,
 						Optional:    true,
 					},
 					attrNotifyUser: schema.BoolAttribute{
@@ -464,15 +545,19 @@ func macPolicySchema() schema.Attribute {
 					},
 				},
 			},
-			attrMemoryProtection:   protectionModeSchema("macOS memory protection settings."),
+			attrRansomware:         protectionModeSchema("macOS ransomware protection settings."),
+			attrMemoryProtection:   memoryProtectionSchema("macOS memory protection settings."),
 			attrBehaviorProtection: behaviorProtectionSchema("macOS behavior protection settings."),
+			attrDeviceControl:      deviceControlSchema("macOS device control settings."),
 			attrPopup: schema.SingleNestedAttribute{
 				Description: "macOS popup notification settings.",
 				Optional:    true,
 				Attributes: map[string]schema.Attribute{
 					attrMalware:            popupItemSchema(),
+					attrRansomware:         popupItemSchema(),
 					attrMemoryProtection:   popupItemSchema(),
 					attrBehaviorProtection: popupItemSchema(),
+					attrDeviceControl:      popupItemSchema(),
 				},
 			},
 			attrLogging: schema.SingleNestedAttribute{
@@ -513,12 +598,16 @@ func linuxPolicySchema() schema.Attribute {
 						Description: descCollectFileEvents,
 						Optional:    true,
 					},
-					"session_data": schema.BoolAttribute{
+					attrSessionData: schema.BoolAttribute{
 						Description: "Collect session data events.",
 						Optional:    true,
 					},
-					"tty_io": schema.BoolAttribute{
+					attrTtyIO: schema.BoolAttribute{
 						Description: "Collect TTY I/O events.",
+						Optional:    true,
+					},
+					attrDNS: schema.BoolAttribute{
+						Description: descCollectDNSEvents,
 						Optional:    true,
 					},
 				},
@@ -538,9 +627,13 @@ func linuxPolicySchema() schema.Attribute {
 						Description: descBlocklistEnabled,
 						Optional:    true,
 					},
+					attrOnWriteScan: schema.BoolAttribute{
+						Description: descOnWriteScan,
+						Optional:    true,
+					},
 				},
 			},
-			attrMemoryProtection:   protectionModeSchema("Linux memory protection settings."),
+			attrMemoryProtection:   memoryProtectionSchema("Linux memory protection settings."),
 			attrBehaviorProtection: behaviorProtectionSchema("Linux behavior protection settings."),
 			attrPopup: schema.SingleNestedAttribute{
 				Description: "Linux popup notification settings.",

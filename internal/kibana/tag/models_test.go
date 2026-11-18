@@ -51,9 +51,7 @@ func TestTagModel_toAPIModel(t *testing.T) {
 
 	t.Run("omits nil color and description", func(t *testing.T) {
 		model := tagModel{
-			tagBaseModel: tagBaseModel{
-				Name: types.StringValue("staging"),
-			},
+			Name: types.StringValue("staging"),
 		}
 
 		body := model.toAPIModel()
@@ -64,10 +62,8 @@ func TestTagModel_toAPIModel(t *testing.T) {
 
 	t.Run("includes color when set", func(t *testing.T) {
 		model := tagModel{
-			tagBaseModel: tagBaseModel{
-				Name:  types.StringValue("staging"),
-				Color: types.StringValue("#FF0000"),
-			},
+			Name:  types.StringValue("staging"),
+			Color: types.StringValue("#FF0000"),
 		}
 
 		body := model.toAPIModel()
@@ -77,10 +73,8 @@ func TestTagModel_toAPIModel(t *testing.T) {
 
 	t.Run("normalizes empty description to absent", func(t *testing.T) {
 		model := tagModel{
-			tagBaseModel: tagBaseModel{
-				Name:        types.StringValue("staging"),
-				Description: types.StringValue("   "),
-			},
+			Name:        types.StringValue("staging"),
+			Description: types.StringValue("   "),
 		}
 
 		body := model.toAPIModel()
@@ -89,10 +83,8 @@ func TestTagModel_toAPIModel(t *testing.T) {
 
 	t.Run("includes non-empty description", func(t *testing.T) {
 		model := tagModel{
-			tagBaseModel: tagBaseModel{
-				Name:        types.StringValue("staging"),
-				Description: types.StringValue("prod workloads"),
-			},
+			Name:        types.StringValue("staging"),
+			Description: types.StringValue("prod workloads"),
 		}
 
 		body := model.toAPIModel()
@@ -106,15 +98,11 @@ func TestTagModel_toUpdateAPIModel(t *testing.T) {
 
 	t.Run("preserves prior color when plan color is unknown", func(t *testing.T) {
 		plan := tagModel{
-			tagBaseModel: tagBaseModel{
-				Name:  types.StringValue("staging-v2"),
-				Color: types.StringUnknown(),
-			},
+			Name:  types.StringValue("staging-v2"),
+			Color: types.StringUnknown(),
 		}
 		prior := &tagModel{
-			tagBaseModel: tagBaseModel{
-				Color: types.StringValue("#AABBCC"),
-			},
+			Color: types.StringValue("#AABBCC"),
 		}
 
 		body := plan.toUpdateAPIModel(prior)
@@ -124,15 +112,11 @@ func TestTagModel_toUpdateAPIModel(t *testing.T) {
 
 	t.Run("uses plan color when known", func(t *testing.T) {
 		plan := tagModel{
-			tagBaseModel: tagBaseModel{
-				Name:  types.StringValue("staging-v2"),
-				Color: types.StringValue("#112233"),
-			},
+			Name:  types.StringValue("staging-v2"),
+			Color: types.StringValue("#112233"),
 		}
 		prior := &tagModel{
-			tagBaseModel: tagBaseModel{
-				Color: types.StringValue("#AABBCC"),
-			},
+			Color: types.StringValue("#AABBCC"),
 		}
 
 		body := plan.toUpdateAPIModel(prior)
@@ -142,15 +126,11 @@ func TestTagModel_toUpdateAPIModel(t *testing.T) {
 
 	t.Run("omits color when plan and prior color are unknown", func(t *testing.T) {
 		plan := tagModel{
-			tagBaseModel: tagBaseModel{
-				Name:  types.StringValue("staging-v2"),
-				Color: types.StringUnknown(),
-			},
+			Name:  types.StringValue("staging-v2"),
+			Color: types.StringUnknown(),
 		}
 		prior := &tagModel{
-			tagBaseModel: tagBaseModel{
-				Color: types.StringUnknown(),
-			},
+			Color: types.StringUnknown(),
 		}
 
 		body := plan.toUpdateAPIModel(prior)
@@ -159,15 +139,11 @@ func TestTagModel_toUpdateAPIModel(t *testing.T) {
 
 	t.Run("clears prior description when plan omits description", func(t *testing.T) {
 		plan := tagModel{
-			tagBaseModel: tagBaseModel{
-				Name:        types.StringValue("staging-v2"),
-				Description: types.StringNull(),
-			},
+			Name:        types.StringValue("staging-v2"),
+			Description: types.StringNull(),
 		}
 		prior := &tagModel{
-			tagBaseModel: tagBaseModel{
-				Description: types.StringValue("old description"),
-			},
+			Description: types.StringValue("old description"),
 		}
 
 		body := plan.toUpdateAPIModel(prior)

@@ -84,8 +84,6 @@ func (t InputType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (at
 // NewInputType creates a new InputType with the given attribute types
 func NewInputType(attrTypes map[string]attr.Type) InputType {
 	return InputType{
-		ObjectType: basetypes.ObjectType{
-			AttrTypes: attrTypes,
-		},
+		AttrTypes: attrTypes,
 	}
 }

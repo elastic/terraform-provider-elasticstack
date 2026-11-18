@@ -19,7 +19,6 @@ package policyshape
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -62,17 +61,8 @@ func (v InputsValue) Equal(o attr.Value) bool {
 // MapSemanticEquals returns true if the given map value is semantically equal to the current map value.
 // Disabled inputs (enabled=false) are ignored during the comparison.
 func (v InputsValue) MapSemanticEquals(ctx context.Context, priorValuable basetypes.MapValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	priorValue, ok := priorValuable.(InputsValue)
+	priorValue, ok, diags := typeutils.AssertSameType(v, priorValuable)
 	if !ok {
-		diags.AddError(
-			"Semantic Equality Check Error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", priorValuable),
-		)
 		return false, diags
 	}
 

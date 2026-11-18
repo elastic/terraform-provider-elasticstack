@@ -47,16 +47,8 @@ func readUser(ctx context.Context, client *clients.ElasticsearchScopedClient, re
 
 	// Set the fields
 	state.Username = types.StringValue(resourceID)
-	if user.Email != nil {
-		state.Email = types.StringValue(*user.Email)
-	} else {
-		state.Email = types.StringValue("")
-	}
-	if user.FullName != nil {
-		state.FullName = types.StringValue(*user.FullName)
-	} else {
-		state.FullName = types.StringValue("")
-	}
+	state.Email = stringOrEmptyValue(user.Email)
+	state.FullName = stringOrEmptyValue(user.FullName)
 	state.Enabled = types.BoolValue(user.Enabled)
 
 	// Handle metadata. The Elasticsearch API treats "no metadata set" and an

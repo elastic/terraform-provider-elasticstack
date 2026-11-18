@@ -45,7 +45,7 @@ func (m *processorConvertModel) MarshalBody() (any, diag.Diagnostics) {
 	if diags.HasError() {
 		return nil, diags
 	}
-	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody(false)
+	body.WithIgnorableTargetFieldBody = m.toIgnorableTargetFieldBody()
 
 	if typeutils.IsKnown(m.Type) {
 		body.Type = m.Type.ValueString()
@@ -57,14 +57,6 @@ func (m *processorConvertModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorConvertDataSource returns a PF data source for the convert processor.
 func NewProcessorConvertDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field whose value is to be converted.",
 			Required:    true,

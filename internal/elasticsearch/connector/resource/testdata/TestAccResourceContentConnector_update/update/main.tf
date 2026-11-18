@@ -8,11 +8,12 @@ provider "elasticstack" {
 
 resource "elasticstack_elasticsearch_connector" "test" {
   connector_id = var.connector_id
-  service_type = "postgresql"
+  service_type = "mysql"
   name         = "TF acc updated"
   description  = "updated description"
   index_name   = "content-connector-upd-${var.connector_id}"
   language     = "en"
+  is_native    = true
 
   pipeline = {
     name                   = "ent-search-generic-ingestion"
@@ -31,8 +32,8 @@ resource "elasticstack_elasticsearch_connector" "test" {
       interval = "0 45 * * * ?"
     }
     access_control = {
-      enabled  = false
-      interval = "0 0 0 * * ?"
+      enabled  = true
+      interval = "0 10 * * * ?"
     }
   }
 
@@ -42,6 +43,9 @@ resource "elasticstack_elasticsearch_connector" "test" {
     }
     incremental_sync = {
       enabled = false
+    }
+    native_connector_api_keys = {
+      enabled = true
     }
     sync_rules = {
       basic = {

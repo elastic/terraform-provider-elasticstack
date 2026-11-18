@@ -24,19 +24,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 )
 
-// alignLegacyMetricStateFromPlan is the canonical legacy_metric alignment invoked via VizConverter.AlignStateFromPlan.
-func alignLegacyMetricStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	if plan == nil || state == nil {
-		return
-	}
-	alignLegacyMetricConfigStateFromPlan(ctx, plan.LegacyMetricConfig, state.LegacyMetricConfig)
-}
-
 func alignLegacyMetricConfigStateFromPlan(ctx context.Context, plan, state *models.LegacyMetricConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
-	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, &plan.LensChartBaseTFModel, &state.LensChartBaseTFModel, plan.MetricJSON, &state.MetricJSON)
 }

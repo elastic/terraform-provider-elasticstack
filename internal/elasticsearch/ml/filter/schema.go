@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -36,13 +37,7 @@ func getSchema(_ context.Context) schema.Schema {
 			"in the `custom_rules` property of detector configuration objects. " +
 			"See the [ML Filter API documentation](https://www.elastic.co/guide/en/elasticsearch/reference/current/ml-put-filter.html) for more details.",
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				MarkdownDescription: "Internal identifier of the resource.",
-				Computed:            true,
-				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.UseStateForUnknown(),
-				},
-			},
+			"id": entitycore.IDAttribute(),
 			"filter_id": schema.StringAttribute{
 				MarkdownDescription: "A string that uniquely identifies a filter.",
 				Required:            true,

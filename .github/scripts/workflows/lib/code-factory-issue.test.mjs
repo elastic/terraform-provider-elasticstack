@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 import path from 'node:path';
+import { normalizeCompiledLock } from './compiled-lock.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -304,7 +305,7 @@ test('code-factory-issue workflow source exists and wires script modules', () =>
 });
 
 test('code-factory-issue lock file is compiled and exists', () => {
-  const lock = readFileSync(lockPath, 'utf8');
+  const lock = normalizeCompiledLock(readFileSync(lockPath, 'utf8'));
   assert.ok(lock.length > 0);
   assert.match(lock, /# gh-aw-metadata:/);
   assert.match(lock, /DO NOT EDIT/);

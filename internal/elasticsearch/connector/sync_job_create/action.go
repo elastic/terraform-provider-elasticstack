@@ -30,6 +30,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	esclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/action"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
 )
@@ -71,7 +72,7 @@ func invokeCreate(ctx context.Context, client *clients.ElasticsearchScopedClient
 	}
 
 	waitForCompletion := false
-	if !model.WaitForCompletion.IsNull() && !model.WaitForCompletion.IsUnknown() {
+	if typeutils.IsKnown(model.WaitForCompletion) {
 		waitForCompletion = model.WaitForCompletion.ValueBool()
 	}
 
@@ -107,12 +108,12 @@ func syncJobCreateParamsFromModel(model Model) (syncJobCreateParams, fwdiag.Diag
 	}
 
 	jobTypeStr := "full"
-	if !model.JobType.IsNull() && !model.JobType.IsUnknown() {
+	if typeutils.IsKnown(model.JobType) {
 		jobTypeStr = model.JobType.ValueString()
 	}
 
 	triggerMethodStr := "on_demand"
-	if !model.TriggerMethod.IsNull() && !model.TriggerMethod.IsUnknown() {
+	if typeutils.IsKnown(model.TriggerMethod) {
 		triggerMethodStr = model.TriggerMethod.ValueString()
 	}
 

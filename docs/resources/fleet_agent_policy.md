@@ -79,7 +79,7 @@ resource "elasticstack_fleet_agent_policy" "test_policy" {
 - `description` (String) The description of the agent policy.
 - `download_source_id` (String) The identifier for the Elastic Agent binary download server.
 - `fleet_server_host_id` (String) The identifier for the Fleet server host.
-- `global_data_tags` (Attributes Map) User-defined data tags to apply to all inputs. Values can be strings (string_value) or numbers (number_value) but not both. Example -- key1 = {string_value = value1}, key2 = {number_value = 42} (see [below for nested schema](#nestedatt--global_data_tags))
+- `global_data_tags` (Attributes Map) User-defined tags. Keyed by tag name; each entry must set exactly one of `string_value` or `number_value`. (see [below for nested schema](#nestedatt--global_data_tags))
 - `host_name_format` (String) Determines the format of the host.name field in events. Can be 'hostname' (short hostname, e.g., 'myhost') or 'fqdn' (fully qualified domain name, e.g., 'myhost.example.com'). Defaults to 'hostname'.
 - `inactivity_timeout` (String) The inactivity timeout for the agent policy. If an agent does not report within this time period, it will be considered inactive. Supports duration strings (e.g., '30s', '2m', '1h').
 - `is_protected` (Boolean) Enable tamper protection for this agent policy (Fleet API `is_protected`). When true, agents use uninstall tokens. Requires Elastic Stack 8.10.0 or later.
@@ -155,7 +155,10 @@ Optional:
 
 - `download_target_directory` (String) Target directory for downloading agent updates.
 - `download_timeout` (String) Timeout for downloading agent updates (e.g., '2h', '30m').
+- `features_disable_policy_change_acks_enabled` (Boolean) Disable policy change acknowledgements from agents (maps to `agent_features_disable_policy_change_acks_enabled`). Requires Elastic Stack 9.4.0 or above.
+- `features_include_tags_in_events_enabled` (Boolean) Include the agent's tags in events it sends (maps to `agent_features_include_tags_in_events_enabled`). Requires Elastic Stack 9.6.0 or above.
 - `go_max_procs` (Number) Maximum number of CPUs that the agent can use (GOMAXPROCS). Set to 0 to use all available CPUs.
+- `internal` (String) Advanced internal agent settings as free-form YAML (maps to `agent_internal`). Kibana provides no stability guarantee for the keys accepted here. Requires Elastic Stack 9.3.0 or above.
 - `logging_files_interval` (String) Interval for log file rotation (e.g., '30s', '1m', '1h').
 - `logging_files_keepfiles` (Number) Number of rotated log files to keep.
 - `logging_files_rotateeverybytes` (Number) Rotate log files when they reach this size in bytes.
@@ -170,8 +173,8 @@ Optional:
 
 Optional:
 
-- `number_value` (Number) Number value for the field. If this is set, string_value must not be defined.
-- `string_value` (String) String value for the field. If this is set, number_value must not be defined.
+- `number_value` (Number) Number value for the tag. If this is set, `string_value` must not be defined.
+- `string_value` (String) String value for the tag. If this is set, `number_value` must not be defined.
 
 
 <a id="nestedblock--kibana_connection"></a>
@@ -183,6 +186,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

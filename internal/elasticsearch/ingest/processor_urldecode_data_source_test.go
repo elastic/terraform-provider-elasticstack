@@ -34,6 +34,12 @@ func TestAccDataSourceIngestProcessorUrldecode(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "id"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "field", "my_url_to_decode"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "ignore_missing", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "target_field"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_urldecode.test", "json", expectedJSONUrldecode),
 				),
 			},
@@ -71,6 +77,18 @@ func TestAccDataSourceIngestProcessorUrldecodeOnFailure(t *testing.T) {
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_urldecode.test_on_failure", "json", expectedJSONUrldecodeOnFailure),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("on_failure_multi"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_urldecode.test_on_failure", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test_on_failure", "field", "source.url"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_urldecode.test_on_failure", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_urldecode.test_on_failure", "on_failure.0", `{"set":{"field":"error.message","value":"{{ _ingest.on_failure_message }}"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_urldecode.test_on_failure", "on_failure.1", `{"set":{"field":"error.type","value":"urldecode"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_urldecode.test_on_failure", "json", expectedJSONUrldecodeOnFailureMulti),
+				),
+			},
 		},
 	})
 }
@@ -105,6 +123,28 @@ const expectedJSONUrldecodeOnFailure = `{
 				"set": {
 					"field": "error.message",
 					"value": "{{ _ingest.on_failure_message }}"
+				}
+			}
+		]
+	}
+}`
+
+const expectedJSONUrldecodeOnFailureMulti = `{
+	"urldecode": {
+		"field": "source.url",
+		"ignore_failure": false,
+		"ignore_missing": false,
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "{{ _ingest.on_failure_message }}"
+				}
+			},
+			{
+				"set": {
+					"field": "error.type",
+					"value": "urldecode"
 				}
 			}
 		]

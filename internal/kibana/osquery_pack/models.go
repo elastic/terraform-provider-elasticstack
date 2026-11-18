@@ -35,9 +35,9 @@ import (
 
 type osqueryPackBaseModel struct {
 	entitycore.KibanaConnectionField
-	ID          types.String `tfsdk:"id"`
-	PackID      types.String `tfsdk:"pack_id"`
-	SpaceID     types.String `tfsdk:"space_id"`
+	ID     types.String `tfsdk:"id"`
+	PackID types.String `tfsdk:"pack_id"`
+	entitycore.SpaceIDField
 	Name        types.String `tfsdk:"name"`
 	Description types.String `tfsdk:"description"`
 	Enabled     types.Bool   `tfsdk:"enabled"`
@@ -72,21 +72,17 @@ var (
 
 func (m osqueryPackBaseModel) GetID() types.String         { return m.ID }
 func (m osqueryPackBaseModel) GetResourceID() types.String { return m.PackID }
-func (m osqueryPackBaseModel) GetSpaceID() types.String    { return m.SpaceID }
 
 func (m *osqueryPackBaseModel) setCompositeIdentity(spaceID, packID string) {
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: packID}).String())
+	m.ID, m.SpaceID = clients.CompositeIdentityValues(spaceID, packID)
 	m.PackID = types.StringValue(packID)
-	m.SpaceID = types.StringValue(spaceID)
 }
 
 func (osqueryPackBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *osqueryPackMinVersion,
-			ErrorMessage: fmt.Sprintf("Osquery packs require Elastic Stack v%s or later.", osqueryPackMinVersion),
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*osqueryPackMinVersion,
+		fmt.Sprintf("Osquery packs require Elastic Stack v%s or later.", osqueryPackMinVersion),
+	), nil
 }
 
 func (m *osqueryPackBaseModel) populateFromAPI(ctx context.Context, spaceID string, data *kibanaoapi.OsqueryPackDetail) diag.Diagnostics {
@@ -94,9 +90,7 @@ func (m *osqueryPackBaseModel) populateFromAPI(ctx context.Context, spaceID stri
 		return nil
 	}
 
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
 	var diags diag.Diagnostics
 
@@ -197,9 +191,9 @@ func (m *queryModel) fromAPIType(item kbapi.SecurityOsqueryAPIObjectQueriesItem)
 	return diags
 }
 
-func (m queryModel) toAPIType(ctx context.Context) (kbapi.SecurityOsqueryAPIObjectQueriesItem, diag.Diagnostics) {
+func (m queryModel) toAPIType(ctx context.Context) (kbapi.SecurityOsqueryAPIObjectQueriesItemInput, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	item := kbapi.SecurityOsqueryAPIObjectQueriesItem{}
+	item := kbapi.SecurityOsqueryAPIObjectQueriesItemInput{}
 
 	if typeutils.IsKnown(m.Query) {
 		q := m.Query.ValueString()

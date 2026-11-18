@@ -18,6 +18,7 @@
 package repository_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -36,16 +37,7 @@ func TestAccDataSourceSnapRepoMissing(t *testing.T) {
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "id"),
-					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "type"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.#", "0"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "url.#", "0"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "gcs.#", "0"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "s3.#", "0"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "azure.#", "0"),
-					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "hdfs.#", "0"),
-				),
+				ExpectError:              regexp.MustCompile(`elasticsearch_snapshot_repository not found`),
 			},
 		},
 	})
@@ -113,6 +105,66 @@ func TestAccDataSourceSnapRepoURL(t *testing.T) {
 
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.max_number_of_snapshots", "500"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_url_repo", "url.0.chunk_size", "1gb"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceSnapRepoS3(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "type", "s3"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "fs.#", "0"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "url.#", "0"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "gcs.#", "0"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "azure.#", "0"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "hdfs.#", "0"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.bucket", "test-bucket"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.client", "default"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.canned_acl", "private"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.storage_class", "standard"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.path_style_access", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.disable_chunked_encoding", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.always_sign_requests", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_s3_repo", "s3.0.server_side_encryption", "false"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccDataSourceSnapRepoFsDefaults(t *testing.T) {
+	name := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          config.Variables{"name": config.StringVariable(name)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "name", name),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "type", "fs"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.#", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.0.location", "/tmp"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.0.compress", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.0.readonly", "false"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.0.max_snapshot_bytes_per_sec", "40mb"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_snapshot_repository.test_fs_repo", "fs.0.max_number_of_snapshots", "500"),
 				),
 			},
 		},

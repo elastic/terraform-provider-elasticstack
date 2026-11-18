@@ -70,7 +70,9 @@ func injectEmptyAsNullDefault(model map[string]any) {
 	}
 }
 
-// PopulateLensMetricDefaults populates default values for Lens metric configuration (shared across XY, metric, pie, treemap, datatable, etc.).
+// PopulateLensMetricDefaults populates shared Lens metric defaults (color, format, empty_as_null).
+// XY y[] and datatable metrics[] call this through PopulateXYMetricDefaults and
+// PopulateDatatableMetricDefaults; other families call it directly or via their own wrappers.
 func PopulateLensMetricDefaults(model map[string]any) map[string]any {
 	if model == nil {
 		return model
@@ -356,6 +358,12 @@ func PopulateLegacyMetricMetricDefaults(model map[string]any) map[string]any {
 			model["show_array_values"] = false
 		}
 		injectEmptyAsNullDefault(model)
+		if _, exists := model["color"]; !exists {
+			model["color"] = map[string]any{attrType: colorTypeAuto}
+		}
+		if _, exists := model["size"]; !exists {
+			model["size"] = "m"
+		}
 	}
 
 	format, ok := model["format"].(map[string]any)
@@ -401,34 +409,8 @@ func PopulatePartitionLensAttributes(attrs map[string]any) map[string]any {
 	if !InitLensAttrs(attrs) {
 		return attrs
 	}
-	if groupBy, ok := attrs["group_by"].([]any); ok {
-		groupByMaps := make([]map[string]any, 0, len(groupBy))
-		for _, g := range groupBy {
-			if m, ok := g.(map[string]any); ok {
-				groupByMaps = append(groupByMaps, m)
-			}
-		}
-		populated := PopulatePartitionGroupByDefaults(groupByMaps)
-		for i := range groupBy {
-			if i < len(populated) {
-				groupBy[i] = populated[i]
-			}
-		}
-	}
-	if metrics, ok := attrs["metrics"].([]any); ok {
-		metricsMaps := make([]map[string]any, 0, len(metrics))
-		for _, m := range metrics {
-			if mp, ok := m.(map[string]any); ok {
-				metricsMaps = append(metricsMaps, mp)
-			}
-		}
-		populated := PopulatePartitionMetricsDefaults(metricsMaps)
-		for i := range metrics {
-			if i < len(populated) {
-				metrics[i] = populated[i]
-			}
-		}
-	}
+	PopulateMapSliceDefaultsBatch(attrs, "group_by", PopulatePartitionGroupByDefaults)
+	PopulateMapSliceDefaultsBatch(attrs, "metrics", PopulatePartitionMetricsDefaults)
 	return attrs
 }
 

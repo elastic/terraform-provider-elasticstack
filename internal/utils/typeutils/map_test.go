@@ -104,23 +104,6 @@ func TestPointerInterfaceMapFromAnyMap(t *testing.T) {
 	})
 }
 
-func TestFlipMap(t *testing.T) {
-	t.Parallel()
-
-	t.Run("flips keys and values", func(t *testing.T) {
-		t.Parallel()
-		m := map[string]string{"a": "x", "b": "y"}
-		got := typeutils.FlipMap(m)
-		require.Equal(t, map[string]string{"x": "a", "y": "b"}, got)
-	})
-
-	t.Run("empty map returns empty map", func(t *testing.T) {
-		t.Parallel()
-		got := typeutils.FlipMap(map[string]string{})
-		require.Empty(t, got)
-	})
-}
-
 func TestFlattenMap(t *testing.T) {
 	t.Parallel()
 
@@ -157,6 +140,60 @@ func TestFlattenMap(t *testing.T) {
 			require.Equal(t, tt.want, typeutils.FlattenMap(tt.input))
 		})
 	}
+}
+
+func TestSetAtPath(t *testing.T) {
+	t.Parallel()
+
+	t.Run("empty path is a no-op", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{"a": 1}
+		typeutils.SetAtPath(m, nil, "value")
+		require.Equal(t, map[string]any{"a": 1}, m)
+	})
+
+	t.Run("single segment sets leaf on root", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{}
+		typeutils.SetAtPath(m, []string{"a"}, "value")
+		require.Equal(t, map[string]any{"a": "value"}, m)
+	})
+
+	t.Run("multi segment path creates intermediate maps", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{}
+		typeutils.SetAtPath(m, []string{"a", "b", "c"}, "value")
+		require.Equal(t, map[string]any{"a": map[string]any{"b": map[string]any{"c": "value"}}}, m)
+	})
+
+	t.Run("reuses an existing intermediate map", func(t *testing.T) {
+		t.Parallel()
+		inner := map[string]any{"existing": "kept"}
+		m := map[string]any{"a": inner}
+		typeutils.SetAtPath(m, []string{"a", "b"}, "value")
+		require.Equal(t, map[string]any{"a": map[string]any{"existing": "kept", "b": "value"}}, m)
+	})
+
+	t.Run("leaf colliding with a non-map node is overwritten with a map", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{"a": "not-a-map"}
+		typeutils.SetAtPath(m, []string{"a", "b"}, "value")
+		require.Equal(t, map[string]any{"a": map[string]any{"b": "value"}}, m)
+	})
+
+	t.Run("leaf colliding with a nil intermediate is overwritten with a map", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{"a": nil}
+		typeutils.SetAtPath(m, []string{"a", "b"}, "value")
+		require.Equal(t, map[string]any{"a": map[string]any{"b": "value"}}, m)
+	})
+
+	t.Run("overwrites an existing leaf value", func(t *testing.T) {
+		t.Parallel()
+		m := map[string]any{"a": "old"}
+		typeutils.SetAtPath(m, []string{"a"}, "new")
+		require.Equal(t, map[string]any{"a": "new"}, m)
+	})
 }
 
 func TestFloat64FromMap(t *testing.T) {

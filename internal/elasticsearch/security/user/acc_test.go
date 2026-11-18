@@ -40,6 +40,7 @@ func TestAccResourceSecurityUser(t *testing.T) {
 	username := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
 	const resourceName = "elasticstack_elasticsearch_security_user.test"
 	const password = "qwerty123"
+	const updatedPassword = "qwerty456!"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -80,8 +81,9 @@ func TestAccResourceSecurityUser(t *testing.T) {
 					resource.TestCheckTypeSetElemAttr(resourceName, "roles.*", "kibana_user"),
 					resource.TestCheckTypeSetElemAttr(resourceName, "roles.*", "monitoring_user"),
 					resource.TestCheckResourceAttr(resourceName, "metadata", `{"env":"prod","owner":"platform","tier":"gold"}`),
-					resource.TestCheckResourceAttr(resourceName, "password", password),
+					resource.TestCheckResourceAttr(resourceName, "password", updatedPassword),
 					resource.TestCheckNoResourceAttr(resourceName, "password_wo_version"),
+					checks.CheckUserCannotAuthenticate(username, updatedPassword),
 				),
 			},
 			{
@@ -99,7 +101,47 @@ func TestAccResourceSecurityUser(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "metadata", `{"env":"prod","owner":"platform","tier":"gold"}`),
 					resource.TestCheckNoResourceAttr(resourceName, "password"),
 					resource.TestCheckNoResourceAttr(resourceName, "password_wo_version"),
-					checks.CheckUserCanAuthenticate(username, password),
+					checks.CheckUserCanAuthenticate(username, updatedPassword),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceSecurityUserUsernameRequiresReplace(t *testing.T) {
+	const resourceName = "elasticstack_elasticsearch_security_user.test"
+	initialUsername := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	replacementUsername := sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityUserDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(initialUsername),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "username", initialUsername),
+					resource.TestCheckResourceAttr(resourceName, "full_name", ""),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"username": config.StringVariable(replacementUsername),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "username", replacementUsername),
+					resource.TestCheckResourceAttr(resourceName, "full_name", ""),
 				),
 			},
 		},
@@ -156,6 +198,13 @@ func TestAccResourceSecurityUserWithPasswordHash(t *testing.T) {
 	}
 	passwordHash := string(passwordHashBytes)
 
+	const updatedPassword = "HashPass456!"
+	updatedPasswordHashBytes, err := bcrypt.GenerateFromPassword([]byte(updatedPassword), bcrypt.DefaultCost)
+	if err != nil {
+		t.Fatalf("failed to generate bcrypt hash for acceptance test: %s", err)
+	}
+	updatedPasswordHash := string(updatedPasswordHashBytes)
+
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceSecurityUserDestroy,
@@ -177,6 +226,19 @@ func TestAccResourceSecurityUserWithPasswordHash(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "password"),
 					resource.TestCheckNoResourceAttr(resourceName, "password_wo_version"),
 					checks.CheckUserCanAuthenticate(username, password),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_password_hash"),
+				ConfigVariables: config.Variables{
+					"username":      config.StringVariable(username),
+					"password_hash": config.StringVariable(updatedPasswordHash),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "password_hash", updatedPasswordHash),
+					resource.TestCheckNoResourceAttr(resourceName, "password"),
+					checks.CheckUserCanAuthenticate(username, updatedPassword),
 				),
 			},
 		},
@@ -336,6 +398,7 @@ func TestAccResourceSecurityUserFromSDK(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_user.test", "username", username),
 					resource.TestCheckTypeSetElemAttr("elasticstack_elasticsearch_security_user.test", "roles.*", "kibana_user"),
+					resource.TestCheckNoResourceAttr("elasticstack_elasticsearch_security_user.test", "metadata"),
 				),
 			},
 		},

@@ -19,16 +19,16 @@ package securityuser
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -43,12 +43,17 @@ type userDataSourceModel struct {
 	Enabled  types.Bool           `tfsdk:"enabled"`
 }
 
+func (m userDataSourceModel) GetID() types.String         { return m.ID }
+func (m userDataSourceModel) GetResourceID() types.String { return m.Username }
+
 func NewUserDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[userDataSourceModel](
 		entitycore.ComponentElasticsearch,
 		"security_user",
-		getUserDataSourceSchema,
-		readUserDataSource,
+		entitycore.ElasticsearchDataSourceOptions[userDataSourceModel]{
+			Schema: getUserDataSourceSchema,
+			Read:   readUserDataSource,
+		},
 	)
 }
 
@@ -90,62 +95,43 @@ func getUserDataSourceSchema(_ context.Context) schema.Schema {
 	}
 }
 
-func readUserDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config userDataSourceModel) (userDataSourceModel, diag.Diagnostics) {
+func readUserDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, resourceID string, config userDataSourceModel) (userDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	username := config.Username.ValueString()
-
-	id, idDiags := esClient.ID(ctx, username)
+	id, idDiags := esClient.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	config.ID = types.StringValue(id.String())
 
-	user, userDiags := elasticsearch.GetUser(ctx, esClient, username)
+	user, userDiags := elasticsearch.GetUser(ctx, esClient, resourceID)
 	diags.Append(userDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	if user == nil {
-		config.ID = types.StringValue("")
-		config.FullName = types.StringNull()
-		config.Email = types.StringNull()
-		config.Roles = types.SetNull(types.StringType)
-		config.Metadata = jsontypes.NewNormalizedNull()
-		config.Enabled = types.BoolNull()
-		config.Username = types.StringValue(username)
-		return config, diags
+		return config, false, diags
 	}
 
-	if user.Email != nil {
-		config.Email = types.StringValue(*user.Email)
-	} else {
-		config.Email = types.StringValue("")
-	}
-	if user.FullName != nil {
-		config.FullName = types.StringValue(*user.FullName)
-	} else {
-		config.FullName = types.StringValue("")
-	}
+	config.Email = stringOrEmptyValue(user.Email)
+	config.FullName = stringOrEmptyValue(user.FullName)
 
 	rolesSet, d := types.SetValueFrom(ctx, types.StringType, user.Roles)
 	diags.Append(d...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	config.Roles = rolesSet
 
-	metadata, err := json.Marshal(user.Metadata)
-	if err != nil {
-		diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
-		return config, diags
+	config.Metadata = typeutils.MarshalToNormalized(user.Metadata, path.Root("metadata"), &diags)
+	if diags.HasError() {
+		return config, false, diags
 	}
-	config.Metadata = jsontypes.NewNormalizedValue(string(metadata))
 
 	config.Enabled = types.BoolValue(user.Enabled)
-	config.Username = types.StringValue(username)
+	config.Username = types.StringValue(resourceID)
 
-	return config, diags
+	return config, true, diags
 }

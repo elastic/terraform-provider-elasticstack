@@ -22,6 +22,7 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/synonyms/getsynonym"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/synonyms/putsynonym"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -40,12 +41,14 @@ func GetSynonymSet(ctx context.Context, apiClient *clients.ElasticsearchScopedCl
 	from := 0
 
 	for {
-		res, err := typedClient.Synonyms.GetSynonym(synonymSetID).From(from).Size(synonymPageSize).Do(ctx)
-		if err != nil {
-			if IsNotFoundElasticsearchError(err) {
-				return nil, nil
-			}
-			return nil, diagutil.FrameworkDiagFromError(err)
+		res, diags := CallOrNotFound(func() (*getsynonym.Response, error) {
+			return typedClient.Synonyms.GetSynonym(synonymSetID).From(from).Size(synonymPageSize).Do(ctx)
+		}, "Unable to get synonym set")
+		if diags.HasError() {
+			return nil, diags
+		}
+		if res == nil {
+			return nil, nil
 		}
 
 		allRules = append(allRules, res.SynonymsSet...)

@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"reflect"
 
 	getconnector "github.com/elastic/go-elasticsearch/v8/typedapi/connector/get"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
@@ -34,6 +33,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	fwtypes "github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -64,32 +64,34 @@ type ContentConnectorDataSourceModel struct {
 	SyncNow                          fwtypes.Bool         `tfsdk:"sync_now"`
 }
 
+// GetID returns the composite data source id.
+func (m ContentConnectorDataSourceModel) GetID() fwtypes.String { return m.ID }
+
+// GetResourceID returns the configured connector_id.
+func (m ContentConnectorDataSourceModel) GetResourceID() fwtypes.String { return m.ConnectorID }
+
 var _ entitycore.WithVersionRequirements = ContentConnectorDataSourceModel{}
 
 func readContentConnectorDataSource(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
+	connectorID string,
 	model ContentConnectorDataSourceModel,
-) (ContentConnectorDataSourceModel, diag.Diagnostics) {
+) (ContentConnectorDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	connectorID := model.ConnectorID.ValueString()
 	resp, getDiags := esclient.GetConnector(ctx, client, connectorID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
-		return model, diags
+		return model, false, diags
 	}
 
 	if resp == nil {
-		diags.AddError(
-			"Connector not found",
-			fmt.Sprintf("Connector %q was not found.", connectorID),
-		)
-		return model, diags
+		return model, false, diags
 	}
 
 	populateContentConnectorDataSourceFromAPI(ctx, client, connectorID, resp, &model, &diags)
-	return model, diags
+	return model, !diags.HasError(), diags
 }
 
 func populateContentConnectorDataSourceFromAPI(
@@ -116,9 +118,9 @@ func populateContentConnectorDataSourceFromAPI(
 	model.LastIncrementalSyncScheduledAt = connectorDateTimeToString(resp.LastIncrementalSyncScheduledAt)
 	model.Error = typeutils.StringishPointerValue(resp.Error)
 
-	model.Filtering = marshalConnectorJSONField("filtering", resp.Filtering, diags)
-	model.CustomScheduling = marshalConnectorJSONField("custom_scheduling", resp.CustomScheduling, diags)
-	model.Configuration = marshalConnectorJSONField("configuration", resp.Configuration, diags)
+	model.Filtering = typeutils.MarshalToNormalized(resp.Filtering, path.Root("filtering"), diags)
+	model.CustomScheduling = typeutils.MarshalToNormalized(resp.CustomScheduling, path.Root("custom_scheduling"), diags)
+	model.Configuration = typeutils.MarshalToNormalized(resp.Configuration, path.Root("configuration"), diags)
 	model.SyncCursor = marshalConnectorRawJSONField("sync_cursor", resp.SyncCursor, diags)
 	model.SyncNow = fwtypes.BoolValue(resp.SyncNow)
 
@@ -141,36 +143,6 @@ func connectorSyncStatusToString(status *syncstatus.SyncStatus) fwtypes.String {
 
 func connectorDateTimeToString(dt estypes.DateTime) fwtypes.String {
 	return typeutils.ElasticDateTimeToStringValue(dt)
-}
-
-func isNilValue(v any) bool {
-	if v == nil {
-		return true
-	}
-	rv := reflect.ValueOf(v)
-	switch rv.Kind() {
-	case reflect.Map, reflect.Slice, reflect.Pointer, reflect.Interface:
-		return rv.IsNil()
-	}
-	return false
-}
-
-func marshalConnectorJSONField(attr string, value any, diags *diag.Diagnostics) jsontypes.Normalized {
-	if isNilValue(value) {
-		return jsontypes.NewNormalizedNull()
-	}
-	encoded, err := json.Marshal(value)
-	if err != nil {
-		diags.AddError(
-			"Failed to encode connector field",
-			fmt.Sprintf("%s: %s", attr, err.Error()),
-		)
-		return jsontypes.NewNormalizedNull()
-	}
-	if string(encoded) == connector.JSONNullLiteral {
-		return jsontypes.NewNormalizedNull()
-	}
-	return jsontypes.NewNormalizedValue(string(encoded))
 }
 
 func marshalConnectorRawJSONField(attr string, raw json.RawMessage, diags *diag.Diagnostics) jsontypes.Normalized {

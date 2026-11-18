@@ -52,29 +52,9 @@ func (m *processorAppendModel) MarshalBody() (any, diag.Diagnostics) {
 		body.Field = m.Field.ValueString()
 	}
 
-	if typeutils.IsKnown(m.Value) {
-		elems := make([]string, 0, len(m.Value.Elements()))
-		for _, elem := range m.Value.Elements() {
-			str, ok := elem.(types.String)
-			if !ok || !typeutils.IsKnown(str) {
-				if !ok {
-					diags.AddError("Invalid value element type", "expected types.String")
-				} else {
-					diags.AddError("Unknown value element", "value elements cannot be unknown")
-				}
-				continue
-			}
-			elems = append(elems, str.ValueString())
-		}
-		body.Value = elems
-	}
+	body.Value = typeutils.StringElements(m.Value, &diags)
 
-	if m.AllowDuplicates.IsNull() || m.AllowDuplicates.IsUnknown() {
-		m.AllowDuplicates = types.BoolValue(true)
-		body.AllowDuplicates = true
-	} else {
-		body.AllowDuplicates = m.AllowDuplicates.ValueBool()
-	}
+	body.AllowDuplicates = typeutils.BoolDefault(&m.AllowDuplicates, true)
 
 	if typeutils.IsKnown(m.MediaType) {
 		body.MediaType = m.MediaType.ValueString()
@@ -86,14 +66,6 @@ func (m *processorAppendModel) MarshalBody() (any, diag.Diagnostics) {
 // NewProcessorAppendDataSource returns a PF data source for the append processor.
 func NewProcessorAppendDataSource() datasource.DataSource {
 	attrs := map[string]schema.Attribute{
-		"id": schema.StringAttribute{
-			Description: descIdentifierWithPeriod,
-			Computed:    true,
-		},
-		attrJSON: schema.StringAttribute{
-			Description: descJSONDataSource,
-			Computed:    true,
-		},
 		attrField: schema.StringAttribute{
 			Description: "The field to be appended to.",
 			Required:    true,

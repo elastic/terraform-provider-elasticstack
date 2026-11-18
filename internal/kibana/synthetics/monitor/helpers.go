@@ -24,25 +24,25 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func int64ToSyntheticsIcmpMonitorFieldsWait(v types.Int64) *kbapi.SyntheticsIcmpMonitorFields_Wait {
+func int64ToKibanaHTTPAPIsIcmpMonitorFieldsWait(v types.Int64) *kbapi.KibanaHTTPAPIsIcmpMonitorFields_Wait {
 	if v.IsNull() || v.IsUnknown() {
 		return nil
 	}
 
-	wait := &kbapi.SyntheticsIcmpMonitorFields_Wait{}
-	if err := wait.FromSyntheticsIcmpMonitorFieldsWait0(strconv.FormatInt(v.ValueInt64(), 10)); err != nil {
+	wait := &kbapi.KibanaHTTPAPIsIcmpMonitorFields_Wait{}
+	if err := wait.FromKibanaHTTPAPIsIcmpMonitorFieldsWait0(strconv.FormatInt(v.ValueInt64(), 10)); err != nil {
 		return nil
 	}
 	return wait
 }
 
-func int64ToSyntheticsHTTPMonitorFieldsMaxRedirects(v types.Int64) *kbapi.SyntheticsHttpMonitorFields_MaxRedirects {
+func int64ToSyntheticsHTTPMonitorFieldsMaxRedirects(v types.Int64) *kbapi.KibanaHTTPAPIsHttpMonitorFields_MaxRedirects {
 	if v.IsNull() || v.IsUnknown() {
 		return nil
 	}
 
-	maxRedirects := &kbapi.SyntheticsHttpMonitorFields_MaxRedirects{}
-	if err := maxRedirects.FromSyntheticsHttpMonitorFieldsMaxRedirects0(strconv.FormatInt(v.ValueInt64(), 10)); err != nil {
+	maxRedirects := &kbapi.KibanaHTTPAPIsHttpMonitorFields_MaxRedirects{}
+	if err := maxRedirects.FromKibanaHTTPAPIsHttpMonitorFieldsMaxRedirects0(strconv.FormatInt(v.ValueInt64(), 10)); err != nil {
 		return nil
 	}
 	return maxRedirects

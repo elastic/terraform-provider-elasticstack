@@ -19,8 +19,21 @@ package panelkit
 
 import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// AttributeNames returns the names of attrs. Callers that need to enumerate a schema's attribute
+// names without depending on the full schema (e.g. a dashboard resource's state upgrader, which
+// relocates flat v0 attributes into a nested block) should use this instead of hardcoding a
+// duplicate list that could drift from the schema.
+func AttributeNames(attrs map[string]schema.Attribute) []string {
+	names := make([]string, 0, len(attrs))
+	for name := range attrs {
+		names = append(names, name)
+	}
+	return names
+}
 
 // ResolvePanelAttrsShape detects whether attrs carries a flat-keyed representation (all flatKeys
 // present at the top level) or a nested config object under configKey. Returns shaped=false when

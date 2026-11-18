@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/attr/xattr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -42,10 +43,8 @@ type VarsJSONValue struct {
 }
 
 // PackageInfoLookupFunc resolves cached Fleet package metadata by cache key
-// (see PackageCacheKey). Each resource that uses VarsJSONType owns its own
-// package-info cache (e.g. a sync.Map keyed by "<name>-<version>", populated
-// from a Fleet API call) and passes a lookup adapter into this package,
-// rather than this package owning shared cache state across resources.
+// (see PackageCacheKey). LookupPackageInfo is the production implementation;
+// tests may pass a map-backed lookup instead.
 type PackageInfoLookupFunc func(cacheKey string) (kbapi.KibanaHTTPAPIsGetPackageInfo, bool)
 
 // Type returns a VarsJSONType.
@@ -68,17 +67,8 @@ func (v VarsJSONValue) Equal(o attr.Value) bool {
 
 // StringSemanticEquals returns true if the given config object value is semantically equal to the current vars object value.
 func (v VarsJSONValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
-	other, ok := newValuable.(VarsJSONValue)
+	other, ok, diags := typeutils.AssertSameType(v, newValuable)
 	if !ok {
-		var diags diag.Diagnostics
-		diags.AddError(
-			"Semantic Equality Check Error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
-		)
-
 		return false, diags
 	}
 

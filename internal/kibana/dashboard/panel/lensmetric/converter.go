@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -35,7 +34,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanelTypeMetric)
+	return string(kbapi.KibanaHTTPAPIsVisMetricNoESQLByValuePanelTypeMetric)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -50,24 +49,21 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	if diags := lenscommon.ValidateLensBlocks(blocks, "metric_chart_config"); diags.HasError() {
 		return diags
 	}
-	var priorConfig *models.MetricChartConfigModel
-	if blocks.MetricChartConfig != nil {
-		cpy := *blocks.MetricChartConfig
-		priorConfig = &cpy
-	}
-	blocks.MetricChartConfig = &models.MetricChartConfigModel{}
+	priorConfig := lenscommon.SnapshotAndResetBlock(&blocks.MetricChartConfig)
 	if priorConfig != nil {
 		blocks.MetricChartConfig.Metrics = priorConfig.Metrics
 	}
 
-	if variant0, err := attrs.AsKibanaHTTPAPIsMetricNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(variant0.DataSource) {
-		return metricChartConfigFromAPIVariant0(ctx, blocks.MetricChartConfig, priorConfig, variant0)
-	}
-	variant1, err := attrs.AsKibanaHTTPAPIsMetricESQLByValuePanel()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return metricChartConfigFromAPIVariant1(ctx, blocks.MetricChartConfig, priorConfig, variant1)
+	return lenscommon.PopulateFromNoESQLOrESQL(
+		ctx, blocks.MetricChartConfig, priorConfig,
+		attrs.AsKibanaHTTPAPIsVisMetricNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsVisMetricESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsVisMetricNoESQLByValuePanel) bool {
+			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
+		},
+		metricChartConfigFromAPIVariant0,
+		metricChartConfigFromAPIVariant1,
+	)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {

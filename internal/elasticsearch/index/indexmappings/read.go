@@ -50,9 +50,8 @@ func readIndexMappings(ctx context.Context, client *clients.ElasticsearchScopedC
 	}
 
 	// Import / first read: no prior mask available, store the full API response.
-	// NewMappingsValue handles normalization; intersection is skipped.
 	if priorMappingsEmpty(state.Mappings) {
-		state.Mappings = index.NewMappingsValue(string(apiBytes))
+		state.Mappings = newIndexMappingsValue(string(apiBytes))
 		return state, true, nil
 	}
 
@@ -70,7 +69,7 @@ func readIndexMappings(ctx context.Context, client *clients.ElasticsearchScopedC
 		}
 	}
 
-	intersected := intersectMappings(apiMap, stateMap)
+	intersected := index.IntersectMappings(apiMap, stateMap)
 	intersectedBytes, err := json.Marshal(intersected)
 	if err != nil {
 		return state, false, diag.Diagnostics{
@@ -78,8 +77,12 @@ func readIndexMappings(ctx context.Context, client *clients.ElasticsearchScopedC
 		}
 	}
 
-	state.Mappings = index.NewMappingsValue(string(intersectedBytes))
+	state.Mappings = newIndexMappingsValue(string(intersectedBytes))
 	return state, true, nil
+}
+
+func newIndexMappingsValue(raw string) index.MappingsValue {
+	return index.NewMappingsValue(raw).WithExactDynamicTemplateNames()
 }
 
 func marshalAPIMappings(apiMappings any) ([]byte, error) {

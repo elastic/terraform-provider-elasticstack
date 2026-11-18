@@ -6,19 +6,6 @@ Define the schema and runtime behaviour of the `elasticstack_fleet_managed_integ
 
 ## Requirements
 
-### Requirement: Resource type and registration
-
-The `elasticstack_fleet_managed_integration` resource SHALL be registered in `experimentalResources()` in `provider/plugin_framework.go`, matching the upstream tech-preview status of the Elastic Managed Integration feature. The old `elasticstack_fleet_agentless_policy` resource SHALL be removed from the provider and SHALL NOT appear in the provider schema.
-
-#### Scenario: New resource type is discoverable
-- **WHEN** `terraform providers schema -json` is run against the provider
-- **THEN** `elasticstack_fleet_managed_integration` SHALL appear in the resource schema
-- **AND** `elasticstack_fleet_agentless_policy` SHALL NOT appear in the resource schema
-
-#### Scenario: Resource registered as experimental
-- **WHEN** the provider is initialised
-- **THEN** the resource SHALL be registered via `experimentalResources()` only
-
 ### Requirement: CRUD via managed_integrations API
 
 The resource SHALL call the following Kibana Fleet managed_integrations endpoints, using the space-aware path:
@@ -258,3 +245,28 @@ The `elasticstack_fleet_agentless_policy` resource is removed from the provider 
 - **WHEN** a Terraform configuration references `elasticstack_fleet_agentless_policy`
 - **THEN** Terraform SHALL report an error indicating the resource type is unknown
 - **AND** no provider code SHALL handle the old resource type
+
+### Requirement: Resource type and stable registration
+
+The `elasticstack_fleet_managed_integration` resource SHALL be registered in the provider's stable resource list (`resources()` in `provider/plugin_framework.go`) and SHALL NOT appear in `experimentalResources()`. It SHALL therefore be present in the provider schema with no opt-in, independent of the `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL` environment variable and of the `acctest` provider version sentinel (`AccTestVersion` in `provider/plugin_framework.go`). It SHALL be registered exactly once, so that enabling the experimental opt-in does not register the type twice. The resource description SHALL NOT describe the resource as experimental; it SHALL continue to state the Kibana 9.5.0 minimum version and the Elastic Cloud Hosted / Serverless-only deployment constraint.
+
+#### Scenario: Resource type is discoverable
+- **WHEN** `terraform providers schema -json` is run against the provider
+- **THEN** `elasticstack_fleet_managed_integration` SHALL appear in the resource schema
+
+#### Scenario: Resource available without the experimental opt-in
+- **WHEN** the provider is initialised with `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL` unset and a released provider version
+- **THEN** `elasticstack_fleet_managed_integration` SHALL be registered
+
+#### Scenario: Experimental opt-in does not duplicate registration
+- **WHEN** the provider is initialised with `TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL` set to `true`
+- **THEN** `elasticstack_fleet_managed_integration` SHALL be registered exactly once
+
+#### Scenario: Resource description makes no experimental claim
+- **WHEN** the resource schema description is inspected
+- **THEN** it SHALL NOT state that the resource is experimental
+- **AND** it SHALL still state the Kibana 9.5.0 minimum version and the Elastic Cloud Hosted / Serverless-only constraint
+
+#### Scenario: Documentation page is generated
+- **WHEN** provider documentation is generated with the experimental opt-in disabled
+- **THEN** a documentation page for `elasticstack_fleet_managed_integration` SHALL be produced

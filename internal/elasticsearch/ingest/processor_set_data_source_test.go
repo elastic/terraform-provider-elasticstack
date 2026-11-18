@@ -39,6 +39,10 @@ func TestAccDataSourceIngestProcessorSet(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "ignore_empty_value", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "media_type", "application/json"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set.test", "json", expectedJSONSet),
 				),
 			},
@@ -54,7 +58,22 @@ func TestAccDataSourceIngestProcessorSet(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "ignore_empty_value", "false"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "media_type", "application/json"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set.test", "json", expectedJSONSetCopyFrom),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("copy_from_alt"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_set.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "field", "current_status"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "copy_from", "status"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "value"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set.test", "json", expectedJSONSetCopyFromAlt),
 				),
 			},
 			{
@@ -68,6 +87,10 @@ func TestAccDataSourceIngestProcessorSet(t *testing.T) {
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "ignore_empty_value", "true"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "media_type", "text/plain"),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "ignore_failure", "false"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "description"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "if"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "on_failure.#"),
+					resource.TestCheckNoResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "tag"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set.test", "json", expectedJSONSetNonDefaultFlags),
 				),
 			},
@@ -85,6 +108,19 @@ func TestAccDataSourceIngestProcessorSet(t *testing.T) {
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set.test", "on_failure.0", `{"set":{"field":"error.message","value":"set processor failed"}}`),
 					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "tag", "set-event-kind"),
 					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set.test", "json", expectedJSONSetAllAttributes),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("multi_on_failure"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("data.elasticstack_elasticsearch_ingest_processor_set.test", "id"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "field", "count"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "value", "1"),
+					resource.TestCheckResourceAttr("data.elasticstack_elasticsearch_ingest_processor_set.test", "on_failure.#", "2"),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set.test", "on_failure.0", `{"set":{"field":"error.message","value":"set processor failed"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set.test", "on_failure.1", `{"set":{"field":"error.type","value":"set"}}`),
+					CheckResourceJSON("data.elasticstack_elasticsearch_ingest_processor_set.test", "json", expectedJSONSetMultiOnFailure),
 				),
 			},
 		},
@@ -106,6 +142,17 @@ const expectedJSONSetCopyFrom = `{
 	"set": {
 		"copy_from": "count",
 		"field": "archived_count",
+		"ignore_empty_value": false,
+		"ignore_failure": false,
+		"media_type": "application/json",
+		"override": true
+	}
+}`
+
+const expectedJSONSetCopyFromAlt = `{
+	"set": {
+		"copy_from": "status",
+		"field": "current_status",
 		"ignore_empty_value": false,
 		"ignore_failure": false,
 		"media_type": "application/json",
@@ -143,5 +190,30 @@ const expectedJSONSetAllAttributes = `{
 		"override": true,
 		"tag": "set-event-kind",
 		"value": "alert"
+	}
+}`
+
+const expectedJSONSetMultiOnFailure = `{
+	"set": {
+		"field": "count",
+		"ignore_empty_value": false,
+		"ignore_failure": false,
+		"media_type": "application/json",
+		"on_failure": [
+			{
+				"set": {
+					"field": "error.message",
+					"value": "set processor failed"
+				}
+			},
+			{
+				"set": {
+					"field": "error.type",
+					"value": "set"
+				}
+			}
+		],
+		"override": true,
+		"value": "1"
 	}
 }`

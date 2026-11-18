@@ -20,43 +20,43 @@ package securityexceptionlist
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func updateExceptionList(
-	ctx context.Context,
-	client *clients.KibanaScopedClient,
-	req entitycore.KibanaWriteRequest[ExceptionListModel],
-) (entitycore.KibanaWriteResult[ExceptionListModel], diag.Diagnostics) {
-	m := req.Plan
+var updateExceptionList = entitycore.SimpleKibanaUpdate[ExceptionListModel, kbapi.UpdateExceptionListJSONRequestBody, kbapi.SecurityExceptionsAPIExceptionList](
+	func(plan ExceptionListModel, ctx context.Context, writeID string) (kbapi.UpdateExceptionListJSONRequestBody, diag.Diagnostics) {
+		body, diags := plan.toUpdateRequest(ctx, writeID)
+		if diags.HasError() {
+			return kbapi.UpdateExceptionListJSONRequestBody{}, diags
+		}
+		return *body, diags
+	},
+	// UpdateExceptionList takes the resource ID via the request body (see
+	// ExceptionListModel.toUpdateRequest), not as a separate parameter, so
+	// the writeID argument required by SimpleKibanaUpdate's apiUpdate shape
+	// is unused here.
+	func(ctx context.Context, client *kibanaoapi.Client, spaceID, _ string, body kbapi.UpdateExceptionListJSONRequestBody) (*kbapi.SecurityExceptionsAPIExceptionList, diag.Diagnostics) {
+		return kibanaoapi.UpdateExceptionList(ctx, client, spaceID, body)
+	},
+	(*ExceptionListModel).populateUpdated,
+)
+
+// populateUpdated captures the namespace type reported by the update
+// response; NamespaceType may be defaulted by the API when the request omits
+// it, so the response value is authoritative.
+func (m *ExceptionListModel) populateUpdated(_ context.Context, _ string, updated *kbapi.SecurityExceptionsAPIExceptionList) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	body, d := m.toUpdateRequest(ctx, req.WriteID)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
+	if entitycore.RequireNonNilKibanaWriteResponse(&diags, updated, "update", "exception list") {
+		return diags
 	}
 
-	updateResp, d := kibanaoapi.UpdateExceptionList(ctx, oapiClient, req.SpaceID, *body)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
+	if updated.NamespaceType != "" {
+		m.NamespaceType = types.StringValue(string(updated.NamespaceType))
 	}
 
-	if updateResp == nil {
-		diags.AddError("Failed to update exception list", "API returned empty response")
-		return entitycore.KibanaWriteResult[ExceptionListModel]{}, diags
-	}
-
-	if updateResp.NamespaceType != "" {
-		m.NamespaceType = types.StringValue(string(updateResp.NamespaceType))
-	}
-
-	return entitycore.KibanaWriteResult[ExceptionListModel]{Model: m}, diags
+	return diags
 }

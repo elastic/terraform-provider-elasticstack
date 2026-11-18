@@ -22,7 +22,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/indices/create"
@@ -30,6 +29,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -50,10 +50,10 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		call = call.WaitForActiveShards(params.WaitForActiveShards)
 	}
 	if params.MasterTimeout > 0 {
-		call = call.MasterTimeout(durationToMsString(params.MasterTimeout))
+		call = call.MasterTimeout(typeutils.DurationToElasticsearchTimeoutString(params.MasterTimeout))
 	}
 	if params.Timeout > 0 {
-		call = call.Timeout(durationToMsString(params.Timeout))
+		call = call.Timeout(typeutils.DurationToElasticsearchTimeoutString(params.Timeout))
 	}
 
 	// For date-math index names we must build the request manually and set
@@ -75,12 +75,8 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 		}
 		defer httpRes.Body.Close()
 
-		if httpRes.StatusCode >= 400 {
-			body, _ := io.ReadAll(httpRes.Body)
-			return "", fwdiags.Diagnostics{fwdiags.NewErrorDiagnostic(
-				fmt.Sprintf("Unable to create index: %s", index.Name),
-				fmt.Sprintf("status: %d, body: %s", httpRes.StatusCode, string(body)),
-			)}
+		if diags := diagutil.CheckHTTPErrorFromFW(httpRes, fmt.Sprintf("Unable to create index: %s", index.Name)); diags.HasError() {
+			return "", diags
 		}
 		// Indices.Create response always contains the resolved index name.
 		// We cannot parse the typed response here because the typed
@@ -108,13 +104,7 @@ func PutIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 func DeleteIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) fwdiags.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Indices.Delete(name).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete index")
 }
 
 // GetIndex retrieves a single index by its concrete name.  The caller is responsible
@@ -136,14 +126,9 @@ func GetIndex(ctx context.Context, apiClient *clients.ElasticsearchScopedClient,
 
 func GetIndices(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, name string) (map[string]types.IndexState, fwdiags.Diagnostics) {
 	typedClient := apiClient.GetESClient()
-	res, err := typedClient.Indices.Get(name).FlatSettings(true).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
-		return nil, diagutil.FrameworkDiagFromError(err)
-	}
-	return res, nil
+	return CallOrNotFound(func() (map[string]types.IndexState, error) {
+		return typedClient.Indices.Get(name).FlatSettings(true).Do(ctx)
+	}, "Unable to get index")
 }
 
 func UpdateIndexSettings(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, index string, settings map[string]any) fwdiags.Diagnostics {

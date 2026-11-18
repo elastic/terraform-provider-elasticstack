@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change kibana-envelope-migration. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Kibana resources with composite ID state implement GetResourceID via the named resource ID field
 
 Kibana resources that store a composite `<spaceID>/<resourceID>` string in the Terraform `id` attribute SHALL implement `GetResourceID()` by returning the named resource-ID field (e.g. `rule_id`, `item_id`), not the composite `id` field. The `KibanaResource[T]` envelope's `resolveKibanaResourceIdentity` parses `GetID()` as a composite ID and uses `GetResourceID()` only as fallback when no composite is present, ensuring both post-create state and import state route correctly.
@@ -76,11 +78,10 @@ The `alertingRuleFeatures` struct, `alertingRuleFeaturesFromVersion`, `alertingR
 
 ### Requirement: Kibana resources fully implement envelope CRUD callbacks
 
-Kibana resources that embed `entitycore.KibanaResource[T]` SHALL supply non-placeholder callbacks for `Create`, `Read`, `Update`, and `Delete` via `KibanaResourceOptions`. The wrapper struct SHALL NOT override the envelope's `Create` or `Update` methods. `PlaceholderKibanaWriteCallback` SHALL NOT be used by `security_exception_item`, `security_detection_rule`, or `alertingrule`.
+Kibana resources that embed `entitycore.KibanaResource[T]` SHALL supply non-placeholder callbacks for `Create`, `Read`, `Update`, and `Delete` via `KibanaResourceOptions`. The wrapper struct SHALL NOT override the envelope's `Create` or `Update` methods. `PlaceholderKibanaWriteCallback` SHALL NOT be used by `security_exception_item`, `security_detection_rule`, `alertingrule`, or `security_enable_rule`.
 
 #### Scenario: Lifecycle dispatch goes through envelope callbacks
 
-- **WHEN** Terraform invokes Create, Read, Update, or Delete on any of the three migrated resources
+- **WHEN** Terraform invokes Create, Read, Update, or Delete on any of the four migrated resources
 - **THEN** the envelope's lifecycle dispatcher SHALL invoke the corresponding callback supplied via `KibanaResourceOptions`
 - **AND** no wrapper-struct `Create` or `Update` method SHALL be present to shadow the envelope's promoted method
-

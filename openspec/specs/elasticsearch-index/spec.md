@@ -252,7 +252,9 @@ When `use_existing` is `true` and the configured `name` is a static index name, 
 
 ### Requirement: Update flow (REQ-015–REQ-018)
 
-On update, the resource SHALL only call the relevant update APIs when the corresponding values have changed. Alias changes SHALL be applied by deleting aliases removed from config (via Delete Alias API) and upserting all aliases present in plan (via Put Alias API). Dynamic setting changes SHALL be applied by calling the Put Settings API with the diff, setting removed dynamic settings to `null` in the request. Mapping changes SHALL be applied by calling the Put Mapping API only when the user-owned mapping intent has semantically changed. Template-injected mapping content that appears in the Elasticsearch Get Index API response SHALL NOT by itself cause a mapping update, replacement, provider inconsistent-result error, or non-empty follow-up plan. All update APIs SHALL target the persisted concrete index identity from state / `id`, not the configured `name`. After all updates, the resource SHALL perform a read to refresh state while preserving any configured `name` already stored in state.
+On update, the resource SHALL only call the relevant update APIs when the corresponding values have changed. Alias changes SHALL be applied by deleting aliases removed from config (via Delete Alias API) and upserting all aliases present in plan (via Put Alias API). Dynamic setting changes SHALL be applied by calling the Put Settings API with the diff, setting removed dynamic settings to `null` in the request. All update APIs SHALL target the persisted concrete index identity from state / `id`, not the configured `name`. After all updates, the resource SHALL perform a read to refresh state while preserving any configured `name` already stored in state.
+
+Mapping changes SHALL be applied using a **unidirectional** decision: the resource SHALL call the Put Mapping API whenever the planned `mappings` contain field or top-level mapping content that is not already present in the prior state `mappings`. The resource SHALL NOT call the Put Mapping API when the prior state `mappings` are a non-drifting superset of the planned `mappings` (state already contains everything the plan specifies, including Elasticsearch- or template-injected extras such as additional `properties`, `dynamic_templates`, or `_meta`). This decision SHALL NOT use the bidirectional semantic-equality check that also treats "plan is a superset of state" as equal — that bidirectional form remains reserved for plan-time semantic equality and replacement decisions (see the "Mappings plan modifier and semantic equality" requirement) and MUST NOT gate whether the Put Mapping API is called.
 
 #### Scenario: Removed alias is deleted
 
@@ -271,6 +273,19 @@ On update, the resource SHALL only call the relevant update APIs when the corres
 - **AND** a matching index template injects additional mapping `properties`, `dynamic_templates`, or other top-level mapping keys
 - **WHEN** Terraform refreshes and plans the same index configuration
 - **THEN** the resource SHALL treat the template-injected mapping content as non-drift and SHALL NOT call the Put Mapping API solely for those template-owned differences
+
+#### Scenario: Adding a mapping field calls the Put Mapping API
+
+- **GIVEN** an index is managed with user-owned `mappings` and no configuration change other than a new field added to `mappings.properties`
+- **WHEN** update runs
+- **THEN** the resource SHALL call the Put Mapping API with the planned `mappings`
+- **AND** the new field SHALL be present in the live cluster's mapping after apply
+
+#### Scenario: State already covering plan skips the Put Mapping API
+
+- **GIVEN** the prior state `mappings` already contain every field and top-level key present in the planned `mappings` (for example, only Elasticsearch- or template-injected extras differ)
+- **WHEN** update runs
+- **THEN** the resource SHALL NOT call the Put Mapping API
 
 ### Requirement: Read (REQ-019–REQ-021)
 
@@ -347,11 +362,21 @@ For `semantic_text` fields, Elasticsearch automatically enriches the stored mapp
 
 On create, the resource SHALL map each Terraform attribute to its corresponding Elasticsearch settings key (e.g. `mapping_total_fields_limit` → `mapping.total_fields.limit`) using dot-notation key conversion. Analysis settings (`analysis_analyzer`, `analysis_tokenizer`, `analysis_char_filter`, `analysis_filter`, `analysis_normalizer`) SHALL be parsed from JSON and nested under the `analysis` key in the create settings payload; these settings are applied only at index creation time and are not sent on update. When the deprecated `settings` block is also present, its `name`/`value` pairs SHALL be merged into the settings map; if any key conflicts with a dedicated attribute, the resource SHALL return an error diagnostic and SHALL not call the API.
 
+The dynamic-setting attributes among these (every entry in `internal/elasticsearch/index.DynamicSettingsKeys`) SHALL be defined by the shared `GetDynamicSettingAttributes() map[string]schema.Attribute` function in `internal/elasticsearch/index/settings_keys.go`, merged into this resource's schema map, rather than hand-declared individually in `internal/elasticsearch/index/index/schema.go`. The resource's `tfModel` SHALL obtain the corresponding typed fields by anonymously embedding `internal/elasticsearch/index/dynamicsettings.Model`. This is an internal refactor: attribute names, types, descriptions, `Optional`/`Computed` flags, and plan-modifier/validator behavior for every dynamic-setting attribute SHALL remain unchanged from before the refactor (see REQ-UNCHANGED below). Static (creation-time-only) setting attributes are unaffected by this change and remain hand-declared in `schema.go`.
+
 #### Scenario: Duplicate setting detected
 
 - GIVEN a setting is defined both via a dedicated attribute and in the deprecated `settings` block
 - WHEN the provider builds the settings map
 - THEN it SHALL return a "duplicate setting definition" error diagnostic and SHALL not call the Create or Put Settings API
+
+#### Scenario: Dynamic setting attribute behavior is unchanged after the schema refactor (REQ-UNCHANGED)
+
+- GIVEN the dynamic-setting attributes are now sourced from `GetDynamicSettingAttributes()` instead of being hand-declared
+- WHEN a configuration sets any `DynamicSettingsKeys`-derived attribute (e.g. `mapping_total_fields_limit`, `number_of_replicas`, `refresh_interval`)
+- THEN the attribute's type, optionality, description, and validation behavior SHALL be identical to its pre-refactor behavior
+- AND existing `elasticstack_elasticsearch_index` configurations SHALL plan with no unexpected diff solely due to this refactor
+- AND existing unit and acceptance test coverage for these attributes SHALL pass unchanged
 
 ### Requirement: Alias filter JSON mapping (REQ-028)
 
@@ -377,6 +402,8 @@ On every read, the resource SHALL serialize all index settings returned by the A
 
 The set of static settings compared during `use_existing` adoption SHALL be extended to include `sort.missing` and `sort.mode`. When these settings are explicitly set in the plan, the adoption flow SHALL compare them against the existing index's static settings and SHALL return an error diagnostic when they differ, consistent with the behavior for `sort.field` and `sort.order`.
 
+When adopting an existing index, mapping reconciliation between the plan and the existing index's mappings SHALL use the same unidirectional Put Mapping decision defined in the "Update flow" requirement: the adoption flow SHALL call the Put Mapping API when the planned `mappings` contain content not already present in the existing index's mappings, and SHALL NOT call it when the existing index's mappings already cover everything the plan specifies. Fields present in the existing index's mappings but omitted from the plan's `mappings` SHALL be retained (the Put Mapping API cannot remove fields) and SHALL NOT be treated as a mismatch requiring an error diagnostic.
+
 #### Scenario: Adoption compares `sort.missing` against existing index
 
 - **GIVEN** `use_existing = true` and an existing index where `index.sort.missing` is `["_last"]`
@@ -384,6 +411,14 @@ The set of static settings compared during `use_existing` adoption SHALL be exte
 - **WHEN** create runs
 - **THEN** the adoption flow SHALL return an error diagnostic naming the mismatched `sort.missing` value
 - **AND** SHALL NOT call any mutating API on the index
+
+#### Scenario: Adoption writes a field the plan adds and retains a field the plan omits
+
+- **GIVEN** `use_existing = true` and an existing index whose live mapping already has field `legacy_field` and does not have field `new_field`
+- **AND** the plan's `mappings` specifies `new_field` and does not specify `legacy_field`
+- **WHEN** create runs and adopts the existing index
+- **THEN** the adoption flow SHALL call the Put Mapping API so that `new_field` is present in the live cluster's mapping after apply
+- **AND** `legacy_field` SHALL remain present in the live cluster's mapping (it is not deleted)
 
 ### Requirement: Nested `sort` attribute for per-field sort configuration (REQ-SORT-01)
 
@@ -497,7 +532,7 @@ The deprecated `sort_field` and `sort_order` plan modifiers SHALL suppress repla
 
 The `sort.missing` and `sort.mode` Elasticsearch settings keys SHALL be added to `staticSettingsKeys`. The `use_existing` index adoption flow SHALL compare these settings against the existing index's static settings when they are explicitly set in the plan.
 
-When the plan originates from the new `sort` `ListNestedAttribute`, the `compareStaticPlanAndES` function in `use_existing.go` SHALL compare `sort.field`, `sort.order`, `sort.missing`, and `sort.mode` as ordered string slices (using `stringSliceOrderedFromAny`). This preserves the order-significant semantics of the nested `sort` list defined in REQ-SORT-01.
+When the plan originates from the new `sort` `ListNestedAttribute`, the `compareStaticPlanAndES` function in `use_existing.go` SHALL compare `sort.field`, `sort.order`, `sort.missing`, and `sort.mode` as ordered string slices (using `stringSliceFromSortFieldAny`). This preserves the order-significant semantics of the nested `sort` list defined in REQ-SORT-01.
 
 When the plan originates from the deprecated `sort_field`/`sort_order` attributes, the `compareStaticPlanAndES` function in `use_existing.go` SHALL preserve the existing legacy behavior for `sort.field`: compare `sort.field` as an unordered set, while continuing to compare ordered per-position settings only where the plan shape preserves positional meaning.
 
@@ -597,3 +632,24 @@ The resource SHALL implement this via a private state flag (`"import_hydration"`
 - **WHEN** `terraform plan` runs a refresh read
 - **THEN** `number_of_replicas` SHALL remain `2` in state and no drift SHALL be introduced for settings not present in the user's config
 
+### Requirement: Shared reflection helpers support anonymous embedded struct fields
+
+`internal/elasticsearch/index/reflectutil.go`'s `GetFieldValueByTagValue` and `SetFieldValueByTagValue` SHALL recurse into anonymous (embedded) struct fields when searching for a `tfsdk`-tagged field, in addition to the immediate struct's own fields, so that a `tfsdk`-tagged field defined on an anonymously-embedded struct (such as `dynamicsettings.Model`) is found and set identically to a field declared directly on the outer struct.
+
+#### Scenario: Field on an anonymously embedded struct is found
+
+- GIVEN a struct `Outer` that anonymously embeds a struct `Inner` with a field tagged `tfsdk:"example_key"`
+- WHEN `GetFieldValueByTagValue` is called on an `Outer` value with `tagName = "example_key"`
+- THEN it SHALL return the value of `Inner`'s `example_key` field and `true`
+
+#### Scenario: Field on an anonymously embedded struct can be set
+
+- GIVEN a struct `Outer` that anonymously embeds a struct `Inner` with a field tagged `tfsdk:"example_key"`
+- WHEN `SetFieldValueByTagValue` is called on a pointer to `Outer` with `tagName = "example_key"` and a new `attr.Value`
+- THEN `Inner`'s `example_key` field SHALL be updated to the new value and the function SHALL return `true`
+
+#### Scenario: Existing flat (non-embedded) field lookup is unaffected
+
+- GIVEN a struct with a directly-declared field tagged `tfsdk:"flat_key"` and no anonymous embedding
+- WHEN `GetFieldValueByTagValue` or `SetFieldValueByTagValue` is called with `tagName = "flat_key"`
+- THEN behavior SHALL be identical to before this change (found and get/set the direct field)

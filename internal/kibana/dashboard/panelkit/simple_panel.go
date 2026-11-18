@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
@@ -65,7 +66,7 @@ func SimpleToAPI[T any](
 	errorMsg string,
 ) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	grid := GridToAPI(pm.Grid)
-	id := IDToAPI(pm.ID)
+	id := typeutils.ValueStringPointer(pm.ID)
 
 	// GridToAPI returns an anonymous struct that is identical to kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid.
 	apiGrid := kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid(grid)

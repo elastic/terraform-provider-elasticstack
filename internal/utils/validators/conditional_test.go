@@ -403,6 +403,47 @@ func TestForbiddenIfDependentPathOneOf_Description(t *testing.T) {
 	require.Equal(t, "value cannot be set when protocol is one of [https tls]", description)
 }
 
+func TestForbiddenIfDependentPathOneOf_MultipleAllowedValuesErrorMessage(t *testing.T) {
+	t.Parallel()
+
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"custom_cert": schema.StringAttribute{Optional: true},
+			"protocol":    schema.StringAttribute{Optional: true},
+		},
+	}
+
+	rawConfig := tftypes.NewValue(
+		tftypes.Object{
+			AttributeTypes: map[string]tftypes.Type{
+				"custom_cert": tftypes.String,
+				"protocol":    tftypes.String,
+			},
+		},
+		map[string]tftypes.Value{
+			"custom_cert": tftypes.NewValue(tftypes.String, "cert"),
+			"protocol":    tftypes.NewValue(tftypes.String, "http"),
+		},
+	)
+
+	config := tfsdk.Config{Raw: rawConfig, Schema: testSchema}
+
+	v := ForbiddenIfDependentPathOneOf(
+		path.Root("protocol"),
+		[]string{"http", "ftp"},
+	)
+
+	response := &validator.StringResponse{}
+	v.ValidateString(context.Background(), validator.StringRequest{
+		Path:        path.Root("custom_cert"),
+		ConfigValue: types.StringValue("cert"),
+		Config:      config,
+	}, response)
+
+	require.True(t, response.Diagnostics.HasError())
+	require.Contains(t, response.Diagnostics.Errors()[0].Detail(), "cannot be set when protocol is one of [http ftp]")
+}
+
 func TestRequiredIfDependentPathOneOf(t *testing.T) {
 	t.Parallel()
 
@@ -541,6 +582,47 @@ func TestRequiredIfDependentPathOneOf(t *testing.T) {
 	}
 }
 
+func TestRequiredIfDependentPathOneOf_MultipleAllowedValuesErrorMessage(t *testing.T) {
+	t.Parallel()
+
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"ssl_cert":      schema.StringAttribute{Optional: true},
+			"security_mode": schema.StringAttribute{Optional: true},
+		},
+	}
+
+	rawConfig := tftypes.NewValue(
+		tftypes.Object{
+			AttributeTypes: map[string]tftypes.Type{
+				"ssl_cert":      tftypes.String,
+				"security_mode": tftypes.String,
+			},
+		},
+		map[string]tftypes.Value{
+			"ssl_cert":      tftypes.NewValue(tftypes.String, nil),
+			"security_mode": tftypes.NewValue(tftypes.String, "ssl"),
+		},
+	)
+
+	config := tfsdk.Config{Raw: rawConfig, Schema: testSchema}
+
+	v := RequiredIfDependentPathOneOf(
+		path.Root("security_mode"),
+		[]string{"ssl", "tls"},
+	)
+
+	response := &validator.StringResponse{}
+	v.ValidateString(context.Background(), validator.StringRequest{
+		Path:        path.Root("ssl_cert"),
+		ConfigValue: types.StringNull(),
+		Config:      config,
+	}, response)
+
+	require.True(t, response.Diagnostics.HasError())
+	require.Contains(t, response.Diagnostics.Errors()[0].Detail(), "must be set when security_mode is one of [ssl tls]")
+}
+
 func TestRequiredIfDependentPathOneOf_Description(t *testing.T) {
 	v := RequiredIfDependentPathOneOf(
 		path.Root("security_mode"),
@@ -559,152 +641,6 @@ func TestRequiredIfDependentPathEquals_Description(t *testing.T) {
 
 	description := v.Description(context.Background())
 	expected := "value required when auth_type equals \"oauth\""
-
-	if description != expected {
-		t.Errorf("Expected description %q, got %q", expected, description)
-	}
-}
-
-func TestDependantPathOneOf(t *testing.T) {
-	t.Parallel()
-
-	type testCase struct {
-		name           string
-		currentValue   types.String
-		dependentValue types.String
-		expectedError  bool
-	}
-
-	testCases := []testCase{
-		{
-			name:           "valid - current null, dependent matches allowed value",
-			currentValue:   types.StringNull(),
-			dependentValue: types.StringValue("machine_learning"),
-			expectedError:  false,
-		},
-		{
-			name:           "valid - current unknown, dependent matches allowed value",
-			currentValue:   types.StringUnknown(),
-			dependentValue: types.StringValue("esql"),
-			expectedError:  false,
-		},
-		{
-			name:           "valid - current set, dependent matches required value",
-			currentValue:   types.StringValue("some_value"),
-			dependentValue: types.StringValue("machine_learning"),
-			expectedError:  false,
-		},
-		{
-			name:           "invalid - current null, dependent doesn't match required value",
-			currentValue:   types.StringNull(),
-			dependentValue: types.StringValue("other_type"),
-			expectedError:  true,
-		},
-		{
-			name:           "invalid - current set, dependent doesn't match required value",
-			currentValue:   types.StringValue("some_value"),
-			dependentValue: types.StringValue("other_type"),
-			expectedError:  true,
-		},
-		{
-			name:           "invalid - current set, dependent is null",
-			currentValue:   types.StringValue("some_value"),
-			dependentValue: types.StringNull(),
-			expectedError:  true,
-		},
-		{
-			name:           "invalid - current set, dependent is unknown",
-			currentValue:   types.StringValue("some_value"),
-			dependentValue: types.StringUnknown(),
-			expectedError:  true,
-		},
-	}
-
-	for _, testCase := range testCases {
-		t.Run(testCase.name, func(t *testing.T) {
-			t.Parallel()
-
-			// Create a simple schema for testing
-			testSchema := schema.Schema{
-				Attributes: map[string]schema.Attribute{
-					"some_field": schema.StringAttribute{
-						Optional: true,
-					},
-					"type": schema.StringAttribute{
-						Optional: true,
-					},
-				},
-			}
-
-			// Create raw config values
-			currentTfValue, err := testCase.currentValue.ToTerraformValue(context.Background())
-			if err != nil {
-				t.Fatalf("Error converting current value: %v", err)
-			}
-			dependentTfValue, err := testCase.dependentValue.ToTerraformValue(context.Background())
-			if err != nil {
-				t.Fatalf("Error converting dependent value: %v", err)
-			}
-
-			rawConfigValues := map[string]tftypes.Value{
-				"some_field": currentTfValue,
-				"type":       dependentTfValue,
-			}
-
-			rawConfig := tftypes.NewValue(
-				tftypes.Object{
-					AttributeTypes: map[string]tftypes.Type{
-						"some_field": tftypes.String,
-						"type":       tftypes.String,
-					},
-				},
-				rawConfigValues,
-			)
-
-			config := tfsdk.Config{
-				Raw:    rawConfig,
-				Schema: testSchema,
-			}
-
-			// Create validator - StringAssert validates that the dependent field matches allowed values
-			v := DependantPathOneOf(
-				path.Root("type"),
-				[]string{"machine_learning", "esql"},
-			)
-
-			// Create validation request
-			request := validator.StringRequest{
-				Path:        path.Root("some_field"),
-				ConfigValue: testCase.currentValue,
-				Config:      config,
-			}
-
-			// Run validation
-			response := &validator.StringResponse{}
-			v.ValidateString(context.Background(), request, response)
-
-			// Check result
-			if testCase.expectedError {
-				if !response.Diagnostics.HasError() {
-					t.Errorf("Expected validation error but got none")
-				}
-			} else {
-				if response.Diagnostics.HasError() {
-					t.Errorf("Expected no validation error but got: %v", response.Diagnostics.Errors())
-				}
-			}
-		})
-	}
-}
-
-func TestDependantPathOneOf_Description(t *testing.T) {
-	v := DependantPathOneOf(
-		path.Root("type"),
-		[]string{"machine_learning", "esql"},
-	)
-
-	description := v.Description(context.Background())
-	expected := "Attribute 'type' is not one of [machine_learning esql]"
 
 	if description != expected {
 		t.Errorf("Expected description %q, got %q", expected, description)
@@ -1606,4 +1542,121 @@ func TestOneOfWhenDependentPathExpressionEquals_Description(t *testing.T) {
 	)
 	require.Contains(t, v.Description(context.Background()), "value must be one of")
 	require.Contains(t, v.Description(context.Background()), "rolling")
+}
+
+func TestForbiddenIfDependentPathExpressionOneOf_forceMergeOnClone(t *testing.T) {
+	t.Parallel()
+
+	type testCase struct {
+		name              string
+		forceMergeOnClone types.Bool
+		forceMergeIndex   types.Bool
+		expectedError     bool
+	}
+
+	testCases := []testCase{
+		{
+			name:              "valid - force_merge_on_clone unset, force_merge_index false",
+			forceMergeOnClone: types.BoolNull(),
+			forceMergeIndex:   types.BoolValue(false),
+			expectedError:     false,
+		},
+		{
+			name:              "valid - force_merge_on_clone false, force_merge_index true",
+			forceMergeOnClone: types.BoolValue(false),
+			forceMergeIndex:   types.BoolValue(true),
+			expectedError:     false,
+		},
+		{
+			name:              "valid - force_merge_on_clone true, force_merge_index true",
+			forceMergeOnClone: types.BoolValue(true),
+			forceMergeIndex:   types.BoolValue(true),
+			expectedError:     false,
+		},
+		{
+			name:              "valid - force_merge_on_clone set, force_merge_index unset",
+			forceMergeOnClone: types.BoolValue(false),
+			forceMergeIndex:   types.BoolNull(),
+			expectedError:     false,
+		},
+		{
+			name:              "valid - force_merge_on_clone set, force_merge_index unknown",
+			forceMergeOnClone: types.BoolValue(true),
+			forceMergeIndex:   types.BoolUnknown(),
+			expectedError:     false,
+		},
+		{
+			name:              "invalid - force_merge_on_clone true, force_merge_index false",
+			forceMergeOnClone: types.BoolValue(true),
+			forceMergeIndex:   types.BoolValue(false),
+			expectedError:     true,
+		},
+		{
+			name:              "invalid - force_merge_on_clone false, force_merge_index false",
+			forceMergeOnClone: types.BoolValue(false),
+			forceMergeIndex:   types.BoolValue(false),
+			expectedError:     true,
+		},
+	}
+
+	testSchema := schema.Schema{
+		Attributes: map[string]schema.Attribute{
+			"force_merge_index": schema.BoolAttribute{
+				Optional: true,
+			},
+			"force_merge_on_clone": schema.BoolAttribute{
+				Optional: true,
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			currentTfValue, err := tc.forceMergeOnClone.ToTerraformValue(context.Background())
+			require.NoError(t, err)
+			dependentTfValue, err := tc.forceMergeIndex.ToTerraformValue(context.Background())
+			require.NoError(t, err)
+
+			rawConfig := tftypes.NewValue(
+				tftypes.Object{
+					AttributeTypes: map[string]tftypes.Type{
+						"force_merge_index":    tftypes.Bool,
+						"force_merge_on_clone": tftypes.Bool,
+					},
+				},
+				map[string]tftypes.Value{
+					"force_merge_index":    dependentTfValue,
+					"force_merge_on_clone": currentTfValue,
+				},
+			)
+
+			config := tfsdk.Config{
+				Raw:    rawConfig,
+				Schema: testSchema,
+			}
+
+			v := ForbiddenIfDependentPathExpressionOneOf(
+				path.MatchRelative().AtParent().AtName("force_merge_index"),
+				[]string{"false"},
+			)
+
+			request := validator.BoolRequest{
+				Path:        path.Root("force_merge_on_clone"),
+				ConfigValue: tc.forceMergeOnClone,
+				Config:      config,
+			}
+
+			response := &validator.BoolResponse{}
+			v.ValidateBool(context.Background(), request, response)
+
+			if tc.expectedError {
+				require.True(t, response.Diagnostics.HasError(), "Expected validation error but got none")
+				require.Contains(t, response.Diagnostics.Errors()[0].Detail(), "force_merge_on_clone")
+			} else {
+				require.False(t, response.Diagnostics.HasError(), "Expected no validation error but got: %v", response.Diagnostics.Errors())
+			}
+		})
+	}
 }

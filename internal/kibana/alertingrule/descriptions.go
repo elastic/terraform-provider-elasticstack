@@ -48,3 +48,12 @@ var timeframeDaysDescription string
 
 //go:embed descriptions/flapping.md
 var flappingDescription string
+
+//go:embed descriptions/artifacts.md
+var artifactsDescription string
+
+//go:embed descriptions/investigation_guide.md
+var investigationGuideDescription string
+
+//go:embed descriptions/dashboards.md
+var dashboardsDescription string

@@ -33,9 +33,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func (model agentModel) GetID() types.String         { return model.ID }
-func (model agentModel) GetResourceID() types.String { return model.AgentID }
-func (model agentModel) GetSpaceID() types.String    { return model.SpaceID }
+func (model agentBaseModel) GetID() types.String         { return model.ID }
+func (model agentBaseModel) GetResourceID() types.String { return model.AgentID }
 
 var _ entitycore.KibanaResourceModel = agentModel{}
 var _ entitycore.WithVersionRequirements = agentModel{}
@@ -47,12 +46,10 @@ var _ entitycore.WithVersionRequirements = agentDataSourceModel{}
 type agentVersionGate struct{}
 
 func (agentVersionGate) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *agentbuilder.MinCoreAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", agentbuilder.MinCoreAPIVersion),
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*agentbuilder.MinCoreAPIVersion,
+		fmt.Sprintf("Agent Builder agents require Elastic Stack v%s or later.", agentbuilder.MinCoreAPIVersion),
+	), nil
 }
 
 // agentBaseModel holds every field shared by the resource model (agentModel)
@@ -68,9 +65,9 @@ func (agentVersionGate) GetVersionRequirements(_ context.Context) ([]entitycore.
 type agentBaseModel struct {
 	entitycore.KibanaConnectionField
 	agentVersionGate
-	ID           types.String `tfsdk:"id"`
-	AgentID      types.String `tfsdk:"agent_id"`
-	SpaceID      types.String `tfsdk:"space_id"`
+	ID      types.String `tfsdk:"id"`
+	AgentID types.String `tfsdk:"agent_id"`
+	entitycore.SpaceIDField
 	Name         types.String `tfsdk:"name"`
 	Description  types.String `tfsdk:"description"`
 	AvatarColor  types.String `tfsdk:"avatar_color"`
@@ -83,7 +80,8 @@ type agentBaseModel struct {
 type agentModel struct {
 	entitycore.ResourceTimeoutsField
 	agentBaseModel
-	Tools types.Set `tfsdk:"tools"` // []string
+	Tools         types.Set    `tfsdk:"tools"` // []string
+	AccessControl types.Object `tfsdk:"access_control"`
 }
 
 type agentDataSourceModel struct {
@@ -92,9 +90,13 @@ type agentDataSourceModel struct {
 	Tools               []toolModel `tfsdk:"tools"`
 }
 
+// UsesCompositeResourceID opts the data source into parsing agent_id as a
+// composite "<space>/<agent>" lookup key.
+func (agentDataSourceModel) UsesCompositeResourceID() bool { return true }
+
 type toolModel struct {
+	entitycore.SpaceIDField
 	ID                        types.String                    `tfsdk:"id"`
-	SpaceID                   types.String                    `tfsdk:"space_id"`
 	ToolID                    types.String                    `tfsdk:"tool_id"`
 	Type                      types.String                    `tfsdk:"type"`
 	Description               types.String                    `tfsdk:"description"`
@@ -116,7 +118,7 @@ func (model *agentBaseModel) populateFromAPI(ctx context.Context, spaceID string
 		return diags
 	}
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.ID = clients.CompositeIDValue(spaceID, data.ID)
 	model.AgentID = types.StringValue(data.ID)
 	model.SpaceID = types.StringValue(spaceID)
 	model.Name = types.StringValue(data.Name)
@@ -158,13 +160,13 @@ func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs b
 		Description: model.Description.ValueString(),
 	}
 
-	if !model.AvatarColor.IsNull() && !model.AvatarColor.IsUnknown() {
+	if typeutils.IsKnown(model.AvatarColor) {
 		body.AvatarColor = model.AvatarColor.ValueStringPointer()
 	}
-	if !model.AvatarSymbol.IsNull() && !model.AvatarSymbol.IsUnknown() {
+	if typeutils.IsKnown(model.AvatarSymbol) {
 		body.AvatarSymbol = model.AvatarSymbol.ValueStringPointer()
 	}
-	if !model.Instructions.IsNull() && !model.Instructions.IsUnknown() {
+	if typeutils.IsKnown(model.Instructions) {
 		body.Configuration.Instructions = model.Instructions.ValueStringPointer()
 	}
 
@@ -175,6 +177,14 @@ func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs b
 	body.Configuration.Tools = []struct {
 		ToolIds []string `json:"tool_ids"` //nolint:revive
 	}{{ToolIds: toolIDs}}
+
+	if typeutils.IsKnown(model.AccessControl) {
+		mode, d := model.accessMode(ctx)
+		diags.Append(d...)
+		body.AccessControl = &struct {
+			AccessMode kbapi.PostAgentBuilderAgentsJSONBodyAccessControlAccessMode `json:"access_mode"`
+		}{AccessMode: kbapi.PostAgentBuilderAgentsJSONBodyAccessControlAccessMode(mode)}
+	}
 
 	if supportsSkillIDs {
 		skillIDs := typeutils.SetTypeAs[string](ctx, model.SkillIDs, path.Empty(), &diags)
@@ -191,7 +201,15 @@ func (model agentModel) toAPICreateModel(ctx context.Context, supportsSkillIDs b
 	return body, diags
 }
 
-func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs bool) (kbapi.PutAgentBuilderAgentsIdJSONRequestBody, diag.Diagnostics) {
+// updateSendFlags carries decisions that depend on configuration (not the plan,
+// which carries prior-state values forward for Optional+Computed attributes).
+type updateSendFlags struct {
+	AccessControl bool
+	AvatarColor   bool
+	AvatarSymbol  bool
+}
+
+func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs bool, send updateSendFlags) (kbapi.PutAgentBuilderAgentsIdJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	name := model.Name.ValueString()
@@ -199,13 +217,13 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 		Name: &name,
 	}
 
-	if !model.Description.IsNull() && !model.Description.IsUnknown() {
+	if typeutils.IsKnown(model.Description) {
 		body.Description = model.Description.ValueStringPointer()
 	}
-	if !model.AvatarColor.IsNull() && !model.AvatarColor.IsUnknown() {
+	if send.AvatarColor && typeutils.IsKnown(model.AvatarColor) {
 		body.AvatarColor = model.AvatarColor.ValueStringPointer()
 	}
-	if !model.AvatarSymbol.IsNull() && !model.AvatarSymbol.IsUnknown() {
+	if send.AvatarSymbol && typeutils.IsKnown(model.AvatarSymbol) {
 		body.AvatarSymbol = model.AvatarSymbol.ValueStringPointer()
 	}
 
@@ -232,16 +250,25 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 	}
 
 	var instructions *string
-	if !model.Instructions.IsNull() && !model.Instructions.IsUnknown() {
+	if typeutils.IsKnown(model.Instructions) {
 		instructions = model.Instructions.ValueStringPointer()
 	}
 
 	body.Configuration = &struct {
+		AiIndices *[]string `json:"ai_indices,omitempty"`
+		Approvals *struct {
+			AutoApprovedApis *struct {
+				Elasticsearch *[]string `json:"elasticsearch,omitempty"`
+				Kibana        *[]string `json:"kibana,omitempty"`
+			} `json:"auto_approved_apis,omitempty"`
+		} `json:"approvals,omitempty"`
 		ConnectorIds              *[]string `json:"connector_ids,omitempty"` //nolint:revive
 		EnableElasticCapabilities *bool     `json:"enable_elastic_capabilities,omitempty"`
 		Instructions              *string   `json:"instructions,omitempty"`
-		PluginIds                 *[]string `json:"plugin_ids,omitempty"` //nolint:revive
-		SkillIds                  *[]string `json:"skill_ids,omitempty"`  //nolint:revive
+		PluginIds                 *[]string `json:"plugin_ids,omitempty"`                  //nolint:revive
+		PostExecutionWorkflowIds  *[]string `json:"post_execution_workflow_ids,omitempty"` //nolint:revive
+		SkillIds                  *[]string `json:"skill_ids,omitempty"`                   //nolint:revive
+		SubagentIds               *[]string `json:"subagent_ids,omitempty"`                //nolint:revive
 		Tools                     *[]struct {
 			ToolIds []string `json:"tool_ids"` //nolint:revive
 		} `json:"tools,omitempty"`
@@ -250,6 +277,14 @@ func (model agentModel) toAPIUpdateModel(ctx context.Context, supportsSkillIDs b
 		Instructions: instructions,
 		Tools:        &tools,
 		SkillIds:     skillIDsPtr,
+	}
+
+	if send.AccessControl {
+		mode, d := model.accessMode(ctx)
+		diags.Append(d...)
+		body.AccessControl = &struct {
+			AccessMode kbapi.PutAgentBuilderAgentsIdJSONBodyAccessControlAccessMode `json:"access_mode"`
+		}{AccessMode: kbapi.PutAgentBuilderAgentsIdJSONBodyAccessControlAccessMode(mode)}
 	}
 
 	labels := typeutils.SetTypeAs[string](ctx, model.Labels, path.Empty(), &diags)

@@ -20,6 +20,7 @@ package privatelocation
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/synthetics"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -47,7 +48,7 @@ func newResource() *Resource {
 			entitycore.KibanaResourceOptions[Model]{
 				Schema: getSchema,
 				Read:   readPrivateLocation,
-				Delete: deletePrivateLocation,
+				Delete: entitycore.SimpleKibanaDelete[Model](kibanaoapi.DeletePrivateLocation),
 				Create: createPrivateLocation,
 				Update: entitycore.PlaceholderKibanaWriteCallback[Model](),
 			},

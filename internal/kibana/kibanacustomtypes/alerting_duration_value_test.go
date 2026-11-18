@@ -132,7 +132,6 @@ func TestAlertingDuration_ValidateAttribute(t *testing.T) {
 	}{
 		// Defaults: zero-value units accepts every parser-supported unit.
 		{name: "null is valid", value: NewAlertingDurationNull()},
-		{name: "unknown is valid", value: NewAlertingDurationUnknown()},
 		{name: "1d with default units", value: NewAlertingDurationValue("1d")},
 		{name: "1w with default units", value: NewAlertingDurationValue("1w")},
 		{name: "garbage is invalid", value: NewAlertingDurationValue("nope"), wantDiag: true},
@@ -181,10 +180,7 @@ func TestAlertingDuration_StringSemanticEquals(t *testing.T) {
 			wantErr: true,
 		},
 		{name: "null == null", val: NewAlertingDurationNull(), other: NewAlertingDurationNull(), wantEqual: true},
-		{name: "null != unknown", val: NewAlertingDurationNull(), other: NewAlertingDurationUnknown()},
 		{name: "null != value", val: NewAlertingDurationNull(), other: NewAlertingDurationValue("1d")},
-		{name: "unknown == unknown", val: NewAlertingDurationUnknown(), other: NewAlertingDurationUnknown(), wantEqual: true},
-		{name: "unknown != value", val: NewAlertingDurationUnknown(), other: NewAlertingDurationValue("1d")},
 		{name: "identical strings are equal", val: NewAlertingDurationValue("1d"), other: NewAlertingDurationValue("1d"), wantEqual: true},
 		{name: "1d == 24h", val: NewAlertingDurationValue("1d"), other: NewAlertingDurationValue("24h"), wantEqual: true},
 		{name: "24h == 1d (reverse direction)", val: NewAlertingDurationValue("24h"), other: NewAlertingDurationValue("1d"), wantEqual: true},

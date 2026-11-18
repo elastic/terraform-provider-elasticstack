@@ -1,3 +1,123 @@
+## [0.17.0] - 2026-11-10
+
+### Breaking changes
+
+`elasticstack_fleet_server_host` now reads `ssl` from Fleet. If a host already has SSL settings configured outside Terraform, a configuration without an `ssl` block plans to remove them, and applying that plan clears the host's SSL settings, which can disconnect enrolled agents. Add the existing settings to an `ssl` block before applying. On Elastic Stack 9.3.0+, if the host also stores `agent_*` or `es_*` SSL fields, which this resource does not manage, updates to `ssl` fail instead; remove those fields outside Terraform first.
+
+The `thresholds[].axis` values `bottom`, `left` and `right` are no longer accepted; use `x`, `y` or `y2`. The removed values were always rejected by Kibana, so they now fail at plan time.
+
+`comments` on `kibana_security_exception_item` is now computed/read-only. Move texts Terraform should enforce into the new `required_comments` attribute and remove any configured `comments`. Previously stored comments remain in Kibana and are echoed in `comments`.
+
+### Changes
+
+- Add custom `headers` to provider-level and entity-local Kibana connections. Values are stored as sensitive in state, but provider debug logging masks only the `Authorization` header, so other header values (such as proxy tokens) can appear in `TF_LOG=DEBUG` output. ([#5482](https://github.com/elastic/terraform-provider-elasticstack/pull/5482))
+- Fix `elasticstack_elasticsearch_snapshot_repository` failing with "Provider returned invalid result object after apply" for S3 repositories without `endpoint`. ([#5476](https://github.com/elastic/terraform-provider-elasticstack/pull/5476))
+- Remove `elasticstack_elasticsearch_security_role` and other resources using JSON attributes with defaults from state when they were deleted outside Terraform, instead of planning a replacement. ([#5461](https://github.com/elastic/terraform-provider-elasticstack/pull/5461))
+- Fix `elasticstack_elasticsearch_ml_anomaly_detection_job` updates failing to decode the response when the job has nested `custom_settings`. ([#5462](https://github.com/elastic/terraform-provider-elasticstack/pull/5462))
+- Add `access_control` support to `elasticstack_kibana_agentbuilder_agent`. ([#5401](https://github.com/elastic/terraform-provider-elasticstack/pull/5401))
+- Add optional `ssl` (certificate, sensitive key, certificate authorities, and client authentication mode) to `elasticstack_fleet_server_host` (requires Elastic Stack 9.1.0+). ([#5394](https://github.com/elastic/terraform-provider-elasticstack/pull/5394))
+- Fixes `elasticstack_elasticsearch_connector` showing a perpetual plan diff when optional blocks (e.g. `scheduling`) are left at their computed defaults, and fixes creating a connector with `connector_id` omitted so Elasticsearch can auto-generate the ID. ([#5398](https://github.com/elastic/terraform-provider-elasticstack/pull/5398))
+- Add a data source to look up a Fleet agent policy by name or policy id. ([#5369](https://github.com/elastic/terraform-provider-elasticstack/pull/5369))
+- Add write-only secrets support (e.g. SSL key) to elasticstack_fleet_agent_download_source ([#5310](https://github.com/elastic/terraform-provider-elasticstack/pull/5310))
+- Add `allow_outdated_version` to `elasticstack_fleet_integration` (requires Kibana 9.6.0+). ([#5336](https://github.com/elastic/terraform-provider-elasticstack/pull/5336))
+- Add `additional_datastreams_permissions` to `elasticstack_fleet_elastic_defend_integration_policy` ([#5322](https://github.com/elastic/terraform-provider-elasticstack/pull/5322))
+- Add elasticstack_elasticsearch_rollover_index_series to bootstrap or adopt an ILM rollover series and delete its current alias members. ([#5297](https://github.com/elastic/terraform-provider-elasticstack/pull/5297))
+- Add `features_disable_policy_change_acks_enabled`, `features_include_tags_in_events_enabled` and `internal` to `advanced_settings` on `elasticstack_fleet_agent_policy`. ([#5279](https://github.com/elastic/terraform-provider-elasticstack/pull/5279))
+- Accept `x`, `y` and `y2` for XY reference-line `thresholds[].axis` in `elasticstack_kibana_dashboard`. ([#5280](https://github.com/elastic/terraform-provider-elasticstack/pull/5280))
+- Add optional SSL configuration (certificate authorities, certificate, and sensitive key) to `elasticstack_fleet_agent_download_source`. ([#5261](https://github.com/elastic/terraform-provider-elasticstack/pull/5261))
+- Add the `elasticstack_kibana_case_template` resource for managing Kibana Cases templates. ([#5268](https://github.com/elastic/terraform-provider-elasticstack/pull/5268))
+- Add optional auth to elasticstack_fleet_agent_download_source for private artifact registries. ([#5263](https://github.com/elastic/terraform-provider-elasticstack/pull/5263))
+- Reject Lens XY duration decimals and compact formatting on Kibana before 9.5.2 ([#5252](https://github.com/elastic/terraform-provider-elasticstack/pull/5252))
+- Add `width` and `grow` support to `pinned_panels` in `elasticstack_kibana_dashboard` ([#5253](https://github.com/elastic/terraform-provider-elasticstack/pull/5253))
+- Add the `elasticstack_kibana_case_field_definition` resource for managing Kibana Cases field definitions (requires Elastic Stack 9.6.0+). ([#5246](https://github.com/elastic/terraform-provider-elasticstack/pull/5246))
+- security_exception_item `comments` is now a read-only view of stored Kibana comments; add `required_comments` to keep enforcing comment texts. ([#5221](https://github.com/elastic/terraform-provider-elasticstack/pull/5221))
+
+## [0.16.6] - 2026-10-12
+
+### Breaking changes
+
+#### `elasticstack_kibana_security_exception_item` no longer accepts a writable `comments` attribute
+
+`comments` is now a computed, read-only view of the full comment log Kibana stores, including comments written outside Terraform (each entry exposes `id`, `comment`, `created_at`, and `created_by`). To require a comment text, move it onto the new `required_comments` list attribute: the provider appends any missing text in configuration order and never edits, reorders, or deletes stored comments. Comment-only changes are in-place updates and no longer recreate the item. Existing state is upgraded automatically (schema version 1): stored comment `id` and `comment` values are preserved, the new audit attributes are added as null, and `required_comments` stays unset until configured. Remove any `comments {}` blocks from configuration; stored comments remain in Kibana either way.
+
+`elasticstack_kibana_alerting_rule` no longer exposes `last_execution_status` or `last_execution_date`. Those values change on every rule execution and caused a perpetual plan diff. Read them from the `elasticstack_kibana_alerting_rules` data source instead. Remove any configuration that references those attributes on the resource, including `lifecycle.ignore_changes`. Existing state that still contains the attributes is read without error and the values are dropped.
+
+The following data sources previously returned empty state or only a warning when the entity was not found, and now return an error: snapshot repository, trained model, `elasticstack_elasticsearch_security_role`, `elasticstack_elasticsearch_security_user`, `elasticstack_kibana_security_role`, index template and query ruleset. Configurations that probed for existence this way must handle the error.
+
+
+#### `elasticstack_kibana_dashboard` renamed `query.text` and `query.json` to `query.expression`
+This renaming matches the Kibana Dashboard API and the `expression` attribute already used by Lens chart queries. The API exposes a single string field, `expression`; `text` and `json` both mapped onto it, and `json` was only ever a JSON document sent as a query string. Replace `text` (or `json`) with `expression`:
+
+```
+query = {
+  language = "kql"
+  text     = "http.response.status_code:200"
+}
+```
+
+becomes 
+
+```
+query = {
+  language   = "kql"
+  expression = "http.response.status_code:200"
+}
+```
+
+([#5081](https://github.com/elastic/terraform-provider-elasticstack/issues/5081))
+
+### Changes
+
+- Add `access_control` to `elasticstack_kibana_agentbuilder_agent` (requires Elastic Stack 9.5.0+ when set). ([#5377](https://github.com/elastic/terraform-provider-elasticstack/issues/5377))
+- Fixes three latent bugs in the maintenance window resource (import decode failure, import `space_id` resolution, and scope removal producing an inconsistent plan) that were exposed while closing the 5 documented schema-coverage test gaps. ([#5188](https://github.com/elastic/terraform-provider-elasticstack/pull/5188))
+- Preserve known-empty tags list on elasticstack_kibana_dashboard read-back so `tags = []` no longer errors with "was cty.ListValEmpty(cty.String), but now null". ([#5146](https://github.com/elastic/terraform-provider-elasticstack/pull/5146))
+- Read Kibana alerting rule execution status from a data source. ([#5145](https://github.com/elastic/terraform-provider-elasticstack/pull/5145))
+- The ML job state resource now fails fast with a clear error when a job settles into a terminal state ("opened", "closed", or "failed") other than the one requested, instead of waiting out the full operation timeout. ([#5156](https://github.com/elastic/terraform-provider-elasticstack/pull/5156))
+- Add the `proxy_id` attribute to `elasticstack_fleet_server_host` to link a Fleet server host to a Fleet proxy. ([#5138](https://github.com/elastic/terraform-provider-elasticstack/pull/5138))
+- Use a custom JSON type for Entity Store status semantic equality, preventing order-only engine changes from producing spurious resource diffs while preserving raw response JSON. ([#5125](https://github.com/elastic/terraform-provider-elasticstack/pull/5125))
+- Add new `elasticstack_elasticsearch_index_settings` resource for managing Elasticsearch index settings. ([#5116](https://github.com/elastic/terraform-provider-elasticstack/pull/5116))
+- Data sources now return a standardized error when the requested entity is not found. ([#5090](https://github.com/elastic/terraform-provider-elasticstack/pull/5090))
+- `elasticstack_kibana_dashboard` root `query` now uses `expression` instead of `text`/`json` (state schema v2 with automatic upgrader) ([#5094](https://github.com/elastic/terraform-provider-elasticstack/pull/5094))
+- Preserve explicitly configured empty ILM allocate filters to prevent inconsistent state after apply. ([#5036](https://github.com/elastic/terraform-provider-elasticstack/pull/5036))
+- Support wildcard and multi-target expressions in index alias read indices. ([#5079](https://github.com/elastic/terraform-provider-elasticstack/pull/5079))
+- `elasticstack_fleet_elastic_defend_integration_policy` now creates the policy with the configured `policy_id` instead of ignoring it, and rejects an empty `policy_id` at plan time. ([#5041](https://github.com/elastic/terraform-provider-elasticstack/pull/5041))
+- Add the `preset` attribute to `elasticstack_fleet_output` for elasticsearch and remote_elasticsearch outputs. Requires Elastic Stack 8.12.0 or later. ([#5042](https://github.com/elastic/terraform-provider-elasticstack/pull/5042))
+- `elasticstack_elasticsearch_ingest_processor_date`: change default value for locale from 'ENGLISH' to 'en' ([#5064](https://github.com/elastic/terraform-provider-elasticstack/pull/5064))
+- Make the root `time_range`, `refresh_interval` and `query` blocks optional on `elasticstack_kibana_dashboard`. ([#5031](https://github.com/elastic/terraform-provider-elasticstack/pull/5031))
+- Add the `elasticstack_fleet_space_settings` resource to manage Fleet's per-space settings (`allowed_namespace_prefixes`). Requires Elastic Stack 9.1.0 or newer. ([#4988](https://github.com/elastic/terraform-provider-elasticstack/pull/4988))
+- Fix `elasticstack_kibana_synthetics_monitor` create failing with `unsupported monitor type` and orphaning the monitor when Kibana reports Synthetics Service push errors; push errors are now surfaced as warnings. ([#4999](https://github.com/elastic/terraform-provider-elasticstack/pull/4999))
+- Add missing Elastic Defend policy settings (device control, macOS ransomware, custom YARA signatures, and additional event and malware flags) to `elasticstack_fleet_elastic_defend_integration_policy`. ([#5024](https://github.com/elastic/terraform-provider-elasticstack/pull/5024))
+- `elasticstack_kibana_agentbuilder_tool` now correctly clears `tags` when set to an explicit empty collection (`tags = []`) on create/update, instead of silently leaving the previous tags unchanged server-side. ([#4954](https://github.com/elastic/terraform-provider-elasticstack/pull/4954))
+- Normalize Kibana 9.6 Lens dashboard read-back defaults so apply no longer reports inconsistent results. ([#4948](https://github.com/elastic/terraform-provider-elasticstack/pull/4948))
+- Add disable_chunked_encoding and always_sign_requests to the S3 snapshot repository ([#4885](https://github.com/elastic/terraform-provider-elasticstack/pull/4885))
+
+## [0.16.5] - 2026-09-07
+
+### Changes
+
+- Add `artifacts.dashboards` support to `elasticstack_kibana_alerting_rule`, letting practitioners link Kibana dashboards to a rule (alongside or instead of an investigation guide). Requires Elastic Stack 9.1.0+. ([#4520](https://github.com/elastic/terraform-provider-elasticstack/pull/4520))
+- `fleet_agent_policy` now reports an error for a Fleet API response containing duplicate `global_data_tags` names instead of silently discarding one of the entries, matching the managed integration resource's existing behavior. ([#4818](https://github.com/elastic/terraform-provider-elasticstack/pull/4818))
+- Plan omitted allow_restricted_indices as false on security role set updates so appending indices no longer fails after apply. Omitting the field after it was previously set to true now plans false and revokes restricted-index access. ([#4768](https://github.com/elastic/terraform-provider-elasticstack/pull/4768))
+- Keep omitted `custom_settings` on `ml_anomaly_detection_job` hands-off so apply no longer copies Elasticsearch/Kibana-authored values into state. ([#4750](https://github.com/elastic/terraform-provider-elasticstack/pull/4750))
+- Stop index mappings from storing template-injected dynamic_templates in state ([#4701](https://github.com/elastic/terraform-provider-elasticstack/pull/4701))
+- Add `additional_datastreams_permissions` to `elasticstack_fleet_integration_policy`, granting an integration's Elasticsearch API key write access to data streams targeted by a `reroute` processor. Requires Elastic Stack 9.1.0 or above. ([#4657](https://github.com/elastic/terraform-provider-elasticstack/pull/4657))
+
+## [0.16.4] - 2026-08-25
+
+### Changes
+
+- Add searchable_snapshot.force_merge_on_clone to elasticsearch_index_lifecycle (ES ≥ 9.2.1). ([#4625](https://github.com/elastic/terraform-provider-elasticstack/pull/4625))
+- Promote elasticstack_fleet_managed_integration to GA so it no longer requires the experimental opt-in. ([#4617](https://github.com/elastic/terraform-provider-elasticstack/pull/4617))
+- Preserve composite resource IDs on update when the cluster UUID changes after deployment recreation ([#4545](https://github.com/elastic/terraform-provider-elasticstack/pull/4545))
+- Prevent false inconsistent-result errors when index mappings use template-injected dynamic templates. ([#4581](https://github.com/elastic/terraform-provider-elasticstack/pull/4581))
+- Treat Watcher-injected search-request and script defaults as equal so omitted keys no longer fail apply. ([#4538](https://github.com/elastic/terraform-provider-elasticstack/pull/4538))
+- Add `artifacts.investigation_guide` support to `elasticstack_kibana_alerting_rule` (inline `content` or file-based `content_path` with drift-detecting checksum). Requires ([#4489](https://github.com/elastic/terraform-provider-elasticstack/pull/4489))
+- Call Put Mapping when adding fields to an existing index's mappings ([#4507](https://github.com/elastic/terraform-provider-elasticstack/pull/4507))
+- Preserve slo_overview panel presentation fields (title, description, hide_title, hide_border) on update so Terraform state does not drift after refresh, and dedupe the merge logic onto the shared panelkit helpers. ([#4472](https://github.com/elastic/terraform-provider-elasticstack/pull/4472))
+- Preserve slo_error_budget panel presentation fields (title, description, hide_title, hide_border) on update so Terraform state does not drift after refresh. ([#4450](https://github.com/elastic/terraform-provider-elasticstack/pull/4450))
+- Fix Fleet integration installation with credentials restricted to a non-default Kibana space. ([#4300](https://github.com/elastic/terraform-provider-elasticstack/pull/4300))
+- Add `space_id` support for Kibana Synthetics parameters with composite IDs and space-scoped CRUD and import. ([#4278](https://github.com/elastic/terraform-provider-elasticstack/pull/4278))
+
 ## [0.16.3] - 2026-07-22
 
 ### Breaking changes
@@ -306,10 +426,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 ### Changes
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 7346053b2 (docs(changelog): add entity store timing/isolation fix entry (#4062))
 
 - Add parameter validation and default normalization for `elasticstack_kibana_alerting_rule` to prevent inconsistent state errors caused by API-injected defaults. ([#1648](https://github.com/elastic/terraform-provider-elasticstack/pull/1648))
 - Fix JSON marshaling error in `elasticstack_kibana_slo` when `good` or `total` fields in `kql_custom_indicator` are empty or null. ([#1729](https://github.com/elastic/terraform-provider-elasticstack/pull/1729))
@@ -318,10 +434,6 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
 
 ### Changes
 
-<<<<<<< HEAD
-
-=======
->>>>>>> 7346053b2 (docs(changelog): add entity store timing/isolation fix entry (#4062))
 
 - Fix provider panic in `elasticstack_kibana_slo` when SLO updates error without a HTTP response. ([#1725](https://github.com/elastic/terraform-provider-elasticstack/pull/1725))
 - Fix inconsistent state error in `elasticstack_kibana_alerting_rule` when `alert_delay` is not specified. ([#1726](https://github.com/elastic/terraform-provider-elasticstack/pull/1726))
@@ -364,10 +476,6 @@ resource "elasticstack_fleet_integration" "tcp-o11y" {
 
 The `input` block in the `elasticstack_fleet_integration_policy` resource has been restructured into the `inputs` map attribute.
 This transition:
-<<<<<<< HEAD
-
-=======
->>>>>>> 7346053b2 (docs(changelog): add entity store timing/isolation fix entry (#4062))
 
 - Allows the provider to implement semantic equality checking across all inputs within the integration policy. This change:
   - Prevents several state consistency errors experienced whilst using this resource
@@ -1061,7 +1169,11 @@ resource "elasticstack_fleet_output" "output" {
 - Initial set of docs
 - CI integration
 
-[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.3...HEAD
+[Unreleased]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.17.0...HEAD
+[0.17.0]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.6...v0.17.0
+[0.16.6]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.5...v0.16.6
+[0.16.5]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.4...v0.16.5
+[0.16.4]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.3...v0.16.4
 [0.16.3]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.2...v0.16.3
 [0.16.2]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.1...v0.16.2
 [0.16.1]: https://github.com/elastic/terraform-provider-elasticstack/compare/v0.16.0...v0.16.1

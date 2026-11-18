@@ -21,6 +21,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -36,8 +37,14 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 	"github.com/stretchr/testify/require"
+)
+
+const (
+	testAccTCPIntegrationName    = "tcp"
+	testAccTCPIntegrationVersion = "1.16.0"
 )
 
 var (
@@ -99,6 +106,7 @@ func TestAccResourceIntegration(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration", "id"),
 				),
 			},
 			{
@@ -127,6 +135,8 @@ func TestAccResourceIntegration(t *testing.T) {
 func TestAccResourceIntegration_kibanaConnection(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionIntegration, versionutils.FlavorAny)
 
+	kibanaEndpoint := strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))
+
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
 			acctest.PreCheck(t)
@@ -142,7 +152,7 @@ func TestAccResourceIntegration_kibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.16.0"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "kibana_connection.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "kibana_connection.0.endpoints.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration", "kibana_connection.0.endpoints.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "kibana_connection.0.endpoints.0", kibanaEndpoint),
 				),
 			},
 			{
@@ -154,7 +164,19 @@ func TestAccResourceIntegration_kibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.17.0"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "kibana_connection.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "kibana_connection.0.endpoints.#", "1"),
-					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration", "kibana_connection.0.endpoints.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "kibana_connection.0.endpoints.0", kibanaEndpoint),
+				),
+			},
+			// Step 3: remove the kibana_connection block entirely. The
+			// resource must fall back to the provider-level Kibana client
+			// and the block must read back as absent, not an empty object.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_connection"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "version", "1.17.0"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration", "kibana_connection.#", "0"),
 				),
 			},
 		},
@@ -364,6 +386,81 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "skip_data_stream_rollover"),
 				),
 			},
+			// Step 4: identical to step 1 (force/prerelease still true) but with
+			// ignore_constraints removed from config. Mirrors the
+			// ignore_mapping_update_errors/skip_data_stream_rollover unset pattern
+			// above, proving ignore_constraints clears independently of its
+			// siblings rather than only ever being asserted as true.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_params_step3"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "force", "true"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints"),
+				),
+			},
+			// Step 5: toggle force/prerelease from true to explicit false on the
+			// same resource, and configure timeouts.create for the first time.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_params_step4"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "force", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "timeouts.create", "5m"),
+				),
+			},
+			// Step 6: omit force/prerelease/ignore_constraints entirely and assert
+			// they read back as absent, plus the computed id is set.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersionIntegration),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_params_step5"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "force"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "allow_outdated_version"),
+					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration_all_params", "id"),
+				),
+			},
+			// Step 7 (Kibana >= 9.6.0): allow_outdated_version = true is accepted and
+			// round-trips; force/ignore_constraints are left unset to isolate it.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(integration.MinVersionAllowOutdatedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_params_step6"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "allow_outdated_version", "true"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "force"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints"),
+				),
+			},
+			// Step 8 (Kibana >= 9.6.0): explicit false is accepted and round-trips.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(integration.MinVersionAllowOutdatedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_params_step7"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "allow_outdated_version", "false"),
+				),
+			},
+			// Step 9 (Kibana >= 9.6.0): removing the attribute clears it from state.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(integration.MinVersionAllowOutdatedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_params_step5"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "allow_outdated_version"),
+				),
+			},
 		},
 	})
 }
@@ -479,42 +576,50 @@ func TestAccResourceIntegrationSkipDestroy(t *testing.T) {
 	})
 }
 
+// testAccAssertPackageInstalledInSpace verifies Fleet reports the package
+// installed in the specified space.
+func testAccAssertPackageInstalledInSpace(pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, name, version, spaceID string) error {
+	if pkg == nil {
+		return fmt.Errorf("package %s/%s not installed", name, version)
+	}
+	globalInstalled := false
+	if pkg.InstallationInfo != nil {
+		globalInstalled = pkg.InstallationInfo.InstallStatus == kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled
+	}
+	if !globalInstalled && pkg.Status != nil && strings.EqualFold(*pkg.Status, "installed") {
+		globalInstalled = true
+	}
+	if !globalInstalled {
+		return fmt.Errorf("package %s/%s not globally installed", name, version)
+	}
+	inSpace := pkg.InstallationInfo != nil &&
+		pkg.InstallationInfo.InstalledKibanaSpaceId != nil &&
+		*pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID
+
+	if pkg.InstallationInfo != nil && pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {
+		if _, ok := (*pkg.InstallationInfo.AdditionalSpacesInstalledKibana)[spaceID]; ok {
+			inSpace = true
+		}
+	}
+	if !inSpace {
+		return fmt.Errorf("package %s/%s not installed in space %s", name, version, spaceID)
+	}
+	return nil
+}
+
 // testAccCheckIntegrationInstalledInSpace queries the Fleet API to verify that
-// the given package version has Kibana assets installed in the specified space.
-func testAccCheckIntegrationInstalledInSpace(name, version, spaceID string) resource.TestCheckFunc {
+// the tcp integration fixture is installed in the specified space.
+func testAccCheckIntegrationInstalledInSpace(spaceID string) resource.TestCheckFunc {
 	return func(_ *terraform.State) error {
 		fleetClient, err := testAccFleetClient()
 		if err != nil {
 			return err
 		}
-		pkg, diags := fleet.GetPackage(context.Background(), fleetClient, name, version, spaceID)
+		pkg, diags := fleet.GetPackage(context.Background(), fleetClient, testAccTCPIntegrationName, testAccTCPIntegrationVersion, spaceID)
 		if diags.HasError() {
 			return fmt.Errorf("failed to get package: %v", diags)
 		}
-		if pkg == nil {
-			return fmt.Errorf("package %s/%s not installed", name, version)
-		}
-		globalInstalled := false
-		if pkg.InstallationInfo != nil {
-			globalInstalled = pkg.InstallationInfo.InstallStatus == kbapi.KibanaHTTPAPIsPackageInfoInstallationInfoInstallStatusInstalled
-		}
-		if !globalInstalled && pkg.Status != nil && strings.EqualFold(*pkg.Status, "installed") {
-			globalInstalled = true
-		}
-		if !globalInstalled {
-			return fmt.Errorf("package %s/%s not globally installed", name, version)
-		}
-		inSpace := pkg.InstallationInfo.InstalledKibanaSpaceId != nil && *pkg.InstallationInfo.InstalledKibanaSpaceId == spaceID
-
-		if pkg.InstallationInfo.AdditionalSpacesInstalledKibana != nil {
-			if _, ok := (*pkg.InstallationInfo.AdditionalSpacesInstalledKibana)[spaceID]; ok {
-				inSpace = true
-			}
-		}
-		if !inSpace {
-			return fmt.Errorf("package %s/%s not installed in space %s", name, version, spaceID)
-		}
-		return nil
+		return testAccAssertPackageInstalledInSpace(pkg, testAccTCPIntegrationName, testAccTCPIntegrationVersion, spaceID)
 	}
 }
 
@@ -567,8 +672,8 @@ func TestAccResourceIntegration_MultiSpaceInstall(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_b", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_b", "version", "1.16.0"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_b", "space_id", spaceB),
-					testAccCheckIntegrationInstalledInSpace("tcp", "1.16.0", spaceA),
-					testAccCheckIntegrationInstalledInSpace("tcp", "1.16.0", spaceB),
+					testAccCheckIntegrationInstalledInSpace(spaceA),
+					testAccCheckIntegrationInstalledInSpace(spaceB),
 				),
 			},
 		},
@@ -611,7 +716,7 @@ func TestAccResourceIntegration_MultiSpaceDelete(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_a", "name", "tcp"),
 					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_a", "space_id", spaceA),
-					testAccCheckIntegrationInstalledInSpace("tcp", "1.16.0", spaceA),
+					testAccCheckIntegrationInstalledInSpace(spaceA),
 				),
 			},
 		},
@@ -656,6 +761,56 @@ func TestAccResourceIntegration_SpaceAwareDrift(t *testing.T) {
 				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: true,
+			},
+		},
+	})
+}
+
+// TestAccResourceIntegration_SpaceIDReplace verifies that changing space_id
+// on an existing resource forces recreation (destroy-before-create) rather
+// than an in-place update, and that the package ends up installed in the
+// new space.
+func TestAccResourceIntegration_SpaceIDReplace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, integration.MinVersionSpaceAwareIntegration, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	spaceID1 := "test_sr1_" + suffix
+	spaceID2 := "test_sr2_" + suffix
+	resourceName := "elasticstack_fleet_integration.test_integration"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID1),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "name", "tcp"),
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID1),
+					testAccCheckIntegrationInstalledInSpace(spaceID1),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(""),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID2),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(
+							resourceName,
+							plancheck.ResourceActionDestroyBeforeCreate,
+						),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "space_id", spaceID2),
+					testAccCheckIntegrationInstalledInSpace(spaceID2),
+				),
 			},
 		},
 	})

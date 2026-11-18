@@ -18,7 +18,6 @@
 package customtypes
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -68,7 +67,7 @@ func (t IndexSettingsType) Equal(o attr.Type) bool {
 
 // ValueFromString returns a StringValuable type given a StringValue.
 func (t IndexSettingsType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
-	return IndexSettingsValue{Normalized: jsontypes.Normalized{StringValue: in}}, nil
+	return IndexSettingsValue{StringValue: in}, nil
 }
 
 // ValueFromTerraform returns a Value given a tftypes.Value.
@@ -139,17 +138,8 @@ func (v IndexSettingsValue) ValidateAttribute(ctx context.Context, req xattr.Val
 // Terraform drift and apply consistency between the user's input form and the canonical
 // {"index":{...}} shape Elasticsearch returns.
 func (v IndexSettingsValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	newValue, ok := newValuable.(IndexSettingsValue)
+	newValue, ok, diags := typeutils.AssertSameType(v, newValuable)
 	if !ok {
-		diags.AddError(
-			"Semantic equality check error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
-		)
 		return false, diags
 	}
 
@@ -249,71 +239,6 @@ func normalizeIndexSettings(m map[string]any) map[string]any {
 	return out
 }
 
-// CanonicalIndexSettingsJSON returns compact JSON for the same effective index settings as raw,
-// in the nested shape Elasticsearch uses (e.g. {"index":{"number_of_shards":"3"}}).
-// It applies the same flattening, index.-prefix normalization, and stringification as semantic equality.
-//
-// When the same logical setting appears as both a top-level key and under a nested path (e.g.
-// number_of_shards alongside index.number_of_shards), normalizeIndexSettings applies a deterministic
-// merge: values whose original flat key contained a dot (nested/dotted source) overwrite values
-// from single-segment keys sharing the same canonical index.* key. Object keys in the output are
-// sorted recursively so repeated calls return an identical byte string.
-func CanonicalIndexSettingsJSON(raw string) (string, error) {
-	var top any
-	if err := json.Unmarshal([]byte(strings.TrimSpace(raw)), &top); err != nil {
-		return "", fmt.Errorf("unmarshal settings JSON: %w", err)
-	}
-	if top == nil {
-		return "", fmt.Errorf("settings must be a JSON object, not null")
-	}
-	m, ok := top.(map[string]any)
-	if !ok {
-		return "", fmt.Errorf("settings must be a JSON object")
-	}
-	flatNorm := normalizeIndexSettings(typeutils.FlattenMap(m))
-	nested := UnflattenDottedMap(flatNorm)
-	b, err := marshalSettingsJSONSorted(nested)
-	if err != nil {
-		return "", fmt.Errorf("marshal canonical settings: %w", err)
-	}
-	return string(b), nil
-}
-
-// marshalSettingsJSONSorted marshals maps with sorted keys at every object level so canonical
-// settings strings are stable across Go releases and map iteration order.
-func marshalSettingsJSONSorted(v any) ([]byte, error) {
-	switch t := v.(type) {
-	case map[string]any:
-		keys := make([]string, 0, len(t))
-		for k := range t {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		var buf bytes.Buffer
-		buf.WriteByte('{')
-		for i, k := range keys {
-			if i > 0 {
-				buf.WriteByte(',')
-			}
-			keyBytes, err := json.Marshal(k)
-			if err != nil {
-				return nil, err
-			}
-			buf.Write(keyBytes)
-			buf.WriteByte(':')
-			valBytes, err := marshalSettingsJSONSorted(t[k])
-			if err != nil {
-				return nil, err
-			}
-			buf.Write(valBytes)
-		}
-		buf.WriteByte('}')
-		return buf.Bytes(), nil
-	default:
-		return json.Marshal(t)
-	}
-}
-
 // UnflattenDottedMap turns dotted keys (after normalizeIndexSettings, e.g. index.number_of_shards)
 // into a nested map for JSON matching Elasticsearch's index settings object shape.
 //
@@ -330,29 +255,7 @@ func UnflattenDottedMap(flat map[string]any) map[string]any {
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
-		v := flat[k]
-		parts := strings.Split(k, ".")
-		cur := root
-		for i := range parts {
-			p := parts[i]
-			if i == len(parts)-1 {
-				cur[p] = v
-				break
-			}
-			existing, ok := cur[p]
-			if !ok {
-				nm := make(map[string]any)
-				cur[p] = nm
-				cur = nm
-				continue
-			}
-			nm, ok := existing.(map[string]any)
-			if !ok {
-				nm = make(map[string]any)
-				cur[p] = nm
-			}
-			cur = nm
-		}
+		typeutils.SetAtPath(root, strings.Split(k, "."), flat[k])
 	}
 	return root
 }

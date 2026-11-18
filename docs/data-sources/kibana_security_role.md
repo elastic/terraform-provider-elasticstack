@@ -18,8 +18,26 @@ provider "elasticstack" {
   kibana {}
 }
 
-data "elasticstack_kibana_security_role" "example" {
+# Manage a role and then look it up with the data source. The data source's
+# read is deferred until after the role is created (via depends_on), so the
+# lookup never targets a role that does not yet exist.
+resource "elasticstack_kibana_security_role" "example" {
   name = "sample_role"
+
+  elasticsearch {
+    cluster = ["manage_ingest_pipelines", "manage_index_templates", "auto_configure"]
+
+    indices {
+      names      = ["logs-myapp-*"]
+      privileges = ["write", "create_index", "auto_configure"]
+    }
+  }
+}
+
+data "elasticstack_kibana_security_role" "example" {
+  name = elasticstack_kibana_security_role.example.name
+
+  depends_on = [elasticstack_kibana_security_role.example]
 }
 ```
 
@@ -50,6 +68,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

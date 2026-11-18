@@ -21,7 +21,9 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -35,7 +37,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -145,15 +146,22 @@ func getSchema(_ context.Context) schema.Schema {
 				Sensitive:  true,
 				CustomType: customtypes.NormalizedYamlType{},
 			},
-			"space_ids": schema.SetAttribute{
-				Description: spaceIDsDescription,
-				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
+			"preset": schema.StringAttribute{
+				Description: "Performance tuning preset for elasticsearch and remote_elasticsearch outputs. One of `balanced`, `custom`, `latency`, `scale`, `throughput`. " +
+					"When omitted, the current preset is kept unless `type` or `config_yaml` changes. Otherwise Fleet may select it: `custom` when `config_yaml` " +
+					"contains performance tuning keys (such as `bulk_max_size` or `worker`) and `balanced` otherwise. Removing `preset` from the configuration " +
+					"does not reset it; set it explicitly to change it. `balanced` cannot be used when `config_yaml` contains performance tuning keys.",
+				Optional: true,
+				Computed: true,
+				PlanModifiers: []planmodifier.String{
+					presetPlanModifier(),
+				},
+				Validators: []validator.String{
+					stringvalidator.OneOf(outputPresets...),
+					validators.AllowedIfDependentPathOneOf(path.Root(attrType), []string{outputTypeElasticsearch, outputTypeRemoteElasticsearch}, validators.AllowedIfOptions{}),
 				},
 			},
+			"space_ids": kbschema.SpaceIDsAttribute(spaceIDsDescription),
 			attrSSL: schema.SingleNestedAttribute{
 				Description: "SSL configuration.",
 				Optional:    true,
@@ -397,7 +405,7 @@ func getSslAttrTypes(ctx context.Context) map[string]attr.Type {
 }
 
 func getHeadersAttrTypes(ctx context.Context) attr.Type {
-	return getSchema(ctx).Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["headers"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getSchema(ctx).Attributes["kafka"].(schema.SingleNestedAttribute).Attributes["headers"].GetType())
 }
 
 func getHashAttrTypes(ctx context.Context) map[string]attr.Type {

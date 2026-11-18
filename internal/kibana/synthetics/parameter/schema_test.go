@@ -18,11 +18,20 @@
 package parameter
 
 import (
+	"context"
+	"reflect"
+	"strings"
 	"testing"
 
 	kboapi "github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/defaults"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func Test_roundtrip(t *testing.T) {
@@ -31,13 +40,13 @@ func Test_roundtrip(t *testing.T) {
 		id             string
 		namespaces     []string
 		omitNamespaces bool
-		request        kboapi.SyntheticsParameterRequest
+		request        kboapi.KibanaHTTPAPIsParameterRequest
 	}{
 		{
 			name:       "only required fields",
 			id:         "id-1",
 			namespaces: []string{"ns-1"},
-			request: kboapi.SyntheticsParameterRequest{
+			request: kboapi.KibanaHTTPAPIsParameterRequest{
 				Key:   "key-1",
 				Value: "value-1",
 			},
@@ -46,7 +55,7 @@ func Test_roundtrip(t *testing.T) {
 			name:       "all fields",
 			id:         "id-2",
 			namespaces: []string{"*"},
-			request: kboapi.SyntheticsParameterRequest{
+			request: kboapi.KibanaHTTPAPIsParameterRequest{
 				Key:               "key-2",
 				Value:             "value-2",
 				Description:       new("description-2"),
@@ -58,7 +67,7 @@ func Test_roundtrip(t *testing.T) {
 			name:       "only description",
 			id:         "id-3",
 			namespaces: []string{"ns-3"},
-			request: kboapi.SyntheticsParameterRequest{
+			request: kboapi.KibanaHTTPAPIsParameterRequest{
 				Key:         "key-3",
 				Value:       "value-3",
 				Description: new("description-3"),
@@ -68,7 +77,7 @@ func Test_roundtrip(t *testing.T) {
 			name:       "only tags",
 			id:         "id-4",
 			namespaces: []string{"ns-4"},
-			request: kboapi.SyntheticsParameterRequest{
+			request: kboapi.KibanaHTTPAPIsParameterRequest{
 				Key:         "key-4",
 				Value:       "value-4",
 				Description: new("description-4"),
@@ -78,7 +87,7 @@ func Test_roundtrip(t *testing.T) {
 			name:       "all namespaces",
 			id:         "id-5",
 			namespaces: []string{"ns-5"},
-			request: kboapi.SyntheticsParameterRequest{
+			request: kboapi.KibanaHTTPAPIsParameterRequest{
 				Key:         "key-5",
 				Value:       "value-5",
 				Description: new("description-5"),
@@ -90,7 +99,7 @@ func Test_roundtrip(t *testing.T) {
 			name:           "namespaces omitted",
 			id:             "id-6",
 			omitNamespaces: true,
-			request: kboapi.SyntheticsParameterRequest{
+			request: kboapi.KibanaHTTPAPIsParameterRequest{
 				Key:   "key-6",
 				Value: "value-6",
 			},
@@ -108,7 +117,11 @@ func Test_roundtrip(t *testing.T) {
 			if !tt.omitNamespaces {
 				response.Namespaces = &tt.namespaces
 			}
-			m := modelFromOAPI(response)
+			m := modelFromOAPI(response, clients.DefaultSpaceID)
+
+			assert.Equal(t, clients.DefaultSpaceID, m.SpaceID.ValueString())
+			assert.Equal(t, clients.DefaultSpaceID+"/"+tt.id, m.ID.ValueString())
+			assert.Equal(t, tt.id, m.GetResourceID().ValueString())
 
 			actual := m.toParameterRequest(false)
 
@@ -119,4 +132,43 @@ func Test_roundtrip(t *testing.T) {
 			assert.Equal(t, typeutils.Deref(tt.request.ShareAcrossSpaces), typeutils.Deref(actual.ShareAcrossSpaces))
 		})
 	}
+}
+
+func TestSchema_hasSpaceIDAttribute(t *testing.T) {
+	t.Parallel()
+
+	canonical := kbschema.ResourceSpaceIDAttribute()
+	spaceIDAttr, ok := getSchema(context.Background()).Attributes["space_id"].(schema.StringAttribute)
+	require.True(t, ok)
+	assert.Equal(t, canonical.MarkdownDescription, spaceIDAttr.MarkdownDescription)
+	assert.True(t, spaceIDAttr.IsOptional())
+	assert.True(t, spaceIDAttr.IsComputed())
+	assertHasStringPlanModifier(t, spaceIDAttr.PlanModifiers, "useStateForUnknown")
+	assertHasStringPlanModifier(t, spaceIDAttr.PlanModifiers, "requiresReplace")
+}
+
+func TestSchema_spaceIDDefault(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	spaceIDAttr, ok := getSchema(ctx).Attributes["space_id"].(schema.StringAttribute)
+	require.True(t, ok)
+
+	defaultHandler := spaceIDAttr.StringDefaultValue()
+	require.NotNil(t, defaultHandler)
+
+	var resp defaults.StringResponse
+	defaultHandler.DefaultString(ctx, defaults.StringRequest{}, &resp)
+	require.False(t, resp.Diagnostics.HasError())
+	require.Equal(t, clients.DefaultSpaceID, resp.PlanValue.ValueString())
+}
+
+func assertHasStringPlanModifier(t *testing.T, modifiers []planmodifier.String, suffix string) {
+	t.Helper()
+	for i := range modifiers {
+		if strings.Contains(reflect.TypeOf(modifiers[i]).String(), suffix) {
+			return
+		}
+	}
+	t.Fatalf("expected plan modifier containing %q among %d modifiers", suffix, len(modifiers))
 }

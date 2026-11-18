@@ -23,7 +23,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -138,10 +137,7 @@ func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, s
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 	defer res.Body.Close()
-	if res.StatusCode == http.StatusNotFound {
-		return nil, nil
-	}
-	if d := diagutil.CheckHTTPErrorFromFW(res, fmt.Sprintf("Unable to get SLM policy: %s", slmName)); d.HasError() {
+	if notFound, d := diagutil.CheckHTTPErrorOrNotFound(res, fmt.Sprintf("Unable to get SLM policy: %s", slmName)); notFound || d.HasError() {
 		return nil, d
 	}
 	bodyBytes, err := io.ReadAll(res.Body)
@@ -169,11 +165,5 @@ func GetSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, s
 func DeleteSlm(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, slmName string) fwdiag.Diagnostics {
 	typedClient := apiClient.GetESClient()
 	_, err := typedClient.Slm.DeleteLifecycle(slmName).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil
-		}
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return nil
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete SLM policy")
 }

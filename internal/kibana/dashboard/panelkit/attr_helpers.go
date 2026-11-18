@@ -18,13 +18,14 @@
 package panelkit
 
 import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // AttrConcreteSet reports whether v is known and non-null Terraform config state (concretely "set").
 func AttrConcreteSet(v attr.Value) bool {
-	return v != nil && !v.IsNull() && !v.IsUnknown()
+	return v != nil && typeutils.IsKnown(v)
 }
 
 // AttrUnknown reports whether v is Terraform unknown (plan-time deferred).

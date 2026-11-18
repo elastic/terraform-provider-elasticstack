@@ -23,6 +23,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -70,24 +71,6 @@ func advancedSettingsMapFromTerraform(ctx context.Context, settings types.Map) (
 
 	diags.Append(validateAdvancedSettingKeys(result)...)
 	return result, diags
-}
-
-// setNestedValue sets value at a dot-separated path within nested maps.
-func setNestedValue(root map[string]any, path string, value string) {
-	parts := strings.Split(path, ".")
-	current := root
-	for i, part := range parts {
-		if i == len(parts)-1 {
-			current[part] = value
-			return
-		}
-		next, ok := current[part].(map[string]any)
-		if !ok || next == nil {
-			next = map[string]any{}
-			current[part] = next
-		}
-		current = next
-	}
 }
 
 // nestedAdvancedToMap flattens a nested advanced object into dot-notation paths
@@ -183,7 +166,7 @@ func mergeAdvancedSettingsIntoPolicy(policy map[string]any, settings, priorSetti
 			if len(matches) != 3 || matches[1] != os {
 				continue
 			}
-			setNestedValue(advanced, matches[2], value)
+			typeutils.SetAtPath(advanced, strings.Split(matches[2], "."), value)
 		}
 		osBlock[attrAdvanced] = advanced
 	}

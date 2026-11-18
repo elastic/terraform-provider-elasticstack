@@ -110,28 +110,6 @@ func trimBreakingBlockEnd(s string) string {
 	})
 }
 
-// Render emits a deterministic markdown fragment for a single Included PR shaped like changelog-renderer.js'
-// aggregated section parts (before multi-PR batching in RenderChangelogSection).
-func Render(sec Section, opts RenderOpts) string {
-	var sectionParts []string
-
-	if strings.TrimSpace(sec.BreakingChanges) != "" {
-		sectionParts = append(sectionParts, "### Breaking changes", "", trimBreakingBlockEnd(sec.BreakingChanges), "")
-	}
-
-	summaryTrim := strings.TrimSpace(sec.Summary)
-	if !rendererTreatsImpactAsNone(sec.ImpactRaw) && summaryTrim != "" {
-		bullet := BuildChangeBullet(summaryTrim, opts.PRNumber, opts.PRURL)
-		sectionParts = append(sectionParts, "### Changes", "", bullet, "")
-	}
-
-	for len(sectionParts) > 0 && sectionParts[len(sectionParts)-1] == "" {
-		sectionParts = sectionParts[:len(sectionParts)-1]
-	}
-
-	return strings.Join(sectionParts, "\n")
-}
-
 // RenderChangelogSection matches renderChangelogSection in changelog-renderer.js.
 func RenderChangelogSection(merged []MergedPR) RenderResult {
 	var included []IncludedPR

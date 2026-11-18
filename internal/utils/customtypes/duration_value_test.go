@@ -207,3 +207,19 @@ func TestDuration_StringSemanticEquals(t *testing.T) {
 		})
 	}
 }
+
+func TestNewDurationFromAny(t *testing.T) {
+	t.Run("nil returns null", func(t *testing.T) {
+		require.True(t, NewDurationFromAny(nil).IsNull())
+	})
+
+	t.Run("string value returned", func(t *testing.T) {
+		got := NewDurationFromAny("3h")
+		require.False(t, got.IsNull())
+		require.Equal(t, "3h", got.ValueString())
+	})
+
+	t.Run("wrong type returns null", func(t *testing.T) {
+		require.True(t, NewDurationFromAny(42).IsNull())
+	})
+}

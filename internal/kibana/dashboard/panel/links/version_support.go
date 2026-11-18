@@ -17,9 +17,8 @@
 
 package links
 
-import "github.com/hashicorp/go-version"
+import "github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 
 // MinKibanaAPISupport is the lowest Kibana version whose Dashboard API accepts
-// links panels. Empirical testing showed Kibana 9.4.0 rejects this panel type
-// (HTTP 400); 9.5.0-SNAPSHOT accepts it.
-var MinKibanaAPISupport = version.Must(version.NewVersion("9.5.0-SNAPSHOT"))
+// links panels. See panelkit.MinKibanaAPISupport95.
+var MinKibanaAPISupport = panelkit.MinKibanaAPISupport95

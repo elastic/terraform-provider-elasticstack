@@ -69,8 +69,8 @@ resource "elasticstack_kibana_dashboard" "getting_started" {
   }
 
   query = {
-    language = "kql"
-    text     = ""
+    language   = "kql"
+    expression = ""
   }
 
   panels = []
@@ -79,7 +79,7 @@ resource "elasticstack_kibana_dashboard" "getting_started" {
 
 - **`time_range`** — Sets the dashboard's global time picker. Here we look at the last seven days (`now-7d` through `now`). Panels inherit this range unless they define their own `time_range`.
 - **`refresh_interval`** — Controls auto-refresh. `pause = true` and `value = 0` mean the dashboard does not poll on a timer until a user enables refresh in the UI.
-- **`query`** — The dashboard-level query bar. An empty `text` with `language = "kql"` means no global filter is applied; panels still respect any filters users add later.
+- **`query`** — The dashboard-level query bar. An empty `expression` with `language = "kql"` means no global filter is applied; panels still respect any filters users add later.
 
 Apply this configuration (with `panels = []` or before you add panels) and open the dashboard in Kibana. You should see the title, time picker, and an empty layout ready for panels.
 

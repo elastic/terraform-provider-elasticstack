@@ -26,20 +26,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config tfModel) (tfModel, diag.Diagnostics) {
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, resourceID string, config tfModel) (tfModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// Default to "*" (all indices) when target is null or empty.
-	target := config.Target.ValueString()
-	if target == "" {
-		target = "*"
-	}
-
-	// Call client API
-	indexAPIModels, idxDiags := elasticsearch.GetIndices(ctx, esClient, target)
+	indexAPIModels, idxDiags := elasticsearch.GetIndices(ctx, esClient, resourceID)
 	diags.Append(idxDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	// Map response body to model
@@ -50,7 +43,7 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 		pDiags := indexStateModel.populateFromAPI(ctx, indexName, indexAPIModel)
 		diags.Append(pDiags...)
 		if diags.HasError() {
-			return config, diags
+			return config, false, diags
 		}
 
 		indices = append(indices, indexStateModel)
@@ -59,11 +52,11 @@ func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedCl
 	indicesList, listDiags := types.ListValueFrom(ctx, indicesElementType(ctx), indices)
 	diags.Append(listDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
-	config.ID = types.StringValue(target)
+	config.ID = types.StringValue(resourceID)
 	config.Indices = indicesList
 
-	return config, diags
+	return config, true, diags
 }

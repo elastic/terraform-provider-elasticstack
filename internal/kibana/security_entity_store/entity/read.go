@@ -37,7 +37,7 @@ func readEntity(
 	spaceID string,
 	model tfModel,
 ) (tfModel, bool, diag.Diagnostics) {
-	spaceID = NormalizeSpaceID(types.StringValue(spaceID))
+	spaceID = clients.EffectiveSpaceIDFromValue(types.StringValue(spaceID))
 	entityID := model.EntityID.ValueString()
 	entityType := model.EntityType.ValueString()
 
@@ -86,7 +86,7 @@ func readEntity(
 		}
 	}
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: entityID}).String())
+	model.ID = clients.CompositeIDValue(spaceID, entityID)
 	model.SpaceID = types.StringValue(spaceID)
 	model.EntityType = types.StringValue(entityType)
 	model.EntityID = types.StringValue(entityID)

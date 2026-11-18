@@ -20,34 +20,33 @@ package securitylist
 import (
 	"context"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
-func updateSecurityList(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[Model]) (entitycore.KibanaWriteResult[Model], diag.Diagnostics) {
-	m := req.Plan
+var updateSecurityList = entitycore.SimpleKibanaUpdate[Model, kbapi.UpdateListJSONRequestBody, kbapi.SecurityListsAPIList](
+	func(plan Model, _ context.Context, _ string) (kbapi.UpdateListJSONRequestBody, diag.Diagnostics) {
+		req, diags := plan.toUpdateRequest()
+		if diags.HasError() {
+			return kbapi.UpdateListJSONRequestBody{}, diags
+		}
+		return *req, diags
+	},
+	// UpdateList takes the resource ID via the request body (see
+	// Model.toUpdateRequest), not as a separate parameter, so the writeID
+	// argument required by SimpleKibanaUpdate's apiUpdate shape is unused here.
+	func(ctx context.Context, client *kibanaoapi.Client, spaceID, _ string, body kbapi.UpdateListJSONRequestBody) (*kbapi.SecurityListsAPIList, diag.Diagnostics) {
+		return kibanaoapi.UpdateList(ctx, client, spaceID, body)
+	},
+	(*Model).populateUpdated,
+)
+
+// populateUpdated only validates the update response is non-nil: the plan
+// already carries the correct field values for an update.
+func (m *Model) populateUpdated(_ context.Context, _ string, updated *kbapi.SecurityListsAPIList) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	updateReq, d := m.toUpdateRequest()
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	updatedList, d := kibanaoapi.UpdateList(ctx, oapiClient, req.SpaceID, *updateReq)
-	diags.Append(d...)
-	if diags.HasError() {
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	if updatedList == nil {
-		diags.AddError("Failed to update security list", "API returned empty response")
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-
-	return entitycore.KibanaWriteResult[Model]{Model: m}, diags
+	entitycore.RequireNonNilKibanaWriteResponse(&diags, updated, "update", "security list")
+	return diags
 }

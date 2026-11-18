@@ -190,6 +190,7 @@ func TestKibanaConnectionSnapshotRoundTrip(t *testing.T) {
 			Endpoints: types.ListValueMust(types.StringType, []attr.Value{
 				types.StringValue("https://kibana.example:5601"),
 			}),
+			Headers: types.MapNull(types.StringType),
 			CACerts: types.ListValueMust(types.StringType, []attr.Value{
 				types.StringValue("/path/to/ca.pem"),
 			}),
@@ -223,6 +224,34 @@ func TestKibanaConnectionSnapshotRoundTrip(t *testing.T) {
 	var caCerts []string
 	require.False(t, decodedConn.CACerts.ElementsAs(ctx, &caCerts, false).HasError())
 	require.Equal(t, []string{"/path/to/ca.pem"}, caCerts)
+}
+
+func TestKibanaConnectionSnapshotDoesNotSerializeHeaders(t *testing.T) {
+	t.Parallel()
+
+	ctx := context.Background()
+	connection, diags := types.ListValueFrom(ctx, providerschema.KibanaConnectionObjectType(), []clientconfig.KibanaConnection{
+		{
+			Endpoints: types.ListNull(types.StringType),
+			Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+				"X-Proxy-Token": types.StringValue("secret"),
+			}),
+			CACerts: types.ListNull(types.StringType),
+		},
+	})
+	require.False(t, diags.HasError())
+
+	encoded, encodeDiags := encodeKibanaConnection(ctx, connection)
+	require.False(t, encodeDiags.HasError())
+	require.NotContains(t, string(encoded), `"headers"`)
+
+	decoded, decodeDiags := decodeKibanaConnection(ctx, encoded)
+	require.False(t, decodeDiags.HasError())
+
+	var decodedConnections []clientconfig.KibanaConnection
+	require.False(t, decoded.ElementsAs(ctx, &decodedConnections, false).HasError())
+	require.Len(t, decodedConnections, 1)
+	require.True(t, decodedConnections[0].Headers.IsNull())
 }
 
 func TestKibanaConnectionSnapshotNullConnection(t *testing.T) {

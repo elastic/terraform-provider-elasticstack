@@ -269,7 +269,7 @@ func discoverSessionDSLTabToAPI(ctx context.Context, m models.DiscoverSessionDSL
 	api.ColumnSettings = discoverSessionColumnSettingsToAPI(ctx, m.ColumnSettings, &diags)
 
 	if len(m.Sort) > 0 {
-		s := discoverSessionSortToAPI0(m.Sort)
+		s := discoverSessionSortToAPI[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection](m.Sort)
 		api.Sort = &s
 	}
 
@@ -346,7 +346,7 @@ func discoverSessionESQLTabToAPI(ctx context.Context, m models.DiscoverSessionES
 	api.ColumnSettings = discoverSessionColumnSettingsToAPI(ctx, m.ColumnSettings, &diags)
 
 	if len(m.Sort) > 0 {
-		s := discoverSessionSortToAPI1(m.Sort)
+		s := discoverSessionSortToAPI[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection](m.Sort)
 		api.Sort = &s
 	}
 
@@ -377,37 +377,9 @@ func discoverSessionESQLTabToAPI(ctx context.Context, m models.DiscoverSessionES
 	return api, diags
 }
 
-func discoverSessionOverridesToAPI(ctx context.Context, m models.DiscoverSessionOverridesModel) (struct {
-	ColumnOrder    *[]string `json:"column_order,omitempty"`
-	ColumnSettings *map[string]struct {
-		Width *float32 `json:"width,omitempty"`
-	} `json:"column_settings,omitempty"`
-	Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity             `json:"density,omitempty"`
-	HeaderRowHeight *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight `json:"header_row_height,omitempty"`
-	RowHeight       *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight       `json:"row_height,omitempty"`
-	RowsPerPage     *float32                                                                                     `json:"rows_per_page,omitempty"`
-	SampleSize      *float32                                                                                     `json:"sample_size,omitempty"`
-	Sort            *[]struct {
-		Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
-		Name      string                                                                                `json:"name"`
-	} `json:"sort,omitempty"`
-}, diag.Diagnostics) {
+func discoverSessionOverridesToAPI(ctx context.Context, m models.DiscoverSessionOverridesModel) (discoverSessionOverridesAPI, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api struct {
-		ColumnOrder    *[]string `json:"column_order,omitempty"`
-		ColumnSettings *map[string]struct {
-			Width *float32 `json:"width,omitempty"`
-		} `json:"column_settings,omitempty"`
-		Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity             `json:"density,omitempty"`
-		HeaderRowHeight *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight `json:"header_row_height,omitempty"`
-		RowHeight       *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight       `json:"row_height,omitempty"`
-		RowsPerPage     *float32                                                                                     `json:"rows_per_page,omitempty"`
-		SampleSize      *float32                                                                                     `json:"sample_size,omitempty"`
-		Sort            *[]struct {
-			Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
-			Name      string                                                                                `json:"name"`
-		} `json:"sort,omitempty"`
-	}
+	var api discoverSessionOverridesAPI
 
 	if typeutils.IsKnown(m.ColumnOrder) && !m.ColumnOrder.IsNull() {
 		co := typeutils.ListTypeToSliceString(ctx, m.ColumnOrder, path.Empty(), &diags)
@@ -419,7 +391,7 @@ func discoverSessionOverridesToAPI(ctx context.Context, m models.DiscoverSession
 	api.ColumnSettings = discoverSessionColumnSettingsToAPI(ctx, m.ColumnSettings, &diags)
 
 	if len(m.Sort) > 0 {
-		s := discoverSessionOverridesSortToAPI(m.Sort)
+		s := discoverSessionSortToAPI[kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection](m.Sort)
 		api.Sort = &s
 	}
 
@@ -452,47 +424,20 @@ func discoverSessionOverridesToAPI(ctx context.Context, m models.DiscoverSession
 	return api, diags
 }
 
-func discoverSessionSortToAPI0(sort []models.DiscoverSessionSortModel) []struct {
-	Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection `json:"direction"`
-	Name      string                                                                            `json:"name"`
+// discoverSessionSortToAPI converts sort models to the API shape shared by every generated
+// Direction enum (kbapi emits a distinct named string type per schema branch for what is
+// structurally the same {direction, name} pair).
+func discoverSessionSortToAPI[D ~string](sort []models.DiscoverSessionSortModel) []struct {
+	Direction D      `json:"direction"`
+	Name      string `json:"name"`
 } {
 	out := make([]struct {
-		Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection `json:"direction"`
-		Name      string                                                                            `json:"name"`
+		Direction D      `json:"direction"`
+		Name      string `json:"name"`
 	}, len(sort))
 	for i, s := range sort {
 		out[i].Name = s.Name.ValueString()
-		out[i].Direction = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs0SortDirection(s.Direction.ValueString())
-	}
-	return out
-}
-
-func discoverSessionSortToAPI1(sort []models.DiscoverSessionSortModel) []struct {
-	Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection `json:"direction"`
-	Name      string                                                                            `json:"name"`
-} {
-	out := make([]struct {
-		Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection `json:"direction"`
-		Name      string                                                                            `json:"name"`
-	}, len(sort))
-	for i, s := range sort {
-		out[i].Name = s.Name.ValueString()
-		out[i].Direction = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig0Tabs1SortDirection(s.Direction.ValueString())
-	}
-	return out
-}
-
-func discoverSessionOverridesSortToAPI(sort []models.DiscoverSessionSortModel) []struct {
-	Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
-	Name      string                                                                                `json:"name"`
-} {
-	out := make([]struct {
-		Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
-		Name      string                                                                                `json:"name"`
-	}, len(sort))
-	for i, s := range sort {
-		out[i].Name = s.Name.ValueString()
-		out[i].Direction = kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection(s.Direction.ValueString())
+		out[i].Direction = D(s.Direction.ValueString())
 	}
 	return out
 }

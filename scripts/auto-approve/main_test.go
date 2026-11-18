@@ -27,9 +27,10 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/google/go-github/v89/github"
+	"github.com/google/go-github/v93/github"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -278,7 +279,7 @@ func TestRunApprovesWhenAllGatesPass(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	orig := newGitHubClient
-	newGitHubClient = func(context.Context, string) (*github.Client, error) {
+	newGitHubClient = func(context.Context, string) (*github.Client, error) { //nolint:unparam // signature must match the newGitHubClient var
 		u, err := url.Parse(server.URL + "/")
 		require.NoError(t, err)
 		client, err := github.NewClient(github.WithTransport(&rewriteTransport{baseURL: u, base: http.DefaultTransport}))
@@ -326,7 +327,7 @@ func TestRunDoesNotApproveWhenGateFails(t *testing.T) {
 	t.Cleanup(server.Close)
 
 	orig := newGitHubClient
-	newGitHubClient = func(context.Context, string) (*github.Client, error) {
+	newGitHubClient = func(context.Context, string) (*github.Client, error) { //nolint:unparam // signature must match the newGitHubClient var
 		u, err := url.Parse(server.URL + "/")
 		require.NoError(t, err)
 		client, err := github.NewClient(github.WithTransport(&rewriteTransport{baseURL: u, base: http.DefaultTransport}))
@@ -387,4 +388,35 @@ func TestLogJSONEncodeError(t *testing.T) {
 func forceSetEnv(t *testing.T, key string, value string) {
 	t.Helper()
 	t.Setenv(key, value)
+}
+
+func TestAutoApproveDoesNotMergeOrEnableAutoMerge(t *testing.T) {
+	t.Parallel()
+
+	entries, err := os.ReadDir(".")
+	require.NoError(t, err)
+
+	forbidden := []string{
+		"PullRequests.Merge",
+		"EnablePullRequestAutoMerge",
+		"MergePullRequest",
+		"EnableAutoMerge",
+		"auto_merge",
+		"auto-merge",
+	}
+
+	for _, entry := range entries {
+		name := entry.Name()
+		if !strings.HasSuffix(name, ".go") || strings.HasSuffix(name, "_test.go") {
+			continue
+		}
+
+		content, readErr := os.ReadFile(name)
+		require.NoError(t, readErr)
+
+		src := string(content)
+		for _, needle := range forbidden {
+			assert.NotContainsf(t, src, needle, "%s must not contain %q", name, needle)
+		}
+	}
 }

@@ -40,9 +40,9 @@ import (
 // fail against the timeouts-free data source schema.
 type skillBaseModel struct {
 	entitycore.KibanaConnectionField
-	ID                types.String                 `tfsdk:"id"`
-	SkillID           types.String                 `tfsdk:"skill_id"`
-	SpaceID           types.String                 `tfsdk:"space_id"`
+	ID      types.String `tfsdk:"id"`
+	SkillID types.String `tfsdk:"skill_id"`
+	entitycore.SpaceIDField
 	Name              types.String                 `tfsdk:"name"`
 	Description       types.String                 `tfsdk:"description"`
 	Content           types.String                 `tfsdk:"content"`
@@ -52,15 +52,12 @@ type skillBaseModel struct {
 
 func (model skillBaseModel) GetID() types.String         { return model.ID }
 func (model skillBaseModel) GetResourceID() types.String { return model.SkillID }
-func (model skillBaseModel) GetSpaceID() types.String    { return model.SpaceID }
 
 func (skillBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *agentbuilder.MinExtendedAPIVersion,
-			ErrorMessage: fmt.Sprintf("Agent Builder skills require Elastic Stack v%s or later.", agentbuilder.MinExtendedAPIVersion),
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*agentbuilder.MinExtendedAPIVersion,
+		fmt.Sprintf("Agent Builder skills require Elastic Stack v%s or later.", agentbuilder.MinExtendedAPIVersion),
+	), nil
 }
 
 // skillModel is the model for the Agent Builder skill resource. It embeds the
@@ -87,11 +84,9 @@ func (model *skillBaseModel) populateFromAPI(ctx context.Context, spaceID string
 	var diags diag.Diagnostics
 	var d diag.Diagnostics
 
-	if spaceID == "" {
-		spaceID = clients.DefaultSpaceID
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.ID = clients.CompositeIDValue(spaceID, data.ID)
 	model.SkillID = types.StringValue(data.ID)
 	model.SpaceID = types.StringValue(spaceID)
 	model.Name = types.StringValue(data.Name)

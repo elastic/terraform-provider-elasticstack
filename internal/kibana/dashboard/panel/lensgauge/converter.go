@@ -22,7 +22,6 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -37,7 +36,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanelTypeGauge)
+	return string(kbapi.KibanaHTTPAPIsVisGaugeNoESQLByValuePanelTypeGauge)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -154,22 +153,17 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	if diags := lenscommon.ValidateLensBlocks(blocks, "gauge_config"); diags.HasError() {
 		return diags
 	}
-	var prior *models.GaugeConfigModel
-	if blocks.GaugeConfig != nil {
-		cpy := *blocks.GaugeConfig
-		prior = &cpy
-	}
-	blocks.GaugeConfig = &models.GaugeConfigModel{}
-
-	if noESQL, err := attrs.AsKibanaHTTPAPIsGaugeNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(noESQL.DataSource) {
-		return gaugeConfigFromAPI(ctx, blocks.GaugeConfig, prior, noESQL)
-	}
-
-	esql, err := attrs.AsKibanaHTTPAPIsGaugeESQLByValuePanel()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return gaugeConfigFromAPIESQL(ctx, blocks.GaugeConfig, prior, esql)
+	prior := lenscommon.SnapshotAndResetBlock(&blocks.GaugeConfig)
+	return lenscommon.PopulateFromNoESQLOrESQL(
+		ctx, blocks.GaugeConfig, prior,
+		attrs.AsKibanaHTTPAPIsVisGaugeNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsVisGaugeESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsVisGaugeNoESQLByValuePanel) bool {
+			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
+		},
+		gaugeConfigFromAPI,
+		gaugeConfigFromAPIESQL,
+	)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
@@ -182,7 +176,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignGaugeStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignGaugeConfigStateFromPlan(ctx, plan.GaugeConfig, state.GaugeConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

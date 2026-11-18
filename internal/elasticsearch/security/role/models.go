@@ -39,17 +39,17 @@ import (
 
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String                                      `tfsdk:"id"`
-	ElasticsearchConnection types.List                                        `tfsdk:"elasticsearch_connection"`
-	Name                    types.String                                      `tfsdk:"name"`
-	Description             types.String                                      `tfsdk:"description"`
-	Applications            types.Set                                         `tfsdk:"applications"`
-	Global                  customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"global"`
-	Cluster                 types.Set                                         `tfsdk:"cluster"`
-	Indices                 types.Set                                         `tfsdk:"indices"`
-	RemoteIndices           types.Set                                         `tfsdk:"remote_indices"`
-	Metadata                jsontypes.Normalized                              `tfsdk:"metadata"`
-	RunAs                   types.Set                                         `tfsdk:"run_as"`
+	entitycore.ElasticsearchConnectionField
+	ID            types.String                                      `tfsdk:"id"`
+	Name          types.String                                      `tfsdk:"name"`
+	Description   types.String                                      `tfsdk:"description"`
+	Applications  types.Set                                         `tfsdk:"applications"`
+	Global        customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"global"`
+	Cluster       types.Set                                         `tfsdk:"cluster"`
+	Indices       types.Set                                         `tfsdk:"indices"`
+	RemoteIndices types.Set                                         `tfsdk:"remote_indices"`
+	Metadata      jsontypes.Normalized                              `tfsdk:"metadata"`
+	RunAs         types.Set                                         `tfsdk:"run_as"`
 }
 
 type ApplicationData struct {
@@ -289,6 +289,26 @@ func fieldSecurityToAPIModel(ctx context.Context, data types.Object) (*estypes.F
 	return &fieldSecurity, diags
 }
 
+// buildFieldSecurityObject converts an API FieldSecurity to the resource's field_security
+// object representation (a single, nullable object).
+func buildFieldSecurityObject(ctx context.Context, fs *estypes.FieldSecurity) (types.Object, diag.Diagnostics) {
+	if fs == nil {
+		return types.ObjectNull(getFieldSecurityAttrTypes()), nil
+	}
+
+	grantSet, exceptSet, diags := fieldSecurityGrantExceptSets(ctx, fs)
+	if diags.HasError() {
+		return types.ObjectNull(getFieldSecurityAttrTypes()), diags
+	}
+
+	fieldSecObj, d := types.ObjectValue(getFieldSecurityAttrTypes(), map[string]attr.Value{
+		attrGrant:  grantSet,
+		attrExcept: exceptSet,
+	})
+	diags.Append(d...)
+	return fieldSecObj, diags
+}
+
 // fromAPIModel converts the API model to the Terraform model.
 func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) diag.Diagnostics {
 	var diags diag.Diagnostics
@@ -314,51 +334,16 @@ func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) di
 	}
 
 	// Applications
-	if len(role.Applications) > 0 {
-		appElements := make([]attr.Value, len(role.Applications))
-		for i, app := range role.Applications {
-			privSet, d := types.SetValueFrom(ctx, types.StringType, app.Privileges)
-			diags.Append(d...)
-			if diags.HasError() {
-				return diags
-			}
-
-			resSet, d := types.SetValueFrom(ctx, types.StringType, app.Resources)
-			diags.Append(d...)
-			if diags.HasError() {
-				return diags
-			}
-
-			appObj, d := types.ObjectValue(getApplicationAttrTypes(), map[string]attr.Value{
-				attrApplication: types.StringValue(app.Application),
-				attrPrivileges:  privSet,
-				attrResources:   resSet,
-			})
-			diags.Append(d...)
-			if diags.HasError() {
-				return diags
-			}
-
-			appElements[i] = appObj
-		}
-
-		appSet, d := types.SetValue(types.ObjectType{AttrTypes: getApplicationAttrTypes()}, appElements)
-		diags.Append(d...)
-		if diags.HasError() {
-			return diags
-		}
-		data.Applications = appSet
-	} else {
-		data.Applications = types.SetNull(types.ObjectType{AttrTypes: getApplicationAttrTypes()})
+	appSet, appDiags := applicationsToSet(ctx, role.Applications)
+	diags.Append(appDiags...)
+	if diags.HasError() {
+		return diags
 	}
+	data.Applications = appSet
 
 	// Cluster
-	clusterStrings := make([]string, len(role.Cluster))
-	for i, cp := range role.Cluster {
-		clusterStrings[i] = cp.String()
-	}
 	var clusterDiags diag.Diagnostics
-	data.Cluster, clusterDiags = typeutils.NonEmptySetOrDefault(ctx, originalCluster, types.StringType, clusterStrings)
+	data.Cluster, clusterDiags = typeutils.NonEmptySetOrDefault(ctx, originalCluster, types.StringType, clusterPrivilegesToStrings(role.Cluster))
 	diags.Append(clusterDiags...)
 	if diags.HasError() {
 		return diags
@@ -381,11 +366,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) di
 				return diags
 			}
 
-			privileges := make([]string, len(index.Privileges))
-			for j, p := range index.Privileges {
-				privileges[j] = p.String()
-			}
-			privSet, d := types.SetValueFrom(ctx, types.StringType, privileges)
+			privSet, d := types.SetValueFrom(ctx, types.StringType, indexPrivilegesToStrings(index.Privileges))
 			diags.Append(d...)
 			if diags.HasError() {
 				return diags
@@ -399,30 +380,10 @@ func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) di
 
 			allowRestrictedVal := types.BoolPointerValue(index.AllowRestrictedIndices)
 
-			var fieldSecObj types.Object
-			if index.FieldSecurity != nil {
-				grantSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(index.FieldSecurity.Grant))
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-
-				exceptSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(index.FieldSecurity.Except))
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-
-				fieldSecObj, d = types.ObjectValue(getFieldSecurityAttrTypes(), map[string]attr.Value{
-					attrGrant:  grantSet,
-					attrExcept: exceptSet,
-				})
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-			} else {
-				fieldSecObj = types.ObjectNull(getFieldSecurityAttrTypes())
+			fieldSecObj, d := buildFieldSecurityObject(ctx, index.FieldSecurity)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
 			}
 
 			indexObj, d := types.ObjectValue(getIndexPermsAttrTypes(), map[string]attr.Value{
@@ -466,11 +427,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) di
 				return diags
 			}
 
-			privileges := make([]string, len(remoteIndex.Privileges))
-			for j, p := range remoteIndex.Privileges {
-				privileges[j] = p.String()
-			}
-			privSet, d := types.SetValueFrom(ctx, types.StringType, privileges)
+			privSet, d := types.SetValueFrom(ctx, types.StringType, indexPrivilegesToStrings(remoteIndex.Privileges))
 			diags.Append(d...)
 			if diags.HasError() {
 				return diags
@@ -489,30 +446,10 @@ func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) di
 				allowRestrictedVal = types.BoolNull()
 			}
 
-			var fieldSecObj types.Object
-			if remoteIndex.FieldSecurity != nil {
-				grantSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.FieldSecurity.Grant))
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-
-				exceptSet, d := types.SetValueFrom(ctx, types.StringType, typeutils.NonNilSlice(remoteIndex.FieldSecurity.Except))
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-
-				fieldSecObj, d = types.ObjectValue(getFieldSecurityAttrTypes(), map[string]attr.Value{
-					attrGrant:  grantSet,
-					attrExcept: exceptSet,
-				})
-				diags.Append(d...)
-				if diags.HasError() {
-					return diags
-				}
-			} else {
-				fieldSecObj = types.ObjectNull(getFieldSecurityAttrTypes())
+			fieldSecObj, d := buildFieldSecurityObject(ctx, remoteIndex.FieldSecurity)
+			diags.Append(d...)
+			if diags.HasError() {
+				return diags
 			}
 
 			remoteIndexObj, d := types.ObjectValue(getRemoteIndexPermsAttrTypes(), map[string]attr.Value{
@@ -542,16 +479,7 @@ func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) di
 	}
 
 	// Metadata
-	if role.Metadata != nil {
-		metadata, err := json.Marshal(role.Metadata)
-		if err != nil {
-			diags.AddError("JSON Marshal Error", fmt.Sprintf("Error marshaling metadata JSON: %s", err))
-			return diags
-		}
-		data.Metadata = jsontypes.NewNormalizedValue(string(metadata))
-	} else {
-		data.Metadata = jsontypes.NewNormalizedNull()
-	}
+	data.Metadata = typeutils.MarshalToNormalized(role.Metadata, path.Root("metadata"), &diags)
 
 	// Run As
 	var runAsDiags diag.Diagnostics
@@ -561,9 +489,8 @@ func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) di
 	return diags
 }
 
-func (data Data) GetID() types.String                    { return data.ID }
-func (data Data) GetResourceID() types.String            { return data.Name }
-func (data Data) GetElasticsearchConnection() types.List { return data.ElasticsearchConnection }
+func (data Data) GetID() types.String         { return data.ID }
+func (data Data) GetResourceID() types.String { return data.Name }
 
 var _ entitycore.WithVersionRequirements = Data{}
 
@@ -572,25 +499,12 @@ var _ entitycore.WithVersionRequirements = Data{}
 func (data Data) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var reqs []entitycore.VersionRequirement
 
-	if typeutils.IsKnown(data.Description) {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion: *MinSupportedDescriptionVersion,
-			ErrorMessage: fmt.Sprintf(
-				"'description' is supported only for Elasticsearch v%s and above",
-				MinSupportedDescriptionVersion.String(),
-			),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs, typeutils.IsKnown(data.Description),
+		MinSupportedDescriptionVersion, "'description' is supported only for Elasticsearch v%s and above", MinSupportedDescriptionVersion.String())
 
-	if typeutils.IsKnown(data.RemoteIndices) && len(data.RemoteIndices.Elements()) > 0 {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion: *MinSupportedRemoteIndicesVersion,
-			ErrorMessage: fmt.Sprintf(
-				"'remote_indices' is supported only for Elasticsearch v%s and above",
-				MinSupportedRemoteIndicesVersion.String(),
-			),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs,
+		typeutils.IsKnown(data.RemoteIndices) && len(data.RemoteIndices.Elements()) > 0,
+		MinSupportedRemoteIndicesVersion, "'remote_indices' is supported only for Elasticsearch v%s and above", MinSupportedRemoteIndicesVersion.String())
 
 	return reqs, nil
 }

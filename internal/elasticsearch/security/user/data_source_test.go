@@ -19,6 +19,7 @@ package securityuser_test
 
 import (
 	"fmt"
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -92,7 +93,6 @@ func TestAccDataSourceSecurityUserCustom(t *testing.T) {
 
 func TestAccDataSourceSecurityUserNotFound(t *testing.T) {
 	username := fmt.Sprintf("nonexistent-%s", sdkacctest.RandStringFromCharSet(20, sdkacctest.CharSetAlphaNum))
-	const ds = "data.elasticstack_elasticsearch_security_user.test"
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -103,15 +103,7 @@ func TestAccDataSourceSecurityUserNotFound(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"username": config.StringVariable(username),
 				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(ds, "id", ""),
-					resource.TestCheckResourceAttr(ds, "username", username),
-					resource.TestCheckNoResourceAttr(ds, "full_name"),
-					resource.TestCheckNoResourceAttr(ds, "email"),
-					resource.TestCheckNoResourceAttr(ds, "metadata"),
-					resource.TestCheckNoResourceAttr(ds, "enabled"),
-					resource.TestCheckNoResourceAttr(ds, "roles.#"),
-				),
+				ExpectError: regexp.MustCompile(`elasticsearch_security_user not found`),
 			},
 		},
 	})

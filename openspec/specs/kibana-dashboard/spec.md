@@ -17,22 +17,21 @@ resource "elasticstack_kibana_dashboard" "example" {
   title       = <required, string>
   description = <optional, string>
 
-  time_range = {
+  time_range = <optional, object({
     from = <required, string>
     to   = <required, string>
     mode = <optional, string> # absolute | relative; preserved when GET omits mode (REQ-009)
-  }
+  })>
 
-  refresh_interval = {
+  refresh_interval = <optional, object({
     pause = <required, bool>
     value = <required, int64>
-  }
+  })>
 
-  query = {
-    language = <required, string>
-    text     = <optional, string> # conflicts with json; string branch of API union
-    json     = <optional, json string, normalized> # conflicts with text; object branch
-  }
+  query = <optional, object({
+    language   = <required, string>
+    expression = <required, string>
+  })>
 
   tags = <optional, list(string)>
 
@@ -328,8 +327,10 @@ Notes:
 
 - The resource is marked as technical preview in its schema description; sections are also marked as technical preview.
 - The resource uses only the provider-level Kibana OpenAPI client; there is no resource-local Kibana connection override block.
-- The resource does not declare a schema version, custom state upgrader, or resource-level compatibility gate in CRUD logic.
+- The resource declares schema version 2 with state upgraders for stored versions 0 and 1 (REQ-040, REQ-055), and has no resource-level compatibility gate in CRUD logic.
+
 ## Requirements
+
 ### Requirement: Kibana Dashboard APIs and request shaping (REQ-001)
 
 The resource SHALL manage dashboards through Kibana's Dashboard HTTP APIs for create, get, update, and delete. For non-default spaces it SHALL call those APIs through a space-aware path rooted at `/s/<space_id>`, and for the default space it SHALL use the base dashboard path. Dashboard API requests SHALL include the request shaping used by the implementation: query parameter `allowUnmappedKeys=true`.
@@ -436,23 +437,29 @@ Schema validation SHALL enforce that each typed panel config block is only prese
 - WHEN Terraform validates the resource schema
 - THEN the provider SHALL return a plan-time error diagnostic
 
-### Requirement: Dashboard root schema API naming (REQ-036)
+### Requirement: Dashboard root schema API naming — expression query (REQ-036)
 
-The resource SHALL expose dashboard-level time selection, refresh, and query using nested attribute objects whose names mirror the Kibana Dashboard API JSON: `time_range` (`from`, `to`, optional `mode`), `refresh_interval` (`pause`, `value`), and `query` (`language`, restricted to `kql` or `lucene`, with exactly one of `text` or `json` for the query expression).
+The resource SHALL expose dashboard-level time selection, refresh, and query using nested attribute objects whose names mirror the Kibana Dashboard API JSON: `time_range` (`from`, `to`, optional `mode`), `refresh_interval` (`pause`, `value`), and `query` (`language`, restricted to `kql` or `lucene`, and `expression`, the KQL/Lucene query string). The root `time_range`, `refresh_interval`, and `query` attributes SHALL be **optional**, matching the Kibana Dashboards API where only `title` is required on create and update. Their nested attributes SHALL remain required when the parent block is configured: `time_range.from` / `time_range.to`, `refresh_interval.pause` / `refresh_interval.value`, and `query.language` / `query.expression`. The resource SHALL NOT set a schema default, plan modifier default, or `Computed` flag on any of the three root blocks.
 
 The resource SHALL expose dashboard `options` with the API-aligned flags `auto_apply_filters` and `hide_panel_borders` in addition to the existing option fields.
 
-#### Scenario: Query union uses text branch
+#### Scenario: Query expression maps directly to the API field
 
-- GIVEN `query = { language = "kql" text = "http.response.status_code:200" }`
+- GIVEN `query = { language = "kql" expression = "http.response.status_code:200" }`
 - WHEN the provider builds the create or update request body
-- THEN it SHALL set the API query expression from `query.text` and SHALL set `query.language` from `query.language`
+- THEN it SHALL set the API query expression from `query.expression` and SHALL set `query.language` from `query.language`
 
-#### Scenario: Query union uses json branch
+#### Scenario: Empty-string expression is valid
 
-- GIVEN `query = { language = "kql" json = jsonencode({ ... }) }`
-- WHEN the provider builds the create or update request
-- THEN it SHALL set the API query expression from `query.json` and SHALL reject configurations where both `text` and `json` are set, or where neither is set
+- GIVEN `query = { language = "kql" expression = "" }`
+- WHEN Terraform validates and plans the resource
+- THEN validation SHALL succeed and the provider SHALL send `expression = ""` in the request body without rejecting it as missing
+
+#### Scenario: Missing expression is rejected
+
+- GIVEN a configuration with `query = { language = "kql" }` and no `expression` set
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic for the missing required `expression` attribute
 
 #### Scenario: Options include new flags
 
@@ -460,9 +467,44 @@ The resource SHALL expose dashboard `options` with the API-aligned flags `auto_a
 - WHEN create or update runs
 - THEN the provider SHALL include those fields in the API `options` object when known
 
+#### Scenario: Title-only configuration is valid
+
+- GIVEN a configuration containing only `title` (no `time_range`, `refresh_interval`, or `query`)
+- WHEN Terraform validates and plans the resource
+- THEN validation SHALL succeed with no diagnostics about missing required root attributes
+
+#### Scenario: Nested attributes remain required when the block is set
+
+- GIVEN a configuration with `time_range = { from = "now-7d" }` (missing `to`)
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return an error diagnostic for the missing nested `to` attribute
+
 ### Requirement: Create and update request mapping (REQ-007)
 
-On create and update, the resource SHALL map Terraform state to the dashboard API request body using `title`, `description`, nested `time_range`, nested `refresh_interval`, nested `query`, tags, options, panels, and sections when those values are known. `access_control` SHALL be sent on create when known. The current regenerated Kibana `PUT /dashboards/{id}` request body does not expose `access_control`, so updates SHALL preserve prior `access_control` state but SHALL NOT claim to mutate it through the dashboard update request until the API surface supports that field. Query mapping SHALL send `query.text` as the string form of the API query expression and `query.json` as the JSON-object form of the same expression field. On create, the provider SHALL call the `POST /dashboards` API and let Kibana assign the dashboard id. If conversion of query or panel data fails, the operation SHALL return diagnostics and SHALL NOT proceed with the dashboard API call. After a successful create or update, the resource SHALL read the dashboard back and use that read as the authoritative final state; if the dashboard cannot be read back, the operation SHALL fail.
+On create and update, the resource SHALL map Terraform state to the dashboard API request body using `title`, `description`, nested `time_range`, nested `refresh_interval`, nested `query`, tags, options, panels, and sections when those values are known. `access_control` SHALL be sent on create when known. The current regenerated Kibana `PUT /dashboards/{id}` request body does not expose `access_control`, so updates SHALL preserve prior `access_control` state but SHALL NOT claim to mutate it through the dashboard update request until the API surface supports that field. Query mapping SHALL send `query.expression` as the API query expression and `query.language` as the API query language, a direct one-to-one copy. On create without a practitioner-supplied `dashboard_id`, the provider SHALL call the `POST /dashboards` API and let Kibana assign the dashboard id; when `dashboard_id` is configured, it SHALL create via `PUT /dashboards/{id}` as described in REQ-003 and REQ-003a. If conversion of query or panel data fails, the operation SHALL return diagnostics and SHALL NOT proceed with the dashboard API call. When `time_range`, `refresh_interval`, or `query` is null in the plan or state, the provider SHALL omit that field from the request body on both create (`POST /dashboards`) and update (`PUT /dashboards/{id}`). Because the Kibana `PUT /dashboards/{id}` operation is a full replace, omitting a block on update SHALL clear it in Kibana rather than preserve its previous value. The provider SHALL NOT send zero-value `time_range`, `refresh_interval`, `query`, or `options` objects for a null block, since Kibana rejects them (for example HTTP 400 on `query.language`). To make this possible, the hand-maintained `PUT /api/dashboards/{id}` overlay in `generated/kbapi/dashboard-paths.json` SHALL list only `title` as required, and the generated `PutDashboardsIdJSONBody` SHALL expose `time_range`, `refresh_interval`, `query`, and `options` as optional (pointer) fields.
+
+After a successful create or update, the resource SHALL read the dashboard back and use that read as the authoritative final state; if the dashboard cannot be read back, the operation SHALL fail.
+
+#### Scenario: Create omits unset root blocks
+
+- GIVEN a configuration with only `title` set
+- WHEN create runs
+- THEN the `POST /dashboards` request body SHALL contain `title` and SHALL NOT contain `time_range`, `refresh_interval`, or `query`
+
+#### Scenario: Update omits unset root blocks
+
+- GIVEN a configuration with only `title` set and prior state with the same configuration
+- WHEN update runs
+- THEN the `PUT /dashboards/{id}` request body SHALL NOT contain `time_range`, `refresh_interval`, `query`, or `options`
+- AND the request SHALL NOT be rejected by Kibana for zero-value blocks
+
+#### Scenario: Removing a block clears it
+
+- GIVEN prior state with `time_range`, `refresh_interval`, and `query` set
+- AND the configuration is changed to remove all three blocks
+- WHEN update runs
+- THEN the `PUT /dashboards/{id}` request body SHALL omit all three
+- AND after the post-apply read the three blocks SHALL be null in state (not reset to a Kibana default)
 
 #### Scenario: Post-apply authoritative read
 
@@ -482,9 +524,9 @@ On refresh, the resource SHALL parse the composite `id`, read the dashboard from
 
 #### Scenario: Read maps nested query and time_range
 
-- GIVEN a successful refresh after create with `query = { language = "kql" text = "foo" }` and `time_range = { from = "now-7d" to = "now" }`
+- GIVEN a successful refresh after create with `query = { language = "kql" expression = "foo" }` and `time_range = { from = "now-7d" to = "now" }`
 - WHEN state is repopulated from the GET response
-- THEN the resource SHALL set `query.language`, `query.text`, and `time_range.from` / `time_range.to` from the API payload
+- THEN the resource SHALL set `query.language`, `query.expression`, and `time_range.from` / `time_range.to` from the API payload
 
 The provider SHALL apply intent-preserving null normalization to the root-level `description` attribute on read. When the Kibana API returns an empty-string `description` (`""`) and the prior Terraform plan/state had `description` as null (i.e., the practitioner did not set `description`), the provider SHALL store `null` in state — not `""`. When the prior Terraform plan/state had `description` as `""` (i.e., the practitioner explicitly set `description = ""`), the provider SHALL preserve `""` in state. When the API returns a non-empty `description`, the provider SHALL store that value unchanged.
 
@@ -515,11 +557,19 @@ This normalization fixes a Kibana 9.5 behavior change: previously the API omitte
 
 When Kibana omits or defaults fields on read, the resource SHALL preserve prior Terraform intent to avoid inconsistent results and spurious drift where the implementation supports that behavior. The resource preserves the prior `time_range.mode` value already held in state or plan instead of overwriting it from read-back when the GET response does not supply a usable mode. When the GET dashboard API does not supply a usable `access_control.access_mode` value, the resource SHALL clear `access_control` in Terraform state rather than leaving a stale prior value behind. When the options block was omitted in Terraform and Kibana materializes only the default dashboard options matching the implementation's `isDashboardOptionsDefaultSet` helper (including `auto_apply_filters` and `hide_panel_borders` at their API defaults when applicable), the resource SHALL keep the `options` block null in state. When a section's prior `collapsed` value was null and Kibana returns `false`, the resource SHALL preserve null rather than forcing `false` into state.
 
+The root `time_range`, `refresh_interval`, and `query` blocks are not subject to null-preservation or default detection. Kibana applies no defaults to these blocks and returns them as absent when they were not sent (verified against Kibana 9.4.2 and 9.6.0-SNAPSHOT), so the resource SHALL map them from the API response as-is: a block present in the response is populated in state, and a block absent from the response is null in state. The existing `time_range.mode` preservation continues to apply when `time_range` is present. If a future Kibana version begins returning defaults for these blocks, the title-only acceptance test is the intended detection mechanism and a follow-up change would add null-preservation.
+
 For panel reads, the provider SHALL seed each panel from prior practitioner intent before finalizing state: from the prior plan on the post-create and post-update read-back, and from prior state on refresh. After that seed, it SHALL apply panel-type-specific alignment so Kibana-injected defaults or omitted optional values do not overwrite practitioner intent. This alignment includes preserving configured titles and descriptions when the API returns blank values, preserving ES|QL control `esql_query`, `title`, and `available_options` when the API omits them, preserving raw `config_json` when the read-back only differs by omitted optional `filters` or `query` keys, and preserving semantically equivalent optional JSON defaults such as `rank_by` in metric and tagcloud configurations.
+
+For typed panel config blocks whose `PopulateFromAPI` receives both `pm` (the panel model being built, which callers always pass zero-valued to avoid aliasing plan pointers) and `prior` (the prior plan or state panel at the same index), the null-preservation decision for that block SHALL key on `prior.<Type>Config`, not on `pm`'s own field: `prior.<Type>Config != nil` SHALL be treated as a same-type update (honor the practitioner's null intent for optional fields), and `prior.<Type>Config == nil` SHALL be treated as creation, import, or a genuine type change: there is no prior null intent to honor, so the block SHALL be rebuilt from the API. For config blocks that are optional even when the panel type matches (`synthetics_monitors_config`, `synthetics_stats_overview_config`), the block SHALL instead be left null when the API response carries no content for it, rather than materializing an empty block. `pm`'s own field state SHALL NOT be used for this decision, since it never carries prior intent into `PopulateFromAPI`.
+
+As of Kibana 9.5.0 GA, several typed panel config blocks' optional enum-shaped fields (for example `aiops_pattern_analysis_config.minimum_time_range` and `.random_sampler_mode`) receive concrete server-side default values on read where earlier Kibana versions returned no value at all. The provider SHALL apply REQ-009 null-preservation to these fields exactly as it does for any other Kibana-injected default: when the practitioner left the field unset (null in prior state/plan), the resource SHALL keep it null in state even though the API now returns a concrete default, rather than materializing that default and producing "Provider produced inconsistent result after apply".
 
 The resource models only the currently supported Terraform subset of dashboard fields. Fields present in the Kibana dashboard API but not modeled by this resource — for example top-level `project_routing` — are outside this resource contract (see REQ-037 for `filters` and REQ-038 for `pinned_panels`).
 
 The provider SHALL treat an API-returned `""` for `description` as semantically equivalent to an omitted field when prior plan/state had `description` null, restoring null in state rather than propagating the API-echoed empty string. This is an instance of REQ-009 null-preservation applied to the dashboard root `description`. This SHALL be consistent with the null/empty-string normalization already applied to XY chart `fitting.type`, `fitting.end_value`, and panel-level `time_range`.
+
+The provider SHALL apply the same intent-preserving treatment to the root-level `tags` attribute. When the Kibana API returns a nil or empty `tags` value and the prior Terraform plan/state had `tags` as a known value — including a known-empty list (`tags = []`) — the provider SHALL preserve that prior known value in state rather than forcing `null`. When the prior plan/state `tags` value is itself null (the practitioner did not set `tags`), the provider SHALL preserve `null`. When the API returns a non-empty `tags` array, the provider SHALL store that value from the API response, overwriting any prior value. When the prior value is `Unknown`, the provider SHALL map a nil-or-empty API `tags` value to `null`. Imports also produce `null` for nil-or-empty API tags because imported state initializes non-identity optional attributes as null. This fixes the error reported when a practitioner sets `tags = []`: without this normalization, the provider produces an unexpected new value, `.tags: was cty.ListValEmpty(cty.String), but now null`.
 
 #### Scenario: Empty-string description treated as null for null-intent practitioners
 
@@ -528,11 +578,63 @@ The provider SHALL treat an API-returned `""` for `description` as semantically 
 - WHEN the provider applies REQ-009 null-preservation to `description`
 - THEN state SHALL contain `description = null` and no drift SHALL be reported on the next plan
 
+#### Scenario: Root blocks omitted in config stay null
+
+- GIVEN a configuration with only `title` set, applied and read back
+- WHEN Kibana returns the dashboard without `time_range`, `refresh_interval`, or `query`
+- THEN state SHALL contain null for all three blocks
+- AND a subsequent plan SHALL show no changes
+- AND importing the dashboard SHALL produce the same state without drift
+
 #### Scenario: Options omitted in config
 
 - GIVEN Terraform configuration omitted the `options` block
 - WHEN Kibana read-back contains only the dashboard option defaults
 - THEN the resource SHALL keep `options` unset in state
+
+#### Scenario: Typed panel config null-preservation keys on prior, not on pm
+
+- GIVEN a typed panel config block (e.g. `aiops_pattern_analysis_config`) whose practitioner-authored value left an optional enum field (e.g. `minimum_time_range`) unset, applied and read back at least once (so `prior.<Type>Config` is non-nil on the next read)
+- WHEN a subsequent refresh or post-update read runs against Kibana 9.5.0 GA or later, which now returns a concrete default for that field instead of omitting it
+- THEN the resource SHALL keep the field null in state because `prior.<Type>Config` is non-nil (same-type update), regardless of what `pm`'s own (zero-valued) field state would otherwise suggest
+- AND the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Known-empty tags normalizes to empty list on read, not null
+
+- GIVEN a dashboard configured with `tags = []` (known-empty list in Terraform plan/state)
+- AND the Kibana API returns a nil or empty `tags` value
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `tags = []`
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Known non-empty tags retained when the API returns nil or empty
+
+- GIVEN prior Terraform plan/state contains `tags = ["a"]`
+- AND the Kibana API returns a nil or empty `tags` value
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `tags = ["a"]`
+
+#### Scenario: Omitted tags stays null on read
+
+- GIVEN a dashboard configured without `tags` (null in Terraform plan/state)
+- AND the Kibana API returns a nil or empty `tags` value
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `tags = null`
+
+#### Scenario: Non-empty API tags overwrite the prior Terraform value
+
+- GIVEN prior Terraform plan/state contains `tags = []`
+- AND the Kibana API returns `tags: ["a", "b"]`
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `tags = ["a", "b"]`
+
+#### Scenario: Import with no API tags records null
+
+- GIVEN a dashboard is imported via `terraform import`, with non-identity optional attributes initialized as null
+- AND the Kibana API returns a nil or empty `tags` value
+- WHEN the provider reads the dashboard
+- THEN state SHALL contain `tags = null`
 
 ### Requirement: Panels, sections, and `config_json` round-trip behavior (REQ-010)
 
@@ -552,7 +654,7 @@ For XY chart `fitting` round-trips, the resource SHALL treat an empty string ret
 
 For XY chart `decorations` round-trips on bar-style layers (e.g. `bar`, `bar_stacked`, `bar_horizontal`), Kibana injects server-side bar-styling defaults — `decorations.show_value_labels = false` and `decorations.minimum_bar_height = 1` — even when the practitioner omitted those fields. When the plan value for such a field is null and the API read-back returns the matching default, the resource SHALL preserve the null plan value in state instead of materializing the server default.
 
-For every Lens chart block that exposes `data_source_json` (legacy_metric, region_map, gauge, heatmap, tagcloud, pie, treemap, mosaic, waffle, datatable, and XY data/reference-line layers), Kibana injects `"time_field":"@timestamp"` into the read-back payload when the practitioner omits it. When the practitioner-authored `data_source_json` does not include `time_field`, the resource SHALL strip that injected key from state before semantic comparison and SHALL preserve the practitioner's original JSON payload.
+For every Lens chart block that exposes `data_source_json` (legacy_metric, region_map, gauge, heatmap, tagcloud, pie, treemap, mosaic, waffle, datatable, metric, and XY data/reference-line layers), Kibana injects certain optional keys into the read-back payload when the practitioner omits them: `"time_field":"@timestamp"`, and — as of Kibana 9.5.0 GA — `"name"` (echoing the underlying data view's display name for `data_view_spec` sources; earlier Kibana versions omitted this key). When the practitioner-authored `data_source_json` does not include one of these injected keys, the resource SHALL strip that key from state before semantic comparison and SHALL preserve the practitioner's original JSON payload.
 
 For each Lens chart panel listed below, Kibana materializes hard-coded server defaults for optional fields when the practitioner omits them. The resource SHALL preserve the practitioner's null/unset plan value in state when the API read-back matches the documented default. The known defaults are:
 
@@ -561,15 +663,39 @@ For each Lens chart panel listed below, Kibana materializes hard-coded server de
 - `tagcloud_config.font_size` defaults to `{min=18, max=72}` (whole block).
 - `heatmap_config.axis.{x,y}.labels.visible` default to `true`.
 - `heatmap_config.axis.{x,y}.title.visible` default to `false`.
+- `heatmap_config.axis.x.labels.orientation` defaults to `"horizontal"` (X only; Y has no orientation in the schema or API) (Kibana 9.6.0-SNAPSHOT and later).
 - `heatmap_config.styling.cells.labels.visible` defaults to `false`.
 - `heatmap_config.legend.visibility` defaults to `"visible"`.
+- `heatmap_config.legend.truncate_after_lines` defaults to `1` (Kibana 9.6.0-SNAPSHOT and later).
 - `pie_chart_config.label_position` defaults to `"outside"`.
+- `pie_chart_config.legend.truncate_after_lines` defaults to `1` (Kibana 9.6.0-SNAPSHOT and later).
+- `pie_chart_config.legend.nested` defaults to `false` (Kibana 9.6.0-SNAPSHOT and later).
+- `waffle_config.legend.truncate_after_lines` defaults to `1` (Kibana 9.6.0-SNAPSHOT and later).
 - `treemap_config.legend.visible` and `mosaic_config.legend.visible` default to `"auto"`.
-- `treemap_config.value_display` and `mosaic_config.value_display` default to the block `{mode="percentage", percent_decimals=null}` (whole block).
+- `treemap_config.legend.truncate_after_lines` and `mosaic_config.legend.truncate_after_lines` default to `1` (Kibana 9.6.0-SNAPSHOT and later).
+- `treemap_config.legend.nested` and `mosaic_config.legend.nested` default to `false` (Kibana 9.6.0-SNAPSHOT and later).
+- `treemap_config.value_display` and `mosaic_config.value_display` default to the block `{mode="percentage", percent_decimals=2}` (Kibana 9.6.0-SNAPSHOT and later). The older shape `{mode="percentage", percent_decimals=null}` SHALL also be treated as a Kibana default. When the practitioner omitted `percent_decimals` and Kibana returns `2`, the resource SHALL preserve the null plan value regardless of `mode` (including `mode="absolute"`).
+- `xy_chart_config.layers[].reference_line_layer.thresholds[].axis` defaults to `"y"` on every Kibana version with the Dashboard API (9.4+); omitted `axis` reads back absent on Kibana 9.4 and 9.5 (probed 9.4.0 and 9.5.5) and injected as `"y"` on Kibana 9.6.0-SNAPSHOT and later.
+- When the typed `xy_chart_config.layers[].reference_line_layer.thresholds[].operation` is omitted, Kibana echoes `value_json.operation` onto that sibling (Kibana 9.6.0-SNAPSHOT and later). The `_layers_reference` evidence is a `value_json` blob that already carries `"operation":"static_value"`. The resource SHALL restore the null plan value when that echo is `"static_value"`. Non-`static_value` omitted-operation paths are unprobed and SHALL NOT be assumed to use the same restore.
+- `xy_chart_config.layers[].reference_line_layer.thresholds[].color_json` defaults to `{"type":"auto"}` (Kibana 9.6.0-SNAPSHOT and later).
+
+These preservations are plan-relative. On `terraform import` there is no plan value, so Kibana-injected defaults (for example `percent_decimals = 2`, `truncate_after_lines = 1`, `thresholds[].axis = "y"` on Kibana 9.6+) SHALL be written to state and a subsequent plan MAY show changes for the affected attributes.
 
 For Lens partition charts (pie `group_by[].config_json`, treemap `group_by_json`, mosaic `group_by_json`/`group_breakdown_by_json`) and Lens datatable (`metrics[].config_json`, `rows[].config_json`, `split_metrics_by[].config_json`), Kibana re-emits each `terms` dimension with the following injected default keys: `rank_by = {type="metric", metric_index=0, direction="desc"}` and `color = {mode="categorical", palette="default", mapping=[]}`. The resource SHALL populate these defaults during semantic-equality comparison so the practitioner's authored JSON round-trips without drift.
 
 When the metric-default normalization injects the `empty_as_null` default into a Lens metric `config_json`, it SHALL inject `empty_as_null = false` ONLY for metric operations whose Kibana API schema accepts the property: `count`, `sum`, and `unique_count`. For all other operations — including `percentile`, `percentile_rank`, `average`, `min`, `max`, `median`, `standard_deviation`, `last_value`, and pipeline operations such as `formula`, `moving_average`, `cumulative_sum`, `differences`, and `counter_rate` — the resource SHALL NOT inject `empty_as_null`, because the corresponding Kibana API metric schema does not define that property and rejects the request with HTTP 400 (`Additional properties are not allowed ('empty_as_null' was unexpected)`). This rule SHALL apply uniformly to every Lens chart family whose metric normalization injects `empty_as_null` — XY (`y[].config_json`), datatable (`metrics[].config_json`), metric chart, pie, gauge, legacy metric, tagcloud, treemap, mosaic, and region map — because all of those families share the same Kibana metric schema in which only `count`, `sum`, and `unique_count` define `empty_as_null`. This gating applies to both the request payload sent to Kibana and the normalization used for semantic-equality comparison, so that operations without `empty_as_null` support neither fail on apply nor produce spurious drift.
+
+As of Kibana 9.6.0-SNAPSHOT, XY `y[].config_json` read-back injects `"axis":"y"` when the practitioner's metric configuration omits `axis`. When the practitioner already set `axis` (for example `"y2"`), Kibana preserves that value. The resource SHALL treat omitted metric `axis` as the default `"y"` on XY `y[]` metric-population paths only, SHALL preserve an explicit metric `axis`, and SHALL NOT derive `"y2"` (or any other axis) from chart-level `axis.y2`. The `color: {type:"auto"}` omit-default, when the practitioner omitted `color`, is already covered by existing metric-default normalization. This axis behavior SHALL NOT apply to grouping/dimension JSON paths such as datatable `rows[]` / `split_metrics_by[]`. (This paragraph covers the free-form `y[].config_json` metric `axis` key, a distinct field from the typed `thresholds[].axis` attribute covered below.)
+
+The Terraform schema for `xy_chart_config.layers[].reference_line_layer.thresholds[].axis` SHALL validate the enum `x | y | y2`, matching what Kibana's Dashboard API accepts on every version that exposes it (9.4+). The schema SHALL NOT accept `bottom`, `left`, or `right`: Kibana's Dashboard API has rejected those values with HTTP 400 on every Kibana version supported by this resource (9.4+), so no persisted state can legally contain them. XY reference-line `thresholds[]` inject omit-defaults when the practitioner omits them: `axis` defaults to `"y"` and `color_json` defaults to `{"type":"auto"}`. When the typed `operation` is omitted, Kibana echoes `value_json.operation` onto that sibling; the resource SHALL restore the null plan value when that echo is `"static_value"` (the only probed shape). When `value_json` is a `static_value` object, Kibana also read-backs a scalar equal to that object's `value` key; the resource SHALL restore the practitioner's authored object when the scalar matches. These defaults SHALL NOT apply to XY `y[]` metric `config_json` (they are sibling threshold attributes). When the practitioner already set `thresholds[].axis` to a value Kibana accepts (`"x"`, `"y"`, or `"y2"`), Kibana preserves that value on Kibana 9.6.0-SNAPSHOT and later and the resource SHALL NOT overwrite it with `"y"`. On Kibana 9.4/9.5, an explicit `axis = "y"` is stripped from the read-back (the API omits the key entirely, matching its treatment of an omitted `axis`); when the plan value is known and equals `"y"` and the API read-back is null, the resource SHALL restore `"y"` into state from the plan so the configured value round-trips on 9.4/9.5 without "Provider produced inconsistent result after apply". This restoration SHALL apply only to the literal default value `"y"`; the API stripping any other explicit value (`"x"` or `"y2"`) is not a known default and SHALL still surface as a plan/state inconsistency.
+
+When `thresholds[].axis` is set together with `value_json`, the provider SHALL send the axis inside the operation object (the typed `axis` is merged into the `value_json` object on write). If `value_json` already contains an `axis` key that differs from the typed `axis`, or `value_json` is not a JSON object, the provider SHALL return a diagnostic error instead of silently dropping or overriding either value; an equal `axis` in both is accepted. On read-back, operation objects other than `static_value` that echo an `axis` SHALL be kept whole in `value_json`, and an `axis` authored inside the plan's `value_json` SHALL NOT be mirrored into the typed `axis` attribute. The Kibana 9.4/9.5 stripping of an explicit `"y"` and the 9.6+ injection are backed by manual probes (9.4.0, 9.5.5, 9.6.x); the automated acceptance run covers 9.5.5 only. When the plan authors `axis` inside `value_json`, a read-back axis that differs from the authored one (an absent axis counting as `"y"`) SHALL remain observable as drift: the provider SHALL NOT clear the typed `axis` or restore the planned `value_json` in that case. When a threshold sets typed `operation` (and optionally `axis`) with no `value_json` and Kibana echoes a bare `{operation, axis}` object (an empty `label` tolerated), the provider SHALL map it back to the typed attributes and keep `value_json` null.
+
+Datatable `metrics[].config_json` extras injected by Kibana 9.6.0-SNAPSHOT when omitted are `visible:true`, `alignment:"right"`, and `color: {type:"auto"}`. Datatable metrics SHALL NOT assume an `axis` default.
+
+When omitted, the provider SHALL inject `legacy_metric_config.metric_json` extras `color: {type:"auto"}` and `size:"m"` only for field-metric operations (`count`, `sum`, `unique_count`, `min`, `max`, `average`, `median`, `standard_deviation`, `last_value`, `percentile`, `percentile_rank`). Injection of these extras is confirmed for `count`; the remaining field-metric operations are inferred from the shared Kibana metric schema. The provider SHALL NOT inject these extras for pipeline operations such as `formula`. Legacy metrics SHALL NOT assume an `axis` default.
+
+The resource SHALL NOT treat a practitioner-authored static Y-metric color as semantically equal to Kibana's `{type:"auto"}` read-back. Kibana 9.6 ES|QL XY overwrites practitioner static Y color; that overwrite is out of scope for this requirement.
 
 #### Scenario: Unset XY X-axis scale
 
@@ -598,6 +724,13 @@ When the metric-default normalization injects the `empty_as_null` default into a
 - THEN the provider SHALL preserve the practitioner's JSON in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
 - AND a subsequent plan SHALL show no changes
 
+#### Scenario: data_source_json without name round-trips on every Lens chart (Kibana 9.5.0 GA)
+
+- GIVEN a Lens chart panel of any supported type whose `data_source_json` uses a `data_view_spec` source and omits `name`
+- WHEN create runs against Kibana 9.5.0 GA (or later) and its read-back returns the same payload with a `"name"` key injected (echoing the data view's display name)
+- THEN the provider SHALL preserve the practitioner's JSON in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
 #### Scenario: Minimal gauge panel preserves null styling.shape_json
 
 - GIVEN a gauge panel whose `gauge_config.styling` block omits `shape_json`
@@ -613,8 +746,8 @@ When the metric-default normalization injects the `empty_as_null` default into a
 
 #### Scenario: Minimal heatmap panel preserves null axis, styling, and legend defaults
 
-- GIVEN a heatmap panel whose `axis.{x,y}.labels.visible`, `axis.{x,y}.title.visible`, `styling.cells.labels.visible`, and `legend.visibility` are unset
-- WHEN create runs and Kibana's read-back returns the documented defaults (`labels.visible=true`, `title.visible=false`, `cells.labels.visible=false`, `legend.visibility="visible"`)
+- GIVEN a heatmap panel whose `axis.{x,y}.labels.visible`, `axis.x.labels.orientation`, `axis.{x,y}.title.visible`, `styling.cells.labels.visible`, `legend.visibility`, and `legend.truncate_after_lines` are unset
+- WHEN create runs and Kibana's read-back returns the documented defaults (`labels.visible=true`, `axis.x.labels.orientation="horizontal"`, `title.visible=false`, `cells.labels.visible=false`, `legend.visibility="visible"`, `legend.truncate_after_lines=1`)
 - THEN the provider SHALL keep each of those fields null in state and a subsequent plan SHALL show no changes
 
 #### Scenario: Minimal pie panel preserves null label_position and group_by JSON defaults
@@ -624,18 +757,52 @@ When the metric-default normalization injects the `empty_as_null` default into a
 - THEN the provider SHALL keep `label_position` null in state and SHALL preserve the practitioner's `group_by[].config_json` payload
 - AND a subsequent plan SHALL show no changes
 
+#### Scenario: Minimal pie panel preserves null legend.truncate_after_lines and legend.nested
+
+- GIVEN a pie panel whose `pie_chart_config.legend.truncate_after_lines` and `legend.nested` are unset
+- WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back returns `legend.truncate_after_lines = 1` and `legend.nested = false`
+- THEN the provider SHALL keep both `legend.truncate_after_lines` and `legend.nested` null in state
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Minimal waffle panel preserves null legend.truncate_after_lines
+
+- GIVEN a waffle panel whose `waffle_config.legend.truncate_after_lines` is unset
+- WHEN create runs and Kibana's read-back returns `legend.truncate_after_lines = 1`
+- THEN the provider SHALL keep `legend.truncate_after_lines` null in state and a subsequent plan SHALL show no changes
+
 #### Scenario: Minimal treemap / mosaic panel preserves partition legend and value_display defaults
 
 - GIVEN a treemap or mosaic panel whose `legend.visible` is unset and whose `value_display` block is omitted
-- WHEN create runs and Kibana's read-back returns `legend.visible = "auto"` and a default `value_display = {mode="percentage", percent_decimals=null}` block
+- WHEN create runs and Kibana's read-back returns `legend.visible = "auto"` and the default `value_display` block `{mode="percentage", percent_decimals=2}` (or the older shape `{mode="percentage", percent_decimals=null}`)
 - THEN the provider SHALL keep `legend.visible` null and SHALL drop the injected `value_display` block from state
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Treemap / mosaic omitted percent_decimals is preserved when Kibana returns 2
+
+- GIVEN a treemap or mosaic panel whose `value_display.percent_decimals` is unset, including when `value_display.mode = "absolute"`
+- WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back returns `percent_decimals = 2`
+- THEN the provider SHALL keep `percent_decimals` null in state
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Minimal treemap / mosaic panel preserves null legend.truncate_after_lines and legend.nested
+
+- GIVEN a treemap or mosaic panel whose `legend.truncate_after_lines` and `legend.nested` are unset
+- WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back returns `legend.truncate_after_lines = 1` and `legend.nested = false`
+- THEN the provider SHALL keep both fields null in state
 - AND a subsequent plan SHALL show no changes
 
 #### Scenario: Datatable terms metrics preserve injected JSON defaults
 
-- GIVEN a datatable panel whose `metrics[].config_json` omits `color`, `empty_as_null`, and `format`
-- WHEN create runs and Kibana's read-back re-emits those keys with their documented defaults
+- GIVEN a datatable panel whose `metrics[].config_json` omits `color`, `visible`, `alignment`, `empty_as_null`, and `format`
+- WHEN create runs and Kibana's read-back re-emits those keys with their documented defaults (`color: {type:"auto"}`, `visible:true`, `alignment:"right"`, and the existing `empty_as_null`/format defaults) and does not inject `axis`
 - THEN the provider SHALL preserve the practitioner's `metrics[].config_json` payload via semantic-equality comparison
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Legacy metric_json preserves injected color and size defaults
+
+- GIVEN a legacy metric panel whose `metric_json` uses a field-metric `operation` such as `"count"` and omits `color` and `size`
+- WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back returns `color: {type:"auto"}` and `size:"m"` without an `axis` key
+- THEN the provider SHALL preserve the practitioner's `metric_json` payload in state
 - AND a subsequent plan SHALL show no changes
 
 #### Scenario: XY percentile metric does not inject empty_as_null
@@ -650,6 +817,86 @@ When the metric-default normalization injects the `empty_as_null` default into a
 - GIVEN an XY panel whose `y[].config_json` uses `operation = "count"` and omits `empty_as_null`
 - WHEN create runs and the provider builds the Kibana API request and reads the panel back
 - THEN the provider SHALL inject the `empty_as_null = false` default for that metric and the metric SHALL round-trip without drift
+
+#### Scenario: XY count metric round-trips on Kibana 9.6 with injected axis and color
+
+- GIVEN an XY panel whose `y[].config_json` uses `operation = "count"`, sets `empty_as_null = true`, and omits both `axis` and `color`
+- WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back returns `{"operation":"count","empty_as_null":true,"axis":"y","color":{"type":"auto"}}`
+- THEN the provider SHALL preserve the practitioner's original `config_json` payload in state and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: XY y[] explicit axis is preserved
+
+- GIVEN an XY panel whose `y[].config_json` already sets `axis = "y2"`
+- WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back returns `axis = "y2"`
+- THEN the provider SHALL preserve the practitioner's `axis` value and SHALL NOT overwrite it with `"y"`
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: XY omitted metric axis is not derived from chart-level axis.y2
+
+- GIVEN an XY panel whose chart-level `axis.y2` is configured and whose `y[].config_json` omits `axis`
+- WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back returns `axis = "y"`
+- THEN the provider SHALL treat `"y"` as the omitted-axis default and SHALL NOT infer `"y2"` from chart-level `axis.y2`
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: Minimal XY reference-line threshold preserves omitted axis, operation, color, and value_json object
+
+- GIVEN an XY chart with a reference-line layer whose `thresholds[]` omit `axis`, `operation`, and `color_json`, and whose `value_json` is a `static_value` object with a numeric `value`
+- WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back returns `axis = "y"`, `operation = "static_value"`, `color_json = {"type":"auto"}`, and a scalar `value_json` equal to that object's `value`
+- THEN the provider SHALL keep `axis`, `operation`, and `color_json` null in state and SHALL restore the practitioner's `value_json` object
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: XY reference-line threshold accepts x, y, and y2
+
+- GIVEN an XY chart with a reference-line layer whose `thresholds[].axis` is explicitly set to `"x"`, `"y"`, or `"y2"`
+- WHEN `terraform plan` runs
+- THEN the configuration SHALL pass schema validation for each of those three values
+
+#### Scenario: XY reference-line threshold rejects bottom, left, and right
+
+- GIVEN an XY chart with a reference-line layer whose `thresholds[].axis` is explicitly set to `"bottom"`, `"left"`, or `"right"`
+- WHEN `terraform plan` runs
+- THEN the provider SHALL report a validation error naming the allowed values `x`, `y`, `y2`
+- AND the configuration SHALL NOT reach `terraform apply`
+
+#### Scenario: XY reference-line threshold explicit y is preserved when Kibana strips it (Kibana 9.4/9.5)
+
+- GIVEN an XY chart with a reference-line layer whose `thresholds[].axis` is explicitly set to `"y"`
+- WHEN create runs against a Kibana 9.4/9.5 stack and its read-back omits the `axis` key entirely
+- THEN the provider SHALL restore `axis = "y"` in state from the plan and the apply SHALL NOT report "Provider produced inconsistent result after apply"
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: XY reference-line threshold explicit y round-trips unchanged on Kibana 9.6+
+
+- GIVEN an XY chart with a reference-line layer whose `thresholds[].axis` is explicitly set to `"y"`
+- WHEN create runs against Kibana 9.6.0-SNAPSHOT (or later) and its read-back echoes `axis = "y"`
+- THEN the provider SHALL keep `axis = "y"` in state
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: XY reference-line threshold axis is sent with value_json
+
+- GIVEN an XY chart with a reference-line layer whose threshold sets both `axis = "y2"` and a `value_json` object without an `axis` key
+- WHEN create runs
+- THEN the request SHALL contain `axis = "y2"` inside that threshold's operation object
+
+#### Scenario: XY reference-line threshold axis conflicts with value_json axis
+
+- GIVEN a threshold whose typed `axis` differs from the `axis` key inside `value_json`, or whose `value_json` is not a JSON object while `axis` is set
+- WHEN the provider builds the request
+- THEN it SHALL return a diagnostic error and SHALL NOT send the threshold
+
+#### Scenario: Import writes Kibana-injected omit-defaults into state
+
+- GIVEN a Lens panel whose configuration omitted a field listed above (for example treemap `value_display.percent_decimals`, waffle `legend.truncate_after_lines`, or XY `thresholds[].axis` on a Kibana 9.6+ stack)
+- WHEN `terraform import` runs against Kibana 9.6.0-SNAPSHOT (or later)
+- THEN state SHALL hold Kibana's injected default for that field
+- AND a subsequent plan MAY show changes relative to a configuration that still omits the field
+
+#### Scenario: Kibana ES|QL XY static Y color overwrite is not treated as a default
+
+- GIVEN an ES|QL XY panel whose `y[].config_json` sets a static color
+- WHEN Kibana's read-back replaces that color with `{type:"auto"}`
+- THEN the provider SHALL NOT treat the practitioner static color and `{type:"auto"}` as semantically equal
 
 ### Requirement: Markdown panel behavior (REQ-012)
 
@@ -1092,6 +1339,8 @@ On write, the provider SHALL map all configured fields from `slo_error_budget_co
 
 On read, the provider SHALL repopulate `slo_error_budget_config` from the API response. For `slo_instance_id`, the provider SHALL preserve the prior Terraform state value when the prior value was null: if the practitioner did not configure `slo_instance_id`, the provider SHALL NOT write the API-returned default `"*"` into state. For `encode_url` and `open_in_new_tab` drilldown fields, the provider SHALL normalize the API default value of `true` so that practitioners who omit those fields do not observe spurious drift after apply. On import, the provider SHALL populate API-returned optional display fields such as `title`, `description`, `hide_title`, and `hide_border`.
 
+For `title`, `description`, `hide_title`, and `hide_border`, the provider SHALL apply REQ-009 null-preservation on every read (create read-back, update read-back, and refresh): the null-intent decision for each field SHALL key on the corresponding field of `prior.SloErrorBudgetConfig` (the prior plan on create/update read-back, or prior state on refresh), not on the panel model under construction. On import (`prior == nil`), each field SHALL be populated directly from the API response when the API supplies a value. On a same-type update or refresh (`prior.SloErrorBudgetConfig != nil`), each field SHALL first be populated from the API response and then, if the corresponding prior field was null or unknown (the practitioner never configured it), reset to null in state rather than left at the API-supplied value.
+
 `drilldowns` SHALL be represented as a list of typed objects. Each drilldown object SHALL contain required `url` (string) and `label` (string), and optional `encode_url` (bool, default `true`) and `open_in_new_tab` (bool, default `true`). On write, the provider SHALL set Kibana's fixed `trigger = "on_open_panel_menu"` and `type = "url_drilldown"` values in the API request.
 
 #### Scenario: Minimal slo_error_budget panel with only slo_id
@@ -1115,6 +1364,22 @@ On read, the provider SHALL repopulate `slo_error_budget_config` from the API re
 - THEN the provider SHALL round-trip the typed drilldown fields
 - AND SHALL apply default normalization for `encode_url` and `open_in_new_tab` so that omitting them in configuration does not produce drift
 - AND SHALL write Kibana's fixed `trigger` and `type` values into the API request
+
+#### Scenario: title, description, hide_title, and hide_border survive a refresh after create
+
+- GIVEN a panel with `type = "slo_error_budget"` and `slo_error_budget_config` setting `title`, `description`, `hide_title`, and `hide_border` to explicit practitioner-configured values
+- WHEN the dashboard is created, read back, and then refreshed in a subsequent plan/apply cycle
+- THEN state SHALL contain the practitioner-configured values for all four fields after every read
+- AND the provider SHALL NOT report "Provider produced inconsistent result after apply" on the refresh
+- AND a subsequent plan SHALL show no changes
+
+#### Scenario: title, description, hide_title, and hide_border null-preservation on refresh
+
+- GIVEN a panel with `type = "slo_error_budget"` and `slo_error_budget_config` that omits `title`, `description`, `hide_title`, and `hide_border` (prior state: null for all four)
+- WHEN the dashboard is refreshed and Kibana's read-back response includes concrete values for one or more of these fields
+- THEN the provider SHALL key the null-preservation decision on `prior.SloErrorBudgetConfig`'s corresponding field, not on the panel model under construction
+- AND SHALL keep each field null in state because the prior value was null
+- AND a subsequent plan SHALL show no changes
 
 ### Requirement: ES|QL control panel behavior (REQ-026)
 
@@ -1833,27 +2098,59 @@ On create and update, the resource SHALL include each filter's JSON object in th
 
 ### Requirement: Dashboard-level pinned controls round-trip (REQ-038)
 
-The resource SHALL expose dashboard-level pinned controls at the dashboard root as `pinned_panels = list(object({ type, options_list_control_config, range_slider_control_config, time_slider_control_config, esql_control_config }))`. Each entry SHALL declare exactly one of the four typed `*_control_config` blocks, and the chosen block SHALL match the entry's `type` value (for example `type = "options_list_control"` requires `options_list_control_config` and forbids the other three). `pinned_panels` entries SHALL NOT include a `grid` attribute, and the resource SHALL NOT populate one on read.
+The resource SHALL expose dashboard-level pinned controls at the dashboard root as `pinned_panels =
+list(object({ type, options_list_control_config, range_slider_control_config,
+time_slider_control_config, esql_control_config, width, grow }))`. Each entry SHALL declare exactly
+one of the four typed `*_control_config` blocks, and the chosen block SHALL match the entry's `type`
+value (for example `type = "options_list_control"` requires `options_list_control_config` and
+forbids the other three). `pinned_panels` entries SHALL NOT include a `grid` attribute, and the
+resource SHALL NOT populate one on read.
 
-The four `*_control_config` block schemas SHALL be identical to the schemas used for the same control types under `panels[]`; any future change to those typed schemas applies to both placements.
+The four `*_control_config` block schemas SHALL be identical to the schemas used for the same
+control types under `panels[]`; any future change to those typed schemas applies to both
+placements.
 
-On create and update, the resource SHALL include `pinned_panels` in the dashboard API request body in the order given in configuration. On read, the resource SHALL repopulate `pinned_panels` from the API `pinned_panels` array in the order returned. When `pinned_panels` is unset in configuration and the API returns an empty list (Kibana's default), the resource SHALL keep the Terraform attribute unset.
+Each `pinned_panels` entry SHALL additionally accept two optional sizing attributes, independent of
+which `*_control_config` block is set:
+
+- `width` (string): one of `"small"`, `"medium"`, or `"large"`. The resource SHALL reject any other
+  value with a validation error diagnostic.
+- `grow` (bool): when `true`, the control expands to fill available horizontal space.
+
+When `width` and/or `grow` are set in configuration, the resource SHALL include them in the
+corresponding pinned-control-group API payload on create and update. When `width` and/or `grow` are
+null in configuration, the resource SHALL omit them from the API payload and SHALL let Kibana apply
+its own defaults (`medium` for `width`, `false` for `grow`).
+
+On read, when a prior Terraform value exists for the `pinned_panels` entry at that list position (regardless of its `type`), the resource SHALL preserve a null/unknown `width` or `grow` value rather than overwriting it with the
+value Kibana reports (including a Kibana-applied default), so that omitting `width`/`grow` from
+configuration produces no diff. When there is no prior Terraform value for the entry (for example during `terraform import`), the resource SHALL populate `width` and `grow` directly from the API response.
+
+On create and update, the resource SHALL include `pinned_panels` in the dashboard API request body
+in the order given in configuration. On read, the resource SHALL repopulate `pinned_panels` from the
+API `pinned_panels` array in the order returned. When `pinned_panels` is unset in configuration and
+the API returns an empty list (Kibana's default), the resource SHALL keep the Terraform attribute
+unset.
 
 #### Scenario: Pinned options-list control round-trip
 
 - GIVEN `pinned_panels = [{ type = "options_list_control", options_list_control_config = { ... } }]`
 - WHEN create runs and the post-apply read returns the same control
-- THEN state SHALL contain a single `pinned_panels` entry with the matching typed config and no `grid`
+- THEN state SHALL contain a single `pinned_panels` entry with the matching typed config and no
+  `grid`
 
 #### Scenario: Mismatched type and config block
 
-- GIVEN a `pinned_panels` entry with `type = "range_slider_control"` and only `options_list_control_config` set
+- GIVEN a `pinned_panels` entry with `type = "range_slider_control"` and only
+  `options_list_control_config` set
 - WHEN Terraform validates the configuration
-- THEN the resource SHALL return an error diagnostic indicating the typed block does not match `type`
+- THEN the resource SHALL return an error diagnostic indicating the typed block does not match
+  `type`
 
 #### Scenario: Multiple typed config blocks set on one entry
 
-- GIVEN a `pinned_panels` entry with both `options_list_control_config` and `range_slider_control_config` set
+- GIVEN a `pinned_panels` entry with both `options_list_control_config` and
+  `range_slider_control_config` set
 - WHEN Terraform validates the configuration
 - THEN the resource SHALL return an error diagnostic indicating exactly one typed block must be set
 
@@ -1862,6 +2159,63 @@ On create and update, the resource SHALL include `pinned_panels` in the dashboar
 - GIVEN `pinned_panels` is unset in configuration
 - WHEN read runs and the API returns `pinned_panels: []`
 - THEN the Terraform `pinned_panels` attribute SHALL remain unset
+
+#### Scenario: Configured width and grow are applied
+
+- GIVEN `pinned_panels = [{ type = "options_list_control", width = "small", grow = false,
+  options_list_control_config = { ... } }]`
+- WHEN create runs
+- THEN the resource SHALL include `width = "small"` and `grow = false` in the pinned-control-group
+  API payload for that entry
+- AND the post-apply read SHALL show `width = "small"` and `grow = false` in state
+
+#### Scenario: Updating width and grow
+
+- GIVEN state contains a `pinned_panels` entry with `width = "small"` and `grow = false`
+- AND configuration changes that entry to `width = "large"` and `grow = true`
+- WHEN Terraform applies the update
+- THEN the plan SHALL show a non-empty diff for `width` and `grow`
+- AND the resource SHALL include `width = "large"` and `grow = true` in the update API payload
+- AND the post-apply read SHALL show `width = "large"` and `grow = true` in state
+
+#### Scenario: Omitted width and grow produce no diff after refresh
+
+- GIVEN configuration for a `pinned_panels` entry omits both `width` and `grow`
+- AND the entry previously applied successfully, so a prior Terraform value exists for it
+- WHEN refresh runs and the API reports `width = "medium"` and `grow = false` (Kibana's defaults)
+- THEN the Terraform `width` and `grow` attributes SHALL remain null
+- AND a subsequent plan-only run SHALL show no diff for `width` or `grow`
+
+#### Scenario: Removing a previously-configured width and grow value
+
+- GIVEN state contains a `pinned_panels` entry with `width = "large"` and `grow = true`
+- AND configuration is changed to omit both attributes from that entry
+- WHEN Terraform applies the update
+- THEN the resource SHALL omit `width` and `grow` from the update API payload
+- AND the post-apply read SHALL show `width` and `grow` as null in state, not the removed values
+
+#### Scenario: Width and grow import directly with no prior state
+
+- GIVEN a dashboard exists in Kibana with a pinned options-list control whose API response reports
+  `width = "small"` and `grow = false`
+- WHEN `terraform import` reads that dashboard
+- THEN the imported state SHALL contain `width = "small"` and `grow = false` for that
+  `pinned_panels` entry, read directly from the API response rather than left null
+
+#### Scenario: Invalid width value is rejected
+
+- GIVEN a `pinned_panels` entry with `width = "huge"`
+- WHEN Terraform validates the configuration
+- THEN the resource SHALL return a validation error diagnostic indicating `width` must be one of
+  `"small"`, `"medium"`, or `"large"`
+
+#### Scenario: Width and grow are consistent across all four pinned control types
+
+- GIVEN `pinned_panels` entries of each of the four supported types (`options_list_control`,
+  `range_slider_control`, `esql_control`, `time_slider_control`), each with `width` and `grow` set
+- WHEN create runs and the post-apply read returns the same controls
+- THEN state SHALL contain the configured `width` and `grow` values for every entry, regardless of
+  control type
 
 ### Requirement: Lens chart presentation fields on typed `vis` panels under `vis_config.by_value` (REQ-039)
 
@@ -2669,7 +3023,7 @@ The block accepts the following attributes:
 - `max_series_to_plot` (optional int64): maximum number of anomaly series to plot. When null in state, the attribute is omitted from the API request. The Kibana API represents this field as a JSON number (`*float32` in the generated client); the provider exposes it as an integer since a series count cannot be fractional, converting to/from the API's numeric type at the boundary.
 - `severity_threshold` (optional list of objects, min 1 item when present): filters which severity bands are displayed. Each list item is a union — exactly one of the following must be set per item:
   - `severity` (string, one of `low`, `warning`, `minor`, `major`, `critical`): a named severity shortcut. The model layer SHALL expand named severities to their canonical `{min, max}` API pairs at write time.
-  - `min` (int64) plus optional `max` (int64): a raw numeric range. `max` may be set only when `min` is set and `severity` is unset; when `max` is set, `min` must also be set. Setting both `severity` and `min` on the same item SHALL produce an error diagnostic at plan time. Setting `severity` together with `max` SHALL produce an error diagnostic at plan time.
+  - `min` (int64) plus optional `max` (int64): an alternative, numeric spelling of one of the canonical severity bands. The Kibana API models `severity_threshold` items as a union of exactly five members, each pinning **both** `min` and `max` to a single canonical pair (see the canonical-band table below); the `critical` member has no `max` field at all. The provider does not validate this constraint client-side, so on Kibana 9.5.0 GA and later (the pre-GA `9.5.0-SNAPSHOT` build accepted arbitrary `min`/`max` values) any `{min, max}` pair that does not exactly match one of the five canonical pairs — including a canonical `min` combined with a non-canonical `max`, or any `max` set alongside `min = 75` — SHALL be rejected by the Kibana API at `terraform apply` time with an HTTP 400 error, not caught earlier as a plan-time diagnostic. `max` may be set only when `min` is set and `severity` is unset; when `max` is set, `min` must also be set. Setting both `severity` and `min` on the same item SHALL produce an error diagnostic at plan time. Setting `severity` together with `max` SHALL produce an error diagnostic at plan time.
 - `title` (optional string): panel title. Subject to REQ-009 null-preservation.
 - `description` (optional string): panel description. Subject to REQ-009 null-preservation.
 - `hide_title` (optional bool): when true, hides the panel title. Subject to REQ-009 null-preservation.
@@ -2685,6 +3039,8 @@ The model layer SHALL expand named severity values to the following canonical `{
 | `minor`     | 25        | 50           |
 | `major`     | 50        | 75           |
 | `critical`  | 75        | (omitted — open-ended upper bound) |
+
+The raw `min`/`max` form exists so a practitioner can spell one of these same five bands numerically instead of via the `severity` enum; it is not a general-purpose custom-range escape hatch on Kibana 9.5.0 GA and later, which validates the `{min, max}` pair against the canonical band list server-side.
 
 On write, the provider SHALL map `ml_anomaly_charts_config` to the `config` object in the `KibanaHTTPAPIsKbnDashboardPanelTypeMlAnomalyCharts` API schema. Optional fields SHALL be included only when set in state; absent optional fields SHALL NOT be sent to the API.
 
@@ -2717,10 +3073,10 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 
 #### Scenario: Raw range escape hatch
 
-- GIVEN a panel with `severity_threshold = [{ min = 10, max = 20 }]`
-- WHEN create runs and the post-apply read returns `{min: 10, max: 20}`
-- THEN state SHALL contain `min = 10` and `max = 20` (not coerced to a named severity)
-- AND a subsequent plan SHALL show no changes
+- GIVEN a panel with `severity_threshold = [{ min = 10, max = 20 }]` (a `{min, max}` pair that does not match any of the five canonical pairs)
+- WHEN create runs against Kibana 9.5.0 GA or later
+- THEN the Kibana API SHALL reject the request with an HTTP 400 error identifying `severity_threshold` as invalid
+- AND `terraform apply` SHALL fail with that error, since the provider does not validate the canonical-boundary constraint client-side and this form is not a general-purpose custom-range escape hatch on supported GA versions
 
 #### Scenario: Raw range coinciding with a canonical band is preserved (no diff)
 
@@ -2731,9 +3087,9 @@ Implementation: new package `internal/kibana/dashboard/panel/mlanomalycharts/` w
 
 #### Scenario: severity_threshold form is preserved across refresh
 
-- GIVEN state holds `severity_threshold = [{ severity = "major" }, { min = 10, max = 20 }]`
-- WHEN a refresh runs and the API returns `[{min: 50, max: 75}, {min: 10, max: 20}]`
-- THEN state SHALL retain the first item as `severity = "major"` and the second as `min = 10, max = 20`
+- GIVEN state holds `severity_threshold = [{ severity = "major" }, { min = 25, max = 50 }]`
+- WHEN a refresh runs and the API returns `[{min: 50, max: 75}, {min: 25, max: 50}]`
+- THEN state SHALL retain the first item as `severity = "major"` and the second as `min = 25, max = 50`
 - AND a subsequent plan SHALL show no changes
 
 #### Scenario: critical severity preserved in raw form when authored raw
@@ -2883,7 +3239,7 @@ On read, the resource SHALL detect the `view_type` field in the API response and
 
 ### Requirement: Dashboard resource schema version upgrade (REQ-040)
 
-The `elasticstack_kibana_dashboard` resource SHALL implement `terraform-plugin-framework`'s `ResourceWithUpgradeState` interface with a single state upgrader for version 0 → 1.
+The `elasticstack_kibana_dashboard` resource SHALL implement `terraform-plugin-framework`'s `ResourceWithUpgradeState` interface with state upgraders keyed by stored schema version (0 and 1). The v1 → v2 transform and the composition that lets v0 state upgrade directly to the current version are specified by REQ-055.
 
 The v0 → v1 upgrader SHALL:
 
@@ -2892,19 +3248,19 @@ The v0 → v1 upgrader SHALL:
 3. For each entry whose `type` is `"range_slider_control"`: move all flat attributes from `range_slider_control_config` (`data_view_id`, `field_name`, `title`, `use_global_filters`, `ignore_validations`, `value`, `step`) into a nested `by_field {}` object within `range_slider_control_config`.
 4. Leave all other panel types unchanged.
 
-The resource schema version SHALL be incremented to 1. No data SHALL be lost during the upgrade; the resulting state SHALL be functionally equivalent to the original state.
+The v0 → v1 transform SHALL be applied as the first step of the v0 upgrader, which then continues through the v1 → v2 transform (REQ-055) and emits state at the current schema version. The v0 → v1 step precedes the v1 → v2 step; the resulting schema version is 2 (see REQ-055). No data SHALL be lost during the upgrade; the resulting state SHALL be functionally equivalent to the original state.
 
 #### Scenario: State upgrade preserves all field-branch attributes
 
 - GIVEN a v0 state containing both `options_list_control` and `range_slider_control` panels with all optional attributes set (e.g. `sort`, `display_settings`, `value`, `step`)
 - WHEN the state upgrader runs
-- THEN all attribute values SHALL be present under the `by_field {}` sub-object in v1 state and no attributes SHALL be dropped
+- THEN all attribute values SHALL be present under the `by_field {}` sub-object in the upgraded v2 state and no attributes SHALL be dropped
 
 #### Scenario: Non-control panels are unaffected by the upgrader
 
 - GIVEN a v0 state containing a mix of `options_list_control`, `range_slider_control`, and `markdown` panels
 - WHEN the state upgrader runs
-- THEN the `markdown` panel entries SHALL be unchanged in v1 state
+- THEN the `markdown` panel entries SHALL be unchanged in the upgraded v2 state
 
 ### Requirement: `links_config` panel block (REQ-054)
 
@@ -3043,6 +3399,137 @@ Optional display fields (`title`, `description`, `hide_title`, `hide_border`) on
 - GIVEN an existing Kibana dashboard whose `links` panel has server-side defaults for `hide_title` (`false`) and `hide_border` (`false`)
 - WHEN the resource imports the dashboard and the user's configuration omits those attributes
 - THEN `hide_title` and `hide_border` SHALL remain null in state and a subsequent plan against a matching configuration SHALL show no changes
+
+### Requirement: Dashboard root query state upgrade to `expression` (REQ-055)
+
+The `elasticstack_kibana_dashboard` resource SHALL implement a state upgrade from schema version 1 to version 2 that migrates the root `query` block from the `text` / `json` union shape to the single `expression` attribute described in REQ-036. The resource schema version SHALL be incremented from 1 to 2.
+
+The v1 → v2 upgrader SHALL:
+
+1. Leave a null or absent `query` block untouched.
+2. For a non-null `query` block, set `query.expression` from `query.text` when `text` is a non-null string; otherwise from `query.json` when `json` is a non-null string, copying the stored string value as-is without re-serialising it; otherwise retain an already-present non-null `expression` value (so the transform is idempotent on v2-shaped input); otherwise set `query.expression` to an explicit null (the key SHALL be present so the v2 nested attribute decodes). The upgrader SHALL NOT substitute an empty string for a missing value.
+3. Remove `query.text` and `query.json` from the upgraded state.
+
+The resource's existing v0 → v1 transform (REQ-040) SHALL be composed with this v1 → v2 transform so that state starting at schema version 0 upgrades directly to version 2 in a single `UpgradeState` call, without requiring two separate `terraform apply` runs. Both transforms SHALL operate on one in-memory raw state map that is read once and written once, so the v0 → v1 panel relocation is not discarded by the second transform. No data SHALL be lost during either upgrade path: the resulting `query.expression` value SHALL be functionally equivalent to the query expression Kibana was already receiving before the upgrade.
+
+#### Scenario: v1 state with `query.text` upgrades to `expression`
+
+- GIVEN a v1 state containing `query = { language = "kql", text = "http.response.status_code:200" }`
+- WHEN the state upgrader runs
+- THEN the v2 state SHALL contain `query = { language = "kql", expression = "http.response.status_code:200" }`
+- AND `query.text` SHALL NOT be present in the upgraded state
+
+#### Scenario: v1 state with `query.json` upgrades to `expression` unchanged
+
+- GIVEN a v1 state containing `query = { language = "kql", json = "{\"match_all\":{}}" }`
+- WHEN the state upgrader runs
+- THEN the v2 state SHALL contain `query.expression` equal to the exact string `{"match_all":{}}`
+- AND `query.json` SHALL NOT be present in the upgraded state
+
+#### Scenario: Null query block is left untouched
+
+- GIVEN a v1 state with no `query` block set (null)
+- WHEN the state upgrader runs
+- THEN the v2 state SHALL also have `query` null
+
+#### Scenario: v0 state upgrades directly to v2
+
+- GIVEN a v0 state containing an `options_list_control` panel with flat attributes and a root `query.text` value
+- WHEN the state upgrader runs
+- THEN the resulting v2 state SHALL have the panel's flat attributes relocated under `by_field {}` per REQ-040
+- AND the root `query` block SHALL have `expression` populated from the prior `text` value, with `text` and `json` absent
+
+#### Scenario: v1 `query` object with neither `text` nor `json` upgrades to a null `expression`
+
+- GIVEN a v1 state containing a `query` object with `language = "kql"` and neither `text` nor `json` set
+- WHEN the state upgrader runs
+- THEN the v2 state SHALL contain `query.language = "kql"` and `query.expression` as an explicit null
+- AND the upgrader SHALL NOT set `query.expression` to an empty string
+
+### Requirement: Lens XY duration-format parameter version gate (REQ-056)
+
+For every Lens XY chart `y[]` metric reachable at `panels[].vis_config.by_value.xy_chart_config`
+(top-level `panels` and panels nested under `sections[].panels`), when that metric's
+`config_json`-decoded `format` has `type` or `id` equal to `"duration"` and also sets `decimals`
+and/or `compact` (directly on `format` or nested under `format.params`), the provider SHALL require
+Elastic Stack **9.5.2** or later before issuing the create or update API request. When the connected
+stack is older than 9.5.2 and is not Serverless, the provider SHALL return an error diagnostic that
+identifies the offending panel, layer, and metric, and states that `format.type = "duration"` with
+`decimals`/`compact` requires Elastic Stack 9.5.2 or later, instead of issuing the API request and
+surfacing Kibana's raw validation error. The provider SHALL NOT perform this version check for
+dashboards whose `y[]` metrics do not use this combination, and SHALL NOT change behavior for
+`format.type` values other than `duration` (in particular `number` and `percent`, which already
+accept `decimals`/`compact` on every supported Kibana version).
+
+#### Scenario: Duration format with decimals and compact on an unsupported stack
+
+- GIVEN a dashboard configuration with an XY chart `line` layer whose `y[]` metric has
+  `config_json` containing `format = { type = "duration", from = "s", to = "ms", decimals = 0,
+  compact = true }`
+- AND the connected Elastic Stack is older than 9.5.2 and is not Serverless
+- WHEN the provider creates or updates the dashboard
+- THEN the provider SHALL return an error diagnostic naming the panel/layer/metric path and the
+  minimum required version
+- AND the provider SHALL NOT issue the underlying Kibana Dashboard API create/update request
+
+#### Scenario: Duration format with decimals and compact on a supported stack
+
+- GIVEN the same configuration as above
+- AND the connected Elastic Stack is 9.5.2 or later
+- WHEN the provider creates or updates the dashboard
+- THEN the provider SHALL issue the API request unchanged and SHALL NOT return a version-gate error
+
+#### Scenario: Duration format with decimals and compact on Serverless
+
+- GIVEN the same configuration as above
+- AND the connected stack is Kibana Serverless
+- WHEN the provider creates or updates the dashboard
+- THEN the provider SHALL NOT return a version-gate error, consistent with
+  `EnforceMinVersion` always being satisfied on Serverless
+
+#### Scenario: Status retrieval failure during the version check
+
+- GIVEN the same configuration as above
+- AND the Kibana status API request fails
+- WHEN the provider creates or updates the dashboard
+- THEN the provider SHALL propagate the status-retrieval error diagnostic
+- AND the provider SHALL NOT return a misleading minimum-version diagnostic
+- AND the provider SHALL NOT issue the dashboard API request
+
+#### Scenario: Version parsing failure during the version check
+
+- GIVEN the same configuration as above
+- AND the connected stack is stateful
+- AND the Kibana status API returns a version that cannot be parsed
+- WHEN the provider creates or updates the dashboard
+- THEN the provider SHALL propagate the version-parsing error diagnostic
+- AND the provider SHALL NOT return a misleading minimum-version diagnostic
+- AND the provider SHALL NOT issue the dashboard API request
+
+#### Scenario: Duration format without decimals or compact
+
+- GIVEN an XY chart `y[]` metric with `config_json` containing `format = { type = "duration", from
+  = "s", to = "ms" }` and neither `decimals` nor `compact` set
+- WHEN the provider creates or updates the dashboard on any supported Kibana version
+- THEN the provider SHALL NOT perform the version check described in this requirement and SHALL NOT
+  return a version-gate error
+
+#### Scenario: Number or percent format with decimals and compact is unaffected
+
+- GIVEN an XY chart `y[]` metric with `config_json` containing `format = { type = "number", decimals
+  = 0, compact = true }`
+- WHEN the provider creates or updates the dashboard on any supported Kibana version
+- THEN the provider SHALL NOT perform the version check described in this requirement and SHALL NOT
+  return a version-gate error
+
+#### Scenario: Offending metric nested inside a section
+
+- GIVEN the offending `y[]` metric from the first scenario is on a panel nested inside
+  `sections[].panels` rather than a top-level panel
+- AND the connected Elastic Stack is older than 9.5.2 and is not Serverless
+- WHEN the provider creates or updates the dashboard
+- THEN the provider SHALL return the same error diagnostic as the top-level-panel case, naming the
+  section and panel path
 
 ## Traceability
 

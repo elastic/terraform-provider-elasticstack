@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	elasticsearch "github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,8 +35,7 @@ func createTrainedModelAlias(ctx context.Context, client *clients.ElasticsearchS
 	plan := req.Plan
 	alias := req.WriteID
 
-	if alias == "" {
-		diags.AddError("Invalid resource ID", "model_alias cannot be empty")
+	if diags := ml.RequireNonEmptyID(alias, "model_alias"); diags.HasError() {
 		return entitycore.WriteResult[TFModel]{Model: plan}, diags
 	}
 

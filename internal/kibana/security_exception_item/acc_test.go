@@ -34,6 +34,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -970,6 +971,17 @@ func TestAccResourceExceptionItemValidation(t *testing.T) {
 				ExpectError: regexp.MustCompile(`(Nested entry requires 'operator' to be set|attribute "operator" is required)`),
 				PlanOnly:    true,
 			},
+			// Test 14: Entries list is empty
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("validation_entries_empty"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ExpectError: regexp.MustCompile("list must contain at least 1 elements"),
+				PlanOnly:    true,
+			},
 		},
 	})
 }
@@ -1124,8 +1136,11 @@ func TestAccResourceExceptionItem_Complex(t *testing.T) {
 func TestAccResourceExceptionItem_Comments(t *testing.T) {
 	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
 
+	const resourceName = "elasticstack_kibana_security_exception_item.test"
 	listID := fmt.Sprintf("test-exception-list-comments-%s", uuid.New().String()[:8])
 	itemID := fmt.Sprintf("test-exception-item-comments-%s", uuid.New().String()[:8])
+
+	var firstCommentID string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -1139,12 +1154,357 @@ func TestAccResourceExceptionItem_Comments(t *testing.T) {
 					"item_id": config.StringVariable(itemID),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "comments.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "comments.0.comment", "Initial test comment"),
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "comments.0.id"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_security_exception_item.test", "meta"),
+					resource.TestCheckResourceAttr(resourceName, "required_comments.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "comments.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "comments.0.comment", "Initial test comment"),
+					resource.TestCheckResourceAttrSet(resourceName, "comments.0.id"),
+					resource.TestMatchResourceAttr(resourceName, "comments.0.created_at", regexp.MustCompile(`^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$`)),
+					resource.TestCheckResourceAttrSet(resourceName, "comments.0.created_by"),
+					resource.TestCheckNoResourceAttr(resourceName, "meta"),
+					resource.TestCheckResourceAttrWith(resourceName, "comments.0.id", func(value string) error {
+						firstCommentID = value
+						return nil
+					}),
 				),
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("comments_noop"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionNoop),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "comments.#", "1"),
+					resource.TestCheckResourceAttrWith(resourceName, "comments.0.id", func(value string) error {
+						if value != firstCommentID {
+							return fmt.Errorf("stored comment id changed on a no-op apply: got %s, want %s", value, firstCommentID)
+						}
+						return nil
+					}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("comments_name_update"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "comments.#", "1"),
+					resource.TestCheckResourceAttrWith(resourceName, "comments.0.id", func(value string) error {
+						if value != firstCommentID {
+							return fmt.Errorf("stored comment id changed on an unrelated update: got %s, want %s", value, firstCommentID)
+						}
+						return nil
+					}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("comments_append"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "comments.#", "2"),
+					resource.TestCheckResourceAttrWith(resourceName, "comments.0.id", func(value string) error {
+						if value != firstCommentID {
+							return fmt.Errorf("stored comment id changed on append: got %s, want %s", value, firstCommentID)
+						}
+						return nil
+					}),
+					resource.TestCheckResourceAttr(resourceName, "comments.1.comment", "Second test comment"),
+					resource.TestCheckResourceAttrSet(resourceName, "comments.1.id"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("comments_remove"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "comments.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "comments.1.comment", "Second test comment"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("comments_unset"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "required_comments.#"),
+					resource.TestCheckResourceAttr(resourceName, "comments.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "comments.1.comment", "Second test comment"),
+					resource.TestCheckResourceAttrWith(resourceName, "comments.0.id", func(value string) error {
+						if value != firstCommentID {
+							return fmt.Errorf("stored comment id changed when required_comments was omitted: got %s, want %s", value, firstCommentID)
+						}
+						return nil
+					}),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("comments_edit"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "comments.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "comments.0.comment", "Initial test comment"),
+					resource.TestCheckResourceAttrWith(resourceName, "comments.0.id", func(value string) error {
+						if value != firstCommentID {
+							return fmt.Errorf("original comment id changed on edit: got %s, want %s", value, firstCommentID)
+						}
+						return nil
+					}),
+					resource.TestCheckResourceAttr(resourceName, "comments.2.comment", "Initial test comment (revised)"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("comments_edit"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				ResourceName:            resourceName,
+				ImportState:             true,
+				ImportStateVerify:       true,
+				ImportStateVerifyIgnore: []string{"required_comments"},
+				ImportStateCheck: func(instances []*terraform.InstanceState) error {
+					for _, instance := range instances {
+						if _, ok := instance.Attributes["required_comments.#"]; ok {
+							return fmt.Errorf("required_comments must be null after import, got %q", instance.Attributes["required_comments.#"])
+						}
+					}
+					return nil
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("comments_import_append"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "required_comments.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "comments.#", "4"),
+					resource.TestCheckResourceAttr(resourceName, "comments.0.comment", "Initial test comment"),
+					resource.TestCheckResourceAttr(resourceName, "comments.1.comment", "Second test comment"),
+					resource.TestCheckResourceAttr(resourceName, "comments.2.comment", "Initial test comment (revised)"),
+					resource.TestCheckResourceAttr(resourceName, "comments.3.comment", "Post-import comment"),
+					resource.TestCheckResourceAttrWith(resourceName, "comments.0.id", func(value string) error {
+						if value != firstCommentID {
+							return fmt.Errorf("stored comment id changed after import: got %s, want %s", value, firstCommentID)
+						}
+						return nil
+					}),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionItem_CommentsOutOfBand(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
+	const resourceName = "elasticstack_kibana_security_exception_item.test"
+	listID := fmt.Sprintf("test-exception-list-oob-%s", uuid.New().String()[:8])
+	itemID := fmt.Sprintf("test-exception-item-oob-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("oob_create"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "comments.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "comments.0.comment", "alpha"),
+					appendOutOfBandComment(resourceName, "out-of-band note"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("oob_create"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "required_comments.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "comments.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "comments.1.comment", "out-of-band note"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("oob_analyst_text"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "comments.#", "2"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("oob_append"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "comments.#", "3"),
+					resource.TestCheckResourceAttr(resourceName, "comments.2.comment", "beta"),
+				),
+			},
+		},
+	})
+}
+
+// appendOutOfBandComment adds a comment directly through the Kibana API,
+// bypassing Terraform, to model an analyst writing comments in the Kibana UI.
+func appendOutOfBandComment(resourceName, text string) resource.TestCheckFunc {
+	return func(state *terraform.State) error {
+		ctx := context.Background()
+
+		resource, ok := state.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+		compID, compDiags := clients.CompositeIDFromStr(resource.Primary.ID)
+		if compDiags.HasError() {
+			return diagutil.FwDiagsAsError(compDiags)
+		}
+		id := compID.ResourceID
+
+		apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return fmt.Errorf("failed to create acceptance testing client: %w", err)
+		}
+		oapiClient := apiClient.GetKibanaOapiClient()
+
+		readResp, d := kibanaoapi.GetExceptionListItem(ctx, oapiClient, "default", &kbapi.ReadExceptionListItemParams{Id: &id})
+		if d.HasError() {
+			return fmt.Errorf("failed to read exception item: %s", d)
+		}
+		if readResp == nil {
+			return fmt.Errorf("exception item %q not found for out-of-band comment", resource.Primary.ID)
+		}
+
+		comments := make(kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray, 0, len(readResp.Comments)+1)
+		for _, comment := range readResp.Comments {
+			commentID := comment.Id
+			comments = append(comments, kbapi.SecurityExceptionsAPIUpdateExceptionListItemComment{Id: &commentID, Comment: comment.Comment})
+		}
+		comments = append(comments, kbapi.SecurityExceptionsAPIUpdateExceptionListItemComment{Comment: text})
+
+		itemID := readResp.ItemId
+		genericReq := kbapi.SecurityExceptionsAPIUpdateExceptionListItemGeneric{
+			Id:          &id,
+			ItemId:      &itemID,
+			Name:        readResp.Name,
+			Description: readResp.Description,
+			Type:        readResp.Type,
+			Entries:     readResp.Entries,
+			Comments:    &comments,
+		}
+		body := kbapi.UpdateExceptionListItemJSONRequestBody{}
+		if err := body.FromSecurityExceptionsAPIUpdateExceptionListItemGeneric(genericReq); err != nil {
+			return fmt.Errorf("failed to build update body: %w", err)
+		}
+
+		_, d = kibanaoapi.UpdateExceptionListItem(ctx, oapiClient, "default", body)
+		if d.HasError() {
+			return fmt.Errorf("failed to append out-of-band comment: %s", d)
+		}
+		return nil
+	}
+}
+
+func TestAccResourceExceptionItem_RequiredCommentsValidation(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("required_comments_validation_whitespace"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable("test-exception-list-validation"),
+					"item_id": config.StringVariable("test-exception-item-validation"),
+				},
+				ExpectError: regexp.MustCompile(`Invalid required_comments entry`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("required_comments_validation_duplicate"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable("test-exception-list-validation"),
+					"item_id": config.StringVariable("test-exception-item-validation"),
+				},
+				ExpectError: regexp.MustCompile(`Duplicate required_comments entry`),
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionItem_CommentsImmutableFieldReplace(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
+	const resourceName = "elasticstack_kibana_security_exception_item.test"
+	listID := fmt.Sprintf("test-exception-list-replace-%s", uuid.New().String()[:8])
+	itemID := fmt.Sprintf("test-exception-item-replace-%s", uuid.New().String()[:8])
+	replacementItemID := fmt.Sprintf("test-exception-item-replace-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
+		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("comments_create"),
@@ -1152,13 +1512,80 @@ func TestAccResourceExceptionItem_Comments(t *testing.T) {
 					"list_id": config.StringVariable(listID),
 					"item_id": config.StringVariable(itemID),
 				},
-				ResourceName:      "elasticstack_kibana_security_exception_item.test",
-				ImportState:       true,
-				ImportStateVerify: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("comments_create"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(replacementItemID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "item_id", replacementItemID),
+					resource.TestCheckResourceAttr(resourceName, "comments.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "comments.0.comment", "Initial test comment"),
+				),
 			},
 		},
 	})
 }
+
+func TestAccResourceExceptionItem_CommentsUnsetToSet(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
+	listID := fmt.Sprintf("test-exception-list-comments-unset-%s", uuid.New().String()[:8])
+	itemID := fmt.Sprintf("test-exception-item-comments-unset-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("no_comments"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.TestCheckNoResourceAttr("elasticstack_kibana_security_exception_item.test", "comments.#"),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("two_comments"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "comments.#", "2"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "comments.0.comment", "First comment"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "comments.0.id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "comments.1.comment", "Second comment"),
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_security_exception_item.test", "comments.1.id"),
+				),
+			},
+		},
+	})
+}
+
+// NOTE: coverage for the `meta` attribute (configuring it with a real,
+// non-empty JSON object and asserting the value) was deliberately NOT added
+// here. Verified directly against the target Kibana/Elasticsearch stack
+// (both through this provider and with raw curl calls to
+// /api/exception_lists/items, bypassing the provider entirely) that
+// submitting ANY non-null `meta` object -- including `{}` -- is rejected by
+// Elasticsearch with a document_parsing_exception: the saved-object mapping
+// for `exception-list.meta` in this stack is `keyword` (plain text), while
+// the Kibana REST API and generated client both type `meta` as a free-form
+// JSON object. This is a pre-existing backend/storage-mapping
+// incompatibility, not something introduced by or fixable within this
+// schema-coverage change; see the PR description for details and a
+// suggested follow-up.
 
 func TestAccResourceExceptionItem_EmptyTagsAndOsTypes(t *testing.T) {
 	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
@@ -1221,6 +1648,79 @@ func TestAccResourceExceptionItem_EmptyTagsAndOsTypes(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "tags.#", "0"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "os_types.#", "0"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionItem_NamespaceTypeDefault(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
+	listID := fmt.Sprintf("test-exception-list-ns-default-%s", uuid.New().String()[:8])
+	itemID := fmt.Sprintf("test-exception-item-ns-default-%s", uuid.New().String()[:8])
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("namespace_type_default"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_security_exception_item.test", "namespace_type", "single"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceExceptionItem_ReplaceOnChange(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, allTestsVersionsConstraint, versionutils.FlavorAny)
+
+	listID := fmt.Sprintf("test-exception-list-replace-%s", uuid.New().String()[:8])
+	itemIDA := fmt.Sprintf("test-exception-item-replace-a-%s", uuid.New().String()[:8])
+	itemIDB := fmt.Sprintf("test-exception-item-replace-b-%s", uuid.New().String()[:8])
+
+	resourceName := "elasticstack_kibana_security_exception_item.test"
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceExceptionItemDestroy,
+		Steps: []resource.TestStep{
+			// Step 1: create with item_id = itemIDA.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("replace_create"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemIDA),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "item_id", itemIDA),
+					resource.TestCheckResourceAttr(resourceName, "namespace_type", "single"),
+				),
+			},
+			// Step 2: changing item_id must force a destroy-before-create replacement.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("replace_create"),
+				ConfigVariables: config.Variables{
+					"list_id": config.StringVariable(listID),
+					"item_id": config.StringVariable(itemIDB),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "item_id", itemIDB),
+					resource.TestCheckResourceAttr(resourceName, "namespace_type", "single"),
 				),
 			},
 		},

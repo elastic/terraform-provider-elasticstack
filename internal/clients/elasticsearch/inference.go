@@ -22,6 +22,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/elastic/go-elasticsearch/v8/typedapi/inference/get"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fwdiag "github.com/hashicorp/terraform-plugin-framework/diag"
@@ -47,21 +48,13 @@ func PutInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchS
 }
 
 func GetInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID string) (*types.InferenceEndpointInfo, fwdiag.Diagnostics) {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
-	res, err := typedClient.Inference.Get().InferenceId(inferenceID).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return nil, nil
-		}
-		diags.AddError("Unable to get inference endpoint", err.Error())
+	res, diags := CallOrNotFound(func() (*get.Response, error) {
+		return typedClient.Inference.Get().InferenceId(inferenceID).Do(ctx)
+	}, "Unable to get inference endpoint")
+	if diags.HasError() || res == nil || len(res.Endpoints) == 0 {
 		return nil, diags
-	}
-
-	if len(res.Endpoints) == 0 {
-		return nil, nil
 	}
 
 	return &res.Endpoints[0], nil
@@ -127,18 +120,8 @@ func UpdateInferenceEndpoint(ctx context.Context, apiClient *clients.Elasticsear
 }
 
 func DeleteInferenceEndpoint(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, inferenceID string) fwdiag.Diagnostics {
-	var diags fwdiag.Diagnostics
-
 	typedClient := apiClient.GetESClient()
 
 	_, err := typedClient.Inference.Delete(inferenceID).Do(ctx)
-	if err != nil {
-		if IsNotFoundElasticsearchError(err) {
-			return diags
-		}
-		diags.AddError("Unable to delete inference endpoint", err.Error())
-		return diags
-	}
-
-	return diags
+	return DeleteWithNotFoundAsSuccess(err, "Unable to delete inference endpoint")
 }

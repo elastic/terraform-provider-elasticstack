@@ -34,9 +34,9 @@ var (
 
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String         `tfsdk:"id"`
-	KibanaConnection types.List           `tfsdk:"kibana_connection"`
-	SpaceID          types.String         `tfsdk:"space_id"`
+	entitycore.KibanaConnectionField
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	EntityType       types.String         `tfsdk:"entity_type"`
 	EntityID         types.String         `tfsdk:"entity_id"`
 	Timestamp        types.String         `tfsdk:"timestamp"`
@@ -67,16 +67,14 @@ type tfModel struct {
 var _ entitycore.KibanaResourceModel = tfModel{}
 var _ entitycore.WithVersionRequirements = (*tfModel)(nil)
 
-func (model tfModel) GetID() types.String             { return model.ID }
-func (model tfModel) GetSpaceID() types.String        { return model.SpaceID }
-func (model tfModel) GetKibanaConnection() types.List { return model.KibanaConnection }
-func (model tfModel) GetResourceID() types.String     { return model.EntityID }
+func (model tfModel) GetID() types.String         { return model.ID }
+func (model tfModel) GetResourceID() types.String { return model.EntityID }
 
 func (*tfModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{{
-		MinVersion:   *MinVersion,
-		ErrorMessage: fmt.Sprintf("elasticstack_kibana_security_entity_store_entity is supported only for Kibana v%s and above", MinVersion.String()),
-	}}, nil
+	return entitycore.SingleVersionRequirement(
+		*MinVersion,
+		fmt.Sprintf("elasticstack_kibana_security_entity_store_entity is supported only for Kibana v%s and above", MinVersion.String()),
+	), nil
 }
 
 // entityBlockModel represents the typed "entity" block.

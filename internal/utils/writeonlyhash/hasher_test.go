@@ -18,9 +18,11 @@
 package writeonlyhash_test
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/writeonlyhash"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
@@ -198,4 +200,99 @@ func TestHasher_Compute_errorDoesNotLeakInput(t *testing.T) {
 	require.Error(t, err)
 	assert.NotContains(t, err.Error(), secret)
 	assert.Contains(t, err.Error(), "bcrypt cost out of range")
+}
+
+func TestHasher_shortValueUnchangedByPreHash(t *testing.T) {
+	t.Parallel()
+
+	// Salted input of exactly 72 bytes must be passed to bcrypt unchanged so
+	// previously stored hashes remain valid.
+	const salt = "elasticsearch_connector"
+	value := strings.Repeat("a", 72-len(salt)-1)
+	require.Len(t, salt+":"+value, 72)
+
+	h := writeonlyhash.New(salt)
+	legacy, err := bcrypt.GenerateFromPassword([]byte(salt+":"+value), 4)
+	require.NoError(t, err)
+
+	assert.True(t, h.Matches(value, legacy))
+}
+
+func TestHasher_longValueRoundtrip(t *testing.T) {
+	t.Parallel()
+
+	pem := "-----BEGIN PRIVATE KEY-----\n" + strings.Repeat("MIIEvQIBADANBgkqhkiG9w0BAQEFAASC", 20) + "\n-----END PRIVATE KEY-----\n"
+	require.Greater(t, len(pem), 72)
+
+	h := writeonlyhash.New("fleet_agent_download_source")
+	hash, err := h.Compute(pem)
+	require.NoError(t, err)
+	assert.True(t, h.Matches(pem, hash))
+}
+
+func TestHasher_EncodeDecodeForPrivateState_roundtrip(t *testing.T) {
+	t.Parallel()
+
+	h := writeonlyhash.New("elasticsearch_connector")
+	hash, err := h.Compute("value")
+	require.NoError(t, err)
+
+	encoded, err := h.EncodeForPrivateState(hash)
+	require.NoError(t, err)
+	assert.True(t, strings.HasPrefix(string(encoded), `"`), "bcrypt bytes contain $ and must be JSON wrapped")
+
+	decoded, err := h.DecodeFromPrivateState(encoded)
+	require.NoError(t, err)
+	assert.Equal(t, hash, decoded)
+
+	empty, err := h.DecodeFromPrivateState(nil)
+	require.NoError(t, err)
+	assert.Nil(t, empty)
+}
+
+func TestHasher_IsUpToDate(t *testing.T) {
+	t.Parallel()
+
+	h := writeonlyhash.New("elasticsearch_connector")
+	hash, err := h.Compute("value")
+	require.NoError(t, err)
+
+	assert.True(t, h.IsUpToDate("value", hash))
+	assert.False(t, h.IsUpToDate("other", hash))
+	assert.False(t, h.IsUpToDate("value", nil))
+}
+
+func TestHasher_ComputeForPrivateState(t *testing.T) {
+	t.Parallel()
+
+	h := writeonlyhash.New("elasticsearch_connector")
+	encoded, diags := h.ComputeForPrivateState("value")
+	require.False(t, diags.HasError())
+
+	decoded, err := h.DecodeFromPrivateState(encoded)
+	require.NoError(t, err)
+	assert.True(t, h.Matches("value", decoded))
+}
+
+func TestAddPrivateStateUnavailableError(t *testing.T) {
+	t.Parallel()
+
+	var diags diag.Diagnostics
+	writeonlyhash.AddPrivateStateUnavailableError(&diags)
+	require.True(t, diags.HasError())
+	assert.Equal(t, writeonlyhash.PrivateStateUnavailableSummary, diags.Errors()[0].Summary())
+	assert.Equal(t, writeonlyhash.PrivateStateUnavailableDetail, diags.Errors()[0].Detail())
+}
+
+func TestHasher_longValuesSharingPrefixDoNotMatch(t *testing.T) {
+	t.Parallel()
+
+	prefix := strings.Repeat("p", 100)
+	h := writeonlyhash.New("fleet_agent_download_source")
+
+	hash, err := h.Compute(prefix + "one")
+	require.NoError(t, err)
+
+	assert.True(t, h.Matches(prefix+"one", hash))
+	assert.False(t, h.Matches(prefix+"two", hash))
 }

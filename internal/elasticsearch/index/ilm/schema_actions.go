@@ -18,18 +18,23 @@
 package ilm
 
 import (
+	"context"
 	_ "embed"
+	"maps"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int64validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/objectvalidator"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 //go:embed descriptions/ilm_set_priority_action.md
@@ -208,7 +213,16 @@ func blockRollover() schema.SingleNestedBlock {
 }
 
 func blockSearchableSnapshot() schema.SingleNestedBlock {
-	return singleNestedBlock("Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.", schema.NestedBlockObject{
+	return searchableSnapshotBlock("Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.")
+}
+
+// blockSearchableSnapshotInFrozenPhase is the frozen-phase-only action; Elasticsearch requires this action for the frozen phase.
+func blockSearchableSnapshotInFrozenPhase() schema.SingleNestedBlock {
+	return searchableSnapshotBlock("Required in the `frozen` phase. Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.")
+}
+
+func searchableSnapshotBlock(desc string) schema.SingleNestedBlock {
+	b := singleNestedBlock(desc, schema.NestedBlockObject{
 		Attributes: map[string]schema.Attribute{
 			attrSnapshotRepository: schema.StringAttribute{
 				Description: "Repository used to store the snapshot. Required when the `searchable_snapshot` action is configured.",
@@ -220,30 +234,11 @@ func blockSearchableSnapshot() schema.SingleNestedBlock {
 				Computed:    true,
 				Default:     booldefault.StaticBool(true),
 			},
+			attrForceMergeOnClone: searchableSnapshotForceMergeOnCloneAttribute(),
 		},
 	}, objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrSnapshotRepository)))
-}
-
-// blockSearchableSnapshotInFrozenPhase is the frozen-phase-only action; Elasticsearch requires this action for the frozen phase.
-func blockSearchableSnapshotInFrozenPhase() schema.SingleNestedBlock {
-	return singleNestedBlock(
-		"Required in the `frozen` phase. Takes a snapshot of the managed index in the configured repository and mounts it as a searchable snapshot.",
-		schema.NestedBlockObject{
-			Attributes: map[string]schema.Attribute{
-				attrSnapshotRepository: schema.StringAttribute{
-					Description: "Repository used to store the snapshot. Required when the `searchable_snapshot` action is configured.",
-					Optional:    true,
-				},
-				attrForceMergeIndex: schema.BoolAttribute{
-					Description: "Force merges the managed index to one segment.",
-					Optional:    true,
-					Computed:    true,
-					Default:     booldefault.StaticBool(true),
-				},
-			},
-		},
-		objectvalidator.AlsoRequires(path.MatchRelative().AtName(attrSnapshotRepository)),
-	)
+	b.PlanModifiers = []planmodifier.Object{defaultForceMergeOnClone{}}
+	return b
 }
 
 func blockSetPriority() schema.SingleNestedBlock {
@@ -290,6 +285,173 @@ func blockUnfollow() schema.SingleNestedBlock {
 			},
 		},
 	})
+}
+
+const forceMergeOnCloneDescription = "" +
+	"Force-merges a clone of the managed index (with no replicas) before creating the searchable snapshot. " +
+	"Set to false to skip the clone and force-merge the managed index directly. Defaults to true. " +
+	"Cannot be set when force_merge_index is false. Setting false requires Elasticsearch 9.2.1 or later."
+
+const forceMergeOnCloneMarkdownDescription = "" +
+	"Force-merges a clone of the managed index (with no replicas) before creating the searchable snapshot. " +
+	"Set to `false` to skip the clone and force-merge the managed index directly. Defaults to `true`. " +
+	"Cannot be set when `force_merge_index` is `false`. Setting `false` requires Elasticsearch **9.2.1** or later."
+
+func searchableSnapshotForceMergeOnCloneAttribute() schema.BoolAttribute {
+	return schema.BoolAttribute{
+		Description:         forceMergeOnCloneDescription,
+		MarkdownDescription: forceMergeOnCloneMarkdownDescription,
+		Optional:            true,
+		Computed:            true,
+		Validators: []validator.Bool{
+			validators.ForbiddenIfDependentPathExpressionOneOf(
+				path.MatchRelative().AtParent().AtName(attrForceMergeIndex),
+				[]string{"false"},
+			),
+		},
+		PlanModifiers: []planmodifier.Bool{
+			defaultForceMergeOnClone{},
+		},
+	}
+}
+
+// defaultForceMergeOnClone plans Elasticsearch's true default for
+// force_merge_on_clone, except when sibling force_merge_index is false — that
+// combination must stay null to match flatten (no backfill) and the API.
+//
+// The planned default is applied here rather than with booldefault.StaticBool
+// so Framework never sees an intermediate true that later modifiers have to
+// undo (which dirties an otherwise-empty plan and unknowns modified_date).
+type defaultForceMergeOnClone struct{}
+
+var (
+	_ planmodifier.Bool   = defaultForceMergeOnClone{}
+	_ planmodifier.Object = defaultForceMergeOnClone{}
+)
+
+func (m defaultForceMergeOnClone) Description(context.Context) string {
+	return "defaults force_merge_on_clone to true unless force_merge_index is false"
+}
+
+func (m defaultForceMergeOnClone) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (m defaultForceMergeOnClone) PlanModifyBool(ctx context.Context, req planmodifier.BoolRequest, resp *planmodifier.BoolResponse) {
+	// When force_merge_index is not yet known, leave the plan unchanged so this
+	// is not the first concrete value. The object modifier can still default.
+	next, ok := plannedForceMergeOnClone(req.ConfigValue, forceMergeIndexFromPlanOrConfig(ctx, req), false)
+	if !ok || resp.PlanValue.Equal(next) {
+		return
+	}
+	resp.PlanValue = next
+}
+
+func (m defaultForceMergeOnClone) PlanModifyObject(ctx context.Context, req planmodifier.ObjectRequest, resp *planmodifier.ObjectResponse) {
+	if !typeutils.IsKnown(req.PlanValue) || req.ConfigValue.IsUnknown() {
+		return
+	}
+
+	configClone := types.BoolNull()
+	if !req.ConfigValue.IsNull() {
+		configClone = boolFromObject(req.ConfigValue, attrForceMergeOnClone)
+	}
+
+	index := boolFromObject(req.PlanValue, attrForceMergeIndex)
+	if !typeutils.IsKnown(index) {
+		index = boolFromObject(req.ConfigValue, attrForceMergeIndex)
+	}
+
+	next, ok := plannedForceMergeOnClone(configClone, index, true)
+	if !ok {
+		return
+	}
+	current := boolFromObject(req.PlanValue, attrForceMergeOnClone)
+	if current.Equal(next) {
+		return
+	}
+
+	attrs := maps.Clone(req.PlanValue.Attributes())
+	attrs[attrForceMergeOnClone] = next
+	obj, diags := types.ObjectValue(req.PlanValue.AttributeTypes(ctx), attrs)
+	resp.Diagnostics.Append(diags...)
+	if diags.HasError() {
+		return
+	}
+	resp.PlanValue = obj
+}
+
+// plannedForceMergeOnClone returns the planned force_merge_on_clone value.
+// ok is false when the caller must leave PlanValue unchanged: unknown config,
+// or (when defaultIfIndexUnknown is false) an unknown force_merge_index.
+func plannedForceMergeOnClone(configClone, index types.Bool, defaultIfIndexUnknown bool) (types.Bool, bool) {
+	if configClone.IsUnknown() {
+		return types.BoolUnknown(), false
+	}
+	if !configClone.IsNull() {
+		return configClone, true
+	}
+	if typeutils.IsKnown(index) && !index.ValueBool() {
+		return types.BoolNull(), true
+	}
+	if typeutils.IsKnown(index) || defaultIfIndexUnknown {
+		return types.BoolValue(true), true
+	}
+	return types.BoolUnknown(), false
+}
+
+func forceMergeIndexFromPlanOrConfig(ctx context.Context, req planmodifier.BoolRequest) types.Bool {
+	siblingPath := req.Path.ParentPath().AtName(attrForceMergeIndex)
+	parentPath := req.Path.ParentPath()
+
+	if req.Plan.Schema != nil && !req.Plan.Raw.IsNull() {
+		if v := boolAtPath(ctx, req.Plan.GetAttribute, siblingPath); typeutils.IsKnown(v) {
+			return v
+		}
+		if v := boolFromParentObject(ctx, req.Plan.GetAttribute, parentPath); typeutils.IsKnown(v) {
+			return v
+		}
+	}
+	if req.Config.Schema != nil && !req.Config.Raw.IsNull() {
+		if v := boolAtPath(ctx, req.Config.GetAttribute, siblingPath); typeutils.IsKnown(v) {
+			return v
+		}
+		if v := boolFromParentObject(ctx, req.Config.GetAttribute, parentPath); typeutils.IsKnown(v) {
+			return v
+		}
+	}
+	return types.BoolUnknown()
+}
+
+func boolAtPath(ctx context.Context, get func(context.Context, path.Path, any) diag.Diagnostics, p path.Path) types.Bool {
+	var v types.Bool
+	if diags := get(ctx, p, &v); diags.HasError() {
+		return types.BoolUnknown()
+	}
+	return v
+}
+
+func boolFromParentObject(ctx context.Context, get func(context.Context, path.Path, any) diag.Diagnostics, parentPath path.Path) types.Bool {
+	var parent types.Object
+	if diags := get(ctx, parentPath, &parent); diags.HasError() {
+		return types.BoolUnknown()
+	}
+	return boolFromObject(parent, attrForceMergeIndex)
+}
+
+func boolFromObject(obj types.Object, name string) types.Bool {
+	if !typeutils.IsKnown(obj) {
+		return types.BoolUnknown()
+	}
+	v, ok := obj.Attributes()[name]
+	if !ok {
+		return types.BoolUnknown()
+	}
+	b, ok := v.(types.Bool)
+	if !ok {
+		return types.BoolUnknown()
+	}
+	return b
 }
 
 func blockWaitForSnapshot() schema.SingleNestedBlock {

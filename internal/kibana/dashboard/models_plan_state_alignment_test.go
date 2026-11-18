@@ -34,13 +34,9 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 		{
 			VisConfig: &models.VisConfigModel{
 				ByValue: &models.VisByValueModel{
-					LensByValueChartBlocks: models.LensByValueChartBlocks{
-						MosaicConfig: &models.MosaicConfigModel{
-							LensChartBaseTFModel: models.LensChartBaseTFModel{
-								Title:       types.StringValue("Sample Mosaic"),
-								Description: types.StringValue("Test mosaic visualization"),
-							},
-						},
+					MosaicConfig: &models.MosaicConfigModel{
+						Title:       types.StringValue("Sample Mosaic"),
+						Description: types.StringValue("Test mosaic visualization"),
 					},
 				},
 			},
@@ -56,14 +52,10 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 		{
 			VisConfig: &models.VisConfigModel{
 				ByValue: &models.VisByValueModel{
-					LensByValueChartBlocks: models.LensByValueChartBlocks{
-						TagcloudConfig: &models.TagcloudConfigModel{
-							LensChartBaseTFModel: models.LensChartBaseTFModel{
-								Title:       types.StringValue("Sample Tagcloud"),
-								Description: types.StringValue("Test tagcloud visualization"),
-							},
-							TagByJSON: mustTagcloudJSON(`{"operation":"terms","fields":["host.name"],"limit":10}`),
-						},
+					TagcloudConfig: &models.TagcloudConfigModel{
+						Title:       types.StringValue("Sample Tagcloud"),
+						Description: types.StringValue("Test tagcloud visualization"),
+						TagByJSON:   mustTagcloudJSON(`{"operation":"terms","fields":["host.name"],"limit":10}`),
 					},
 				},
 			},
@@ -74,13 +66,9 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 		{
 			VisConfig: &models.VisConfigModel{
 				ByValue: &models.VisByValueModel{
-					LensByValueChartBlocks: models.LensByValueChartBlocks{
-						MosaicConfig: &models.MosaicConfigModel{
-							LensChartBaseTFModel: models.LensChartBaseTFModel{
-								Title:       types.StringValue(""),
-								Description: types.StringValue(""),
-							},
-						},
+					MosaicConfig: &models.MosaicConfigModel{
+						Title:       types.StringValue(""),
+						Description: types.StringValue(""),
 					},
 				},
 			},
@@ -96,16 +84,12 @@ func Test_alignPanelStateFromPlan_preservesCommonPanelFields(t *testing.T) {
 		{
 			VisConfig: &models.VisConfigModel{
 				ByValue: &models.VisByValueModel{
-					LensByValueChartBlocks: models.LensByValueChartBlocks{
-						TagcloudConfig: &models.TagcloudConfigModel{
-							LensChartBaseTFModel: models.LensChartBaseTFModel{
-								Title:       types.StringValue(""),
-								Description: types.StringValue(""),
-							},
-							TagByJSON: mustTagcloudJSON(
-								`{"operation":"terms","fields":["host.name"],"limit":10,"rank_by":{"type":"metric","metric_index":0,"direction":"desc"}}`,
-							),
-						},
+					TagcloudConfig: &models.TagcloudConfigModel{
+						Title:       types.StringValue(""),
+						Description: types.StringValue(""),
+						TagByJSON: mustTagcloudJSON(
+							`{"operation":"terms","fields":["host.name"],"limit":10,"rank_by":{"type":"metric","metric_index":0,"direction":"desc"}}`,
+						),
 					},
 				},
 			},
@@ -202,23 +186,17 @@ func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *te
 	plan := models.PanelModel{
 		VisConfig: &models.VisConfigModel{
 			ByValue: &models.VisByValueModel{
-				LensByValueChartBlocks: models.LensByValueChartBlocks{
-					MosaicConfig: &models.MosaicConfigModel{
-						LensChartBaseTFModel: models.LensChartBaseTFModel{
-							Title:               types.StringValue("M"),
-							Description:         types.StringValue("d"),
-							IgnoreGlobalFilters: types.BoolValue(true),
-							Sampling:            types.Float64Value(0.5),
-						},
-					},
-					TreemapConfig: &models.TreemapConfigModel{
-						LensChartBaseTFModel: models.LensChartBaseTFModel{
-							Title:               types.StringValue("T"),
-							Description:         types.StringValue("d"),
-							IgnoreGlobalFilters: types.BoolValue(true),
-							Sampling:            types.Float64Value(0.5),
-						},
-					},
+				MosaicConfig: &models.MosaicConfigModel{
+					Title:               types.StringValue("M"),
+					Description:         types.StringValue("d"),
+					IgnoreGlobalFilters: types.BoolValue(true),
+					Sampling:            types.Float64Value(0.5),
+				},
+				TreemapConfig: &models.TreemapConfigModel{
+					Title:               types.StringValue("T"),
+					Description:         types.StringValue("d"),
+					IgnoreGlobalFilters: types.BoolValue(true),
+					Sampling:            types.Float64Value(0.5),
 				},
 			},
 		},
@@ -226,23 +204,17 @@ func Test_alignPanelStateFromPlan_preservesMosaicTreemapPartitionSnapshots(t *te
 	state := models.PanelModel{
 		VisConfig: &models.VisConfigModel{
 			ByValue: &models.VisByValueModel{
-				LensByValueChartBlocks: models.LensByValueChartBlocks{
-					MosaicConfig: &models.MosaicConfigModel{
-						LensChartBaseTFModel: models.LensChartBaseTFModel{
-							Title:               types.StringValue("M"),
-							Description:         types.StringValue("d"),
-							IgnoreGlobalFilters: types.BoolNull(),
-							Sampling:            types.Float64Null(),
-						},
-					},
-					TreemapConfig: &models.TreemapConfigModel{
-						LensChartBaseTFModel: models.LensChartBaseTFModel{
-							Title:               types.StringValue("T"),
-							Description:         types.StringValue("d"),
-							IgnoreGlobalFilters: types.BoolNull(),
-							Sampling:            types.Float64Null(),
-						},
-					},
+				MosaicConfig: &models.MosaicConfigModel{
+					Title:               types.StringValue("M"),
+					Description:         types.StringValue("d"),
+					IgnoreGlobalFilters: types.BoolNull(),
+					Sampling:            types.Float64Null(),
+				},
+				TreemapConfig: &models.TreemapConfigModel{
+					Title:               types.StringValue("T"),
+					Description:         types.StringValue("d"),
+					IgnoreGlobalFilters: types.BoolNull(),
+					Sampling:            types.Float64Null(),
 				},
 			},
 		},
@@ -294,13 +266,11 @@ func Test_alignPanelStateFromPlan_pinnedPanel_xyChart_appliesAlignment(t *testin
 	plan := models.PanelModel{
 		VisConfig: &models.VisConfigModel{
 			ByValue: &models.VisByValueModel{
-				LensByValueChartBlocks: models.LensByValueChartBlocks{
-					XYChartConfig: &models.XYChartConfigModel{
-						Legend: &models.XYLegendModel{
-							Visibility: types.StringValue("visible"),
-							Inside:     types.BoolValue(false),
-							Position:   types.StringValue("right"),
-						},
+				XYChartConfig: &models.XYChartConfigModel{
+					Legend: &models.XYLegendModel{
+						Visibility: types.StringValue("visible"),
+						Inside:     types.BoolValue(false),
+						Position:   types.StringValue("right"),
 					},
 				},
 			},
@@ -309,13 +279,11 @@ func Test_alignPanelStateFromPlan_pinnedPanel_xyChart_appliesAlignment(t *testin
 	state := models.PanelModel{
 		VisConfig: &models.VisConfigModel{
 			ByValue: &models.VisByValueModel{
-				LensByValueChartBlocks: models.LensByValueChartBlocks{
-					XYChartConfig: &models.XYChartConfigModel{
-						Legend: &models.XYLegendModel{
-							Visibility: types.StringValue("visible"),
-							Inside:     types.BoolNull(),
-							Position:   types.StringNull(),
-						},
+				XYChartConfig: &models.XYChartConfigModel{
+					Legend: &models.XYLegendModel{
+						Visibility: types.StringValue("visible"),
+						Inside:     types.BoolNull(),
+						Position:   types.StringNull(),
 					},
 				},
 			},
@@ -366,14 +334,12 @@ func Test_alignDashboardStateFromPlanSections_sectionXYChart_preservesLegend(t *
 		Panels: []models.PanelModel{{
 			VisConfig: &models.VisConfigModel{
 				ByValue: &models.VisByValueModel{
-					LensByValueChartBlocks: models.LensByValueChartBlocks{
-						XYChartConfig: &models.XYChartConfigModel{
-							Legend: &models.XYLegendModel{
-								Visibility: types.StringValue("visible"),
-								Inside:     types.BoolValue(false),
-								Position:   types.StringValue("right"),
-								Size:       types.StringValue("m"),
-							},
+					XYChartConfig: &models.XYChartConfigModel{
+						Legend: &models.XYLegendModel{
+							Visibility: types.StringValue("visible"),
+							Inside:     types.BoolValue(false),
+							Position:   types.StringValue("right"),
+							Size:       types.StringValue("m"),
 						},
 					},
 				},
@@ -384,9 +350,7 @@ func Test_alignDashboardStateFromPlanSections_sectionXYChart_preservesLegend(t *
 		Panels: []models.PanelModel{{
 			VisConfig: &models.VisConfigModel{
 				ByValue: &models.VisByValueModel{
-					LensByValueChartBlocks: models.LensByValueChartBlocks{
-						XYChartConfig: &models.XYChartConfigModel{Legend: nil},
-					},
+					XYChartConfig: &models.XYChartConfigModel{Legend: nil},
 				},
 			},
 		}},

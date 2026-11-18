@@ -22,7 +22,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
-	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,13 +33,11 @@ type MachineLearningRuleProcessor struct {
 
 func newMachineLearningRuleProcessor() MachineLearningRuleProcessor {
 	return MachineLearningRuleProcessor{
-		baseRuleProcessor: baseRuleProcessor[kbapi.SecurityDetectionsAPIMachineLearningRule]{
-			updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIMachineLearningRule, d *Data) diag.Diagnostics {
-				return d.updateFromMachineLearningRule(ctx, v)
-			},
-			idFn: func(v kbapi.SecurityDetectionsAPIMachineLearningRule) string {
-				return v.Id.String()
-			},
+		updateFn: func(ctx context.Context, v *kbapi.SecurityDetectionsAPIMachineLearningRule, d *Data) diag.Diagnostics {
+			return d.updateFromMachineLearningRule(ctx, v)
+		},
+		idFn: func(v kbapi.SecurityDetectionsAPIMachineLearningRule) string {
+			return v.Id.String()
 		},
 	}
 }
@@ -90,44 +87,9 @@ func (d Data) toMachineLearningRuleCreateProps(ctx context.Context) (kbapi.Secur
 		}
 	}
 
-	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:                           &mlRule.Actions,
-		ResponseActions:                   &mlRule.ResponseActions,
-		RuleID:                            &mlRule.RuleId,
-		Enabled:                           &mlRule.Enabled,
-		From:                              &mlRule.From,
-		To:                                &mlRule.To,
-		Interval:                          &mlRule.Interval,
-		Index:                             nil, // ML rules don't use index patterns
-		Author:                            &mlRule.Author,
-		Tags:                              &mlRule.Tags,
-		FalsePositives:                    &mlRule.FalsePositives,
-		References:                        &mlRule.References,
-		License:                           &mlRule.License,
-		Note:                              &mlRule.Note,
-		Setup:                             &mlRule.Setup,
-		MaxSignals:                        &mlRule.MaxSignals,
-		Version:                           &mlRule.Version,
-		ExceptionsList:                    &mlRule.ExceptionsList,
-		AlertSuppression:                  &mlRule.AlertSuppression,
-		RiskScoreMapping:                  &mlRule.RiskScoreMapping,
-		SeverityMapping:                   &mlRule.SeverityMapping,
-		RelatedIntegrations:               &mlRule.RelatedIntegrations,
-		RequiredFields:                    &mlRule.RequiredFields,
-		BuildingBlockType:                 &mlRule.BuildingBlockType,
-		DataViewID:                        nil, // ML rules don't have DataViewID
-		Namespace:                         &mlRule.Namespace,
-		RuleNameOverride:                  &mlRule.RuleNameOverride,
-		TimestampOverride:                 &mlRule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: &mlRule.TimestampOverrideFallbackDisabled,
-		InvestigationFields:               &mlRule.InvestigationFields,
-		Filters:                           nil, // ML rules don't have Filters
-		Threat:                            &mlRule.Threat,
-		TimelineID:                        &mlRule.TimelineId,
-		TimelineTitle:                     &mlRule.TimelineTitle,
-	}, &diags)
-
-	// ML rules don't use index patterns or query
+	// ML rules don't use index patterns or query, and don't support DataViewID or Filters;
+	// buildCommonRuleProps leaves those nil automatically since mlRule has no such fields.
+	d.setCommonCreateProps(ctx, buildCommonRuleProps(&mlRule), &diags)
 
 	// Convert to union type
 	err := createProps.FromSecurityDetectionsAPIMachineLearningRuleCreateProps(mlRule)
@@ -180,44 +142,9 @@ func (d Data) toMachineLearningRuleUpdateProps(ctx context.Context) (kbapi.Secur
 		}
 	}
 
-	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:                           &mlRule.Actions,
-		ResponseActions:                   &mlRule.ResponseActions,
-		RuleID:                            &mlRule.RuleId,
-		Enabled:                           &mlRule.Enabled,
-		From:                              &mlRule.From,
-		To:                                &mlRule.To,
-		Interval:                          &mlRule.Interval,
-		Index:                             nil, // ML rules don't use index patterns
-		Author:                            &mlRule.Author,
-		Tags:                              &mlRule.Tags,
-		FalsePositives:                    &mlRule.FalsePositives,
-		References:                        &mlRule.References,
-		License:                           &mlRule.License,
-		Note:                              &mlRule.Note,
-		Setup:                             &mlRule.Setup,
-		MaxSignals:                        &mlRule.MaxSignals,
-		Version:                           &mlRule.Version,
-		ExceptionsList:                    &mlRule.ExceptionsList,
-		AlertSuppression:                  &mlRule.AlertSuppression,
-		RiskScoreMapping:                  &mlRule.RiskScoreMapping,
-		SeverityMapping:                   &mlRule.SeverityMapping,
-		RelatedIntegrations:               &mlRule.RelatedIntegrations,
-		RequiredFields:                    &mlRule.RequiredFields,
-		BuildingBlockType:                 &mlRule.BuildingBlockType,
-		DataViewID:                        nil, // ML rules don't have DataViewID
-		Namespace:                         &mlRule.Namespace,
-		RuleNameOverride:                  &mlRule.RuleNameOverride,
-		TimestampOverride:                 &mlRule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: &mlRule.TimestampOverrideFallbackDisabled,
-		InvestigationFields:               &mlRule.InvestigationFields,
-		Filters:                           nil, // ML rules don't have Filters
-		Threat:                            &mlRule.Threat,
-		TimelineID:                        &mlRule.TimelineId,
-		TimelineTitle:                     &mlRule.TimelineTitle,
-	}, &diags)
-
-	// ML rules don't use index patterns or query
+	// ML rules don't use index patterns or query, and don't support DataViewID or Filters;
+	// buildCommonRuleProps leaves those nil automatically since mlRule has no such fields.
+	d.setCommonUpdateProps(ctx, buildCommonRuleProps(&mlRule), &diags)
 
 	// Convert to union type
 	err := updateProps.FromSecurityDetectionsAPIMachineLearningRuleUpdateProps(mlRule)
@@ -234,53 +161,9 @@ func (d Data) toMachineLearningRuleUpdateProps(ctx context.Context) (kbapi.Secur
 func (d *Data) updateFromMachineLearningRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIMachineLearningRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// ML rules don't support DataViewId, Index, or Query/Language; pass nil so the common helper sets them to their zero values.
-	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, commonAPIRuleFields{
-		ResourceID:                        rule.Id.String(),
-		RuleID:                            rule.RuleId,
-		Name:                              rule.Name,
-		Type:                              string(rule.Type),
-		Enabled:                           rule.Enabled,
-		From:                              rule.From,
-		To:                                rule.To,
-		Interval:                          rule.Interval,
-		Description:                       rule.Description,
-		RiskScore:                         int64(rule.RiskScore),
-		Severity:                          string(rule.Severity),
-		MaxSignals:                        int64(rule.MaxSignals),
-		Version:                           int64(rule.Version),
-		Revision:                          int64(rule.Revision),
-		CreatedAt:                         rule.CreatedAt,
-		CreatedBy:                         rule.CreatedBy,
-		UpdatedAt:                         rule.UpdatedAt,
-		UpdatedBy:                         rule.UpdatedBy,
-		TimelineID:                        rule.TimelineId,
-		TimelineTitle:                     rule.TimelineTitle,
-		DataViewID:                        nil, // ML rules don't have DataViewId
-		Namespace:                         rule.Namespace,
-		RuleNameOverride:                  rule.RuleNameOverride,
-		TimestampOverride:                 rule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: rule.TimestampOverrideFallbackDisabled,
-		BuildingBlockType:                 rule.BuildingBlockType,
-		License:                           rule.License,
-		Note:                              rule.Note,
-		Setup:                             rule.Setup,
-		Index:                             nil, // ML rules don't use index patterns
-		Author:                            rule.Author,
-		Tags:                              rule.Tags,
-		FalsePositives:                    rule.FalsePositives,
-		References:                        rule.References,
-		Actions:                           rule.Actions,
-		ExceptionsList:                    rule.ExceptionsList,
-		RiskScoreMapping:                  rule.RiskScoreMapping,
-		InvestigationFields:               rule.InvestigationFields,
-		Threat:                            rule.Threat,
-		SeverityMapping:                   rule.SeverityMapping,
-		RelatedIntegrations:               rule.RelatedIntegrations,
-		RequiredFields:                    rule.RequiredFields,
-		AlertSuppression:                  rule.AlertSuppression,
-		ResponseActions:                   rule.ResponseActions,
-	})...)
+	// ML rules don't support DataViewId or Index; buildCommonAPIRuleFields leaves those
+	// zero-valued automatically since rule has no such fields.
+	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, buildCommonAPIRuleFields(rule.Id.String(), rule))...)
 
 	// ML rules don't have query or language
 	d.Query = types.StringNull()
@@ -296,7 +179,7 @@ func (d *Data) updateFromMachineLearningRule(ctx context.Context, rule *kbapi.Se
 		copy(jobIDStrings, multipleJobIDs)
 		d.MachineLearningJobID = typeutils.ListValueFrom(ctx, jobIDStrings, types.StringType, path.Root("machine_learning_job_id"), &diags)
 	} else {
-		d.MachineLearningJobID = types.ListValueMust(types.StringType, []attr.Value{})
+		d.MachineLearningJobID = typeutils.StringsToListMust(nil)
 	}
 
 	return diags

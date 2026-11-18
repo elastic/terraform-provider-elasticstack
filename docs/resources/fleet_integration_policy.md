@@ -58,6 +58,11 @@ resource "elasticstack_fleet_integration_policy" "sample" {
   // Optional: specify a custom output to send data to
   // output_id           = "my-custom-output-id"
 
+  // Optional (Elastic Stack 9.1.0+): grant the integration's API key write
+  // access to data streams a `reroute` processor targets. Shown in Kibana as
+  // "Add a reroute processor permission".
+  // additional_datastreams_permissions = ["logs-tcp.rerouted-default"]
+
   inputs = {
     "tcp-tcp" = {
       enabled = true
@@ -92,6 +97,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 
 ### Optional
 
+- `additional_datastreams_permissions` (List of String) Data streams the integration's Elasticsearch API key may write to in addition to those the integration package declares. Set this when a custom ingest pipeline uses a `reroute` processor whose destination lies outside the package's own data streams; without it, rerouted documents are rejected with a `security_exception`. In the Kibana UI this control appears as "Add a reroute processor permission" under the policy's advanced options. Entries may be exact data stream names (`metrics-elastic_agent.my_dataset-default`) or patterns (`logs-custom-*`), and Kibana validates them against the space's allowed namespace prefixes. Requires Elastic Stack 9.1.0 or above. To revoke previously granted permissions, remove this attribute; an empty list is not accepted.
 - `agent_policy_id` (String) ID of the agent policy.
 - `agent_policy_ids` (List of String) List of agent policy IDs.
 - `description` (String) The description of the integration policy.
@@ -161,6 +167,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

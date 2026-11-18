@@ -51,38 +51,18 @@ func SetValueFrom[T any](ctx context.Context, value []T, elemType attr.Type, p p
 	return collectionValueFrom(ctx, value, elemType, p, diags, types.SetValueFrom)
 }
 
-// SetTypeToSliceStringPtr extracts a *[]string from an optional set attribute,
-// returning nil when the set is null, unknown, or empty.
-func SetTypeToSliceStringPtr(ctx context.Context, s types.Set, p path.Path, diags *diag.Diagnostics) *[]string {
-	if s.IsNull() || s.IsUnknown() || len(s.Elements()) == 0 {
-		return nil
+// SetFromAPIStringsPreserveKnownEmpty converts an optional API string slice into a
+// types.Set of strings. Kibana returns nil/[] interchangeably for an empty set, so
+// a nil or empty apiValue collapses dest to Null only when dest was Unknown;
+// all Known destinations (including Known-empty, e.g. `attr = []` from config) are
+// preserved as-is to avoid "produced inconsistent result after apply" diffs on
+// read-after-apply. T must be a string kind (~string).
+func SetFromAPIStringsPreserveKnownEmpty[T ~string](ctx context.Context, apiValue *[]T, dest types.Set) (types.Set, diag.Diagnostics) {
+	if apiValue != nil && len(*apiValue) > 0 {
+		return types.SetValueFrom(ctx, types.StringType, *apiValue)
 	}
-	result := SetTypeAs[string](ctx, s, p, diags)
-	if diags.HasError() {
-		return nil
+	if dest.IsUnknown() {
+		return types.SetNull(types.StringType), nil
 	}
-	return &result
-}
-
-// StringSetElements extracts the string values from a types.Set of strings
-// without requiring a context.Context. Returns nil for null/unknown sets and
-// appends an error diagnostic for non-string or unknown elements.
-func StringSetElements(set types.Set, diags *diag.Diagnostics) []string {
-	if set.IsNull() || set.IsUnknown() {
-		return nil
-	}
-	elems := make([]string, 0, len(set.Elements()))
-	for _, elem := range set.Elements() {
-		str, ok := elem.(types.String)
-		if !ok || str.IsUnknown() {
-			if !ok {
-				diags.AddError("Invalid set element type", "expected types.String")
-			} else {
-				diags.AddError("Unknown set element", "set elements cannot be unknown")
-			}
-			continue
-		}
-		elems = append(elems, str.ValueString())
-	}
-	return elems
+	return dest, nil
 }

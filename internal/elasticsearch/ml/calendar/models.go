@@ -26,10 +26,10 @@ import (
 
 type TFModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                      fwtypes.String `tfsdk:"id"`
-	ElasticsearchConnection fwtypes.List   `tfsdk:"elasticsearch_connection"`
-	CalendarID              fwtypes.String `tfsdk:"calendar_id"`
-	Description             fwtypes.String `tfsdk:"description"`
+	entitycore.ElasticsearchConnectionField
+	ID          fwtypes.String `tfsdk:"id"`
+	CalendarID  fwtypes.String `tfsdk:"calendar_id"`
+	Description fwtypes.String `tfsdk:"description"`
 }
 
 // GetID implements entitycore.ElasticsearchResourceModel.
@@ -37,9 +37,6 @@ func (m TFModel) GetID() fwtypes.String { return m.ID }
 
 // GetResourceID implements entitycore.ElasticsearchResourceModel.
 func (m TFModel) GetResourceID() fwtypes.String { return m.CalendarID }
-
-// GetElasticsearchConnection implements entitycore.ElasticsearchResourceModel.
-func (m TFModel) GetElasticsearchConnection() fwtypes.List { return m.ElasticsearchConnection }
 
 func newPutCalendarRequestFromTFModel(m TFModel) *putcalendar.Request {
 	desc := m.Description.ValueString()

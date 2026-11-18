@@ -18,8 +18,9 @@
 package agentdownloadsource
 
 import (
+	"context"
+
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
@@ -28,16 +29,16 @@ var (
 	_ resource.Resource                = newResource()
 	_ resource.ResourceWithConfigure   = newResource()
 	_ resource.ResourceWithImportState = newResource()
+	_ resource.ResourceWithModifyPlan  = newResource()
 )
 
 // Resource implements the Fleet Agent Download Source resource.
 type Resource struct {
 	*entitycore.KibanaResource[model]
-	*fleet.SpaceImporter
+	*entitycore.SpaceImporter
 }
 
 func newResource() *Resource {
-	placeholder := entitycore.PlaceholderKibanaWriteCallback[model]()
 	return &Resource{
 		KibanaResource: entitycore.NewKibanaResource[model](
 			entitycore.ComponentFleet,
@@ -46,12 +47,23 @@ func newResource() *Resource {
 				Schema: getSchema,
 				Read:   readAgentDownloadSource,
 				Delete: deleteAgentDownloadSource,
-				Create: placeholder,
-				Update: placeholder,
+				Create: writeAgentDownloadSource,
+				Update: writeAgentDownloadSource,
 			},
 		),
-		SpaceImporter: fleet.NewSpaceImporter(path.Root("source_id"), path.Root("id")),
+		SpaceImporter: entitycore.NewSpaceImporter(path.Root("source_id"), path.Root("id")),
 	}
+}
+
+// Delete removes the download source, then clears the stored write-only secret
+// hashes so a re-created resource starts without drift state.
+func (r *Resource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
+	r.KibanaResource.Delete(ctx, req, resp)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+
+	clearAllSecretHashes(ctx, resp.Private, &resp.Diagnostics)
 }
 
 // NewResource is a helper function to simplify the provider implementation.

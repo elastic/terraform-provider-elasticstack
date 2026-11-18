@@ -9,7 +9,50 @@ description: |-
 # elasticstack_fleet_agent_download_source (Resource)
 
 Creates a new Fleet Agent Binary Download Source.
+
 ## Example Usage
+
+### Basic download source
+
+```terraform
+provider "elasticstack" {
+  kibana {}
+}
+
+# Placeholder PEM material for illustration only — replace with real certificates in production.
+locals {
+  example_ca          = <<-EOT
+    -----BEGIN CERTIFICATE-----
+    MIIBkTCB+wIJAKHHCgV4Jh0FMA0GCSqGGSIb3DQEBCwUAMBExCzAJBgNVBAYTAlVT
+    -----END CERTIFICATE-----
+  EOT
+  example_client_cert = <<-EOT
+    -----BEGIN CERTIFICATE-----
+    MIIBkTCB+wIJAKHHCgV4Jh0FMA0GCSqGGSIb3DQEBCwUAMBExCzAJBgNVBAYTAlVT
+    -----END CERTIFICATE-----
+  EOT
+  example_client_key  = <<-EOT
+    -----BEGIN RSA PRIVATE KEY-----
+    MIIEpAIBAAKCAQEA0
+    -----END RSA PRIVATE KEY-----
+  EOT
+}
+
+resource "elasticstack_fleet_agent_download_source" "example" {
+  name    = "Agent Download Source example"
+  host    = "https://artifacts.elastic.co/downloads/elastic-agent"
+  default = false
+
+  # The ssl block requires Elastic Stack 9.1.0 or higher.
+  ssl = {
+    certificate_authorities = [trimspace(local.example_ca)]
+    certificate             = trimspace(local.example_client_cert)
+    key                     = trimspace(local.example_client_key)
+  }
+}
+```
+
+### Download source with authentication
 
 ```terraform
 provider "elasticstack" {
@@ -17,9 +60,70 @@ provider "elasticstack" {
 }
 
 resource "elasticstack_fleet_agent_download_source" "example" {
-  name    = "Agent Download Source example"
-  host    = "https://artifacts.elastic.co/downloads/elastic-agent"
+  name    = "Private Agent Download Source"
+  host    = "https://artifacts.example.com/downloads/elastic-agent"
   default = false
+
+  auth = {
+    username = "svc-account"
+    password = "example-password"
+    headers = [
+      {
+        key   = "X-Custom-Header"
+        value = "value"
+      },
+    ]
+  }
+}
+```
+
+### Download source with write-only secrets
+
+The `ssl.key_wo`, `auth.password_wo` and `auth.api_key_wo` attributes are never stored in Terraform state.
+
+> **NOTE**: [Write-only arguments](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments) are supported in Terraform 1.11 and later.
+
+```terraform
+provider "elasticstack" {
+  kibana {}
+}
+
+# Write-only attributes are never stored in Terraform state and require Terraform 1.11 or later.
+# Bump the *_wo value (or change the secret) to have the provider detect the change and update Fleet.
+resource "elasticstack_fleet_agent_download_source" "example" {
+  name    = "Private Agent Download Source"
+  host    = "https://artifacts.example.com/downloads/elastic-agent"
+  default = false
+
+  auth = {
+    username    = "svc-account"
+    password_wo = var.download_source_password
+  }
+
+  # The ssl block requires Elastic Stack 9.1.0 or higher.
+  ssl = {
+    certificate = trimspace(var.client_certificate)
+    key_wo      = var.client_key
+  }
+}
+
+# The defaults below are non-production placeholders; supply real values via
+# TF_VAR_* environment variables or a tfvars file.
+variable "download_source_password" {
+  type      = string
+  sensitive = true
+  default   = "example-password-change-me"
+}
+
+variable "client_certificate" {
+  type    = string
+  default = "-----BEGIN CERTIFICATE-----\nREPLACE_ME\n-----END CERTIFICATE-----"
+}
+
+variable "client_key" {
+  type      = string
+  sensitive = true
+  default   = "-----BEGIN PRIVATE KEY-----\nREPLACE_ME\n-----END PRIVATE KEY-----"
 }
 ```
 
@@ -33,16 +137,40 @@ resource "elasticstack_fleet_agent_download_source" "example" {
 
 ### Optional
 
+- `auth` (Attributes) Authentication used by Elastic Agents when downloading binaries from this source. (see [below for nested schema](#nestedatt--auth))
 - `default` (Boolean) Set this download source as the default for agents.
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
 - `proxy_id` (String) The ID of the proxy to use for this download source.
 - `source_id` (String) Unique identifier of the Fleet agent download source.
 - `space_ids` (Set of String) The Kibana space IDs where this download source is available. When set, the download source will be created and managed within the specified space. Note: The order of space IDs does not matter as this is a set.
+- `ssl` (Attributes) SSL/TLS configuration for the download source host. (see [below for nested schema](#nestedatt--ssl))
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
 - `id` (String) The ID of this resource.
+
+<a id="nestedatt--auth"></a>
+### Nested Schema for `auth`
+
+Optional:
+
+- `api_key` (String, Sensitive) API key used to authenticate download requests. Conflicts with api_key_wo and the password attributes.
+- `api_key_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only API key used to authenticate download requests. Never stored in Terraform state; changes are detected from a hash kept in private state. Conflicts with api_key and the password attributes.
+- `headers` (Attributes List) Custom HTTP headers sent with every download request. (see [below for nested schema](#nestedatt--auth--headers))
+- `password` (String, Sensitive) Password for HTTP Basic authentication. Required when username is set. Conflicts with password_wo and the api_key attributes.
+- `password_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only password for HTTP Basic authentication. Never stored in Terraform state; changes are detected from a hash kept in private state. Required when username is set. Conflicts with password and the api_key attributes.
+- `username` (String) Username for HTTP Basic authentication. Required when password or password_wo is set.
+
+<a id="nestedatt--auth--headers"></a>
+### Nested Schema for `auth.headers`
+
+Required:
+
+- `key` (String) HTTP header name.
+- `value` (String) HTTP header value.
+
+
 
 <a id="nestedblock--kibana_connection"></a>
 ### Nested Schema for `kibana_connection`
@@ -53,9 +181,21 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.
+
+
+<a id="nestedatt--ssl"></a>
+### Nested Schema for `ssl`
+
+Optional:
+
+- `certificate` (String) Client SSL certificate for the download source host.
+- `certificate_authorities` (List of String) Server SSL certificate authorities trusted for the download source host.
+- `key` (String, Sensitive) Client SSL certificate key for the download source host. Sent to Fleet as a managed secret.
+- `key_wo` (String, Sensitive, [Write-only](https://developer.hashicorp.com/terraform/language/resources/ephemeral#write-only-arguments)) Write-only client SSL certificate key for the download source host. Never stored in Terraform state; changes are detected from a hash kept in private state. Conflicts with `key`.
 
 
 <a id="nestedatt--timeouts"></a>

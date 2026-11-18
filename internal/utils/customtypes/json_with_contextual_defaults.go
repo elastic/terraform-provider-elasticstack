@@ -113,9 +113,7 @@ func (t JSONWithContextualDefaultsType) ValueFromString(_ context.Context, in ba
 	}
 
 	return JSONWithContextualDefaultsValue{
-		Normalized: jsontypes.Normalized{
-			StringValue: in,
-		},
+		StringValue:      in,
 		contextValue:     contextValue,
 		populateDefaults: t.populateDefaults,
 	}, nil
@@ -123,22 +121,7 @@ func (t JSONWithContextualDefaultsType) ValueFromString(_ context.Context, in ba
 
 // ValueFromTerraform returns a Value given a tftypes.Value.
 func (t JSONWithContextualDefaultsType) ValueFromTerraform(ctx context.Context, in tftypes.Value) (attr.Value, error) {
-	attrValue, err := t.StringType.ValueFromTerraform(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-
-	stringValue, ok := attrValue.(basetypes.StringValue)
-	if !ok {
-		return nil, fmt.Errorf("unexpected value type of %T", attrValue)
-	}
-
-	stringValuable, diags := t.ValueFromString(ctx, stringValue)
-	if diags.HasError() {
-		return nil, fmt.Errorf("unexpected error converting StringValue to StringValuable: %v", diags)
-	}
-
-	return stringValuable, nil
+	return typeutils.StringTypableValueFromTerraform(ctx, t.StringType, t.ValueFromString, in)
 }
 
 // Type returns a JSONWithContextType.
@@ -215,18 +198,8 @@ func removeNulls(m map[string]any) {
 // StringSemanticEquals returns true if the given config object value is semantically equal to the current config object value.
 // The comparison will ignore any default values present in one value, but unset in the other.
 func (v JSONWithContextualDefaultsValue) StringSemanticEquals(ctx context.Context, newValuable basetypes.StringValuable) (bool, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	newValue, ok := newValuable.(JSONWithContextualDefaultsValue)
+	newValue, ok, diags := typeutils.AssertSameType(v, newValuable)
 	if !ok {
-		diags.AddError(
-			"Semantic Equality Check Error",
-			"An unexpected value type was received while performing semantic equality checks. "+
-				"Please report this to the provider developers.\n\n"+
-				"Expected Value Type: "+fmt.Sprintf("%T", v)+"\n"+
-				"Got Value Type: "+fmt.Sprintf("%T", newValuable),
-		)
-
 		return false, diags
 	}
 

@@ -22,18 +22,12 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func deleteSecurityEnableRule(ctx context.Context, client *clients.KibanaScopedClient, _, _ string, model enableRuleModel) diag.Diagnostics {
 	var diags diag.Diagnostics
-
-	diags.Append(entitycore.EnforceVersionRequirements(ctx, client, &model)...)
-	if diags.HasError() {
-		return diags
-	}
 
 	spaceID := model.SpaceID.ValueString()
 	key := model.Key.ValueString()

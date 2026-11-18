@@ -19,48 +19,32 @@ package osquerypack
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func readOsqueryPackDataSource(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
+	packID, spaceID string,
 	config dataSourceModel,
-) (dataSourceModel, diag.Diagnostics) {
+) (dataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !typeutils.IsKnown(config.PackID) || config.PackID.ValueString() == "" {
-		diags.AddError("Invalid configuration", "pack_id must be set.")
-		return config, diags
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 
-	spaceID, packID := clients.ResolveCompositeSpaceAndID(config.SpaceID, config.PackID.ValueString())
-
-	oapiClient := client.GetKibanaOapiClient()
-
-	detail, readDiags := kibanaoapi.GetOsqueryPack(ctx, oapiClient, spaceID, packID)
+	detail, readDiags := kibanaoapi.GetOsqueryPack(ctx, client.GetKibanaOapiClient(), spaceID, packID)
 	diags.Append(readDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	if detail == nil {
-		diags.AddError(
-			"Osquery pack not found",
-			fmt.Sprintf("Unable to fetch osquery pack with pack_id %q in space %q.", packID, spaceID),
-		)
-		return config, diags
+		return config, false, diags
 	}
 
 	diags.Append(config.populateFromAPI(ctx, spaceID, detail)...)
-	if diags.HasError() {
-		return config, diags
-	}
-
-	return config, diags
+	return config, !diags.HasError(), diags
 }

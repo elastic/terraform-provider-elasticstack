@@ -78,6 +78,51 @@ func TestAccResourceDashboardSloErrorBudgetMinimal(t *testing.T) {
 	})
 }
 
+func TestAccResourceDashboardSloErrorBudgetWithDisplayFields(t *testing.T) {
+	dashboardTitle := "Test Dashboard SLO Error Budget Display " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, dashboardacctest.MinDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_display_fields"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.type", "slo_error_budget"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.slo_id", "my-slo-id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.title", "My Error Budget Panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.description", "Monitors remaining error budget"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.hide_title", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.hide_border", "false"),
+				),
+			},
+			// Re-apply with no changes — presentation fields must survive refresh without drift.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_display_fields"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				PlanOnly: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.title", "My Error Budget Panel"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.description", "Monitors remaining error budget"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.hide_title", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.slo_error_budget_config.hide_border", "false"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceDashboardSloErrorBudgetWithDrilldowns(t *testing.T) {
 	dashboardTitle := "Test Dashboard SLO Error Budget Drilldowns " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 

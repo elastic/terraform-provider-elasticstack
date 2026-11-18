@@ -18,13 +18,12 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"slices"
 	"strings"
 	"time"
+
+	"github.com/elastic/terraform-provider-elasticstack/scripts/internal/memoryio"
 )
 
 type AttemptReason string
@@ -78,13 +77,9 @@ type Memory struct {
 const maxAttempts = 500
 
 func loadMemory(path string) (*Memory, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
 	var mem Memory
-	if err := json.Unmarshal(data, &mem); err != nil {
-		return nil, fmt.Errorf("parse memory: %w", err)
+	if err := memoryio.ReadJSON(path, &mem); err != nil {
+		return nil, err
 	}
 	if mem.Version == 0 {
 		mem.Version = 1
@@ -93,34 +88,7 @@ func loadMemory(path string) (*Memory, error) {
 }
 
 func saveMemory(path string, mem *Memory) error {
-	data, err := json.MarshalIndent(mem, "", "  ")
-	if err != nil {
-		return fmt.Errorf("marshal memory: %w", err)
-	}
-	data = append(data, '\n')
-	dir := filepath.Dir(path)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("create memory dir: %w", err)
-	}
-	tmp, err := os.CreateTemp(dir, ".deadcode-memory-*.json.tmp")
-	if err != nil {
-		return fmt.Errorf("create temp: %w", err)
-	}
-	tmpName := tmp.Name()
-	if _, err := tmp.Write(data); err != nil {
-		_ = tmp.Close()
-		_ = os.Remove(tmpName)
-		return fmt.Errorf("write temp: %w", err)
-	}
-	if err := tmp.Close(); err != nil {
-		_ = os.Remove(tmpName)
-		return fmt.Errorf("close temp: %w", err)
-	}
-	if err := os.Rename(tmpName, path); err != nil {
-		_ = os.Remove(tmpName)
-		return fmt.Errorf("rename temp: %w", err)
-	}
-	return nil
+	return memoryio.AtomicWriteJSON(path, mem, ".deadcode-memory-*.json.tmp")
 }
 
 func isInCooldown(mem *Memory, symbol string, now time.Time) bool {

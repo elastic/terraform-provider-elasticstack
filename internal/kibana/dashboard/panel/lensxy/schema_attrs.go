@@ -18,9 +18,11 @@
 package lensxy
 
 import (
+	"fmt"
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
@@ -36,6 +38,9 @@ const (
 
 	referenceLineIconDescription = "Icon to display on the reference line. Valid values: 'alert', 'asterisk', 'bell', 'bolt', 'bug', 'circle', " +
 		"'editorComment', 'flag', 'heart', 'mapMarker', 'pinFilled', 'starEmpty', 'starFilled', 'tag', 'triangle'."
+
+	referenceLineAxisDescription = "Which axis the reference line is drawn on. Valid values: `x` (the chart's X axis), " +
+		"`y` (the primary Y axis), `y2` (the secondary Y axis). Defaults to `y` when omitted."
 )
 
 // getXYAxisSchema returns the schema for XY chart axis configuration
@@ -351,9 +356,11 @@ func xyDataLayerAttributes() map[string]schema.Attribute {
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
 					"config_json": schema.StringAttribute{
-						MarkdownDescription: "Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition.",
-						CustomType:          jsontypes.NormalizedType{},
-						Required:            true,
+						MarkdownDescription: "Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. " +
+							"For standard: axis, color, and metric definition. " +
+							fmt.Sprintf(`A format with type "duration" that also sets decimals and/or compact requires Elastic Stack %s or later.`, panelkit.MinKibanaAPISupportDurationFormatParams.Original()),
+						CustomType: jsontypes.NormalizedType{},
+						Required:   true,
 					},
 				},
 			},
@@ -388,10 +395,10 @@ func xyReferenceLineLayerAttributes() map[string]schema.Attribute {
 			NestedObject: schema.NestedAttributeObject{
 				Attributes: map[string]schema.Attribute{
 					"axis": schema.StringAttribute{
-						MarkdownDescription: "Which axis the reference line applies to. Valid values: 'left', 'right'.",
+						MarkdownDescription: referenceLineAxisDescription,
 						Optional:            true,
 						Validators: []validator.String{
-							stringvalidator.OneOf("bottom", "left", "right"),
+							stringvalidator.OneOf("x", "y", "y2"),
 						},
 					},
 					"color_json": schema.StringAttribute{

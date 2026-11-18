@@ -1,0 +1,762 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package elasticdefendintegrationpolicy
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
+)
+
+const endpointPackageName = "endpoint"
+
+const (
+	endpointInputType          = "endpoint"
+	bootstrapEndpointInputType = "ENDPOINT_INTEGRATION_CONFIG"
+)
+
+// populateModelFromAPI maps a PackagePolicy API response into the
+// Terraform state model. It validates that the package name is "endpoint" and
+// maps all modelled schema fields. Server-managed fields (artifact_manifest,
+// version) are NOT written to the public model; callers must persist them
+// separately via savePrivateState.
+func populateModelFromAPI(ctx context.Context, model *elasticDefendIntegrationPolicyModel, policy *kbapi.PackagePolicy) diag.Diagnostics {
+	var diags diag.Diagnostics
+
+	if policy == nil {
+		return diags
+	}
+
+	// Validate package identity (REQ-005)
+	if policy.Package == nil || policy.Package.Name != endpointPackageName {
+		pkgName := "<nil>"
+		if policy.Package != nil {
+			pkgName = policy.Package.Name
+		}
+		return diag.Diagnostics{
+			diag.NewErrorDiagnostic(
+				"Not an Elastic Defend policy",
+				fmt.Sprintf("Package policy %q belongs to package %q, not %q. "+
+					"Only Elastic Defend package policies can be managed by elasticstack_fleet_elastic_defend_integration_policy.",
+					policy.Id, pkgName, endpointPackageName),
+			),
+		}
+	}
+
+	policyID := policy.Id
+	model.PolicyID = types.StringValue(policyID)
+	model.Name = types.StringValue(policy.Name)
+	model.Namespace = types.StringPointerValue(policy.Namespace)
+	// Kibana retains an existing description when the field is omitted from
+	// requests. When the user does not configure description (null), keep null
+	// regardless of what the API returns — matching the repo pattern that
+	// omitted fields are left unmanaged server-side.
+	if !model.Description.IsNull() {
+		model.Description = types.StringPointerValue(policy.Description)
+	}
+	model.Enabled = types.BoolValue(policy.Enabled)
+
+	if policy.Package != nil {
+		model.IntegrationVersion = types.StringValue(policy.Package.Version)
+	}
+
+	originallyUsedAgentPolicyID := typeutils.IsKnown(model.AgentPolicyID)
+	originallyUsedAgentPolicyIDs := typeutils.IsKnown(model.AgentPolicyIDs)
+
+	if originallyUsedAgentPolicyID {
+		model.AgentPolicyID = types.StringPointerValue(policy.PolicyId)
+	}
+	if originallyUsedAgentPolicyIDs {
+		if policy.PolicyIds != nil {
+			agentPolicyIDs, d := types.ListValueFrom(ctx, types.StringType, *policy.PolicyIds)
+			diags.Append(d...)
+			model.AgentPolicyIDs = agentPolicyIDs
+		} else {
+			model.AgentPolicyIDs = types.ListNull(types.StringType)
+		}
+	}
+	if !originallyUsedAgentPolicyID && !originallyUsedAgentPolicyIDs {
+		// Default: check API response structure and prefer list form when multiple IDs exist
+		if policy.PolicyIds != nil && len(*policy.PolicyIds) > 1 {
+			agentPolicyIDs, d := types.ListValueFrom(ctx, types.StringType, *policy.PolicyIds)
+			diags.Append(d...)
+			model.AgentPolicyIDs = agentPolicyIDs
+		} else if policy.PolicyId != nil {
+			model.AgentPolicyID = types.StringPointerValue(policy.PolicyId)
+		}
+	}
+
+	// An empty or absent server value imports as null; only a known empty list in the model round-trips as [].
+	switch {
+	case policy.AdditionalDatastreamsPermissions != nil && len(*policy.AdditionalDatastreamsPermissions) > 0:
+		perms, d := types.ListValueFrom(ctx, types.StringType, *policy.AdditionalDatastreamsPermissions)
+		diags.Append(d...)
+		model.AdditionalDatastreamsPermissions = perms
+	case typeutils.IsKnown(model.AdditionalDatastreamsPermissions) && len(model.AdditionalDatastreamsPermissions.Elements()) == 0:
+		// Preserve an explicit empty list so `[]` round-trips.
+	default:
+		model.AdditionalDatastreamsPermissions = types.ListNull(types.StringType)
+	}
+
+	// Populate space_ids — only overwrite when the API actually returns them.
+	// If the API omits space_ids, preserve the existing model value so
+	// space-aware operations (e.g. update, delete) continue to work correctly.
+	originallySetSpaceIDs := typeutils.IsKnown(model.SpaceIDs)
+	var operationalSpaceID string
+	if policy.SpaceIds != nil {
+		spaceIDs, d := types.SetValueFrom(ctx, types.StringType, *policy.SpaceIds)
+		diags.Append(d...)
+		model.SpaceIDs = spaceIDs
+		if len(*policy.SpaceIds) > 0 {
+			operationalSpaceID = (*policy.SpaceIds)[0]
+		}
+	} else if !originallySetSpaceIDs {
+		model.SpaceIDs = types.SetNull(types.StringType)
+	}
+
+	if operationalSpaceID == "" && originallySetSpaceIDs {
+		// Preserve existing space — extract it so the composite ID is correct.
+		var existingSpaceIDs []string
+		d := model.SpaceIDs.ElementsAs(ctx, &existingSpaceIDs, false)
+		diags.Append(d...)
+		if len(existingSpaceIDs) > 0 {
+			operationalSpaceID = existingSpaceIDs[0]
+		}
+	}
+
+	// Set composite ID: "<space_id>/<policy_id>" when a space is in use.
+	if operationalSpaceID != "" {
+		model.ID = types.StringValue(operationalSpaceID + "/" + policyID)
+	} else {
+		model.ID = types.StringValue(policyID)
+	}
+
+	// Extract typed inputs from the union Inputs field
+	typedInputs, err := policy.Inputs.AsPackagePolicyTypedInputs()
+	if err != nil {
+		return diag.Diagnostics{
+			diag.NewErrorDiagnostic(
+				"Failed to parse policy inputs",
+				fmt.Sprintf("Could not decode typed inputs from Defend package policy response: %s", err.Error()),
+			),
+		}
+	}
+
+	// Extract preset and policy from the endpoint input config
+	var preset string
+	var policyData map[string]any
+
+	for _, input := range typedInputs {
+		if input.Type == "endpoint" {
+			if input.Config != nil {
+				// Extract preset from integration_config.value.endpointConfig.preset
+				if icEntry, ok := (*input.Config)["integration_config"]; ok {
+					if valMap, ok := icEntry.Value.(map[string]any); ok {
+						if ec, ok := valMap["endpointConfig"]; ok {
+							if ecMap, ok := ec.(map[string]any); ok {
+								if p, ok := ecMap[attrPreset]; ok {
+									if pStr, ok := p.(string); ok {
+										preset = pStr
+									}
+								}
+							}
+						}
+					}
+				}
+
+				// Extract policy data — the Fleet API returns policy wrapped in a
+				// {"value": {...}} envelope, consistent with other config keys.
+				if pEntry, ok := (*input.Config)["policy"]; ok {
+					if valMap, ok := pEntry.Value.(map[string]any); ok {
+						policyData = valMap
+					}
+				}
+			}
+			break
+		}
+	}
+
+	if preset != "" {
+		model.Preset = types.StringValue(preset)
+	} else {
+		model.Preset = types.StringNull()
+	}
+
+	// Map policy data to the nested policy attribute
+	policyObj, d := mapPolicyFromAPI(ctx, policyData)
+	diags.Append(d...)
+	model.Policy = policyObj
+
+	originallySetAdvancedSettings := typeutils.IsKnown(model.AdvancedSettings)
+	if originallySetAdvancedSettings {
+		settings := advancedSettingsFromPolicyData(policyData)
+		advancedSettings, d := advancedSettingsMapToTerraform(settings)
+		diags.Append(d...)
+		model.AdvancedSettings = advancedSettings
+	}
+
+	return diags
+}
+
+// mapPolicyFromAPI converts the raw Defend policy map from the API response
+// into the Terraform policy object.
+func mapPolicyFromAPI(ctx context.Context, policyData map[string]any) (types.Object, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if policyData == nil {
+		// Return null policy object when there's no data, to avoid spurious plan diffs
+		return types.ObjectNull(policyAttrTypes()), diags
+	}
+
+	var winData, macData, linuxData map[string]any
+	if w, ok := policyData[policyOSWindows]; ok {
+		if wMap, ok := w.(map[string]any); ok {
+			winData = wMap
+		}
+	}
+	if m, ok := policyData[policyOSMac]; ok {
+		if mMap, ok := m.(map[string]any); ok {
+			macData = mMap
+		}
+	}
+	if l, ok := policyData[policyOSLinux]; ok {
+		if lMap, ok := l.(map[string]any); ok {
+			linuxData = lMap
+		}
+	}
+
+	winObj, d := mapWindowsPolicyFromAPI(ctx, winData)
+	diags.Append(d...)
+
+	macObj, d := mapMacPolicyFromAPI(ctx, macData)
+	diags.Append(d...)
+
+	linuxObj, d := mapLinuxPolicyFromAPI(ctx, linuxData)
+	diags.Append(d...)
+
+	policyObj, d := types.ObjectValueFrom(ctx, policyAttrTypes(), policyModel{
+		Windows: winObj,
+		Mac:     macObj,
+		Linux:   linuxObj,
+	})
+	diags.Append(d...)
+	return policyObj, diags
+}
+
+// commonPolicyFields holds the sub-sections shared identically by all three OS
+// policy types (Windows, Mac, Linux).
+type commonPolicyFields struct {
+	MemoryProtection   types.Object
+	BehaviorProtection types.Object
+	Logging            types.Object
+}
+
+// mapCommonPolicyFieldsFromAPI extracts memory_protection, behavior_protection,
+// and logging — blocks that are byte-for-byte identical across all three OS
+// mapping functions.
+func mapCommonPolicyFieldsFromAPI(ctx context.Context, data map[string]any) (commonPolicyFields, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	memProtObj, d := mapOptionalObject(ctx, data, attrMemoryProtection, memoryProtectionAttrTypes(), func(m map[string]any) memoryProtectionModel {
+		return memoryProtectionModel{
+			Mode:                 typeutils.StringFromMap(m, attrMode),
+			Supported:            typeutils.BoolFromMap(m, attrSupported),
+			CustomYaraSignatures: typeutils.BoolFromMap(m, attrCustomYara),
+		}
+	})
+	diags.Append(d...)
+
+	behProtObj, d := mapOptionalObject(ctx, data, attrBehaviorProtection, behaviorProtectionAttrTypes(), func(m map[string]any) behaviorProtectionModel {
+		return behaviorProtectionModel{
+			Mode:              typeutils.StringFromMap(m, attrMode),
+			Supported:         typeutils.BoolFromMap(m, attrSupported),
+			ReputationService: typeutils.BoolFromMap(m, attrReputationService),
+		}
+	})
+	diags.Append(d...)
+
+	loggingObj, d := mapOptionalObject(ctx, data, attrLogging, loggingAttrTypes(), func(m map[string]any) loggingModel {
+		return loggingModel{
+			File: typeutils.StringFromMap(m, attrFile),
+		}
+	})
+	diags.Append(d...)
+
+	return commonPolicyFields{
+		MemoryProtection:   memProtObj,
+		BehaviorProtection: behProtObj,
+		Logging:            loggingObj,
+	}, diags
+}
+
+// commonPolicyPayloadFields holds the memory_protection, behavior_protection,
+// and logging model objects shared identically by all three OS payload
+// builders (buildLinuxPolicyPayload, buildMacPolicyPayload,
+// buildWindowsPolicyPayload).
+type commonPolicyPayloadFields struct {
+	MemoryProtection   types.Object
+	BehaviorProtection types.Object
+	Logging            types.Object
+}
+
+// buildCommonPolicyPayloadFields decodes memory_protection,
+// behavior_protection, and logging — blocks that are byte-for-byte identical
+// across all three OS build functions — and writes the resulting maps into
+// target under their respective attribute keys when present.
+func buildCommonPolicyPayloadFields(ctx context.Context, target map[string]any, fields commonPolicyPayloadFields, diags *diag.Diagnostics) {
+	if pm, ok := decodeObjectField[memoryProtectionModel](ctx, fields.MemoryProtection, diags); ok {
+		memProt := map[string]any{}
+		typeutils.SetStringInMap(memProt, attrMode, pm.Mode)
+		typeutils.SetBoolInMap(memProt, attrSupported, pm.Supported)
+		typeutils.SetBoolInMap(memProt, attrCustomYara, pm.CustomYaraSignatures)
+		target[attrMemoryProtection] = memProt
+	}
+
+	if bm, ok := decodeObjectField[behaviorProtectionModel](ctx, fields.BehaviorProtection, diags); ok {
+		behProt := map[string]any{}
+		typeutils.SetStringInMap(behProt, attrMode, bm.Mode)
+		typeutils.SetBoolInMap(behProt, attrSupported, bm.Supported)
+		typeutils.SetBoolInMap(behProt, attrReputationService, bm.ReputationService)
+		target[attrBehaviorProtection] = behProt
+	}
+
+	if logm, ok := decodeObjectField[loggingModel](ctx, fields.Logging, diags); ok {
+		logging := map[string]any{}
+		typeutils.SetStringInMap(logging, attrFile, logm.File)
+		target[attrLogging] = logging
+	}
+}
+
+// macWindowsMalwareFields holds the malware and ransomware sub-objects, which
+// are byte-for-byte identical between mapMacPolicyFromAPI and
+// mapWindowsPolicyFromAPI. Linux is excluded: its malware shape lacks
+// notify_user and it has no ransomware field, so it is not covered by
+// commonPolicyFields.
+type macWindowsMalwareFields struct {
+	Malware    types.Object
+	Ransomware types.Object
+}
+
+// mapMalwareAndRansomwareFromAPI extracts malware and ransomware — blocks
+// that are byte-for-byte identical across mapMacPolicyFromAPI and
+// mapWindowsPolicyFromAPI.
+func mapMalwareAndRansomwareFromAPI(ctx context.Context, data map[string]any) (macWindowsMalwareFields, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	malwareObj, d := mapOptionalObject(ctx, data, attrMalware, malwareFullAttrTypes(), func(m map[string]any) malwareFullModel {
+		return malwareFullModel{
+			Mode:        typeutils.StringFromMap(m, attrMode),
+			Blocklist:   typeutils.BoolFromMap(m, attrBlocklist),
+			OnWriteScan: typeutils.BoolFromMap(m, attrOnWriteScan),
+			NotifyUser:  typeutils.BoolFromMap(m, attrNotifyUser),
+		}
+	})
+	diags.Append(d...)
+
+	ransomwareObj, d := mapOptionalObject(ctx, data, attrRansomware, protectionModeAttrTypes(), func(m map[string]any) protectionModeModel {
+		return protectionModeModel{
+			Mode:      typeutils.StringFromMap(m, attrMode),
+			Supported: typeutils.BoolFromMap(m, attrSupported),
+		}
+	})
+	diags.Append(d...)
+
+	return macWindowsMalwareFields{
+		Malware:    malwareObj,
+		Ransomware: ransomwareObj,
+	}, diags
+}
+
+// buildMalwareAndRansomwarePayloadFields decodes malware and ransomware —
+// blocks that are byte-for-byte identical across buildMacPolicyPayload and
+// buildWindowsPolicyPayload — and writes the resulting maps into target under
+// their respective attribute keys when present.
+func buildMalwareAndRansomwarePayloadFields(ctx context.Context, target map[string]any, fields macWindowsMalwareFields, diags *diag.Diagnostics) {
+	if mm, ok := decodeObjectField[malwareFullModel](ctx, fields.Malware, diags); ok {
+		malware := map[string]any{}
+		typeutils.SetStringInMap(malware, attrMode, mm.Mode)
+		typeutils.SetBoolInMap(malware, attrBlocklist, mm.Blocklist)
+		typeutils.SetBoolInMap(malware, attrOnWriteScan, mm.OnWriteScan)
+		typeutils.SetBoolInMap(malware, attrNotifyUser, mm.NotifyUser)
+		target[attrMalware] = malware
+	}
+
+	if rm, ok := decodeObjectField[protectionModeModel](ctx, fields.Ransomware, diags); ok {
+		ransomware := map[string]any{}
+		typeutils.SetStringInMap(ransomware, attrMode, rm.Mode)
+		typeutils.SetBoolInMap(ransomware, attrSupported, rm.Supported)
+		target[attrRansomware] = ransomware
+	}
+}
+
+// buildDeviceControlPayloadField decodes device_control — a block that is
+// byte-for-byte identical across buildMacPolicyPayload and
+// buildWindowsPolicyPayload — and writes it into target when present.
+func buildDeviceControlPayloadField(ctx context.Context, target map[string]any, deviceControl types.Object, diags *diag.Diagnostics) {
+	if dm, ok := decodeObjectField[deviceControlModel](ctx, deviceControl, diags); ok {
+		dc := map[string]any{}
+		typeutils.SetBoolInMap(dc, attrEnabled, dm.Enabled)
+		typeutils.SetStringInMap(dc, attrUsbStorage, dm.UsbStorage)
+		target[attrDeviceControl] = dc
+	}
+}
+
+// ---- attr types shared by two or more OS-specific policy types ----
+
+func malwareFullAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		attrMode:        types.StringType,
+		attrBlocklist:   types.BoolType,
+		attrOnWriteScan: types.BoolType,
+		attrNotifyUser:  types.BoolType,
+	}
+}
+
+func protectionModeAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		attrMode:      types.StringType,
+		attrSupported: types.BoolType,
+	}
+}
+
+func memoryProtectionAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		attrMode:       types.StringType,
+		attrSupported:  types.BoolType,
+		attrCustomYara: types.BoolType,
+	}
+}
+
+func deviceControlAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		attrEnabled:    types.BoolType,
+		attrUsbStorage: types.StringType,
+	}
+}
+
+func behaviorProtectionAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		attrMode:              types.StringType,
+		attrSupported:         types.BoolType,
+		attrReputationService: types.BoolType,
+	}
+}
+
+func loggingAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		attrFile: types.StringType,
+	}
+}
+
+func policyAttrTypes() map[string]attr.Type {
+	return map[string]attr.Type{
+		policyOSWindows: types.ObjectType{AttrTypes: windowsAttrTypes()},
+		policyOSMac:     types.ObjectType{AttrTypes: macAttrTypes()},
+		policyOSLinux:   types.ObjectType{AttrTypes: linuxAttrTypes()},
+	}
+}
+
+// basePackagePolicyFields holds the request fields that are computed
+// identically for both the bootstrap (create) and finalize (update) package
+// policy requests: agent policy id(s), additional datastream permissions,
+// description, and force.
+type basePackagePolicyFields struct {
+	PolicyID                         *string
+	PolicyIDs                        *[]string
+	AdditionalDatastreamsPermissions *[]string
+	Description                      *string
+	Force                            *bool
+}
+
+// buildBasePackagePolicyFields computes the request fields shared by
+// buildBootstrapRequest and buildFinalizeRequest, so the two request builders
+// don't duplicate the field-population logic for fields they have in common.
+func buildBasePackagePolicyFields(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (basePackagePolicyFields, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	var fields basePackagePolicyFields
+
+	policyID, policyIDs, d := agentPoliciesFromModel(ctx, model)
+	diags.Append(d...)
+	if diags.HasError() {
+		return fields, diags
+	}
+	fields.PolicyID, fields.PolicyIDs = policyID, policyIDs
+
+	perms, permsDiags := additionalDatastreamsPermissionsFromModel(ctx, model)
+	diags.Append(permsDiags...)
+	if diags.HasError() {
+		return fields, diags
+	}
+	fields.AdditionalDatastreamsPermissions = perms
+
+	if typeutils.IsKnown(model.Description) {
+		fields.Description = model.Description.ValueStringPointer()
+	}
+
+	if typeutils.IsKnown(model.Force) {
+		fields.Force = model.Force.ValueBoolPointer()
+	}
+
+	return fields, diags
+}
+
+// buildBootstrapRequest builds the minimal Defend package policy request used
+// for the first create step (bootstrap). Kibana expects the create bootstrap to
+// use the special ENDPOINT_INTEGRATION_CONFIG input type with preset mapped
+// under config._config.value.endpointConfig.preset.
+func buildBootstrapRequest(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (kbapi.PackagePolicyCreateRequestTypedInputs, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	pkg := kbapi.PackagePolicyRequestPackage{
+		Name:    endpointPackageName,
+		Version: model.IntegrationVersion.ValueString(),
+	}
+	req := kbapi.PackagePolicyCreateRequestTypedInputs{
+		Id:        typeutils.OptionalString(model.PolicyID),
+		Name:      model.Name.ValueString(),
+		Namespace: model.Namespace.ValueStringPointer(),
+		Package:   &pkg,
+		Enabled:   model.Enabled.ValueBoolPointer(),
+	}
+
+	base, d := buildBasePackagePolicyFields(ctx, model)
+	diags.Append(d...)
+	if diags.HasError() {
+		return req, diags
+	}
+	req.PolicyId, req.PolicyIds = base.PolicyID, base.PolicyIDs
+	req.AdditionalDatastreamsPermissions = base.AdditionalDatastreamsPermissions
+	req.Description = base.Description
+	req.Force = base.Force
+
+	// Build bootstrap input config: _config.value.endpointConfig.preset
+	config := map[string]policyshape.TypedVarEntry{}
+	if typeutils.IsKnown(model.Preset) && model.Preset.ValueString() != "" {
+		config["_config"] = policyshape.TypedVarEntry{Value: map[string]any{
+			"type": endpointPackageName,
+			"endpointConfig": map[string]any{
+				attrPreset: model.Preset.ValueString(),
+			},
+		}}
+	}
+
+	streams := []kbapi.PackagePolicyRequestTypedInputStream{}
+	input := kbapi.PackagePolicyRequestTypedInput{
+		Type:    bootstrapEndpointInputType,
+		Enabled: true,
+		Streams: &streams,
+	}
+	if len(config) > 0 {
+		input.Config = &config
+	}
+	req.Inputs = []kbapi.PackagePolicyRequestTypedInput{input}
+
+	return req, diags
+}
+
+// buildFinalizeRequest builds the Defend package policy update request used
+// after the bootstrap to apply the user-configured policy settings. It uses
+// the typed-inputs format with an "endpoint" input and includes the
+// server-managed artifact_manifest and version from the private state.
+func buildFinalizeRequest(
+	ctx context.Context,
+	model *elasticDefendIntegrationPolicyModel,
+	priorAdvanced map[string]string,
+	ps defendPrivateState,
+) (kbapi.PackagePolicyUpdateRequestTypedInputs, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	pkg := kbapi.PackagePolicyRequestPackage{
+		Name:    endpointPackageName,
+		Version: model.IntegrationVersion.ValueString(),
+	}
+	name := model.Name.ValueString()
+	req := kbapi.PackagePolicyUpdateRequestTypedInputs{
+		Name:      &name,
+		Namespace: model.Namespace.ValueStringPointer(),
+		Package:   &pkg,
+		Enabled:   model.Enabled.ValueBoolPointer(),
+	}
+
+	base, d := buildBasePackagePolicyFields(ctx, model)
+	diags.Append(d...)
+	if diags.HasError() {
+		// Propagate errors from ElementsAs
+		return req, diags
+	}
+	req.PolicyId, req.PolicyIds = base.PolicyID, base.PolicyIDs
+	req.AdditionalDatastreamsPermissions = base.AdditionalDatastreamsPermissions
+	req.Description = base.Description
+	req.Force = base.Force
+
+	// Include the version token for optimistic concurrency control
+	if ps.Version != "" {
+		req.Version = &ps.Version
+	}
+
+	// Build the finalize input config
+	config, d := buildFinalizeInputConfig(ctx, model, priorAdvanced, ps)
+	diags.Append(d...)
+	if diags.HasError() {
+		return req, diags
+	}
+
+	streams := []kbapi.PackagePolicyRequestTypedInputStream{}
+	input := kbapi.PackagePolicyRequestTypedInput{
+		Type:    endpointInputType,
+		Enabled: true,
+		Streams: &streams,
+	}
+	if len(config) > 0 {
+		input.Config = &config
+	}
+	req.Inputs = &[]kbapi.PackagePolicyRequestTypedInput{input}
+
+	return req, diags
+}
+
+// buildFinalizeInputConfig builds the typed config map for the finalize/update
+// input. It includes integration_config (with preset), artifact_manifest (from
+// private state), and the typed policy payload. Each entry wraps its payload in
+// the {value, type, frozen} policyshape.TypedVarEntry envelope the Defend API expects.
+func buildFinalizeInputConfig(
+	ctx context.Context,
+	model *elasticDefendIntegrationPolicyModel,
+	priorAdvanced map[string]string,
+	ps defendPrivateState,
+) (map[string]policyshape.TypedVarEntry, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	config := map[string]policyshape.TypedVarEntry{}
+
+	// integration_config with preset — only include when preset is set
+	preset := ""
+	if typeutils.IsKnown(model.Preset) {
+		preset = model.Preset.ValueString()
+	}
+	if preset != "" {
+		config["integration_config"] = policyshape.TypedVarEntry{Value: map[string]any{
+			"endpointConfig": map[string]any{
+				attrPreset: preset,
+			},
+		}}
+	}
+
+	// Kibana requires callers to echo back the opaque artifact_manifest on
+	// update/finalize requests. Persist it in private state and round-trip it.
+	if ps.ArtifactManifest != nil {
+		config["artifact_manifest"] = policyshape.TypedVarEntry{Value: ps.ArtifactManifest}
+	}
+
+	// Build the typed policy payload from the Terraform model.
+	// The Fleet API expects the policy wrapped in a {value: {...}} envelope,
+	// consistent with how other config keys like "integration_config" are structured.
+	policyData, d := buildPolicyPayload(ctx, model, priorAdvanced)
+	diags.Append(d...)
+	if policyData != nil {
+		config["policy"] = policyshape.TypedVarEntry{Value: policyData}
+	}
+
+	return config, diags
+}
+
+// buildPolicyPayload converts the Terraform policy model into the Defend API
+// policy map structure.
+func buildPolicyPayload(ctx context.Context, model *elasticDefendIntegrationPolicyModel, priorAdvanced map[string]string) (map[string]any, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if model.Policy.IsNull() || model.Policy.IsUnknown() {
+		return nil, diags
+	}
+
+	var pm policyModel
+	d := model.Policy.As(ctx, &pm, basetypes.ObjectAsOptions{UnhandledNullAsEmpty: true, UnhandledUnknownAsEmpty: true})
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	policy := map[string]any{}
+
+	winData, d := buildWindowsPolicyPayload(ctx, pm.Windows)
+	diags.Append(d...)
+	if winData != nil {
+		policy[policyOSWindows] = winData
+	}
+
+	macData, d := buildMacPolicyPayload(ctx, pm.Mac)
+	diags.Append(d...)
+	if macData != nil {
+		policy[policyOSMac] = macData
+	}
+
+	linuxData, d := buildLinuxPolicyPayload(ctx, pm.Linux)
+	diags.Append(d...)
+	if linuxData != nil {
+		policy[policyOSLinux] = linuxData
+	}
+
+	settings, d := advancedSettingsMapFromTerraform(ctx, model.AdvancedSettings)
+	diags.Append(d...)
+	if diags.HasError() {
+		return nil, diags
+	}
+	mergeAdvancedSettingsIntoPolicy(policy, settings, priorAdvanced)
+
+	return policy, diags
+}
+
+// agentPoliciesFromModel returns the PolicyId / PolicyIds request values for the model.
+func agentPoliciesFromModel(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (*string, *[]string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	if typeutils.IsKnown(model.AgentPolicyIDs) {
+		var ids []string
+		d := model.AgentPolicyIDs.ElementsAs(ctx, &ids, false)
+		if d.HasError() {
+			diags.Append(d...)
+			return nil, nil, diags
+		}
+		var policyID *string
+		if len(ids) > 0 {
+			policyID = &ids[0]
+		}
+		return policyID, &ids, diags
+	}
+	return model.AgentPolicyID.ValueStringPointer(), nil, diags
+}
+
+// additionalDatastreamsPermissionsFromModel returns the request value for
+// additional_datastreams_permissions: a known list (including an empty one) is
+// sent, while null or unknown is omitted so the server value is retained.
+func additionalDatastreamsPermissionsFromModel(ctx context.Context, model *elasticDefendIntegrationPolicyModel) (*[]string, diag.Diagnostics) {
+	if !typeutils.IsKnown(model.AdditionalDatastreamsPermissions) {
+		return nil, nil
+	}
+	perms := []string{}
+	diags := model.AdditionalDatastreamsPermissions.ElementsAs(ctx, &perms, false)
+	if diags.HasError() {
+		return nil, diags
+	}
+	return &perms, diags
+}

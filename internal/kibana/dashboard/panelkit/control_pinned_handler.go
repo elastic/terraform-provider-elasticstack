@@ -22,8 +22,18 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
+
+// pinnedSizing carries the per-control width and grow values, which the DashboardPanelType*
+// intermediate structs do not model, so they are applied to and read from the group structs by
+// JSON key.
+type pinnedSizing struct {
+	Width *string `json:"width,omitempty"`
+	Grow  *bool   `json:"grow,omitempty"`
+}
 
 // ControlPinnedHandler is a reusable generic implementation of iface.PinnedHandler for
 // dashboard control-bar panels. Each control-panel package instantiates one with its
@@ -86,8 +96,20 @@ func (h ControlPinnedHandler[G, P]) FromAPI(ctx context.Context, prior *models.P
 		diags.AddError(h.RemapFromErrSummary, err.Error())
 		return models.PinnedPanelModel{}, diags
 	}
+	var sizing pinnedSizing
+	if err := RemapViaJSON(group, &sizing); err != nil {
+		diags.AddError(h.RemapFromErrSummary, err.Error())
+		return models.PinnedPanelModel{}, diags
+	}
 
 	ppm, populateTf := models.SeedPinnedPanelForRead(prior, h.PanelTypeDiscriminator)
+	if prior == nil {
+		ppm.Width = types.StringPointerValue(sizing.Width)
+		ppm.Grow = types.BoolPointerValue(sizing.Grow)
+	} else {
+		ppm.Width = PreserveString(ppm.Width, sizing.Width)
+		ppm.Grow = PreserveBool(ppm.Grow, sizing.Grow)
+	}
 	pm := ppm.SyntheticPanel()
 	populateDiags := h.PopulateFromAPI(ctx, &pm, populateTf, &panel)
 	diags.Append(populateDiags...)
@@ -121,6 +143,11 @@ func (h ControlPinnedHandler[G, P]) ToAPI(ppm models.PinnedPanelModel) (kbapi.Da
 	}
 	if h.AfterRemapToGroup != nil {
 		h.AfterRemapToGroup(&group)
+	}
+	sizing := pinnedSizing{Width: typeutils.OptionalString(ppm.Width), Grow: typeutils.OptionalBool(ppm.Grow)}
+	if err := RemapViaJSON(sizing, &group); err != nil {
+		diags.AddError(h.RemapToErrSummary, err.Error())
+		return kbapi.DashboardPinnedPanels_Item{}, diags
 	}
 
 	var item kbapi.DashboardPinnedPanels_Item

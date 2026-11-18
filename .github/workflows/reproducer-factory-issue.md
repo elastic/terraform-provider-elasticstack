@@ -4,6 +4,9 @@ imports:
   - shared/elastic-stack.md
 name: Reproducer Factory Issue Intake
 timeout-minutes: 65
+sandbox:
+  agent:
+    runtime: docker-sudo-iptables
 description: >-
   Reacts to trusted qualifying `reproducer-factory` issue events or internal workflow dispatch
   requests, suppresses duplicate linked pull requests, and delegates bug reproduction to an agent
@@ -29,7 +32,7 @@ on:
     pull-requests: read
   steps:
     - name: Checkout repository
-      uses: actions/checkout@v7.0.0
+      uses: actions/checkout@v7.0.1
       with:
         persist-credentials: false
         fetch-depth: 1
@@ -277,7 +280,7 @@ on:
         steps.normalize_context.outputs.actor_trusted == 'true' &&
         steps.check_duplicate_pr.outputs.duplicate_pr_found != 'true' &&
         steps.normalize_context.outputs.issue_number != ''
-      uses: actions/upload-artifact@v7.0.1
+      uses: actions/upload-artifact@v7.0.2
       with:
         name: reproducer-factory-issue-context
         path: /tmp/reproducer-factory-context/
@@ -302,6 +305,7 @@ on:
           await fn({ github, context, core });
 env:
   REPRODUCER_FACTORY_ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+  CHECKPOINT_DISABLE: "1"
 concurrency:
   group: reproducer-factory-issue-${{ github.event.issue.number || inputs.issue_number }}
   cancel-in-progress: false
@@ -312,19 +316,42 @@ if: >-
   needs.pre_activation.outputs.issue_number != ''
 steps:
   - name: Download issue context artifact
-    uses: actions/download-artifact@v8.0.1
+    uses: actions/download-artifact@v8.0.2
     with:
       name: reproducer-factory-issue-context
       path: /tmp/reproducer-factory-context/
+model: "anthropic/claude-sonnet-5"
 engine:
   id: claude
-  model: "llm-gateway/claude-sonnet-4-6"
   args:
     - "--effort"
     - "high"
+    # Keep the author's context window bounded so it is not compacted mid-run.
+    - "--autocompact"
+    - "250k"
   env:
-    ANTHROPIC_BASE_URL: "https://elastic.litellm-prod.ai/"
-    ANTHROPIC_API_KEY: ${{ secrets.CLAUDE_LITELLM_PROXY_API_KEY }}
+    ANTHROPIC_BASE_URL: "https://openrouter.ai/api"
+    ANTHROPIC_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+    # Experimental (same settings as research-factory-issue): tell the CLI the real window for
+    # these non-first-party slugs and cap the compaction window. Verify via compact_boundary
+    # pre_tokens in the run log (it should be about 212k or higher, not about 170k). Remove
+    # both if they cause API errors.
+    CLAUDE_CODE_MAX_CONTEXT_TOKENS: "1000000"
+    CLAUDE_CODE_AUTO_COMPACT_WINDOW: "250000"
+# Disable the per-run AI Credits budget guard. The OpenRouter model slug
+# "anthropic/claude-sonnet-5" may be absent from the AWF api-proxy's built-in
+# pricing table. gh-aw's models.providers frontmatter override does not
+# propagate to apiProxy.defaultAiCreditsPricing
+# (see https://github.com/github/gh-aw/issues/47365, fix pending in
+# https://github.com/github/gh-aw/pull/47571), so with the guard active the
+# proxy could reject every request with HTTP 400 (unknown_model_ai_credits).
+# Setting -1 omits maxAiCredits from the generated AWF config, letting the
+# agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
+# still applies.
+max-ai-credits: -1
+# The daily guardrail is also disabled: it fails closed ("Daily AIC accounting
+# record could not be resolved") when prior runs lack resolvable AIC usage.
+max-daily-ai-credits: -1
 permissions:
   contents: read
   issues: read
@@ -352,7 +379,7 @@ tools:
     mode: gh-proxy
     toolsets: [issues, pull_requests, repos]
 network:
-  allowed: [defaults, node, go, elastic.litellm-prod.ai, www.elastic.co]
+  allowed: [defaults, node, go, openrouter.ai, www.elastic.co]
 mcp-servers:
   elastic-docs:
     url: "https://www.elastic.co/docs/_mcp/"
@@ -375,7 +402,7 @@ safe-outputs:
           type: string
       steps:
         - name: Checkout repository
-          uses: actions/checkout@v7.0.0
+          uses: actions/checkout@v7.0.1
           with:
             persist-credentials: false
             fetch-depth: 1
@@ -400,9 +427,9 @@ safe-outputs:
 
 # Reproducer Factory issue reproduction worker
 
-You reproduce **issue #${{ needs.pre_activation.outputs.issue_number }}** (`${{ needs.pre_activation.outputs.issue_title }}`) labeled `reproducer-factory`. The activation gates below reference this same issue number consistently — treat **`${{ needs.pre_activation.outputs.issue_number }}`** as the authoritative id for test naming, branch names, and `Related to #${{ needs.pre_activation.outputs.issue_number }}` linkage.
+You reproduce **issue #${{ needs.pre_activation.outputs.issue_number }}** (`${{ needs.pre_activation.outputs.issue_title }}`) labeled`reproducer-factory`. The activation gates below reference this same issue number consistently — treat **`${{ needs.pre_activation.outputs.issue_number }}`** as the authoritative id for test naming, branch names, and `Related to #${{ needs.pre_activation.outputs.issue_number }}` linkage.
 
-Express the reported failure as an acceptance test (`ExpectError` or `ExpectNonEmptyPlan`) and decide one of three outcomes: **reproduced**, **cannot reproduce**, or **appears fixed**. You **MUST** emit exactly one `update-reproducer-comment` safe output on every activation. You **MAY** emit `create-pull-request` **only** for outcome A (reproduced).
+Express the reported failure as an acceptance test (`ExpectError` or `ExpectNonEmptyPlan`) and decide one of three outcomes: **reproduced**, **cannot reproduce**, or **appears fixed**. You **MUST** emit exactly one `update_reproducer_comment` safe output on every activation (see **How to emit safe outputs** — a fenced code block in your final message emits nothing). You **MAY** emit `create_pull_request` **only** for outcome A (reproduced).
 
 ## Pre-activation context
 
@@ -425,11 +452,25 @@ Read all context files before proceeding. They may contain markdown, code fences
 
 ## Time budget
 
-Reserve approximately **55 minutes** for investigation, documentation lookup, test authoring, and test runs. The job hard-kills at **65 minutes**. Reserve the final **~5 minutes** for emitting safe outputs (`update-reproducer-comment`, and `create-pull-request` only for outcome A).
+Reserve approximately **55 minutes** for investigation, documentation lookup, test authoring, and test runs. The job hard-kills at **65 minutes**. Reserve the final **~5 minutes** for emitting safe outputs (`update_reproducer_comment`, and `create_pull_request` only for outcome A).
 
 ## Partial output preference
 
-If you are running short on time, prefer emitting a **partial-but-valid** `update-reproducer-comment` (for example an honest outcome-B comment with clear unknowns) over emitting `noop`. A partial comment that documents what you tried is more useful than silence.
+If you are running short on time, prefer emitting a **partial-but-valid** `update_reproducer_comment` (for example an honest outcome-B comment with clear unknowns) over emitting `noop`. A partial comment that documents what you tried is more useful than silence.
+
+## How to emit safe outputs
+
+At the very start of the run, write the exact command below to `/tmp/gh-aw/agent/EMIT.md` and re-read that file before you emit and after any context summary; it survives context compaction.
+
+The only exit path is the CLI `safeoutputs update_reproducer_comment`, which is on `PATH`. It is **not** a native or MCP tool, so it will never appear in your function list — never conclude it is missing, and never inspect `mcp-servers.json`, `tools.json`, or the safe-outputs mount. Writing the comment in your final assistant message — for example inside a fenced code block — emits **nothing**, and the run completes without any visible output. The CLI tool names use underscores, not the hyphenated job names: `update_reproducer_comment`, `create_pull_request`.
+
+Write the final body to `/tmp/gh-aw/agent/reproducer-comment.md` (without the `<!-- gha-reproducer-factory -->` marker), then run from the repository root:
+
+```bash
+jq -Rs '{body: .}' /tmp/gh-aw/agent/reproducer-comment.md | safeoutputs update_reproducer_comment .
+```
+
+The `body` input is limited to 10 KiB and there is no chunking helper — keep the comment under 10,000 bytes (check with `wc -c`); if you exceed it, trim investigation detail, never the required sections. Run `safeoutputs update_reproducer_comment --help` to see the syntax if unsure. If you are unsure of anything, re-read `EMIT.md`. You **SHALL NOT** call it more than once. If you cannot emit the comment for any reason, call `noop` with an explanation instead of ending silently.
 
 ## Test environment
 
@@ -440,6 +481,7 @@ ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9201 \
 ELASTICSEARCH_USERNAME=elastic \
 ELASTICSEARCH_PASSWORD=password \
 KIBANA_ENDPOINT=http://host.docker.internal:5602 \
+CHECKPOINT_DISABLE=1 \
 TF_ACC=1 \
 go test -v -run TestAccReproduceIssue${{ needs.pre_activation.outputs.issue_number }} ./path/to/package
 ```
@@ -464,11 +506,11 @@ Follow this decision tree end-to-end for **issue #${{ needs.pre_activation.outpu
 4. **Run** the acceptance test against the live Elastic Stack (see **Test environment**). If the test passes with `ExpectError` or `ExpectNonEmptyPlan`, the failure is reproduced. If it fails for a different reason, iterate on the config. If it passes unexpectedly, consider outcome C.
 5. **Route by result:**
    - **Test reproduces the failure** (`ExpectError` or `ExpectNonEmptyPlan` passes against the live stack) → **Outcome A (reproduced)**
-     Emit `update-reproducer-comment` with the outcome-A body, then emit `create-pull-request` on branch `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`. The PR body **MUST** include `Related to #${{ needs.pre_activation.outputs.issue_number }}` (do **not** use `Closes`).
+     Emit `update_reproducer_comment` with the outcome-A body, then emit `create_pull_request` on branch `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`. The PR body **MUST** include `Related to #${{ needs.pre_activation.outputs.issue_number }}` (do **not** use `Closes`).
    - **Cannot build a credible test config or cannot determine from static analysis** → **Outcome B (cannot reproduce)**
-     Emit `update-reproducer-comment` with the outcome-B body. **Do not** emit `create-pull-request`.
+     Emit `update_reproducer_comment` with the outcome-B body. **Do not** emit `create_pull_request`.
    - **Static analysis suggests the issue no longer applies** (e.g. recently merged fix, code path changed) → **Outcome C (appears fixed)**
-     Emit `update-reproducer-comment` with the outcome-C body, including the test configuration (inline or fenced), evidence from code/git history that the failure condition no longer applies. **Do not** emit `create-pull-request`.
+     Emit `update_reproducer_comment` with the outcome-C body, including the test configuration (inline or fenced), evidence from code/git history that the failure condition no longer applies. **Do not** emit `create_pull_request`.
 
 ## Test file placement
 
@@ -478,7 +520,7 @@ Follow this decision tree end-to-end for **issue #${{ needs.pre_activation.outpu
 
 ## Comment format
 
-The reproducer comment **MUST** conform to the `ci-reproducer-factory-comment-format` capability. The workflow automatically prepends `<!-- gha-reproducer-factory -->`; **do not** include that marker in the body you pass to `update-reproducer-comment`.
+The reproducer comment **MUST** conform to the `ci-reproducer-factory-comment-format` capability. The workflow automatically prepends `<!-- gha-reproducer-factory -->`; **do not** include that marker in the body you pass to `update_reproducer_comment`.
 
 1. **`## Bug reproduction`** — Open the body with this H2 heading. Immediately below it, add a provenance header that records the run timestamp, the run link (`${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`), and a one-line notice that the comment is replaced on each run, e.g.:
 
@@ -492,7 +534,7 @@ The reproducer comment **MUST** conform to the `ci-reproducer-factory-comment-fo
 
 Place `### References` **before** the `<details>` metadata block.
 
-3. **Pipeline metadata block** — After `### References`, include exactly one HTML `<details>` element (**no** `open` attribute) with `<summary>🤖 Pipeline metadata</summary>` containing exactly one fenced ```json``` code block. The JSON object MUST match `ci-reproducer-factory-comment-format` (`openspec/specs/ci-reproducer-factory-comment-format/spec.md`):
+1. **Pipeline metadata block** — After `### References`, include exactly one HTML `<details>` element (**no** `open` attribute) with `<summary>🤖 Pipeline metadata</summary>` containing exactly one fenced ```json``` code block. The JSON object MUST match `ci-reproducer-factory-comment-format` (`openspec/specs/ci-reproducer-factory-comment-format/spec.md`):
 
 - `schema_version` (string, required): e.g. `"1.0"`.
 - `outcome` (string, required): `"reproduced"`, `"cannot-reproduce"`, or `"appears-fixed"`.
@@ -508,7 +550,7 @@ The JSON `outcome` and optional fields MUST be internally consistent with the hu
 **Outcome A only:**
 
 - Branch: `reproducer-factory/issue-${{ needs.pre_activation.outputs.issue_number }}`
-- Label: `reproducer-factory` (via `create-pull-request` safe output)
+- Label: `reproducer-factory` (via `create_pull_request` safe output)
 - PR body **MUST** contain `Related to #${{ needs.pre_activation.outputs.issue_number }}`. Do **not** use `Closes #${{ needs.pre_activation.outputs.issue_number }}` — the reproduction confirms the bug for **#${{ needs.pre_activation.outputs.issue_number }}**; it does not resolve the issue.
 - Include **only** the reproduction test file — no unrelated changes.
 
@@ -516,7 +558,8 @@ The JSON `outcome` and optional fields MUST be internally consistent with the hu
 
 - Do **not** re-check pre-activation gates (event eligibility, actor trust, duplicate PR state); pre-activation already handled them.
 - Emit **only** configured safe outputs — **no** free-form issue comments, **no** label changes, **no** extra pull requests.
-- Emit **at most one** `update-reproducer-comment` and **at most one** `create-pull-request`.
-- If you cannot complete a full investigation, prefer a **partial** outcome-B `update-reproducer-comment` that states unknowns honestly over `noop`.
+- Emit **at most one** `update_reproducer_comment` and **at most one** `create_pull_request`.
+- If you cannot complete a full investigation, prefer a **partial** outcome-B `update_reproducer_comment` that states unknowns honestly over `noop`.
 - Do **not** emit `noop` solely because the `elastic-docs` MCP server is unavailable.
-- Do **not** include `<!-- gha-reproducer-factory -->` in the markdown you pass to `update-reproducer-comment`; the workflow adds it.
+- Do **not** include `<!-- gha-reproducer-factory -->` in the markdown you pass to `update_reproducer_comment`; the workflow adds it.
+- Do **not** write safe outputs as fenced code blocks or plain text in your final message — only `safeoutputs` CLI calls are recorded.

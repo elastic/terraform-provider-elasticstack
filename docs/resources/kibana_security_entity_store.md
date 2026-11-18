@@ -28,7 +28,7 @@ Manages the Elastic Security Entity Store lifecycle within a Kibana space.
 ### Read-Only
 
 - `id` (String) Computed resource identifier in the format <space_id>/entity_store.
-- `status_json` (String) Normalized JSON representation of the most recent entity store status response.
+- `status_json` (String) Raw JSON of the most recent entity store status response. The order of the engines array is ignored when comparing this attribute for semantic equality.
 
 <a id="nestedatt--history_snapshot"></a>
 ### Nested Schema for `history_snapshot`
@@ -47,6 +47,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

@@ -18,12 +18,12 @@
 package dashboard_test
 
 import (
+	_ "embed"
 	"fmt"
 	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
-	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/dashboardacctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
@@ -62,7 +62,7 @@ func TestAccResourceEmptyDashboard(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval.pause", "true"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "refresh_interval.value", "90000"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.text", "http.response.status_code:200"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.expression", "http.response.status_code:200"),
 				),
 			},
 			{
@@ -441,30 +441,6 @@ func TestAccResourceDashboardPanels_panels_and_sections(t *testing.T) {
 	})
 }
 
-func TestAccResourceDashboardRootQueryJSON(t *testing.T) {
-	dashboardTitle := "Test Dashboard JSON Query " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-
-	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("basic"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "query.json", `{"match_all":{}}`),
-				),
-			},
-		},
-	})
-}
-
 func TestAccResourceDashboardPanelsJSONConfig(t *testing.T) {
 	dashboardTitle := "Test Dashboard Panel with JSON Config " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
@@ -551,27 +527,158 @@ func TestAccResourceDashboardQueryTransition(t *testing.T) {
 		Steps: []resource.TestStep{
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_text"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("initial"),
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.expression", "http.response.status_code:200"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("updated"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "lucene"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.expression", "status:500"),
+				),
+			},
+		},
+	})
+}
+
+//go:embed testdata/TestAccResourceDashboardQueryStateUpgrade/v1_text/main.tf
+var testAccDashboardQueryV1TextConfig string
+
+//go:embed testdata/TestAccResourceDashboardQueryStateUpgradeFromJSON/v1_json/main.tf
+var testAccDashboardQueryV1JSONConfig string
+
+func TestAccResourceDashboardQueryStateUpgrade(t *testing.T) {
+	dashboardTitle := "Test Dashboard Query Upgrade " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
+	// Not parallel: concurrent external-provider downloads race on the shared plugin cache.
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Last release with schema v1, where the root query used `text` / `json`.
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.16.5",
+					},
+				},
+				Config: testAccDashboardQueryV1TextConfig,
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.text", "http.response.status_code:200"),
 				),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_json"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("expression"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.expression", "http.response.status_code:200"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "query.text"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "query.json"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardQueryStateUpgradeFromJSON(t *testing.T) {
+	dashboardTitle := "Test Dashboard Query JSON Upgrade " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
+	// Not parallel: concurrent external-provider downloads race on the shared plugin cache.
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Last release with schema v1, where the root query used `text` / `json`.
+				ExternalProviders: map[string]resource.ExternalProvider{
+					"elasticstack": {
+						Source:            "elastic/elasticstack",
+						VersionConstraint: "0.16.5",
+					},
+				},
+				Config: testAccDashboardQueryV1JSONConfig,
 				ConfigVariables: config.Variables{
 					"dashboard_title": config.StringVariable(dashboardTitle),
 				},
 				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
-					checks.TestCheckResourceAttrJSONSubset("elasticstack_kibana_dashboard.test", "query.json", `{"match_all":{}}`),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.json", `{"match_all":{}}`),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("expression_json"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.expression", `{"match_all":{}}`),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "query.text"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "query.json"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceDashboardQueryEmptyExpression(t *testing.T) {
+	dashboardTitle := "Test Dashboard Empty Query " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.language", "kql"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "query.expression", ""),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
 			},
 		},
 	})
@@ -834,6 +941,123 @@ func TestAccResourceDashboardDescriptionNormalization(t *testing.T) {
 					"dashboard_title": config.StringVariable(dashboardTitle + " (empty)"),
 				},
 				PlanOnly: true,
+			},
+		},
+	})
+}
+
+// TestAccResourceDashboardTagsNormalization verifies the intent-preserving
+// nil/empty-list normalization for the root-level tags attribute (REQ-009).
+// Without it, a `tags = []` dashboard read back from Kibana with nil-or-empty
+// tags collapses the known-empty list to null and Terraform flags an
+// inconsistent result after apply. This test asserts:
+//   - `tags = []` round-trips as a known-empty list in state with no drift,
+//   - importing a nil-or-empty-tags dashboard records tags as null,
+//   - omitted tags stay null, and
+//   - non-empty tags round-trip from the API.
+func TestAccResourceDashboardTagsNormalization(t *testing.T) {
+	dashboardTitle := "Test Dashboard Tags Normalization " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, minDashboardAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				// Explicit tags = []: must round-trip as a known-empty list
+				// (tags.# = 0), not null, even when the API returns nil or [].
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "title", dashboardTitle),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "tags.#", "0"),
+				),
+			},
+			{
+				// Same tags = [] config, plan only — must show no changes.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+			},
+			{
+				// Import the empty-tags dashboard: import has no prior plan
+				// intent (optional attributes initialize as null), so a
+				// nil-or-empty API tags value must be recorded as null.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ResourceName: "elasticstack_kibana_dashboard.test",
+				ImportState:  true,
+				ImportStateCheck: func(is []*terraform.InstanceState) error {
+					if len(is) != 1 {
+						return fmt.Errorf("expected 1 imported state, got %d", len(is))
+					}
+					if v, ok := is[0].Attributes["tags.#"]; ok {
+						return fmt.Errorf("expected imported tags to be null, got tags.# = %s", v)
+					}
+					return nil
+				},
+			},
+			{
+				// Omitted tags: must stay null in state (null intent preserved).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omitted"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "tags"),
+				),
+			},
+			{
+				// Non-empty tags: the API value must be stored in state.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("non_empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "tags.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "tags.0", "test"),
+				),
+			},
+			{
+				// Transition from non-empty tags back to tags = []: the
+				// known-empty intent must replace the API value in state.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrSet("elasticstack_kibana_dashboard.test", "id"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "tags.#", "0"),
+				),
+			},
+			{
+				// Same tags = [] config after the update, plan only — must show
+				// no changes.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
 			},
 		},
 	})

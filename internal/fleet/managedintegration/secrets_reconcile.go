@@ -76,15 +76,10 @@ func reconcileVarsJSONFromPrior(
 	if populated.IsNull() {
 		return populated
 	}
-	priorMap, ok := secretReconcileJSONToMap(prior, attrPath, secretReconcileAttrVarsJSON, diags)
-	if !ok || len(priorMap) == 0 {
-		return populated
-	}
-	respMap, ok := secretReconcileJSONToMap(populated, attrPath, secretReconcileAttrVarsJSON, diags)
+	respMap, ok := reconcileVarsMapFromJSON(prior, populated, secretReconcileAttrVarsJSON, attrPath, diags)
 	if !ok {
 		return populated
 	}
-	reconcileSecretVarsMapFromPrior(priorMap, respMap, attrPath, diags)
 	return varsJSONFromMap(ctx, respMap, packageName, packageVersion, attrPath, diags)
 }
 
@@ -132,7 +127,7 @@ func varsJSONFromMap(_ context.Context, vars map[string]any, packageName, packag
 	if useNull {
 		return policyshape.NewVarsJSONNull()
 	}
-	v, d := policyshape.NewVarsJSONWithIntegration(raw, packageName, packageVersion, lookupCachedPackageInfo)
+	v, d := policyshape.NewVarsJSONWithIntegration(raw, packageName, packageVersion, policyshape.LookupPackageInfo)
 	diags.Append(d...)
 	return v
 }
@@ -183,16 +178,24 @@ func reconcileNormalizedVarsFromPrior(prior, populated jsontypes.Normalized, att
 	if prior.IsNull() || prior.IsUnknown() {
 		return populated
 	}
-	priorMap, ok := secretReconcileJSONToMap(prior, attrPath, secretReconcileAttrVars, diags)
-	if !ok || len(priorMap) == 0 {
-		return populated
-	}
-	respMap, ok := secretReconcileJSONToMap(populated, attrPath, secretReconcileAttrVars, diags)
+	respMap, ok := reconcileVarsMapFromJSON(prior, populated, secretReconcileAttrVars, attrPath, diags)
 	if !ok {
 		return populated
 	}
-	reconcileSecretVarsMapFromPrior(priorMap, respMap, attrPath, diags)
 	return normalizedVarsFromMap(respMap, attrPath, diags)
+}
+
+func reconcileVarsMapFromJSON(prior, populated secretReconcileJSONString, attrLabel string, attrPath path.Path, diags *diag.Diagnostics) (map[string]any, bool) {
+	priorMap, ok := secretReconcileJSONToMap(prior, attrPath, attrLabel, diags)
+	if !ok || len(priorMap) == 0 {
+		return nil, false
+	}
+	respMap, ok := secretReconcileJSONToMap(populated, attrPath, attrLabel, diags)
+	if !ok {
+		return nil, false
+	}
+	reconcileSecretVarsMapFromPrior(priorMap, respMap, attrPath, diags)
+	return respMap, true
 }
 
 func normalizedVarsFromMap(vars map[string]any, attrPath path.Path, diags *diag.Diagnostics) jsontypes.Normalized {
@@ -203,29 +206,17 @@ func normalizedVarsFromMap(vars map[string]any, attrPath path.Path, diags *diag.
 	return jsontypes.NewNormalizedValue(raw)
 }
 
-// reconcileSecretVarsMapFromPrior mutates resp in place, mirroring
-// policyshape.HandleReqRespSecrets but using prior config/state as the source
-// of plaintext instead of a private secret store.
+// reconcileSecretVarsMapFromPrior mutates resp in place, sharing
+// policyshape.WalkSecretRefVars' map-walking/unwrap/isSecretRef-detection
+// core with policyshape.HandleReqRespSecrets but using prior config/state as
+// the source of plaintext instead of a private secret store.
 func reconcileSecretVarsMapFromPrior(prior, resp map[string]any, basePath path.Path, diags *diag.Diagnostics) {
 	if prior == nil || resp == nil {
 		return
 	}
-	for key, val := range resp {
-		attrPath := basePath.AtMapKey(key)
-		mval, ok := val.(map[string]any)
-		if !ok {
-			continue
-		}
-		if wrapped, ok := mval["value"]; ok {
-			resp[key] = wrapped
-			val = wrapped
-		}
-		if mval, ok := val.(map[string]any); ok {
-			if isSecretRefMap(mval) {
-				reconcileSecretRefValueFromPrior(key, mval, prior, resp, attrPath, diags)
-			}
-		}
-	}
+	policyshape.WalkSecretRefVars(resp, false, func(key string, mval map[string]any) {
+		reconcileSecretRefValueFromPrior(key, mval, prior, resp, basePath.AtMapKey(key), diags)
+	})
 }
 
 func reconcileSecretRefValueFromPrior(key string, mval map[string]any, prior, resp map[string]any, attrPath path.Path, diags *diag.Diagnostics) {
@@ -252,12 +243,6 @@ func reconcileSecretRefValueFromPrior(key string, mval map[string]any, prior, re
 		resp[key] = priorVal
 		return
 	}
-	if priorRef, ok := priorVal.(map[string]any); ok {
-		if isSecretRefMap(priorRef) {
-			resp[key] = priorVal
-			return
-		}
-	}
 	resp[key] = priorVal
 }
 
@@ -277,8 +262,4 @@ func coerceAnySlice(v any) ([]any, bool) {
 	default:
 		return nil, false
 	}
-}
-
-func isSecretRefMap(m map[string]any) bool {
-	return m["isSecretRef"] == true
 }

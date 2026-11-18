@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -34,18 +33,19 @@ var (
 )
 
 var (
-	MinVersionPolicyIDs = version.Must(version.NewVersion("8.15.0"))
+	MinVersionPolicyIDs                        = version.Must(version.NewVersion("8.15.0"))
+	MinVersionAdditionalDatastreamsPermissions = version.Must(version.NewVersion("9.1.0"))
 )
 
 type elasticDefendIntegrationPolicyResource struct {
 	*entitycore.ResourceBase
-	*fleet.SpaceImporter
+	*entitycore.SpaceImporter
 }
 
 func newElasticDefendIntegrationPolicyResource() *elasticDefendIntegrationPolicyResource {
 	return &elasticDefendIntegrationPolicyResource{
 		ResourceBase:  entitycore.NewResourceBase(entitycore.ComponentFleet, "elastic_defend_integration_policy"),
-		SpaceImporter: fleet.NewSpaceImporter(path.Root("policy_id")),
+		SpaceImporter: entitycore.NewSpaceImporter(path.Root("policy_id")),
 	}
 }
 

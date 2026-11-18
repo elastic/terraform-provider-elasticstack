@@ -26,7 +26,7 @@ Assigns a single anomaly detection job or job group to an ML calendar using `PUT
 
 ### Read-Only
 
-- `id` (String) Internal composite identifier of the resource.
+- `id` (String) Internal identifier of the resource
 
 <a id="nestedblock--elasticsearch_connection"></a>
 ### Nested Schema for `elasticsearch_connection`

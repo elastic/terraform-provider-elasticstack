@@ -291,6 +291,28 @@ func TestMigrateV0ToV1_PreservesExistingTransformations(t *testing.T) {
 	require.Nil(t, action2[blockAlertsFilter], "empty alerts_filter list should collapse to null")
 }
 
+func TestMigrateV0ToV1_DropsRemovedExecutionAttributes(t *testing.T) {
+	t.Parallel()
+
+	raw := baseAlertingRuleState()
+	raw[attrParams] = `{"test":"value"}`
+	raw["scheduled_task_id"] = "task-1"
+	raw["last_execution_status"] = "ok"
+	raw["last_execution_date"] = "2024-01-02 03:04:05.000 +0000 UTC"
+
+	resp := runMigrateV0ToV1Resp(t, raw)
+	require.False(t, resp.Diagnostics.HasError(), "%s", resp.Diagnostics)
+
+	var got map[string]any
+	require.NoError(t, json.Unmarshal(resp.DynamicValue.JSON, &got))
+	require.NotContains(t, got, "last_execution_status")
+	require.NotContains(t, got, "last_execution_date")
+	require.Equal(t, "task-1", got["scheduled_task_id"])
+	require.Equal(t, int64(1), testResourceSchema(t).Version)
+
+	requireUpgradedStateDecodes(t, resp)
+}
+
 func TestUpgradeState_RegistersV0Upgrader(t *testing.T) {
 	t.Parallel()
 

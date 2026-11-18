@@ -22,6 +22,9 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	dsschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 )
 
 func getDataSourceSchema(_ context.Context) dsschema.Schema {
@@ -32,10 +35,7 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 				Description: "Generated ID for the outputs.",
 				Computed:    true,
 			},
-			"space_id": dsschema.StringAttribute{
-				Description: "The Kibana space ID where this output is available.",
-				Optional:    true,
-			},
+			"space_id": kbschema.DataSourceSpaceIDAttribute(),
 			"outputs": dsschema.ListNestedAttribute{
 				Description: "The list of outputs",
 				Computed:    true,
@@ -87,5 +87,5 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 }
 
 func getOutputItemElemType(ctx context.Context) attr.Type {
-	return getDataSourceSchema(ctx).Attributes["outputs"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getDataSourceSchema(ctx).Attributes["outputs"].GetType())
 }

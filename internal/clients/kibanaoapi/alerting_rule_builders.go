@@ -24,6 +24,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingactions"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -65,6 +66,14 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 			LookBackWindow        float64 `json:"look_back_window"`
 			StatusChangeThreshold float64 `json:"status_change_threshold"`
 		} `json:"flapping"`
+		Artifacts *struct {
+			InvestigationGuide *struct {
+				Blob string `json:"blob"`
+			} `json:"investigation_guide"`
+			Dashboards []struct {
+				ID string `json:"id"`
+			} `json:"dashboards"`
+		} `json:"artifacts"`
 		Actions []struct {
 			Group     *string        `json:"group"`
 			ID        string         `json:"id"`
@@ -125,12 +134,8 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 			}
 
 			if action.AlertsFilter.Timeframe != nil {
-				days := make([]int32, len(action.AlertsFilter.Timeframe.Days))
-				for i, d := range action.AlertsFilter.Timeframe.Days {
-					days[i] = int32(d)
-				}
 				a.AlertsFilter.Timeframe = &models.AlertsFilterTimeframe{
-					Days:       days,
+					Days:       alertingactions.Int32FromInt(action.AlertsFilter.Timeframe.Days),
 					Timezone:   action.AlertsFilter.Timeframe.Timezone,
 					HoursStart: action.AlertsFilter.Timeframe.Hours.Start,
 					HoursEnd:   action.AlertsFilter.Timeframe.Hours.End,
@@ -152,6 +157,27 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 			LookBackWindow:        int64(intermediate.Flapping.LookBackWindow),
 			StatusChangeThreshold: int64(intermediate.Flapping.StatusChangeThreshold),
 			Enabled:               intermediate.Flapping.Enabled,
+		}
+	}
+
+	var artifacts *models.AlertingRuleArtifacts
+	if intermediate.Artifacts != nil {
+		// Keep a non-nil artifacts object whenever the API returned the key,
+		// even if both sub-fields are empty, so the read path can distinguish
+		// "GET omitted artifacts" (pre-9.5.0) from "artifacts present but a
+		// sibling was cleared".
+		artifacts = &models.AlertingRuleArtifacts{}
+		if intermediate.Artifacts.InvestigationGuide != nil {
+			artifacts.InvestigationGuide = &models.AlertingRuleInvestigationGuide{
+				Blob: intermediate.Artifacts.InvestigationGuide.Blob,
+			}
+		}
+		if len(intermediate.Artifacts.Dashboards) > 0 {
+			dashboards := make([]models.AlertingRuleArtifactDashboard, len(intermediate.Artifacts.Dashboards))
+			for i, d := range intermediate.Artifacts.Dashboards {
+				dashboards[i] = models.AlertingRuleArtifactDashboard{ID: d.ID}
+			}
+			artifacts.Dashboards = dashboards
 		}
 	}
 
@@ -189,6 +215,7 @@ func ConvertResponseToModel(spaceID string, resp any) (*models.AlertingRule, dia
 		Actions:    actions,
 		AlertDelay: alertDelay,
 		Flapping:   flapping,
+		Artifacts:  artifacts,
 	}, nil
 }
 
@@ -333,12 +360,8 @@ func buildActionsSlice(modelActions []models.AlertingRuleAction) []alertingRuleA
 				}
 			}
 			if action.AlertsFilter.Timeframe != nil {
-				days := make([]int, len(action.AlertsFilter.Timeframe.Days))
-				for j, d := range action.AlertsFilter.Timeframe.Days {
-					days[j] = int(d)
-				}
 				filter.Timeframe = &alertingRuleActionTimeframe{
-					Days: days,
+					Days: alertingactions.IntFromInt32(action.AlertsFilter.Timeframe.Days),
 					Hours: struct {
 						End   string `json:"end"`
 						Start string `json:"start"`
@@ -396,7 +419,42 @@ type ruleBodyOptionalFields struct {
 	AlertDelay *struct {
 		Active float32 `json:"active"`
 	} `json:"alert_delay,omitempty"`
-	Flapping *flappingWire `json:"flapping,omitempty"`
+	Flapping  *flappingWire  `json:"flapping,omitempty"`
+	Artifacts *artifactsWire `json:"artifacts,omitempty"`
+}
+
+// artifactsWire is the JSON shape of the alerting rule `artifacts` object on
+// create/update requests.
+type artifactsWire struct {
+	InvestigationGuide *struct {
+		Blob string `json:"blob"`
+	} `json:"investigation_guide,omitempty"`
+	Dashboards []artifactsDashboardWire `json:"dashboards,omitempty"`
+}
+
+type artifactsDashboardWire struct {
+	ID string `json:"id"`
+}
+
+func artifactsWireFromModel(a *models.AlertingRuleArtifacts) *artifactsWire {
+	if a == nil || (a.InvestigationGuide == nil && len(a.Dashboards) == 0) {
+		return nil
+	}
+	w := &artifactsWire{}
+	if a.InvestigationGuide != nil {
+		w.InvestigationGuide = &struct {
+			Blob string `json:"blob"`
+		}{
+			Blob: a.InvestigationGuide.Blob,
+		}
+	}
+	if len(a.Dashboards) > 0 {
+		w.Dashboards = make([]artifactsDashboardWire, len(a.Dashboards))
+		for i, d := range a.Dashboards {
+			w.Dashboards[i] = artifactsDashboardWire{ID: d.ID}
+		}
+	}
+	return w
 }
 
 func buildOptionalRuleFields(rule models.AlertingRule) ruleBodyOptionalFields {
@@ -425,6 +483,10 @@ func buildOptionalRuleFields(rule models.AlertingRule) ruleBodyOptionalFields {
 
 	if w := flappingWireFromModel(rule.Flapping); w != nil {
 		fields.Flapping = w
+	}
+
+	if w := artifactsWireFromModel(rule.Artifacts); w != nil {
+		fields.Artifacts = w
 	}
 
 	return fields

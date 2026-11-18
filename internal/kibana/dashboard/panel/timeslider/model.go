@@ -94,9 +94,9 @@ func timeSliderPreserveNullIntentFromPrior(prior, existing *models.TimeSliderCon
 	if prior == nil || existing == nil {
 		return
 	}
-	panelkit.NullPreserveFloat32FromPrior(prior.StartPercentageOfTimeRange, &existing.StartPercentageOfTimeRange)
-	panelkit.NullPreserveFloat32FromPrior(prior.EndPercentageOfTimeRange, &existing.EndPercentageOfTimeRange)
-	panelkit.NullPreserveBoolFromPrior(prior.IsAnchored, &existing.IsAnchored)
+	panelkit.NullPreserveFromPrior(prior.StartPercentageOfTimeRange, &existing.StartPercentageOfTimeRange)
+	panelkit.NullPreserveFromPrior(prior.EndPercentageOfTimeRange, &existing.EndPercentageOfTimeRange)
+	panelkit.NullPreserveFromPrior(prior.IsAnchored, &existing.IsAnchored)
 }
 
 // BuildConfig writes TF fields into tsPanel.Config.

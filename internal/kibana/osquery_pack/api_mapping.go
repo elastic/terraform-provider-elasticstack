@@ -102,13 +102,13 @@ func shardsMapToAPI(shards types.Map) *kbapi.SecurityOsqueryAPIShards {
 	return &result
 }
 
-func queriesMapToAPI(ctx context.Context, queries types.Map) (*kbapi.SecurityOsqueryAPIObjectQueries, diag.Diagnostics) {
+func queriesMapToAPI(ctx context.Context, queries types.Map) (*kbapi.SecurityOsqueryAPIObjectQueriesInput, diag.Diagnostics) {
 	if !typeutils.IsKnown(queries) || queries.IsNull() {
 		return nil, nil
 	}
 
 	var diags diag.Diagnostics
-	result := make(kbapi.SecurityOsqueryAPIObjectQueries, len(queries.Elements()))
+	result := make(kbapi.SecurityOsqueryAPIObjectQueriesInput, len(queries.Elements()))
 
 	for name, av := range queries.Elements() {
 		var q queryModel

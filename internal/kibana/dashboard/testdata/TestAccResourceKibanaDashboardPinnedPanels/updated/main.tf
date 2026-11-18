@@ -24,13 +24,15 @@ resource "elasticstack_kibana_dashboard" "test" {
     value = 0
   }
   query = {
-    language = "kql"
-    text     = ""
+    language   = "kql"
+    expression = ""
   }
 
   pinned_panels = [
     {
-      type = "options_list_control"
+      type  = "options_list_control"
+      width = "large"
+      grow  = true
       options_list_control_config = {
         by_field = {
           data_view_id     = elasticstack_kibana_data_view.test.data_view.id
@@ -45,7 +47,9 @@ resource "elasticstack_kibana_dashboard" "test" {
       }
     },
     {
-      type = "range_slider_control"
+      type  = "range_slider_control"
+      width = "medium"
+      grow  = true
       range_slider_control_config = {
         by_field = {
           data_view_id       = elasticstack_kibana_data_view.test.data_view.id

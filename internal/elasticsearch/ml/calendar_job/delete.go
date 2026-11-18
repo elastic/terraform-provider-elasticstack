@@ -25,7 +25,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/elasticsearch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ml"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
 func deleteCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, _ TFModel) fwdiags.Diagnostics {
@@ -37,23 +36,8 @@ func deleteCalendarJob(ctx context.Context, client *clients.ElasticsearchScopedC
 		return diags
 	}
 
-	tflog.Debug(ctx, fmt.Sprintf("Deleting ML calendar job assignment: calendar=%s job=%s", calendarID, jobID))
-
 	typedClient := client.GetESClient()
 
 	_, err := typedClient.Ml.DeleteCalendarJob(calendarID, jobID).Do(ctx)
-	if err != nil {
-		if elasticsearch.IsNotFoundElasticsearchError(err) {
-			tflog.Debug(ctx, fmt.Sprintf("ML calendar job assignment already removed: calendar=%s job=%s", calendarID, jobID))
-			return diags
-		}
-		diags.AddError(
-			"Failed to remove ML job from calendar",
-			fmt.Sprintf("Unable to remove job %q from calendar %q: %s", jobID, calendarID, err.Error()),
-		)
-		return diags
-	}
-
-	tflog.Debug(ctx, fmt.Sprintf("Successfully removed ML job from calendar: calendar=%s job=%s", calendarID, jobID))
-	return diags
+	return elasticsearch.DeleteWithNotFoundAsSuccess(err, fmt.Sprintf("Failed to delete ML calendar job assignment (calendar=%s)", calendarID))
 }

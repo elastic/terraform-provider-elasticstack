@@ -107,13 +107,13 @@ func expandDataStreamBlock(obj types.Object) *models.DataStreamSettings {
 	}
 	attrs := obj.Attributes()
 	dSettings := &models.DataStreamSettings{}
-	if hidden, ok := attrs[attrHidden]; ok && !hidden.IsNull() && !hidden.IsUnknown() {
+	if hidden, ok := attrs[attrHidden]; ok && typeutils.IsKnown(hidden) {
 		if hv, ok := hidden.(types.Bool); ok {
 			h := hv.ValueBool()
 			dSettings.Hidden = &h
 		}
 	}
-	if acr, ok := attrs[attrAllowCustomRouting]; ok && !acr.IsNull() && !acr.IsUnknown() {
+	if acr, ok := attrs[attrAllowCustomRouting]; ok && typeutils.IsKnown(acr) {
 		if av, ok := acr.(types.Bool); ok && av.ValueBool() {
 			t := true
 			dSettings.AllowCustomRouting = &t

@@ -28,7 +28,7 @@ import (
 )
 
 // readDataSource is the envelope read callback for the spaces data source.
-func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config dataSourceModel) (dataSourceModel, diag.Diagnostics) {
+func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, _ string, _ string, config dataSourceModel) (dataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	oapiClient := kbClient.GetKibanaOapiClient()
@@ -37,7 +37,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 	spaces, fwDiags := kibanaoapi.ListSpaces(ctx, oapiClient)
 	diags.Append(fwDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	// Map response body to model
@@ -59,7 +59,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 		disabledFeatures, d := types.ListValueFrom(ctx, types.StringType, rawFeatures)
 		if d.HasError() {
 			diags.Append(d...)
-			return config, diags
+			return config, false, diags
 		}
 
 		spaceState.DisabledFeatures = disabledFeatures
@@ -69,7 +69,7 @@ func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, c
 
 	config.ID = types.StringValue("spaces")
 
-	return config, diags
+	return config, true, diags
 }
 
 // fetchSpace loads a single space by ID. It returns (nil, false, nil) when the space is not found (HTTP 404).

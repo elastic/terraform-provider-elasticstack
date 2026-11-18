@@ -24,6 +24,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -32,14 +33,12 @@ import (
 
 const panelConfigAttrsKeyPrefix = panelType + "_config"
 
-type Handler struct{}
-
-func (Handler) PanelType() string                  { return panelType }
-func (Handler) SchemaAttribute() schema.Attribute  { return SchemaAttribute() }
-func (Handler) ClassifyJSON(_ map[string]any) bool { return false }
-func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
-	return config
+type Handler struct {
+	panelkit.NoopHandlerBase
 }
+
+func (Handler) PanelType() string                 { return panelType }
+func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 
 func (Handler) PinnedHandler() iface.PinnedHandler { return newPinnedHandler() }
 
@@ -63,7 +62,7 @@ func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item k
 func (Handler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	_ = dashboard
 	grid := panelkit.GridToAPI(pm.Grid)
-	id := panelkit.IDToAPI(pm.ID)
+	id := typeutils.ValueStringPointer(pm.ID)
 	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeEsqlControl{
 		Grid: grid,
 		Id:   id,

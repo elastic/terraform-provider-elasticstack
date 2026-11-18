@@ -20,12 +20,14 @@ package agentconfiguration
 import (
 	"strings"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // AgentConfiguration holds the agent configuration.
 type AgentConfiguration struct {
-	KibanaConnection   types.List   `tfsdk:"kibana_connection"`
+	entitycore.KibanaConnectionField
 	ID                 types.String `tfsdk:"id"`
 	ServiceName        types.String `tfsdk:"service_name"`
 	ServiceEnvironment types.String `tfsdk:"service_environment"`
@@ -35,7 +37,7 @@ type AgentConfiguration struct {
 
 func (ac *AgentConfiguration) SetIDFromService() string {
 	parts := []string{ac.ServiceName.ValueString()}
-	if !ac.ServiceEnvironment.IsNull() && !ac.ServiceEnvironment.IsUnknown() && ac.ServiceEnvironment.ValueString() != "" {
+	if typeutils.IsKnown(ac.ServiceEnvironment) && ac.ServiceEnvironment.ValueString() != "" {
 		parts = append(parts, ac.ServiceEnvironment.ValueString())
 	}
 

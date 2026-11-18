@@ -20,10 +20,19 @@ package securitylistdatastreams
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 )
+
+// deleteSecurityListDataStreamsAPI adapts [kibanaoapi.DeleteListIndex], which
+// has no resource-id concept beyond the space, to the (spaceID, resourceID)
+// signature expected by [entitycore.SimpleKibanaDelete].
+func deleteSecurityListDataStreamsAPI(ctx context.Context, client *kibanaoapi.Client, spaceID, _ string) diag.Diagnostics {
+	return kibanaoapi.DeleteListIndex(ctx, client, spaceID)
+}
 
 // Ensure provider defined types fully satisfy framework interfaces
 var (
@@ -44,7 +53,7 @@ func newSecurityListDataStreamsResource() *securityListDataStreamsResource {
 			entitycore.KibanaResourceOptions[Model]{
 				Schema: getSchema,
 				Read:   readSecurityListDataStreams,
-				Delete: deleteSecurityListDataStreams,
+				Delete: entitycore.SimpleKibanaDelete[Model](deleteSecurityListDataStreamsAPI),
 				Create: createSecurityListDataStreams,
 				Update: updateSecurityListDataStreams,
 			},

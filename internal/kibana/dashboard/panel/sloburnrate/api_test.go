@@ -128,6 +128,9 @@ func TestDrilldowns_roundTrip_viaHandler(t *testing.T) {
 	require.Nil(t, drillsFromConfig(cfg1)[1]["open_in_new_tab"])
 }
 
+// TestPopulateFromAPI_typeChangeRecovery verifies that when the panel at this index was
+// previously a different type (prior.SloBurnRateConfig is nil, e.g. prior held a different
+// type's config), there is no null intent to honor and the config is rebuilt entirely from the API.
 func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	t.Parallel()
 
@@ -139,14 +142,8 @@ func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	}
 
 	pm := &models.PanelModel{}
-	// Prior has known Title so that null-preservation doesn't wipe it after the
-	// type-change init falls through to the merge path.
 	prior := &models.PanelModel{
-		SloBurnRateConfig: &models.SloBurnRateConfigModel{
-			SloID:    types.StringValue("old-slo"),
-			Duration: types.StringValue("5m"),
-			Title:    types.StringValue("old-title"),
-		},
+		Type: types.StringValue("ml_anomaly_charts"),
 	}
 
 	diags := sloburnrate.PopulateFromAPI(pm, prior, apiConfig)
@@ -157,9 +154,55 @@ func TestPopulateFromAPI_typeChangeRecovery(t *testing.T) {
 	// Required fields come from the API.
 	require.Equal(t, "slo-abc", cfg.SloID.ValueString())
 	require.Equal(t, "1h", cfg.Duration.ValueString())
-	// Title was known in prior so null-preservation allows it to be updated from API.
 	require.Equal(t, "Recovered", cfg.Title.ValueString())
 	require.True(t, cfg.SloInstanceID.IsNull())
+}
+
+func TestPopulateFromAPI_nullPreservation(t *testing.T) {
+	t.Parallel()
+
+	// Kibana 9.5.0 GA returns concrete defaults for these optional fields instead of omitting
+	// them, unlike earlier stack versions. A prior config that left them unset must still see
+	// them as null after Read/apply, matching the calling convention where pm always arrives
+	// zero-valued (dashboardMapPanelFromAPI never shallow-copies the plan into pm).
+	instanceID := "host-1"
+	title := "Burn Rate"
+	description := "desc"
+	hideTitle := false
+	hideBorder := false
+	apiConfig := kbapi.KibanaHTTPAPIsSloBurnRateEmbeddable{
+		SloId:         "my-slo",
+		Duration:      "5m",
+		SloInstanceId: &instanceID,
+		Title:         &title,
+		Description:   &description,
+		HideTitle:     &hideTitle,
+		HideBorder:    &hideBorder,
+	}
+
+	prior := &models.PanelModel{
+		SloBurnRateConfig: &models.SloBurnRateConfigModel{
+			SloID:         types.StringValue("my-slo"),
+			Duration:      types.StringValue("5m"),
+			SloInstanceID: types.StringNull(),
+			Title:         types.StringNull(),
+			Description:   types.StringNull(),
+			HideTitle:     types.BoolNull(),
+			HideBorder:    types.BoolNull(),
+		},
+	}
+	pm := &models.PanelModel{}
+	diags := sloburnrate.PopulateFromAPI(pm, prior, apiConfig)
+	require.False(t, diags.HasError(), "%s", diags)
+
+	cfg := pm.SloBurnRateConfig
+	require.Equal(t, "my-slo", cfg.SloID.ValueString())
+	require.Equal(t, "5m", cfg.Duration.ValueString())
+	require.True(t, cfg.SloInstanceID.IsNull())
+	require.True(t, cfg.Title.IsNull())
+	require.True(t, cfg.Description.IsNull())
+	require.True(t, cfg.HideTitle.IsNull())
+	require.True(t, cfg.HideBorder.IsNull())
 }
 
 func jsonPanelMap(t *testing.T, item kbapi.DashboardPanelItem) map[string]any {

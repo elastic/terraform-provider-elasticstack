@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -101,27 +102,18 @@ func populateFieldStatsTableFromAPI(pm *models.PanelModel, prior *models.PanelMo
 	case fieldStatsViewTypeEsql:
 		cfg1, err := apiPanel.Config.AsKibanaHTTPAPIsDataVisualizerFieldStats1()
 		if err != nil {
-			return fieldStatsTableDecodeDiagnostics(err, attrByEsql)
+			return iface.UnionDecodeDiagnostics("field_stats_table", err, attrByEsql)
 		}
 		return mergeFieldStatsTableEsqlFromAPI(existing, prior, cfg1)
 	case fieldStatsViewTypeDataview:
 		cfg0, err := apiPanel.Config.AsKibanaHTTPAPIsDataVisualizerFieldStats0()
 		if err != nil {
-			return fieldStatsTableDecodeDiagnostics(err, attrByDataview)
+			return iface.UnionDecodeDiagnostics("field_stats_table", err, attrByDataview)
 		}
 		return mergeFieldStatsTableDataviewFromAPI(existing, prior, cfg0)
 	default:
 		return fieldStatsTableInvalidViewTypeDiagnostics(viewType)
 	}
-}
-
-func fieldStatsTableDecodeDiagnostics(err error, branch string) diag.Diagnostics {
-	var diags diag.Diagnostics
-	diags.AddError(
-		"Failed to decode field_stats_table API config",
-		"Could not decode the API field_stats_table "+branch+" config: "+err.Error(),
-	)
-	return diags
 }
 
 // fieldStatsTableProbeDiagnostics reports a failure to (un)marshal the kbapi union itself while
@@ -157,13 +149,13 @@ func fieldStatsTableConfigFromAPIImport(apiCfg kbapi.KibanaHTTPAPIsDataVisualize
 	case fieldStatsViewTypeEsql:
 		cfg1, err := apiCfg.AsKibanaHTTPAPIsDataVisualizerFieldStats1()
 		if err != nil {
-			return nil, fieldStatsTableDecodeDiagnostics(err, attrByEsql)
+			return nil, iface.UnionDecodeDiagnostics("field_stats_table", err, attrByEsql)
 		}
 		return &models.FieldStatsTableConfigModel{ByEsql: fieldStatsTableByEsqlFromAPI(cfg1)}, nil
 	case fieldStatsViewTypeDataview:
 		cfg0, err := apiCfg.AsKibanaHTTPAPIsDataVisualizerFieldStats0()
 		if err != nil {
-			return nil, fieldStatsTableDecodeDiagnostics(err, attrByDataview)
+			return nil, iface.UnionDecodeDiagnostics("field_stats_table", err, attrByDataview)
 		}
 		return &models.FieldStatsTableConfigModel{ByDataview: fieldStatsTableByDataviewFromAPI(cfg0)}, nil
 	default:

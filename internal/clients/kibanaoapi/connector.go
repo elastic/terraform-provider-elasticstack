@@ -65,12 +65,10 @@ func CreateConnector(ctx context.Context, client *Client, connector models.Kiban
 		return "", diagutil.ErrDiag("HTTP request failed", err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp.JSON200.Id, nil
-	default:
-		return "", diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); diags.HasError() {
+		return "", diags
 	}
+	return resp.JSON200.Id, nil
 }
 
 func UpdateConnector(ctx context.Context, client *Client, connector models.KibanaActionConnector) (string, fwdiag.Diagnostics) {
@@ -84,12 +82,10 @@ func UpdateConnector(ctx context.Context, client *Client, connector models.Kiban
 		return "", diagutil.ErrDiag("Unable to update connector", err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		return resp.JSON200.Id, nil
-	default:
-		return "", diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); diags.HasError() {
+		return "", diags
 	}
+	return resp.JSON200.Id, nil
 }
 
 func GetConnector(ctx context.Context, client *Client, connectorID, spaceID string) (*models.KibanaActionConnector, fwdiag.Diagnostics) {
@@ -98,9 +94,11 @@ func GetConnector(ctx context.Context, client *Client, connectorID, spaceID stri
 		return nil, diagutil.ErrDiag("Unable to get connector", err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		cr := ConnectorResponse{
+	cr, diags := HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *ConnectorResponse {
+		if resp.JSON200 == nil {
+			return nil
+		}
+		return &ConnectorResponse{
 			Config:           resp.JSON200.Config,
 			ConnectorTypeID:  resp.JSON200.ConnectorTypeId,
 			ID:               resp.JSON200.Id,
@@ -109,12 +107,11 @@ func GetConnector(ctx context.Context, client *Client, connectorID, spaceID stri
 			IsPreconfigured:  resp.JSON200.IsPreconfigured,
 			Name:             resp.JSON200.Name,
 		}
-		return ConnectorResponseToModel(spaceID, &cr)
-	case http.StatusNotFound:
-		return nil, nil
-	default:
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	})
+	if diags.HasError() || cr == nil {
+		return nil, diags
 	}
+	return ConnectorResponseToModel(spaceID, cr)
 }
 
 func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceID, connectorTypeID string) ([]*models.KibanaActionConnector, fwdiag.Diagnostics) {
@@ -123,8 +120,8 @@ func SearchConnectors(ctx context.Context, client *Client, connectorName, spaceI
 		return nil, diagutil.ErrDiag("Unable to get connectors", err)
 	}
 
-	if resp.StatusCode() != http.StatusOK {
-		return nil, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); diags.HasError() {
+		return nil, diags
 	}
 
 	foundConnectors := []*models.KibanaActionConnector{}
@@ -216,8 +213,8 @@ func DeleteConnector(ctx context.Context, client *Client, connectorID string, sp
 		return diagutil.ErrDiag("Unable to delete connector", err)
 	}
 
-	if resp.StatusCode() != http.StatusOK && resp.StatusCode() != http.StatusNoContent {
-		return diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+	if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNoContent); diags.HasError() {
+		return diags
 	}
 
 	return nil

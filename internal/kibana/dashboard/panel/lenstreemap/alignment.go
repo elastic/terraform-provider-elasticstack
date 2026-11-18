@@ -24,13 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 )
 
-func alignTreemapStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	if plan == nil || state == nil {
-		return
-	}
-	alignTreemapConfigStateFromPlan(ctx, plan.TreemapConfig, state.TreemapConfig)
-}
-
 func alignTreemapConfigStateFromPlan(ctx context.Context, plan, state *models.TreemapConfigModel) {
 	if plan == nil || state == nil {
 		return

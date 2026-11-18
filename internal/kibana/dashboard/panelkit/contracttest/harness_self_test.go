@@ -89,7 +89,7 @@ func (synthStatsHandler) FromAPI(_ context.Context, pm, prior *models.PanelModel
 func (synthStatsHandler) ToAPI(pm models.PanelModel, dashboard *models.DashboardModel) (kbapi.DashboardPanelItem, diag.Diagnostics) {
 	_ = dashboard
 	grid := panelkit.GridToAPI(pm.Grid)
-	id := panelkit.IDToAPI(pm.ID)
+	id := typeutils.ValueStringPointer(pm.ID)
 	sso := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSyntheticsStatsOverview{
 		Grid: grid,
 		Id:   id,
@@ -170,7 +170,7 @@ func populateSLOBurnHarness(pm *models.PanelModel, tfPanel *models.PanelModel, a
 
 func buildSLOBurnHarnessPanel(pm models.PanelModel) kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate {
 	grid := panelkit.GridToAPI(pm.Grid)
-	id := panelkit.IDToAPI(pm.ID)
+	id := typeutils.ValueStringPointer(pm.ID)
 	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloBurnRate{
 		Grid: grid,
 		Id:   id,

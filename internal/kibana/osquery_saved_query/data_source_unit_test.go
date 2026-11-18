@@ -153,14 +153,6 @@ func TestEcsMappingDataSourceElemType_matchesSchema(t *testing.T) {
 		"getEcsMappingElemType() drifted from data source ecs_mapping nested object; update both together")
 }
 
-func TestResolveDataSourceSpaceID(t *testing.T) {
-	t.Parallel()
-
-	assert.Equal(t, "production", resolveDataSourceSpaceID(types.StringValue("production")))
-	assert.Equal(t, clients.DefaultSpaceID, resolveDataSourceSpaceID(types.StringNull()))
-	assert.Equal(t, clients.DefaultSpaceID, resolveDataSourceSpaceID(types.StringValue("")))
-}
-
 func TestDataSourceModel_GetVersionRequirements(t *testing.T) {
 	t.Parallel()
 
@@ -175,12 +167,10 @@ func TestDataSourceModel_GetVersionRequirements(t *testing.T) {
 func TestFinishOsquerySavedQueryDataSourceRead_notFound(t *testing.T) {
 	t.Parallel()
 
-	config := dataSourceModel{osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{SavedQueryID: types.StringValue("missing-query")}}
-	_, diags := finishOsquerySavedQueryDataSourceRead(context.Background(), config, nil, "default")
-	require.True(t, diags.HasError())
-	assert.Equal(t, "Osquery saved query not found", diags.Errors()[0].Summary())
-	assert.Contains(t, diags.Errors()[0].Detail(), "missing-query")
-	assert.Contains(t, diags.Errors()[0].Detail(), "default")
+	config := dataSourceModel{SavedQueryID: types.StringValue("missing-query")}
+	_, found, diags := finishOsquerySavedQueryDataSourceRead(context.Background(), config, nil, "default")
+	require.False(t, diags.HasError())
+	assert.False(t, found, "not found is reported to the envelope via found=false")
 }
 
 func TestFinishOsquerySavedQueryDataSourceRead_successWithDefaultSpace(t *testing.T) {
@@ -205,14 +195,13 @@ func TestFinishOsquerySavedQueryDataSourceRead_successWithDefaultSpace(t *testin
 	}
 
 	config := dataSourceModel{
-		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
-			SavedQueryID: types.StringValue("list_processes"),
-			SpaceID:      types.StringNull(),
-		},
+		SavedQueryID: types.StringValue("list_processes"),
+		SpaceID:      types.StringNull(),
 	}
 
-	result, diags := finishOsquerySavedQueryDataSourceRead(ctx, config, entity, clients.DefaultSpaceID)
+	result, found, diags := finishOsquerySavedQueryDataSourceRead(ctx, config, entity, clients.DefaultSpaceID)
 	require.False(t, diags.HasError())
+	require.True(t, found)
 	assert.Equal(t, clients.DefaultSpaceID, result.SpaceID.ValueString())
 	assert.Equal(t, "default/list_processes", result.ID.ValueString())
 	assert.Equal(t, "saved-object-123", result.SavedObjectID.ValueString())
@@ -239,10 +228,8 @@ func TestDataSourceModel_populateFromGetAPI_prebuilt(t *testing.T) {
 	}
 
 	model := dataSourceModel{
-		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
-			SavedQueryID: types.StringValue("list_all_processes"),
-			SpaceID:      types.StringValue("default"),
-		},
+		SavedQueryID: types.StringValue("list_all_processes"),
+		SpaceID:      types.StringValue("default"),
 	}
 	diags := model.populateFromGetAPI(ctx, entity)
 	require.False(t, diags.HasError())
@@ -265,10 +252,8 @@ func TestDataSourceModel_populateFromGetAPI_userManaged(t *testing.T) {
 	}
 
 	model := dataSourceModel{
-		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
-			SavedQueryID: types.StringValue("list_processes"),
-			SpaceID:      types.StringValue("production"),
-		},
+		SavedQueryID: types.StringValue("list_processes"),
+		SpaceID:      types.StringValue("production"),
 	}
 	diags := model.populateFromGetAPI(ctx, entity)
 	require.False(t, diags.HasError())
@@ -287,10 +272,8 @@ func TestDataSourceModel_populateFromGetAPI_prebuiltOmitted(t *testing.T) {
 	}
 
 	model := dataSourceModel{
-		osquerySavedQueryBaseModel: osquerySavedQueryBaseModel{
-			SavedQueryID: types.StringValue("list_processes"),
-			SpaceID:      types.StringValue("default"),
-		},
+		SavedQueryID: types.StringValue("list_processes"),
+		SpaceID:      types.StringValue("default"),
 	}
 	diags := model.populateFromGetAPI(ctx, entity)
 	require.False(t, diags.HasError())

@@ -68,10 +68,10 @@ func alignImagePanelConfigFromPlan(plan, state *models.ImagePanelConfigModel) {
 }
 
 func cloneImagePanelConfigModel(model *models.ImagePanelConfigModel) *models.ImagePanelConfigModel {
-	if model == nil {
+	cloned := lenscommon.CloneModel(model)
+	if cloned == nil {
 		return nil
 	}
-	cloned := *model
 	if model.Src.URL != nil {
 		url := *model.Src.URL
 		cloned.Src.URL = &url
@@ -80,5 +80,5 @@ func cloneImagePanelConfigModel(model *models.ImagePanelConfigModel) *models.Ima
 		file := *model.Src.File
 		cloned.Src.File = &file
 	}
-	return &cloned
+	return cloned
 }

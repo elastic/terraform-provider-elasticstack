@@ -22,6 +22,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -29,9 +30,9 @@ import (
 
 type tagsDataSourceModel struct {
 	entitycore.KibanaConnectionField
-	Query   types.String `tfsdk:"query"`
-	SpaceID types.String `tfsdk:"space_id"`
-	Tags    types.List   `tfsdk:"tags"`
+	Query types.String `tfsdk:"query"`
+	entitycore.SpaceIDField
+	Tags types.List `tfsdk:"tags"`
 }
 
 type tagItemModel struct {
@@ -42,6 +43,15 @@ type tagItemModel struct {
 	Managed     types.Bool   `tfsdk:"managed"`
 	CreatedAt   types.String `tfsdk:"created_at"`
 	UpdatedAt   types.String `tfsdk:"updated_at"`
+}
+
+// tagsDataSourceResourceID is the fixed identity used by this list-style data
+// source, which has no lookup key and no id attribute (query is a filter).
+const tagsDataSourceResourceID = "tags"
+
+func (tagsDataSourceModel) GetID() types.String { return types.StringNull() }
+func (tagsDataSourceModel) GetResourceID() types.String {
+	return types.StringValue(tagsDataSourceResourceID)
 }
 
 var _ entitycore.WithVersionRequirements = (*tagsDataSourceModel)(nil)
@@ -71,11 +81,11 @@ func tagItemFromAPI(detail kibanaoapi.TagDetail) tagItemModel {
 		ID:    types.StringValue(detail.ID),
 		Name:  types.StringValue(detail.Name),
 		Color: types.StringValue(detail.Color),
-	}
-	item.Description = optionalStringPointerValue(detail.Description)
-	item.Managed = types.BoolPointerValue(detail.Managed)
-	item.CreatedAt = types.StringPointerValue(detail.CreatedAt)
-	item.UpdatedAt = types.StringPointerValue(detail.UpdatedAt)
+
+		Description: typeutils.TrimmedStringishPointerValue(detail.Description),
+		Managed:     types.BoolPointerValue(detail.Managed),
+		CreatedAt:   types.StringPointerValue(detail.CreatedAt),
+		UpdatedAt:   types.StringPointerValue(detail.UpdatedAt)}
 	return item
 }
 

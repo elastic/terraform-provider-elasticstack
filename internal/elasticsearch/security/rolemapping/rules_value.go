@@ -61,7 +61,7 @@ func (t NormalizedRulesType) Equal(o attr.Type) bool {
 
 // ValueFromString returns a StringValuable type given a StringValue.
 func (t NormalizedRulesType) ValueFromString(_ context.Context, in basetypes.StringValue) (basetypes.StringValuable, diag.Diagnostics) {
-	return NormalizedRulesValue{Normalized: jsontypes.Normalized{StringValue: in}}, nil
+	return NormalizedRulesValue{StringValue: in}, nil
 }
 
 // ValueFromTerraform returns a Value given a tftypes.Value.

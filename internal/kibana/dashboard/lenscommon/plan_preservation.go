@@ -22,10 +22,13 @@ import (
 	"encoding/json"
 	"reflect"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -56,17 +59,21 @@ func AlignTitleAndDescriptionFromPlan(planTitle, planDescription types.String, s
 	PreserveKnownStringIfStateBlank(planDescription, stateDescription)
 }
 
-// PreservePlanJSONWithDefaultsIfSemanticallyEqual replaces *state with plan when both are known
-// and StringSemanticEquals reports them equal. Lets practitioners keep their plan formatting
-// when only whitespace or default-key ordering differs from the API response.
-func PreservePlanJSONWithDefaultsIfSemanticallyEqual[T any](ctx context.Context, plan customtypes.JSONWithDefaultsValue[T], state *customtypes.JSONWithDefaultsValue[T]) {
-	if !typeutils.IsKnown(plan) || !typeutils.IsKnown(*state) {
-		return
-	}
-	eq, diags := plan.StringSemanticEquals(ctx, *state)
-	if !diags.HasError() && eq {
-		*state = plan
-	}
+// AlignBasicMetricChartStateFromPlan aligns the common "basic metric chart" state
+// fields (title/description, data_source_json, metric_json) from plan into state.
+// Shared by Lens panel types whose config is just a metric over a data source
+// (gauge, heatmap, legacy_metric, region_map, tagcloud). Callers with additional
+// fields should handle those after calling this function.
+func AlignBasicMetricChartStateFromPlan[T any](
+	ctx context.Context,
+	planBase, stateBase *models.LensChartBaseTFModel,
+	planMetricJSON customtypes.JSONWithDefaultsValue[T],
+	stateMetricJSON *customtypes.JSONWithDefaultsValue[T],
+) {
+	AlignTitleAndDescriptionFromPlan(planBase.Title, planBase.Description, &stateBase.Title, &stateBase.Description)
+	PreservePlanJSONIfStateAddsOptionalKeys(planBase.DataSourceJSON, &stateBase.DataSourceJSON, "time_field", "name")
+	var diags diag.Diagnostics
+	*stateMetricJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, planMetricJSON, *stateMetricJSON, &diags)
 }
 
 // PreserveNormalizedJSONSemanticEquality replaces state with plan when normalized structures match semantically.
@@ -198,50 +205,16 @@ func PreservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual[T any](plan jsont
 	}
 }
 
-// PreserveNullStringIfStateEquals copies a null plan value back into state when the API
-// read-back returned the supplied default. Use this for optional typed string attributes
-// (e.g. `tagcloud.orientation`, `pie.label_position`) that Kibana auto-populates with a
-// hard-coded default when the practitioner omitted the field. Without this, the
-// inconsistent plan/state values would surface as "Provider produced inconsistent result
-// after apply" diagnostics.
-func PreserveNullStringIfStateEquals(plan types.String, state *types.String, expected string) {
+// PreserveNullIfStateEquals copies a null plan value back into state when the API read-back
+// returned the supplied default. Use this for optional typed attributes (e.g.
+// `tagcloud.orientation`, `pie.label_position`) that Kibana auto-populates with a hard-coded
+// default when the practitioner omitted the field. Without this, the inconsistent plan/state
+// values would surface as "Provider produced inconsistent result after apply" diagnostics.
+func PreserveNullIfStateEquals[T attr.Value](plan T, state *T, expected T) {
 	if !plan.IsNull() || plan.IsUnknown() {
 		return
 	}
-	if typeutils.IsKnown(*state) && state.ValueString() == expected {
-		*state = plan
-	}
-}
-
-// PreserveNullBoolIfStateEquals mirrors PreserveNullStringIfStateEquals for bool attributes.
-// See PreserveNullStringIfStateEquals.
-func PreserveNullBoolIfStateEquals(plan types.Bool, state *types.Bool, expected bool) {
-	if !plan.IsNull() || plan.IsUnknown() {
-		return
-	}
-	if typeutils.IsKnown(*state) && state.ValueBool() == expected {
-		*state = plan
-	}
-}
-
-// PreserveNullInt64IfStateEquals mirrors PreserveNullStringIfStateEquals for int64 attributes.
-// See PreserveNullStringIfStateEquals.
-func PreserveNullInt64IfStateEquals(plan types.Int64, state *types.Int64, expected int64) {
-	if !plan.IsNull() || plan.IsUnknown() {
-		return
-	}
-	if typeutils.IsKnown(*state) && state.ValueInt64() == expected {
-		*state = plan
-	}
-}
-
-// PreserveNullFloat64IfStateEquals mirrors PreserveNullStringIfStateEquals for float64 attributes.
-// See PreserveNullStringIfStateEquals.
-func PreserveNullFloat64IfStateEquals(plan types.Float64, state *types.Float64, expected float64) {
-	if !plan.IsNull() || plan.IsUnknown() {
-		return
-	}
-	if typeutils.IsKnown(*state) && state.ValueFloat64() == expected {
+	if typeutils.IsKnown(*state) && (*state).Equal(expected) {
 		*state = plan
 	}
 }

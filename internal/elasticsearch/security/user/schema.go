@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/security"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework-validators/setvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
@@ -38,10 +39,7 @@ func GetSchema(_ context.Context) schema.Schema {
 	return schema.Schema{
 		MarkdownDescription: userResourceDescription,
 		Attributes: map[string]schema.Attribute{
-			"id": schema.StringAttribute{
-				MarkdownDescription: "Internal identifier of the resource",
-				Computed:            true,
-			},
+			"id": entitycore.IDAttribute(),
 			"username": schema.StringAttribute{
 				MarkdownDescription: usernameDescription,
 				Required:            true,

@@ -10,7 +10,7 @@ Manage Elastic Defend Fleet integration policies (package policies for the `endp
 
 ```hcl
 resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
-  id                  = <computed, string>             # same as policy_id; UseStateForUnknown
+  id                  = <computed, string>             # "<space_id>/<policy_id>" when a space is known, else policy_id; UseStateForUnknown
   policy_id           = <optional+computed, string>    # force new; UseStateForUnknown; import key
   name                = <required, string>
   namespace           = <required, string>
@@ -21,6 +21,7 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
   force               = <optional, bool>
   integration_version = <required, string>
   space_ids           = <optional+computed, set(string)>  # UseStateForUnknown
+  additional_datastreams_permissions = <optional+computed, list(string)>  # requires Elastic Stack >= 9.1.0; UseStateForUnknown; empty list allowed; unset does not revoke
 
   preset = <optional, string>
 
@@ -35,6 +36,7 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
         registry            = <optional, bool>
         security            = <optional, bool>
         authentication      = <optional, bool>
+        credential_access   = <optional, bool>
       }
       malware = <optional, single nested attribute> {
         mode          = <optional, string>
@@ -47,13 +49,18 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
         supported = <optional+computed, bool>    # default true
       }
       memory_protection = <optional, single nested attribute> {
-        mode      = <optional+computed, string>  # default "off"
-        supported = <optional+computed, bool>    # default true
+        mode                   = <optional+computed, string>  # default "off"
+        supported              = <optional+computed, bool>    # default true
+        custom_yara_signatures = <optional, bool>
       }
       behavior_protection = <optional, single nested attribute> {
         mode               = <optional+computed, string>  # default "off"
         supported          = <optional+computed, bool>    # default true
         reputation_service = <optional+computed, bool>    # default false
+      }
+      device_control = <optional, single nested attribute> {
+        enabled     = <optional, bool>
+        usb_storage = <optional, string>  # one of "audit", "read_only", "no_execute", "deny_all"
       }
       popup = <optional+computed, single nested attribute> {
         malware = <optional, single nested attribute> {
@@ -69,6 +76,10 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
           enabled = <optional+computed, bool>    # default false
         }
         behavior_protection = <optional, single nested attribute> {
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
+        }
+        device_control = <optional, single nested attribute> {
           message = <optional+computed, string>  # default ""
           enabled = <optional+computed, bool>    # default false
         }
@@ -88,9 +99,11 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
     }
     mac = <optional, single nested attribute> {
       events = <optional, single nested attribute> {
-        process = <optional, bool>
-        network = <optional, bool>
-        file    = <optional, bool>
+        process  = <optional, bool>
+        network  = <optional, bool>
+        file     = <optional, bool>
+        dns      = <optional, bool>
+        security = <optional, bool>
       }
       malware = <optional, single nested attribute> {
         mode          = <optional, string>
@@ -98,17 +111,30 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
         on_write_scan = <optional, bool>
         notify_user   = <optional, bool>
       }
-      memory_protection = <optional, single nested attribute> {
+      ransomware = <optional, single nested attribute> {
         mode      = <optional+computed, string>  # default "off"
         supported = <optional+computed, bool>    # default true
+      }
+      memory_protection = <optional, single nested attribute> {
+        mode                   = <optional+computed, string>  # default "off"
+        supported              = <optional+computed, bool>    # default true
+        custom_yara_signatures = <optional, bool>
       }
       behavior_protection = <optional, single nested attribute> {
         mode               = <optional+computed, string>  # default "off"
         supported          = <optional+computed, bool>    # default true
         reputation_service = <optional+computed, bool>    # default false
       }
+      device_control = <optional, single nested attribute> {
+        enabled     = <optional, bool>
+        usb_storage = <optional, string>  # one of "audit", "read_only", "no_execute", "deny_all"
+      }
       popup = <optional, single nested attribute> {
         malware = <optional, single nested attribute> {
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
+        }
+        ransomware = <optional, single nested attribute> {
           message = <optional+computed, string>  # default ""
           enabled = <optional+computed, bool>    # default false
         }
@@ -117,6 +143,10 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
           enabled = <optional+computed, bool>    # default false
         }
         behavior_protection = <optional, single nested attribute> {
+          message = <optional+computed, string>  # default ""
+          enabled = <optional+computed, bool>    # default false
+        }
+        device_control = <optional, single nested attribute> {
           message = <optional+computed, string>  # default ""
           enabled = <optional+computed, bool>    # default false
         }
@@ -132,14 +162,17 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "example" {
         file         = <optional, bool>
         session_data = <optional, bool>
         tty_io       = <optional, bool>
+        dns          = <optional, bool>
       }
       malware = <optional, single nested attribute> {
-        mode      = <optional, string>
-        blocklist = <optional, bool>
+        mode          = <optional, string>
+        blocklist     = <optional, bool>
+        on_write_scan = <optional, bool>
       }
       memory_protection = <optional, single nested attribute> {
-        mode      = <optional+computed, string>  # default "off"
-        supported = <optional+computed, bool>    # default true
+        mode                   = <optional+computed, string>  # default "off"
+        supported              = <optional+computed, bool>    # default true
+        custom_yara_signatures = <optional, bool>
       }
       behavior_protection = <optional, single nested attribute> {
         mode               = <optional+computed, string>  # default "off"
@@ -196,7 +229,7 @@ The provider implementation backing this resource SHALL use a shared Kibana Flee
 
 ### Requirement: Focused package-policy envelope and fixed package identity (REQ-003)
 
-The resource SHALL expose a familiar package-policy envelope with `id`, `policy_id`, `name`, `namespace`, `agent_policy_id`, `agent_policy_ids`, `description`, `enabled`, `force`, `integration_version`, `advanced_settings`, and `space_ids`. The resource SHALL always target package name `endpoint` and SHALL NOT expose a user-configurable `integration_name`. The resource SHALL NOT expose the generic `vars_json`, generic `inputs`, generic `streams`, or `output_id` surfaces from `elasticstack_fleet_integration_policy` in v1.
+The resource SHALL expose a familiar package-policy envelope with `id`, `policy_id`, `name`, `namespace`, `agent_policy_id`, `agent_policy_ids`, `description`, `enabled`, `force`, `integration_version`, `advanced_settings`, `additional_datastreams_permissions`, and `space_ids`. The resource SHALL always target package name `endpoint` and SHALL NOT expose a user-configurable `integration_name`. The resource SHALL NOT expose the generic `vars_json`, generic `inputs`, generic `streams`, or `output_id` surfaces from `elasticstack_fleet_integration_policy` in v1.
 
 #### Scenario: Package name is fixed to Elastic Defend
 
@@ -207,7 +240,7 @@ The resource SHALL expose a familiar package-policy envelope with `id`, `policy_
 
 ### Requirement: Identity and import (REQ-004)
 
-The resource SHALL expose computed `id` and `policy_id` attributes whose values are set from the Kibana package policy id returned by the API. `policy_id` SHALL be the import key. Changes to a configured `policy_id` SHALL require replacement.
+The resource SHALL expose a computed `id` attribute in the form `<space_id>/<policy_id>` when an operational space is known (the first of the API's `space_ids`, or else the first configured `space_ids`), and equal to `policy_id` otherwise. The resource SHALL expose an optional, computed `policy_id` attribute set from the Kibana package policy id returned by the API. When `policy_id` is configured, the package policy SHALL be created with that id (see REQ-008); otherwise Kibana assigns the id. `policy_id` SHALL be the import key. Changes to a configured `policy_id` SHALL require replacement.
 
 The resource SHALL support import with both plain and composite import IDs.
 
@@ -249,6 +282,7 @@ On read and import, the resource SHALL validate that the resolved package policy
 ### Requirement: Typed Defend configuration schema (REQ-006)
 
 The resource SHALL model Defend-owned configuration through typed Terraform attributes and nested attributes. The `preset` attribute SHALL map to `config.integration_config.value.endpointConfig.preset` in read/update payloads. The `policy` attribute SHALL contain optional `windows`, `mac`, and `linux` nested attributes, each with a distinct schema containing only the fields applicable to that operating system. Structurally invalid combinations (such as `policy.linux.ransomware`) SHALL be impossible at plan time without requiring custom validation. The typed schema SHALL also model the provider-known Defend defaults for popup entries, protection mode objects, behavior protection, Windows antivirus registration, and Windows attack surface reduction credential hardening so omitted or empty nested blocks plan with the same effective values the Defend policy uses.
+The `policy.{windows,mac}.device_control` object SHALL NOT have an object-level default, so it remains null (and is omitted from the request payload) unless configured.
 
 #### Scenario: Policy settings are modeled as typed attributes
 
@@ -264,12 +298,29 @@ The resource SHALL model Defend-owned configuration through typed Terraform attr
 - THEN the typed schema SHALL include the documented Linux-specific event flags
 - AND those flags SHALL include `session_data` and `tty_io`
 
+#### Scenario: Device control, macOS ransomware, and custom YARA settings are modeled
+
+- GIVEN a configuration that sets `policy.{windows,mac}.device_control`, `policy.mac.ransomware`, `policy.{windows,mac}.popup.device_control`, `policy.mac.popup.ransomware`, or `policy.{windows,mac,linux}.memory_protection.custom_yara_signatures`
+- WHEN the provider builds the finalize or update request
+- THEN those values SHALL be written to the matching keys under the Defend `policy` payload
+- AND `device_control.usb_storage` SHALL accept only `"audit"`, `"read_only"`, `"no_execute"`, or `"deny_all"`
+- AND reading the policy SHALL map those keys back into the same attributes
+
+#### Scenario: Event and malware flags cover documented per-OS leaves
+
+- GIVEN a configuration for Defend event collection or malware protection
+- WHEN Terraform maps the policy schema to and from the API
+- THEN `policy.windows.events` SHALL include `credential_access`
+- AND `policy.mac.events` SHALL include `dns` and `security`
+- AND `policy.linux.events` SHALL include `dns`
+- AND `policy.linux.malware` SHALL include `on_write_scan`
+
 #### Scenario: Omitted nested policy settings use modeled defaults
 
 - GIVEN a configuration that omits or leaves empty a popup item, protection-mode object, behavior-protection object, Windows antivirus registration object, or Windows attack-surface-reduction credential hardening object
 - WHEN Terraform plans the Defend resource
 - THEN the omitted or empty nested object SHALL use the modeled defaults
-- AND `policy.windows.popup` SHALL default to an object whose `malware`, `ransomware`, `memory_protection`, and `behavior_protection` entries each use the popup-item defaults
+- AND `policy.windows.popup` SHALL default to an object whose `malware`, `ransomware`, `memory_protection`, `behavior_protection`, and `device_control` entries each use the popup-item defaults
 - AND popup items SHALL default to `{ message = "", enabled = false }`
 - AND protection-mode objects SHALL default to `{ mode = "off", supported = true }`
 - AND behavior-protection objects SHALL default to `{ mode = "off", supported = true, reputation_service = false }`
@@ -293,6 +344,8 @@ On create, the resource SHALL create the Elastic Defend package policy using the
 
 When `agent_policy_ids` is configured, the bootstrap request SHALL set `PolicyIds` to the full list and `PolicyId` to the first element for compatibility.
 
+When `policy_id` is configured with a known, non-empty value, the bootstrap request SHALL set the package policy `id` to that value. When `policy_id` is null or unknown, the bootstrap request SHALL omit `id` so that Kibana assigns one.
+
 **Note:** Kibana rejects `"ENDPOINT_INTEGRATION_CONFIG"` as the input type and `"_config"` as the config key. Both bootstrap and finalize/update paths use `"endpoint"` and `"integration_config"` respectively.
 
 #### Scenario: Create bootstraps a new Defend package policy
@@ -301,6 +354,20 @@ When `agent_policy_ids` is configured, the bootstrap request SHALL set `PolicyId
 - WHEN create runs
 - THEN the provider SHALL first create the underlying package policy through the Defend bootstrap request flow
 - AND the provider SHALL capture the returned package policy id and server-managed Defend payloads from the response
+
+#### Scenario: Create with an explicit policy_id
+
+- GIVEN a configuration with `policy_id = "my-defend-policy"`
+- WHEN create runs
+- THEN the bootstrap request SHALL include `id = "my-defend-policy"`
+- AND `policy_id` in state SHALL be `"my-defend-policy"`
+
+#### Scenario: Create without policy_id
+
+- GIVEN a configuration that does not set `policy_id`
+- WHEN create runs
+- THEN the bootstrap request SHALL NOT include `id`
+- AND `policy_id` in state SHALL be the id assigned by Kibana
 
 ### Requirement: Create finalizes the modeled policy after bootstrap (REQ-009)
 
@@ -500,3 +567,96 @@ create/update and SHALL treat absent keys as unmanaged within the advanced-setti
 - THEN the provider SHALL send advanced settings as empty for each OS that had previously managed
   advanced keys in state
 - AND keys previously managed by Terraform SHALL be removed from the Defend policy
+
+### Requirement: additional_datastreams_permissions attribute (REQ-016)
+
+The resource SHALL expose an `additional_datastreams_permissions` attribute of type `list(string)`, `Optional` and `Computed`, with a `UseStateForUnknown` plan modifier. Each element SHALL be a data stream name or pattern (for example `logs-nginx-*`) for which the Defend package policy's agent policy is granted write access in addition to the data streams the `endpoint` package itself declares.
+
+The attribute SHALL accept an empty list. This differs from `elasticstack_fleet_integration_policy`'s attribute of the same name, which rejects an empty list at plan time.
+
+The attribute SHALL be mapped identically on the bootstrap create request and the finalize/update request (the latter is also used by the plain update path): a known value (including an empty list) SHALL always be included in the request body; a null or unknown value SHALL always be omitted.
+
+On read, a non-empty API list SHALL populate the attribute preserving API order. An absent or empty API list SHALL populate the attribute as an empty list when the model already held a known, non-null empty list, and as null otherwise. On import the model is null, so an absent or empty API list imports as null.
+
+#### Scenario: Permissions configured on create
+
+- GIVEN a configuration with `additional_datastreams_permissions = ["logs-nginx-*"]`
+- WHEN create runs (bootstrap followed by finalize)
+- THEN both the bootstrap and finalize request bodies SHALL include `additional_datastreams_permissions` with that single element
+- AND a subsequent read SHALL populate the attribute with that value from the API response
+
+#### Scenario: Permissions updated to a new list
+
+- GIVEN an existing Defend policy with `additional_datastreams_permissions = ["logs-nginx-*"]`
+- WHEN the configuration changes to `["logs-nginx-*", "metrics-custom-*"]` and update runs
+- THEN the update request body SHALL include both elements
+- AND a subsequent read SHALL reflect both elements in state
+
+#### Scenario: Attribute omitted when never configured
+
+- GIVEN a configuration that never sets `additional_datastreams_permissions`
+- WHEN create or update runs
+- THEN neither the bootstrap, finalize, nor plain update request body SHALL include `additional_datastreams_permissions`
+- AND a subsequent read SHALL set the attribute to null in state when the API response omits or empties the field
+
+#### Scenario: Retained value is re-sent after removal from config
+
+- GIVEN an existing Defend policy with a non-null `additional_datastreams_permissions` in state
+- AND the attribute is removed from configuration
+- WHEN update runs
+- THEN `UseStateForUnknown` SHALL carry the prior value into the plan, so the update request MAY re-send that same value
+- AND the request SHALL be omitted only on create or when prior state is null
+
+#### Scenario: Out-of-band permissions are surfaced without being revoked
+
+- GIVEN a Defend package policy whose `additional_datastreams_permissions` was set outside Terraform (for example `["logs-nginx-*"]`)
+- AND a configuration that never sets the attribute
+- WHEN the resource refreshes and a later apply runs
+- THEN state SHALL be populated from the API value
+- AND the plan SHALL show no diff for the attribute
+- AND no request SHALL send an empty array, so the server-side permissions SHALL remain unchanged
+
+### Requirement: additional_datastreams_permissions — no revoke-on-unset; explicit empty list clears (REQ-017)
+
+Unlike `elasticstack_fleet_integration_policy`, this resource SHALL NOT send an empty array in place of an omitted `additional_datastreams_permissions` field when the attribute is unset. Removing the attribute from configuration SHALL leave any previously granted permissions on the server unchanged. An explicit `additional_datastreams_permissions = []` SHALL be the supported way to clear previously granted permissions.
+
+#### Scenario: Removing the attribute from config does not revoke permissions
+
+- GIVEN an existing Defend policy with `additional_datastreams_permissions = ["logs-nginx-*"]` granted through Terraform
+- WHEN the attribute is removed from configuration (not set to `[]`) and update runs, changing no other attribute
+- THEN the plan SHALL retain the prior value `["logs-nginx-*"]` for the attribute
+- AND the update request SHALL NOT send an empty array
+- AND the server-side permissions SHALL remain `["logs-nginx-*"]` after the update
+- AND a subsequent read SHALL populate the attribute from the still-present API value rather than null
+
+#### Scenario: Explicit empty list clears permissions
+
+- GIVEN an existing Defend policy with `additional_datastreams_permissions = ["logs-nginx-*"]`
+- WHEN the configuration changes to `additional_datastreams_permissions = []` and update runs
+- THEN the update request body SHALL include the attribute as an empty array
+- AND the server-side permissions SHALL be cleared
+- AND a subsequent read SHALL populate the attribute as an empty list (not null), because the configuration explicitly holds a known empty list
+
+### Requirement: Compatibility — additional_datastreams_permissions (REQ-018)
+
+When `additional_datastreams_permissions` is configured with a known, non-null value, the resource SHALL verify the server version is at least 9.1.0, via an attribute-scoped version requirement evaluated independently of the existing `agent_policy_ids` version requirement (`MinVersionPolicyIDs`, 8.15.0), so that configuring one of the two attributes does not suppress the version check for the other. If the server version is lower, the resource SHALL return an attribute-level error diagnostic and SHALL NOT call the Fleet API.
+
+#### Scenario: additional_datastreams_permissions rejected below minimum stack version
+
+- GIVEN a configuration with `additional_datastreams_permissions = ["logs-nginx-*"]`
+- WHEN create or update runs against Elastic Stack < 9.1.0
+- THEN the provider SHALL return an attribute-scoped error diagnostic stating that `additional_datastreams_permissions` requires Elastic Stack >= 9.1.0
+- AND no package policy SHALL be created or modified
+
+#### Scenario: Omitting the attribute succeeds below minimum stack version
+
+- GIVEN a configuration that does not set `additional_datastreams_permissions`
+- WHEN create or update runs against Elastic Stack < 9.1.0
+- THEN the operation SHALL succeed, since no version requirement is evaluated for a null/unknown attribute
+
+#### Scenario: additional_datastreams_permissions and agent_policy_ids version requirements are independent
+
+- GIVEN a configuration that sets `agent_policy_ids` but not `additional_datastreams_permissions`, or vice versa, or both, or neither
+- WHEN the provider evaluates version requirements before create or update
+- THEN each attribute's version requirement SHALL be evaluated solely based on whether that attribute itself is known (and, for `additional_datastreams_permissions`, non-null)
+- AND configuring one of the two attributes SHALL NOT suppress the version check for the other

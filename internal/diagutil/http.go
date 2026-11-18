@@ -48,6 +48,19 @@ func CheckHTTPErrorFromFW(res *http.Response, errMsg string) fwdiag.Diagnostics 
 	return diags
 }
 
+// CheckHTTPErrorOrNotFound applies the standard "404 means missing, anything
+// else >=400 is an error" convention for typed-client calls made via
+// .Perform(ctx) (as opposed to .Do(ctx), which already collapses 404s into an
+// error handled by IsNotFoundElasticsearchError). Callers should treat a true
+// notFound return the same as a successful "does not exist" result and return
+// early, ignoring diags (which is always nil in that case).
+func CheckHTTPErrorOrNotFound(res *http.Response, errMsg string) (notFound bool, diags fwdiag.Diagnostics) {
+	if res.StatusCode == http.StatusNotFound {
+		return true, nil
+	}
+	return false, CheckHTTPErrorFromFW(res, errMsg)
+}
+
 func ReportUnknownHTTPError(statusCode int, body []byte) fwdiag.Diagnostics {
 	return fwdiag.Diagnostics{
 		fwdiag.NewErrorDiagnostic(

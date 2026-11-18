@@ -59,6 +59,13 @@ func acceptanceTestKibanaEndpoint() string {
 	return strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))
 }
 
+// KibanaConnectionEndpoint returns the Kibana endpoint used to populate the
+// "kibana_endpoints" variable in [KibanaConnectionVariables], so tests can
+// assert the exact value of a configured kibana_connection.endpoints entry.
+func KibanaConnectionEndpoint() string {
+	return acceptanceTestKibanaEndpoint()
+}
+
 func KibanaConnectionVariables(additional ...config.Variables) config.Variables {
 	auth := acceptanceTestKibanaConnectionAuth()
 	vars := config.Variables{

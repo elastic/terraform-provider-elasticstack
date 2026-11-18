@@ -39,6 +39,26 @@ type AlertingRule struct {
 	ExecutionStatus AlertingRuleExecutionStatus
 	AlertDelay      *float32
 	Flapping        *AlertingRuleFlapping
+	Artifacts       *AlertingRuleArtifacts
+}
+
+// AlertingRuleArtifacts holds the rule's linked assets: an investigation guide
+// and/or references to related dashboards.
+type AlertingRuleArtifacts struct {
+	InvestigationGuide *AlertingRuleInvestigationGuide
+	Dashboards         []AlertingRuleArtifactDashboard
+}
+
+// AlertingRuleArtifactDashboard references a Kibana dashboard linked to the
+// rule. Maps to the API's artifacts.dashboards[].id.
+type AlertingRuleArtifactDashboard struct {
+	ID string
+}
+
+// AlertingRuleInvestigationGuide is the investigation guide content attached to
+// a rule. Maps to the API's artifacts.investigation_guide.blob.
+type AlertingRuleInvestigationGuide struct {
+	Blob string
 }
 
 // AlertingRuleFlapping is rule-level flapping detection settings (Kibana 8.16+).

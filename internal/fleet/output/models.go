@@ -23,6 +23,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
@@ -32,8 +33,8 @@ import (
 
 type outputModel struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.KibanaConnectionField
 	ID                          types.String                    `tfsdk:"id"`
-	KibanaConnection            types.List                      `tfsdk:"kibana_connection"`
 	OutputID                    types.String                    `tfsdk:"output_id"`
 	Name                        types.String                    `tfsdk:"name"`
 	Type                        types.String                    `tfsdk:"type"`
@@ -50,26 +51,14 @@ type outputModel struct {
 	SyncIntegrations            types.Bool                      `tfsdk:"sync_integrations"`
 	SyncUninstalledIntegrations types.Bool                      `tfsdk:"sync_uninstalled_integrations"`
 	WriteToLogsStreams          types.Bool                      `tfsdk:"write_to_logs_streams"`
+	Preset                      types.String                    `tfsdk:"preset"`
 }
 
-func (model outputModel) GetID() types.String             { return model.ID }
-func (model outputModel) GetResourceID() types.String     { return model.OutputID }
-func (model outputModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+func (model outputModel) GetID() types.String         { return model.ID }
+func (model outputModel) GetResourceID() types.String { return model.OutputID }
 
 func (model outputModel) GetSpaceID() types.String {
-	if model.SpaceIDs.IsNull() || model.SpaceIDs.IsUnknown() {
-		return types.StringValue("")
-	}
-	for _, elem := range model.SpaceIDs.Elements() {
-		s, ok := elem.(types.String)
-		if !ok || s.IsNull() || s.IsUnknown() {
-			continue
-		}
-		if v := s.ValueString(); v != "" {
-			return s
-		}
-	}
-	return types.StringValue("")
+	return fleet.SpaceIDFromSetOrDefault(model.SpaceIDs, "")
 }
 
 // IsUnscopedSpace implements entitycore.KibanaUnscopedSpace.
@@ -79,51 +68,26 @@ func (model outputModel) GetVersionRequirements(ctx context.Context) ([]entityco
 	var reqs []entitycore.VersionRequirement
 
 	if sslModel := typeutils.ObjectTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), nil); sslModel != nil {
-		if typeutils.IsKnown(sslModel.VerificationMode) {
-			reqs = append(reqs, entitycore.VersionRequirement{
-				MinVersion:   *MinVersionOutputSSLVerificationMode,
-				ErrorMessage: fmt.Sprintf("ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String()),
-			})
-		}
+		reqs = entitycore.AppendVersionRequirementIf(reqs, typeutils.IsKnown(sslModel.VerificationMode),
+			MinVersionOutputSSLVerificationMode, "ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String())
 	}
 
-	if model.Type.ValueString() == outputTypeKafka {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *MinVersionOutputKafka,
-			ErrorMessage: fmt.Sprintf("Kafka output type requires server version %s or higher", MinVersionOutputKafka.String()),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs, typeutils.IsKnown(model.Preset),
+		MinVersionOutputPreset, "preset requires server version %s or higher", MinVersionOutputPreset.String())
+
+	reqs = entitycore.AppendVersionRequirementIf(reqs, model.Type.ValueString() == outputTypeKafka,
+		MinVersionOutputKafka, "Kafka output type requires server version %s or higher", MinVersionOutputKafka.String())
 
 	return reqs, nil
 }
 
-func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) (diags diag.Diagnostics) {
-	if union == nil {
-		return
-	}
-
-	output, err := union.ValueByDiscriminator()
-	if err != nil {
-		diags.AddError(err.Error(), "")
-		return
-	}
-
-	switch output := output.(type) {
-	case kbapi.KibanaHTTPAPIsOutputResponseElasticsearch:
-		diags.Append(model.fromAPIElasticsearchModel(ctx, &output)...)
-
-	case kbapi.KibanaHTTPAPIsOutputResponseLogstash:
-		diags.Append(model.fromAPILogstashModel(ctx, &output)...)
-
-	case kbapi.KibanaHTTPAPIsOutputResponseKafka:
-		diags.Append(model.fromAPIKafkaModel(ctx, &output)...)
-	case kbapi.KibanaHTTPAPIsOutputResponseRemoteElasticsearch:
-		diags.Append(model.fromAPIRemoteElasticsearchModel(ctx, &output)...)
-	default:
-		diags.AddError(fmt.Sprintf("unhandled output type: %T", output), "")
-	}
-
-	return
+func (model *outputModel) populateFromAPI(ctx context.Context, union *kbapi.OutputUnion) diag.Diagnostics {
+	return fleet.DispatchOutputUnion(ctx, union, fleet.OutputUnionHandlers{
+		Elasticsearch:       model.fromAPIElasticsearchModel,
+		Logstash:            model.fromAPILogstashModel,
+		Kafka:               model.fromAPIKafkaModel,
+		RemoteElasticsearch: model.fromAPIRemoteElasticsearchModel,
+	})
 }
 
 func (model outputModel) toAPICreateModel(ctx context.Context) (kbapi.NewOutputUnion, diag.Diagnostics) {
@@ -210,6 +174,7 @@ func (model *outputModel) fromAPICommonFields(ctx context.Context, d commonOutpu
 	model.DefaultIntegrations = types.BoolPointerValue(d.isDefault)
 	model.DefaultMonitoring = types.BoolPointerValue(d.isDefaultMonitoring)
 	model.ConfigYaml = configYamlFromAPI(d.configYaml)
+	model.Preset = types.StringNull()
 	if !isImport && existingConfigYaml.IsNull() {
 		model.ConfigYaml = customtypes.NewNormalizedYamlNull()
 	}

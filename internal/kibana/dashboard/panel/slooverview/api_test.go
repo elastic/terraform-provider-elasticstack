@@ -100,8 +100,8 @@ func TestSloOverview_singleMode_drilldowns_roundTrip_viaHandler(t *testing.T) {
 	        "trigger": "on_open_panel_menu",
 	        "url": "https://kibana/app",
 	        "label": "Kibana home",
-	        "encode_url": true,
-	        "open_in_new_tab": false
+	        "encode_url": false,
+	        "open_in_new_tab": true
 	      }
 	    ]
 	  }
@@ -121,8 +121,11 @@ func TestSloOverview_singleMode_drilldowns_roundTrip_viaHandler(t *testing.T) {
 	require.Equal(t, "https://example.com/{{context.panel.title}}", ddA[0].URL.ValueString())
 	require.True(t, ddA[0].EncodeURL.IsNull())
 	ddB := ddA[1]
-	require.True(t, ddB.EncodeURL.ValueBool())
-	require.False(t, ddB.OpenInNewTab.ValueBool())
+	// encode_url=false and open_in_new_tab=true both diverge from Kibana's server
+	// defaults (true/false), so on import they must be preserved as concrete values
+	// rather than null (panelkit.DrilldownBoolImportPreserving contract).
+	require.False(t, ddB.EncodeURL.ValueBool())
+	require.True(t, ddB.OpenInNewTab.ValueBool())
 
 	item1, td := slooverview.Handler{}.ToAPI(pm, nil)
 	require.False(t, td.HasError(), "%s", td)
@@ -137,8 +140,8 @@ func TestSloOverview_singleMode_drilldowns_roundTrip_viaHandler(t *testing.T) {
 	require.Equal(t, d0[0]["label"], d1[0]["label"])
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableDrilldownsTriggerOnOpenPanelMenu), d1[0]["trigger"])
 	require.Equal(t, string(kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableDrilldownsTypeUrlDrilldown), d1[0]["type"])
-	require.Equal(t, true, d1[1]["encode_url"])
-	require.Equal(t, false, d1[1]["open_in_new_tab"])
+	require.Equal(t, false, d1[1]["encode_url"])
+	require.Equal(t, true, d1[1]["open_in_new_tab"])
 }
 
 func TestSloOverview_groupsMode_drilldowns_roundTrip_viaHandler(t *testing.T) {

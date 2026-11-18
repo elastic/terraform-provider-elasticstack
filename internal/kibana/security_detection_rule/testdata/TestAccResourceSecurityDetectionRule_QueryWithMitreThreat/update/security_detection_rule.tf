@@ -24,7 +24,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   references      = ["https://attack.mitre.org/techniques/T1566/001/", "https://attack.mitre.org/techniques/T1204/002/"]
   false_positives = ["Legitimate corporate macros", "Authorized office automation"]
   author          = ["Security Team", "SOC Team"]
-  license         = "Elastic License v2"
+  license         = "Apache License 2.0"
   note            = "Investigate parent process and command line. Check for malicious documents."
   max_signals     = 200
 

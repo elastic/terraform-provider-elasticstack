@@ -80,7 +80,7 @@ The resource SHALL use the Elasticsearch Put Datafeed API to create datafeeds ([
 
 ### Requirement: Identity and import (REQ-007–REQ-009)
 
-The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<datafeed_id>`. During create and update, the resource SHALL derive `id` by calling `r.client.ID(ctx, datafeedID)` to obtain the cluster UUID and `datafeed_id`, and SHALL set `id` in state after a successful API call. The resource SHALL support import by accepting an `id` in the format `<cluster_uuid>/<datafeed_id>`, parsing it with `clients.CompositeIDFromStr`, and persisting both `id` and `datafeed_id` to state. When the import `id` format is invalid, the resource SHALL return an error diagnostic.
+The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<datafeed_id>`. During create, the resource SHALL derive `id` by calling `client.ID(ctx, datafeedID)` to obtain the cluster UUID and `datafeed_id`, and SHALL set `id` in state after a successful API call. During update, the resource SHALL preserve the `id` already present in prior state unchanged and SHALL NOT call `client.ID` or otherwise recompute `id` from the currently connected cluster's UUID. The resource SHALL support import by accepting an `id` in the format `<cluster_uuid>/<datafeed_id>`, parsing it with `clients.CompositeIDFromStr`, and persisting both `id` and `datafeed_id` to state. When the import `id` format is invalid, the resource SHALL return an error diagnostic.
 
 #### Scenario: Import with valid composite id
 
@@ -93,6 +93,13 @@ The resource SHALL expose a computed `id` in the format `<cluster_uuid>/<datafee
 - GIVEN import with an id that is not in `<cluster_uuid>/<datafeed_id>` format
 - WHEN import runs
 - THEN the resource SHALL return an error diagnostic
+
+#### Scenario: Id preserved after update
+
+- GIVEN an existing datafeed whose stored `id` carries a cluster UUID that no longer matches the UUID of the cluster the provider is currently connected to
+- WHEN a non-id attribute of the datafeed is changed and applied
+- THEN the update SHALL succeed
+- AND `id` in the resulting state SHALL be unchanged from the value in prior state
 
 ### Requirement: Lifecycle — force-new attributes (REQ-010–REQ-011)
 
@@ -275,7 +282,7 @@ On read, the resource SHALL set the following state attributes from the Get Data
 - `chunking_config` SHALL be set from the API response when non-nil; `time_span` SHALL be set only when `mode` is `manual` and the API returns a non-empty `time_span`.
 - `delayed_data_check_config` SHALL be set from the API response when non-nil.
 - `indices_options` SHALL be set from the API response when non-nil; individual sub-fields that are nil in the API response SHALL be stored as null in state.
-- `indices_options.expand_wildcards`: when the API response contains a non-empty `expand_wildcards` list, the resource SHALL store the values as a `NewExpandWildcardsValue` set. When the API response contains an empty or nil `expand_wildcards`, the resource SHALL store a null `ExpandWildcardsValue` (`NewExpandWildcardsNull`). The `IndicesOptions` model struct field `ExpandWildcards` SHALL be typed as `ExpandWildcardsValue` (not `types.List`). The `GetIndicesOptionsAttrTypes()` helper and all `map[string]attr.Type` usages for `"expand_wildcards"` SHALL reference `ExpandWildcardsType` instead of `types.ListType`.
+- `indices_options.expand_wildcards`: when the API response contains a non-empty `expand_wildcards` list, the resource SHALL store the values as a `NewExpandWildcardsValue` set. When the API response contains an empty or nil `expand_wildcards`, the resource SHALL store `["none"]` as an `ExpandWildcardsValue` set (Elasticsearch serializes `expand_wildcards: "none"` as `[]` because it stores that option as an empty wildcard-state set). The resource SHALL NOT store a null `ExpandWildcardsValue` for an empty API list: Plugin Framework semantic equality short-circuits when either side is null, so mapping `[]` to null produces "Provider produced inconsistent result after apply" when configuration is `["none"]`. The `IndicesOptions` model struct field `ExpandWildcards` SHALL be typed as `ExpandWildcardsValue` (not `types.List`). The `GetIndicesOptionsAttrTypes()` helper and all `map[string]attr.Type` usages for `"expand_wildcards"` SHALL reference `ExpandWildcardsType` instead of `types.ListType`.
 
 #### Scenario: Non-empty expand_wildcards stored as set value
 
@@ -283,11 +290,11 @@ On read, the resource SHALL set the following state attributes from the Get Data
 - WHEN read runs
 - THEN `expand_wildcards` in state SHALL contain the elements `"open"` and `"closed"` as a set
 
-#### Scenario: Empty expand_wildcards stored as null
+#### Scenario: Empty expand_wildcards stored as none
 
-- GIVEN the Elasticsearch API returns `expand_wildcards: []` or omits the field
+- GIVEN the Elasticsearch API returns `expand_wildcards: []` or omits the field on a present `indices_options` object
 - WHEN read runs
-- THEN `expand_wildcards` in state SHALL be null
+- THEN `expand_wildcards` in state SHALL contain the single element `"none"`
 
 #### Scenario: Null query stored as null in state
 
@@ -334,7 +341,7 @@ Semantic equality rules:
 1. If both values are null, they are semantically equal.
 2. If both values are unknown, they are semantically equal.
 3. If one is null or unknown and the other is not, they are not semantically equal.
-4. Otherwise, normalize each value independently: expand the token `"all"` to `{"open", "closed", "hidden"}`; leave all other tokens (including `"none"`) as literals. Compare the two normalized token sets for equality without regard to order.
+4. Otherwise, normalize each value independently: expand the token `"all"` to `{"open", "closed", "hidden"}`; treat an empty set as `{"none"}` (Elasticsearch serializes `"none"` as `[]`); leave all other tokens (including `"none"`) as literals. Compare the two normalized token sets for equality without regard to order.
 
 #### Scenario: `all` token does not produce a perpetual diff
 
@@ -354,11 +361,11 @@ Semantic equality rules:
 - WHEN the Elasticsearch API returns `expand_wildcards: ["open", "closed"]` on read
 - THEN Terraform SHALL show a diff for `expand_wildcards` because `all` expands to `{open, closed, hidden}` which differs from `{open, closed}`
 
-#### Scenario: `none` token compared literally
+#### Scenario: `none` token round-trips from an empty API list
 
 - GIVEN `indices_options.expand_wildcards = ["none"]` in configuration
-- WHEN the Elasticsearch API returns `expand_wildcards: ["none"]` on read
-- THEN Terraform SHALL NOT show a diff for `expand_wildcards`
+- WHEN the Elasticsearch API returns `expand_wildcards: []` on read
+- THEN Terraform SHALL NOT fail apply with an inconsistent result, SHALL store `"none"` in state, and SHALL NOT show a diff for `expand_wildcards`
 
 #### Scenario: `none` is not equal to other tokens
 

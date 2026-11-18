@@ -18,6 +18,7 @@
 package mlanomalycharts_test
 
 import (
+	"regexp"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -65,41 +66,6 @@ func TestAccResourceDashboardMlAnomalyChartsNamedSeverities(t *testing.T) {
 	})
 }
 
-func TestAccResourceDashboardMlAnomalyChartsRawRange(t *testing.T) {
-	dashboardTitle := "Test Dashboard ML Anomaly Charts Raw " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
-
-	versionutils.SkipIfUnsupported(t, mlanomalycharts.MinKibanaAPISupport, versionutils.FlavorAny)
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck: func() { acctest.PreCheck(t) },
-		Steps: []resource.TestStep{
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("raw_range"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle),
-				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.job_ids.#", "1"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.job_ids.0", "fake-job-alpha"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.severity_threshold.0.min", "10"),
-					resource.TestCheckResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.severity_threshold.0.max", "20"),
-					resource.TestCheckNoResourceAttr("elasticstack_kibana_dashboard.test", "panels.0.ml_anomaly_charts_config.severity_threshold.0.severity"),
-				),
-			},
-			{
-				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("raw_range"),
-				ConfigVariables: config.Variables{
-					"dashboard_title": config.StringVariable(dashboardTitle),
-				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: false,
-			},
-		},
-	})
-}
-
 func TestAccResourceDashboardMlAnomalyChartsRawRangeCanonicalCoincidence(t *testing.T) {
 	dashboardTitle := "Test Dashboard ML Anomaly Charts Raw Canonical " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
 
@@ -130,6 +96,30 @@ func TestAccResourceDashboardMlAnomalyChartsRawRangeCanonicalCoincidence(t *test
 				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+// TestAccResourceDashboardMlAnomalyChartsNonCanonicalRangeRejected verifies that Kibana rejects a
+// severity_threshold {min, max} pair that does not match one of the five canonical bands at apply
+// time. This is Kibana API behavior (confirmed to differ between the pre-GA 9.5.0-SNAPSHOT build,
+// which accepted it, and the 9.5.0 GA release, which does not), not a plan-time provider validation.
+func TestAccResourceDashboardMlAnomalyChartsNonCanonicalRangeRejected(t *testing.T) {
+	dashboardTitle := "Test Dashboard ML Anomaly Charts Non Canonical " + sdkacctest.RandStringFromCharSet(4, sdkacctest.CharSetAlphaNum)
+
+	versionutils.SkipIfUnsupported(t, mlanomalycharts.MinKibanaAPISupport, versionutils.FlavorAny)
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("raw_range"),
+				ConfigVariables: config.Variables{
+					"dashboard_title": config.StringVariable(dashboardTitle),
+				},
+				ExpectError: regexp.MustCompile(`severity_threshold`),
 			},
 		},
 	})

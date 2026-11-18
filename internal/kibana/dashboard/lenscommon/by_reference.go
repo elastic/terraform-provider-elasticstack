@@ -73,8 +73,8 @@ func VisByReferenceModelToAPIConfig1(
 	var diags diag.Diagnostics
 	api1 := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeVisConfig1{
 		RefId: byRef.RefID.ValueString(),
-	}
-	api1.TimeRange = TimeRangeModelToAPI(byRef.TimeRange)
+
+		TimeRange: TimeRangeModelToAPI(byRef.TimeRange)}
 	if typeutils.IsKnown(byRef.ReferencesJSON) {
 		refs, d := JSONBytesFromOptionalNormalizedArray(byRef.ReferencesJSON, referencesJSONFieldLabel)
 		diags.Append(d...)

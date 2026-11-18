@@ -28,20 +28,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 )
 
-func alignGaugeStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	if plan == nil || state == nil {
-		return
-	}
-	alignGaugeConfigStateFromPlan(ctx, plan.GaugeConfig, state.GaugeConfig)
-}
-
 func alignGaugeConfigStateFromPlan(ctx context.Context, plan, state *models.GaugeConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
-	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, &plan.LensChartBaseTFModel, &state.LensChartBaseTFModel, plan.MetricJSON, &state.MetricJSON)
 	if plan.Styling != nil && state.Styling != nil {
 		lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.Styling.ShapeJSON, &state.Styling.ShapeJSON, "orientation")
 		// Kibana materializes the default bullet shape with the horizontal

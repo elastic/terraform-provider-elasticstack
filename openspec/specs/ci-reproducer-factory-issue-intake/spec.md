@@ -121,7 +121,8 @@ The workflow SHALL set a job-level `timeout-minutes` of 65 minutes. The agent pr
 - **AND** the prompt SHALL state that the agent SHALL prefer a partial-but-valid comment over `noop` when running short on time
 
 ### Requirement: Workflow provides an Elastic Stack acceptance-test environment
-The reproduction agent SHALL have access to a live Elastic Stack for running acceptance tests, using the same environment configuration as the `code-factory` workflow. The agent prompt SHALL document the connection parameters: `ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9200`, `ELASTICSEARCH_USERNAME=elastic`, `ELASTICSEARCH_PASSWORD=password`, and `KIBANA_ENDPOINT=http://host.docker.internal:5601`. The network allow-list SHALL include `go` to support `go test` downloads.
+
+The reproduction agent SHALL have access to a live Elastic Stack for running acceptance tests, using the same environment configuration as the `code-factory` workflow. The agent prompt SHALL document the connection parameters: `ELASTICSEARCH_ENDPOINTS=http://host.docker.internal:9201`, `ELASTICSEARCH_USERNAME=elastic`, `ELASTICSEARCH_PASSWORD=password`, `KIBANA_ENDPOINT=http://host.docker.internal:5602`, and `CHECKPOINT_DISABLE=1`. The network allow-list SHALL include `go` to support `go test` downloads. `CHECKPOINT_DISABLE` SHALL be set to `1` so the embedded `terraform` binary used by `terraform-plugin-testing` does not attempt an outbound call to `checkpointapi.hashicorp.com` that the AWF sandbox's egress firewall would otherwise block.
 
 #### Scenario: Agent runs an acceptance test
 - **WHEN** the reproduction agent writes a `TestAccReproduceIssue{N}` test and runs it
@@ -130,6 +131,11 @@ The reproduction agent SHALL have access to a live Elastic Stack for running acc
 #### Scenario: Maintainer inspects workflow network policy
 - **WHEN** maintainers inspect the authored workflow frontmatter
 - **THEN** `network.allowed` SHALL include `go`
+
+#### Scenario: Agent's acceptance-test invocation disables Terraform checkpoint telemetry
+- **WHEN** the reproduction agent runs `TF_ACC=1 go test ...` against the provisioned Elastic Stack
+- **THEN** `CHECKPOINT_DISABLE` SHALL be set to `1` in the agent's environment for that invocation
+- **AND** the AWF sandbox's egress firewall SHALL NOT report `checkpointapi.hashicorp.com` as a blocked domain for that run
 
 ### Requirement: Agent has structured access to Elastic documentation
 The workflow SHALL configure the Elastic docs MCP server as an HTTP MCP server so the agent can query Elastic documentation while investigating the reported bug. The workflow frontmatter SHALL include `www.elastic.co` in `network.allowed` and SHALL declare an `mcp-servers.elastic-docs` entry pointing to `https://www.elastic.co/docs/_mcp/`. If the MCP tools are unavailable the agent SHALL proceed from the issue content alone.

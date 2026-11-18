@@ -52,11 +52,8 @@ func deleteEntityLink(ctx context.Context, client *clients.KibanaScopedClient, _
 		return diags
 	}
 
-	if resp.StatusCode() == http.StatusNotFound {
-		return diags
-	}
-	if resp.StatusCode() != http.StatusOK {
-		diags.Append(diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)...)
+	if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK, http.StatusNotFound); d.HasError() {
+		diags.Append(d...)
 		return diags
 	}
 

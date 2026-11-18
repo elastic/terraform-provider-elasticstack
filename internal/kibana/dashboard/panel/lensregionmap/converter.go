@@ -22,7 +22,6 @@ import (
 	"maps"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
-	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -37,7 +36,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap)
+	return string(kbapi.KibanaHTTPAPIsVisRegionMapNoESQLByValuePanelTypeRegionMap)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -70,22 +69,17 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	if diags := lenscommon.ValidateLensBlocks(blocks, "region_map_config"); diags.HasError() {
 		return diags
 	}
-	var prior *models.RegionMapConfigModel
-	if blocks.RegionMapConfig != nil {
-		cpy := *blocks.RegionMapConfig
-		prior = &cpy
-	}
-	blocks.RegionMapConfig = &models.RegionMapConfigModel{}
-
-	if noESQL, err := attrs.AsKibanaHTTPAPIsRegionMapNoESQLByValuePanel(); err == nil && !lenscommon.IsNoESQLCandidateActuallyESQL(noESQL.DataSource) {
-		return regionMapConfigFromAPINoESQL(ctx, blocks.RegionMapConfig, prior, noESQL)
-	}
-
-	regionMapESQL, err := attrs.AsKibanaHTTPAPIsRegionMapESQLByValuePanel()
-	if err != nil {
-		return diagutil.FrameworkDiagFromError(err)
-	}
-	return regionMapConfigFromAPIESQL(ctx, blocks.RegionMapConfig, prior, regionMapESQL)
+	prior := lenscommon.SnapshotAndResetBlock(&blocks.RegionMapConfig)
+	return lenscommon.PopulateFromNoESQLOrESQL(
+		ctx, blocks.RegionMapConfig, prior,
+		attrs.AsKibanaHTTPAPIsVisRegionMapNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsVisRegionMapESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsVisRegionMapNoESQLByValuePanel) bool {
+			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
+		},
+		regionMapConfigFromAPINoESQL,
+		regionMapConfigFromAPIESQL,
+	)
 }
 
 func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscommon.VisByValueConfig0, diag.Diagnostics) {
@@ -98,7 +92,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignRegionMapStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignRegionMapConfigStateFromPlan(ctx, plan.RegionMapConfig, state.RegionMapConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

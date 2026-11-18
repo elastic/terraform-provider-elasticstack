@@ -92,15 +92,6 @@ func PointerInterfaceMapFromAnyMap(input map[string]any) map[string]*any {
 	return output
 }
 
-// FlipMap returns a new map with keys and values swapped.
-func FlipMap[K comparable, V comparable](m map[K]V) map[V]K {
-	inv := make(map[V]K)
-	for k, v := range m {
-		inv[v] = k
-	}
-	return inv
-}
-
 // FlattenMap recursively flattens a nested map into a single-level map with dot-separated keys.
 // For example, {"index": {"key": 1}} becomes {"index.key": 1}.
 func FlattenMap(m map[string]any) map[string]any {
@@ -121,4 +112,24 @@ func FlattenMap(m map[string]any) map[string]any {
 	}
 	flattener("", m, out)
 	return out
+}
+
+// SetAtPath sets value at the given sequence of keys within obj, creating intermediate
+// map[string]any nodes as needed. If an intermediate segment already holds a non-map value
+// (or nil), it is replaced with a new map so the walk can continue. A nil or empty segments
+// slice is a no-op.
+func SetAtPath(obj map[string]any, segments []string, value any) {
+	if len(segments) == 0 {
+		return
+	}
+	cur := obj
+	for _, seg := range segments[:len(segments)-1] {
+		next, ok := cur[seg].(map[string]any)
+		if !ok || next == nil {
+			next = make(map[string]any)
+			cur[seg] = next
+		}
+		cur = next
+	}
+	cur[segments[len(segments)-1]] = value
 }

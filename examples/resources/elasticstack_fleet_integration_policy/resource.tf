@@ -35,6 +35,11 @@ resource "elasticstack_fleet_integration_policy" "sample" {
   // Optional: specify a custom output to send data to
   // output_id           = "my-custom-output-id"
 
+  // Optional (Elastic Stack 9.1.0+): grant the integration's API key write
+  // access to data streams a `reroute` processor targets. Shown in Kibana as
+  // "Add a reroute processor permission".
+  // additional_datastreams_permissions = ["logs-tcp.rerouted-default"]
+
   inputs = {
     "tcp-tcp" = {
       enabled = true

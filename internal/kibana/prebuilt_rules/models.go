@@ -28,9 +28,9 @@ import (
 
 type prebuiltRuleModel struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.KibanaConnectionField
+	entitycore.SpaceIDField
 	ID                    types.String `tfsdk:"id"`
-	SpaceID               types.String `tfsdk:"space_id"`
-	KibanaConnection      types.List   `tfsdk:"kibana_connection"`
 	RulesInstalled        types.Int64  `tfsdk:"rules_installed"`
 	RulesNotInstalled     types.Int64  `tfsdk:"rules_not_installed"`
 	RulesNotUpdated       types.Int64  `tfsdk:"rules_not_updated"`
@@ -39,22 +39,18 @@ type prebuiltRuleModel struct {
 	TimelinesNotUpdated   types.Int64  `tfsdk:"timelines_not_updated"`
 }
 
-func (m prebuiltRuleModel) GetID() types.String             { return m.ID }
-func (m prebuiltRuleModel) GetResourceID() types.String     { return m.SpaceID }
-func (m prebuiltRuleModel) GetSpaceID() types.String        { return m.SpaceID }
-func (m prebuiltRuleModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m prebuiltRuleModel) GetID() types.String         { return m.ID }
+func (m prebuiltRuleModel) GetResourceID() types.String { return m.SpaceID }
 
 var _ entitycore.KibanaResourceModel = prebuiltRuleModel{}
 
 var minSupportedVersion = version.Must(version.NewVersion("8.0.0"))
 
 func (m prebuiltRuleModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
-	return []entitycore.VersionRequirement{
-		{
-			MinVersion:   *minSupportedVersion,
-			ErrorMessage: "Prebuilt rules are not supported until Elastic Stack v8.0.0. Upgrade the target server to use this resource",
-		},
-	}, nil
+	return entitycore.SingleVersionRequirement(
+		*minSupportedVersion,
+		"Prebuilt rules are not supported until Elastic Stack v8.0.0. Upgrade the target server to use this resource",
+	), nil
 }
 
 func (m *prebuiltRuleModel) populateFromStatus(status *kbapi.ReadPrebuiltRulesAndTimelinesStatusResponse) {

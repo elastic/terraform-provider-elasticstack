@@ -17,7 +17,10 @@
 
 package clients
 
-import "github.com/hashicorp/terraform-plugin-framework/types"
+import (
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/types"
+)
 
 // ResolveCompositeSpaceAndID resolves a Kibana space ID and resource ID from a
 // raw ID (which may be a bare resource ID or a composite "<space_id>/<resource_id>"
@@ -30,7 +33,7 @@ import "github.com/hashicorp/terraform-plugin-framework/types"
 //     was provided, use the space from the composite ID.
 //  4. Always extract the bare resource ID from the composite string when present.
 func ResolveCompositeSpaceAndID(configSpaceID types.String, rawID string) (spaceID, resourceID string) {
-	spaceExplicit := !configSpaceID.IsNull() && !configSpaceID.IsUnknown() && configSpaceID.ValueString() != ""
+	spaceExplicit := typeutils.IsKnown(configSpaceID) && configSpaceID.ValueString() != ""
 	spaceID = DefaultSpaceID
 	if spaceExplicit {
 		spaceID = configSpaceID.ValueString()

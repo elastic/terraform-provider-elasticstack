@@ -86,7 +86,9 @@ resource "elasticstack_elasticsearch_snapshot_repository" "example" {
     buffer_size           = <optional, computed, string>
     canned_acl            = <optional, string>            # default: "private"
     storage_class         = <optional, string>            # default: "standard"
-    path_style_access     = <optional, bool>              # default: false
+    path_style_access          = <optional, bool>              # default: false
+    disable_chunked_encoding   = <optional, bool>              # default: false
+    always_sign_requests       = <optional, bool>              # default: false
     # common settings
     chunk_size                 = <optional, string>
     compress                   = <optional, bool>    # default: true
@@ -321,23 +323,24 @@ The data source SHALL support only a read operation. It SHALL NOT perform create
 
 ### Requirement: Data source API (REQ-DS-002)
 
-The data source SHALL use the Elasticsearch Get Snapshot Repository API (`GET /_snapshot/<repository>`) to fetch the repository identified by `name`. When the API returns a non-success status, the data source SHALL surface the API error to Terraform diagnostics. When the repository is not found (API returns `nil` with no error), the data source SHALL set `id`, return a warning diagnostic with the message "Could not find snapshot repository [<name>]", and SHALL not attempt to populate type block attributes.
+The data source SHALL use the Elasticsearch Get Snapshot Repository API (`GET /_snapshot/<repository>`) to fetch the repository identified by `name`. When the API returns a non-success status, the data source SHALL surface the API error to Terraform diagnostics. When the repository is not found (API returns `nil` with no error), the read callback SHALL return `found == false` and the envelope SHALL append a standardized not-found error diagnostic; Terraform state SHALL NOT be set.
 
 #### Scenario: Repository not found
 
 - GIVEN no repository with the requested name exists
 - WHEN the data source is read
-- THEN a warning diagnostic SHALL be returned and all type block attributes SHALL be empty lists
+- THEN the envelope SHALL return an error diagnostic identifying the data source and requested name
+- AND Terraform state SHALL NOT be set
 
 ### Requirement: Data source identity (REQ-DS-003)
 
-The data source SHALL set `id` in the format `<cluster_uuid>/<repository_name>` by calling `client.ID(ctx, repoName)` after resolving the client. The `id` SHALL be set regardless of whether the repository was found.
+The data source read callback SHALL set `id` in the format `<cluster_uuid>/<repository_name>` by calling `client.ID(ctx, resourceID)` before returning `found == true`. The envelope SHALL NOT mutate `id`.
 
-#### Scenario: Data source id set
+#### Scenario: Data source id set on found read
 
-- **GIVEN** the data source read runs for a repository name
-- **WHEN** the provider resolves the Elasticsearch client
-- **THEN** `id` SHALL be set to `<cluster_uuid>/<repository_name>`
+- **GIVEN** the data source read finds a repository
+- **WHEN** the read callback returns `found == true`
+- **THEN** `id` SHALL be set to `<cluster_uuid>/<repository_name>` on the returned model
 
 ### Requirement: Data source connection (REQ-DS-004)
 
@@ -457,6 +460,14 @@ returns `endpoint` and `path_style_access` in the S3 settings object.
   default (for `path_style_access`). This mirrors the existing `compressFallback` pattern
   used in `settingsToFs` and `settingsToURL`.
 
+Read-side state inheritance SHALL apply only when the prior value (the prior state value, or
+the planned value during the read that follows create or update) is known. During the read
+that follows create or update, the prior value is the planned value, and an Optional +
+Computed attribute that is not configured is unknown in the plan. When the API omits a field
+and the prior value is unknown, the refreshed state SHALL hold `null` for `endpoint` and the
+schema default (`false`) for `path_style_access`. State SHALL never hold an unknown value for
+either attribute after create, update, read, or import.
+
 The decision and its rationale SHALL be documented in the implementing PR description.
 
 #### Scenario: No spurious diff after second apply
@@ -470,4 +481,118 @@ The decision and its rationale SHALL be documented in the implementing PR descri
 - GIVEN a repository created with `path_style_access = true`
 - WHEN `terraform plan` is run again on the same unchanged configuration
 - THEN the plan SHALL show no changes for the `path_style_access` attribute
+
+#### Scenario: Create without endpoint
+
+- GIVEN an `s3` repository block that does not set `endpoint`
+- WHEN the resource is created
+- THEN the apply SHALL succeed
+- AND state SHALL hold `null` for `s3.endpoint`
+- BUT state SHALL NOT hold an unknown value for `s3.endpoint`
+
+#### Scenario: Update without endpoint
+
+- GIVEN an existing repository whose `s3` block does not set `endpoint`
+- WHEN another `s3` setting, such as `chunk_size`, is changed and applied
+- THEN the apply SHALL succeed
+- AND state SHALL hold `null` for `s3.endpoint`
+
+#### Scenario: No spurious diff without endpoint
+
+- GIVEN a repository created from an `s3` block that does not set `endpoint`
+- WHEN `terraform plan` is run again on the same unchanged configuration
+- THEN the plan SHALL show no changes
+
+#### Scenario: Endpoint removed together with another change
+
+- GIVEN an existing repository whose `s3` block sets `endpoint`
+- WHEN `endpoint` is removed from the `s3` block and another `s3` setting is changed in the same apply
+- THEN the apply SHALL succeed
+- AND state SHALL hold `null` for `s3.endpoint`
+
+#### Scenario: API value wins over an unknown prior value
+
+- GIVEN the prior `endpoint` value is unknown
+- AND the GET response returns `endpoint`
+- WHEN the resource reads the repository
+- THEN state SHALL hold the `endpoint` value from the GET response
+
+#### Scenario: Known prior endpoint is still inherited
+
+- GIVEN the prior `endpoint` value is a known URL
+- AND the GET response does not return `endpoint`
+- WHEN the resource reads the repository
+- THEN state SHALL hold the prior `endpoint` URL
+
+### Requirement: S3 disable_chunked_encoding and always_sign_requests schema and write mapping (REQ-019)
+
+The `s3` repository type block SHALL expose `disable_chunked_encoding` and `always_sign_requests`
+as `Optional + Computed` boolean attributes with `Default: booldefault.StaticBool(false)`, matching
+the existing `server_side_encryption`/`path_style_access` attribute pattern. Both settings are
+Elasticsearch S3 **client** settings (`s3.client.CLIENT_NAME.disable_chunked_encoding`,
+`s3.client.CLIENT_NAME.always_sign_requests`) exposed on this resource via the same
+"overriding client settings in repository settings" mechanism already used for `endpoint` and
+`path_style_access`.
+
+The write path (`s3ToSettings`) SHALL include both keys unconditionally in the settings map sent
+to the Put Snapshot Repository API, regardless of whether the configured/defaulted value is
+`true` or `false`, matching `server_side_encryption`/`path_style_access`. Because the `s3`
+repository type already uses the raw-JSON write path (REQ-016), both keys reach Elasticsearch
+without being silently discarded.
+
+The data source `s3` block SHALL expose both attributes as computed.
+
+#### Scenario: disable_chunked_encoding present in PUT body
+
+- GIVEN an `s3` repository block with `disable_chunked_encoding` set to `true`
+- WHEN the resource creates or updates the repository
+- THEN the PUT `/_snapshot/{name}` request body SHALL include `"disable_chunked_encoding": true`
+  in `settings`
+
+#### Scenario: always_sign_requests present in PUT body
+
+- GIVEN an `s3` repository block with `always_sign_requests` set to `true`
+- WHEN the resource creates or updates the repository
+- THEN the PUT `/_snapshot/{name}` request body SHALL include `"always_sign_requests": true` in
+  `settings`
+
+#### Scenario: Defaults omit no keys
+
+- GIVEN an `s3` repository block that omits both `disable_chunked_encoding` and
+  `always_sign_requests`
+- WHEN the resource creates or updates the repository
+- THEN the PUT request body `settings` SHALL include both keys with value `false`
+
+#### Scenario: Data source exposes both attributes
+
+- GIVEN an S3 snapshot repository with `disable_chunked_encoding` and `always_sign_requests` set
+- WHEN the `elasticstack_elasticsearch_snapshot_repository` data source reads the repository
+- THEN both attributes SHALL be populated on the data source `s3` block
+
+### Requirement: S3 disable_chunked_encoding and always_sign_requests read-side drift prevention (REQ-020)
+
+The implementer SHALL determine whether the Elasticsearch GET `/_snapshot/{name}` response
+returns `disable_chunked_encoding` and `always_sign_requests` in the S3 settings object.
+
+- If the GET response **does** return a field, no read-side fallback is required for that field
+  and it SHALL be mapped directly with `boolSetting(s, settingKey, false)`.
+- If the GET response **does not** return a field, `settingsToS3` SHALL implement the same
+  read-side state inheritance already applied to `path_style_access` under REQ-017: when the API
+  omits the field, the prior state value SHALL be preserved in the refreshed state rather than
+  overwritten with the schema default (`false`).
+
+The decision and its rationale SHALL be documented in the implementing PR description, consistent
+with REQ-017.
+
+#### Scenario: No spurious diff for disable_chunked_encoding after second apply
+
+- GIVEN a repository created with `disable_chunked_encoding = true`
+- WHEN `terraform plan` is run again on the same unchanged configuration
+- THEN the plan SHALL show no changes for the `disable_chunked_encoding` attribute
+
+#### Scenario: No spurious diff for always_sign_requests after second apply
+
+- GIVEN a repository created with `always_sign_requests = true`
+- WHEN `terraform plan` is run again on the same unchanged configuration
+- THEN the plan SHALL show no changes for the `always_sign_requests` attribute
 

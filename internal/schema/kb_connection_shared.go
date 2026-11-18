@@ -80,6 +80,13 @@ func kbConnectionBlockSpec() connectionBlockSpec {
 				// writeOnly is deliberately false: action resources read endpoints back.
 			},
 			{
+				name:        attrHeaders,
+				description: descKbHeaders,
+				kind:        connAttrMap,
+				sensitive:   true,
+				writeOnly:   true,
+			},
+			{
 				name:        attrCACerts,
 				description: descKbCACerts,
 				kind:        connAttrList,

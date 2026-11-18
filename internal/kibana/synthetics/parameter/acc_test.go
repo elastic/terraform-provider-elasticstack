@@ -18,12 +18,17 @@
 package parameter_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/terraform-plugin-testing/config"
+	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
@@ -31,6 +36,9 @@ import (
 var (
 	minKibanaParameterAPIVersion = version.Must(version.NewVersion("8.12.0"))
 )
+
+// accTestKibanaSpaceIDCharset matches elasticstack_kibana_space space_id validation (^[a-z0-9_-]+$).
+const accTestKibanaSpaceIDCharset = "abcdefghijklmnopqrstuvwxyz0123456789_-"
 
 func TestSyntheticParameterResource(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minKibanaParameterAPIVersion, versionutils.FlavorAny)
@@ -50,15 +58,30 @@ func TestSyntheticParameterResource(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "tags.#", "2"),
 					resource.TestCheckResourceAttr(resourceID, "tags.0", "a"),
 					resource.TestCheckResourceAttr(resourceID, "tags.1", "b"),
+					resource.TestCheckResourceAttr(resourceID, "space_id", clients.DefaultSpaceID),
+					testAccCheckCompositeIDFormat(resourceID, clients.DefaultSpaceID),
+					testAccCheckParameterExistsInKibanaSpace(resourceID, clients.DefaultSpaceID),
 				),
 			},
-			// ImportState testing — also verifies value round-trips correctly from the API.
+			// Import by composite `<space_id>/<uuid>`.
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ResourceName:             resourceID,
 				ImportState:              true,
 				ImportStateVerify:        true,
+				ImportStateIdFunc:        testAccParameterCompositeImportID(resourceID),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+			},
+			// Import by bare parameter UUID (default space).
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             resourceID,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return testAccParameterResourceUUIDFromState(s, resourceID)
+				},
+				ConfigDirectory: acctest.NamedTestCaseDirectory("import"),
 			},
 			// Defaults: omit description and tags to verify empty defaults are applied.
 			{
@@ -69,6 +92,8 @@ func TestSyntheticParameterResource(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "value", "test-value"),
 					resource.TestCheckResourceAttr(resourceID, "description", ""),
 					resource.TestCheckResourceAttr(resourceID, "tags.#", "0"),
+					resource.TestCheckResourceAttr(resourceID, "space_id", clients.DefaultSpaceID),
+					testAccCheckCompositeIDFormat(resourceID, clients.DefaultSpaceID),
 				),
 			},
 			// Update and Read testing
@@ -83,6 +108,8 @@ func TestSyntheticParameterResource(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "tags.0", "c"),
 					resource.TestCheckResourceAttr(resourceID, "tags.1", "d"),
 					resource.TestCheckResourceAttr(resourceID, "tags.2", "e"),
+					resource.TestCheckResourceAttr(resourceID, "space_id", clients.DefaultSpaceID),
+					testAccCheckCompositeIDFormat(resourceID, clients.DefaultSpaceID),
 				),
 			},
 			// Delete testing automatically occurs in TestCase
@@ -136,4 +163,209 @@ func TestSyntheticParameterResource_SharedAcrossSpaces(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestSyntheticParameterResource_nonDefaultSpace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaParameterAPIVersion, versionutils.FlavorAny)
+
+	resourceID := "elasticstack_kibana_synthetics_parameter.test"
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	spaceID := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	vars := config.Variables{
+		"suffix":   config.StringVariable(suffix),
+		"space_id": config.StringVariable(spaceID),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "space_id", spaceID),
+					resource.TestCheckResourceAttr(resourceID, "key", fmt.Sprintf("test-key-space-%s", suffix)),
+					resource.TestCheckResourceAttr(resourceID, "value", "test-value-space"),
+					testAccCheckCompositeIDFormat(resourceID, spaceID),
+					testAccCheckParameterExistsInKibanaSpace(resourceID, spaceID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             resourceID,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateIdFunc:        testAccParameterCompositeImportID(resourceID),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("import"),
+				ConfigVariables:          vars,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "space_id", spaceID),
+					resource.TestCheckResourceAttr(resourceID, "key", fmt.Sprintf("test-key-space-updated-%s", suffix)),
+					resource.TestCheckResourceAttr(resourceID, "value", "test-value-space-updated"),
+					testAccCheckCompositeIDFormat(resourceID, spaceID),
+				),
+			},
+		},
+	})
+}
+
+func TestSyntheticParameterResource_spaceRequiresReplace(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaParameterAPIVersion, versionutils.FlavorAny)
+
+	resourceID := "elasticstack_kibana_synthetics_parameter.test"
+	suffix := sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum)
+	spaceID1 := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	spaceID2 := sdkacctest.RandStringFromCharSet(12, accTestKibanaSpaceIDCharset)
+	var firstCompositeID, firstParamUUID string
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_create"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(suffix),
+					"space_id": config.StringVariable(spaceID1),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "space_id", spaceID1),
+					testAccCheckCompositeIDFormat(resourceID, spaceID1),
+					testAccCheckParameterExistsInKibanaSpace(resourceID, spaceID1),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceID]
+						if !ok {
+							return fmt.Errorf("resource not found: %s", resourceID)
+						}
+						firstCompositeID = rs.Primary.ID
+						uuid, err := testAccParameterResourceUUIDFromState(s, resourceID)
+						if err != nil {
+							return err
+						}
+						firstParamUUID = uuid
+						return nil
+					},
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("space_replace"),
+				ConfigVariables: config.Variables{
+					"suffix":   config.StringVariable(suffix),
+					"space_id": config.StringVariable(spaceID2),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "space_id", spaceID2),
+					testAccCheckCompositeIDFormat(resourceID, spaceID2),
+					testAccCheckParameterExistsInKibanaSpace(resourceID, spaceID2),
+					func(s *terraform.State) error {
+						rs, ok := s.RootModule().Resources[resourceID]
+						if !ok {
+							return fmt.Errorf("resource not found: %s", resourceID)
+						}
+						if rs.Primary.ID == firstCompositeID {
+							return fmt.Errorf("expected new composite id after space_id change (RequiresReplace), got same id: %s", firstCompositeID)
+						}
+						compID, diags := clients.CompositeIDFromStr(rs.Primary.ID)
+						if diags.HasError() {
+							return fmt.Errorf("parse composite id %q: %v", rs.Primary.ID, diags)
+						}
+						if compID.ClusterID != spaceID2 {
+							return fmt.Errorf("expected composite space segment %q after replace, got %q", spaceID2, compID.ClusterID)
+						}
+						newUUID, err := testAccParameterResourceUUIDFromState(s, resourceID)
+						if err != nil {
+							return err
+						}
+						if newUUID == firstParamUUID {
+							return fmt.Errorf("expected new parameter UUID after space_id change (RequiresReplace), got same UUID: %s", firstParamUUID)
+						}
+						return nil
+					},
+				),
+			},
+		},
+	})
+}
+
+func testAccParameterCompositeImportID(resourceAddr string) resource.ImportStateIdFunc {
+	return func(s *terraform.State) (string, error) {
+		rs, ok := s.RootModule().Resources[resourceAddr]
+		if !ok {
+			return "", fmt.Errorf("resource not found: %s", resourceAddr)
+		}
+		return rs.Primary.ID, nil
+	}
+}
+
+func testAccParameterResourceUUIDFromState(s *terraform.State, resourceAddr string) (string, error) {
+	rs, ok := s.RootModule().Resources[resourceAddr]
+	if !ok {
+		return "", fmt.Errorf("resource not found: %s", resourceAddr)
+	}
+	compID, diags := clients.CompositeIDFromStr(rs.Primary.ID)
+	if diags.HasError() {
+		return "", fmt.Errorf("parse composite id %q: %v", rs.Primary.ID, diags)
+	}
+	return compID.ResourceID, nil
+}
+
+func testAccCheckCompositeIDFormat(resourceAddr, spaceID string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceAddr]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceAddr)
+		}
+
+		compID, diags := clients.CompositeIDFromStr(rs.Primary.ID)
+		if diags.HasError() {
+			return fmt.Errorf("parse composite id %q: %v", rs.Primary.ID, diags)
+		}
+		if compID.ClusterID != spaceID {
+			return fmt.Errorf("resource %q space segment %q, want %q", resourceAddr, compID.ClusterID, spaceID)
+		}
+		if compID.ResourceID == "" {
+			return fmt.Errorf("resource %q composite id %q has empty resource UUID segment", resourceAddr, rs.Primary.ID)
+		}
+		if rs.Primary.Attributes["space_id"] != spaceID {
+			return fmt.Errorf("resource %q space_id %q, want %q", resourceAddr, rs.Primary.Attributes["space_id"], spaceID)
+		}
+		return nil
+	}
+}
+
+func testAccCheckParameterExistsInKibanaSpace(resourceAddr, spaceID string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		paramUUID, err := testAccParameterResourceUUIDFromState(s, resourceAddr)
+		if err != nil {
+			return err
+		}
+		return testAccAssertParameterExistsInKibanaAPI(spaceID, paramUUID)
+	}
+}
+
+func testAccAssertParameterExistsInKibanaAPI(spaceID, paramUUID string) error {
+	apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		return err
+	}
+	kibanaClient := apiClient.GetKibanaOapiClient()
+	resp, err := kibanaClient.API.GetParameterWithResponse(
+		context.Background(),
+		paramUUID,
+		kibanautil.SpaceAwarePathRequestEditor(spaceID),
+	)
+	if err != nil {
+		return fmt.Errorf("get parameter %q in Kibana space %q: %w", paramUUID, spaceID, err)
+	}
+	if resp.JSON200 != nil && resp.StatusCode() == 200 {
+		return nil
+	}
+	return fmt.Errorf("expected parameter %q readable in Kibana space %q (HTTP 200 with body), got status %d", paramUUID, spaceID, resp.StatusCode())
 }

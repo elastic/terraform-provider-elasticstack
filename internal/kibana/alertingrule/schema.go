@@ -19,7 +19,6 @@ package alertingrule
 
 import (
 	"context"
-	"sync"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
@@ -35,6 +34,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
@@ -43,13 +43,17 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-var (
-	attrTypesOnce        sync.Once
-	cachedActionsTypes   map[string]attr.Type
-	cachedFrequencyTypes map[string]attr.Type
-	cachedFilterTypes    map[string]attr.Type
-	cachedTimeframeTypes map[string]attr.Type
-	cachedFlappingTypes  map[string]attr.Type
+var attrTypesCache kbschema.AttrTypesCache
+
+const (
+	attrTypesKeyActions            = "actions"
+	attrTypesKeyFrequency          = "frequency"
+	attrTypesKeyAlertsFilter       = "alerts_filter"
+	attrTypesKeyTimeframe          = "timeframe"
+	attrTypesKeyFlapping           = "flapping"
+	attrTypesKeyArtifacts          = "artifacts"
+	attrTypesKeyInvestigationGuide = "investigation_guide"
+	attrTypesKeyDashboard          = "dashboard"
 )
 
 func getSchema(_ context.Context) schema.Schema {
@@ -150,14 +154,6 @@ func getSchema(_ context.Context) schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"last_execution_status": schema.StringAttribute{
-				Description: "Status of the last execution of this rule.",
-				Computed:    true,
-			},
-			"last_execution_date": schema.StringAttribute{
-				Description: "Date of the last execution of this rule.",
-				Computed:    true,
-			},
 			"alert_delay": schema.Int64Attribute{
 				Description: "A number that indicates how many consecutive runs need to meet the rule conditions for an alert to occur.",
 				Computed:    true,
@@ -196,6 +192,78 @@ func getSchema(_ context.Context) schema.Schema {
 						Optional:    true,
 						Validators: []validator.Int64{
 							int64validator.AtLeast(1),
+						},
+					},
+				},
+			},
+			attrArtifacts: schema.SingleNestedAttribute{
+				MarkdownDescription: artifactsDescription,
+				Optional:            true,
+				Computed:            true,
+				PlanModifiers: []planmodifier.Object{
+					objectplanmodifier.UseStateForUnknown(),
+				},
+				Attributes: map[string]schema.Attribute{
+					attrDashboards: schema.ListNestedAttribute{
+						MarkdownDescription: dashboardsDescription,
+						Optional:            true,
+						Computed:            true,
+						Validators: []validator.List{
+							listvalidator.AtLeastOneOf(
+								path.MatchRelative().AtParent().AtName(attrInvestigationGuide),
+								path.MatchRelative().AtParent().AtName(attrDashboards),
+							),
+							listvalidator.SizeAtLeast(1),
+						},
+						PlanModifiers: []planmodifier.List{
+							listplanmodifier.UseStateForUnknown(),
+						},
+						NestedObject: schema.NestedAttributeObject{
+							Attributes: map[string]schema.Attribute{
+								"id": schema.StringAttribute{
+									MarkdownDescription: "The Kibana dashboard saved-object id.",
+									Required:            true,
+								},
+							},
+						},
+					},
+					attrInvestigationGuide: schema.SingleNestedAttribute{
+						MarkdownDescription: investigationGuideDescription,
+						Optional:            true,
+						Computed:            true,
+						Validators: []validator.Object{
+							objectvalidator.AtLeastOneOf(
+								path.MatchRelative().AtParent().AtName(attrInvestigationGuide),
+								path.MatchRelative().AtParent().AtName(attrDashboards),
+							),
+						},
+						PlanModifiers: []planmodifier.Object{
+							objectplanmodifier.UseStateForUnknown(),
+						},
+						Attributes: map[string]schema.Attribute{
+							attrContent: schema.StringAttribute{
+								MarkdownDescription: "Inline investigation guide content (Markdown). Mutually exclusive with `content_path`.",
+								Optional:            true,
+								Validators: []validator.String{
+									stringvalidator.ExactlyOneOf(
+										path.MatchRelative().AtParent().AtName(attrContent),
+										path.MatchRelative().AtParent().AtName(attrContentPath),
+									),
+								},
+							},
+							attrContentPath: schema.StringAttribute{
+								MarkdownDescription: "Path to a local file whose contents are used as the investigation guide. " +
+									"The provider computes a SHA-256 `checksum` of the file at plan time to detect external changes. " +
+									"Mutually exclusive with `content`.",
+								Optional: true,
+							},
+							attrChecksum: schema.StringAttribute{
+								MarkdownDescription: "SHA-256 checksum of the file at `content_path`, used to detect drift. Computed; not user-settable.",
+								Computed:            true,
+								PlanModifiers: []planmodifier.String{
+									stringplanmodifier.UseStateForUnknown(),
+								},
+							},
 						},
 					},
 				},
@@ -309,53 +377,79 @@ func getSchema(_ context.Context) schema.Schema {
 	}
 }
 
-// initAttrTypes initializes and caches all attribute types from the schema.
-// This is called once via sync.Once to avoid repeatedly parsing the schema.
-func initAttrTypes() {
+// initAttrTypes reflects all attribute types out of the schema once, via the
+// shared kbschema.AttrTypesCache, to avoid repeatedly parsing the schema.
+func initAttrTypes(set kbschema.Set) {
 	s := getSchema(context.Background())
 
 	actionsBlock := s.Blocks["actions"].(schema.ListNestedBlock)
-	cachedActionsTypes = actionsBlock.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyActions, actionsBlock.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	freqBlock := actionsBlock.NestedObject.Blocks["frequency"].(schema.SingleNestedBlock)
-	cachedFrequencyTypes = freqBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyFrequency, freqBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	filterBlock := actionsBlock.NestedObject.Blocks["alerts_filter"].(schema.SingleNestedBlock)
-	cachedFilterTypes = filterBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyAlertsFilter, filterBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	tfBlock := filterBlock.Blocks["timeframe"].(schema.SingleNestedBlock)
-	cachedTimeframeTypes = tfBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyTimeframe, tfBlock.Type().(attr.TypeWithAttributeTypes).AttributeTypes())
 
 	flapAttr := s.Attributes["flapping"].(schema.SingleNestedAttribute)
-	cachedFlappingTypes = flapAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes()
+	set(attrTypesKeyFlapping, flapAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
+
+	artifactsAttr := s.Attributes[attrArtifacts].(schema.SingleNestedAttribute)
+	set(attrTypesKeyArtifacts, artifactsAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
+
+	investigationGuideAttr := artifactsAttr.Attributes[attrInvestigationGuide].(schema.SingleNestedAttribute)
+	set(attrTypesKeyInvestigationGuide, investigationGuideAttr.GetType().(attr.TypeWithAttributeTypes).AttributeTypes())
+
+	dashboardsAttr := artifactsAttr.Attributes[attrDashboards].(schema.ListNestedAttribute)
+	set(attrTypesKeyDashboard, dashboardsAttr.NestedObject.Type().(attr.TypeWithAttributeTypes).AttributeTypes())
 }
 
 // getActionsAttrTypes returns the attribute types for actions list elements.
 func getActionsAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initAttrTypes)
-	return cachedActionsTypes
+	return attrTypesCache.Get(attrTypesKeyActions, initAttrTypes)
 }
 
 // getFrequencyAttrTypes returns the attribute types for frequency object.
 func getFrequencyAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initAttrTypes)
-	return cachedFrequencyTypes
+	return attrTypesCache.Get(attrTypesKeyFrequency, initAttrTypes)
 }
 
 // getAlertsFilterAttrTypes returns the attribute types for alerts_filter object.
 func getAlertsFilterAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initAttrTypes)
-	return cachedFilterTypes
+	return attrTypesCache.Get(attrTypesKeyAlertsFilter, initAttrTypes)
 }
 
 // getTimeframeAttrTypes returns the attribute types for timeframe object.
 func getTimeframeAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initAttrTypes)
-	return cachedTimeframeTypes
+	return attrTypesCache.Get(attrTypesKeyTimeframe, initAttrTypes)
 }
 
 // getFlappingAttrTypes returns the attribute types for the flapping object.
 func getFlappingAttrTypes() map[string]attr.Type {
-	attrTypesOnce.Do(initAttrTypes)
-	return cachedFlappingTypes
+	return attrTypesCache.Get(attrTypesKeyFlapping, initAttrTypes)
+}
+
+// getArtifactsAttrTypes returns the attribute types for the artifacts object.
+func getArtifactsAttrTypes() map[string]attr.Type {
+	return attrTypesCache.Get(attrTypesKeyArtifacts, initAttrTypes)
+}
+
+// getInvestigationGuideAttrTypes returns the attribute types for the
+// investigation_guide object.
+func getInvestigationGuideAttrTypes() map[string]attr.Type {
+	return attrTypesCache.Get(attrTypesKeyInvestigationGuide, initAttrTypes)
+}
+
+// getDashboardAttrTypes returns the attribute types for a single dashboards
+// list element.
+func getDashboardAttrTypes() map[string]attr.Type {
+	return attrTypesCache.Get(attrTypesKeyDashboard, initAttrTypes)
+}
+
+// getDashboardsElementType returns the object type of a dashboards list element.
+func getDashboardsElementType() types.ObjectType {
+	return types.ObjectType{AttrTypes: getDashboardAttrTypes()}
 }

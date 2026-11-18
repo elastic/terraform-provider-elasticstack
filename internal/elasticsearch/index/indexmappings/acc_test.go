@@ -21,6 +21,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"maps"
+	"os"
 	"regexp"
 	"strings"
 	"testing"
@@ -39,6 +41,10 @@ const mappingsResourceName = "elasticstack_elasticsearch_index_mappings.test"
 
 var indexMappingsIDRegexp = regexp.MustCompile(`^[A-Za-z0-9_-]+/.+$`)
 
+func indexMappingsIDRegexpForIndex(indexName string) *regexp.Regexp {
+	return regexp.MustCompile(`^[A-Za-z0-9_-]+/` + regexp.QuoteMeta(indexName) + `$`)
+}
+
 func TestAccResourceIndexMappings_basic(t *testing.T) {
 	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -54,7 +60,7 @@ func TestAccResourceIndexMappings_basic(t *testing.T) {
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
-					resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexp),
+					resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexpForIndex(indexName)),
 					checkStateMappingsProperties([]string{"title"}, nil),
 				),
 			},
@@ -119,6 +125,36 @@ func TestAccResourceIndexMappings_update(t *testing.T) {
 					},
 				},
 			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("one_field"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(mappingsResourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
+					checkStateMappingsProperties([]string{"title"}, []string{"body"}),
+					// Removing a field from the config only stops tracking it; the mapping stays on the index.
+					checkIndexMappingsContainField(indexName, "body"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("one_field"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
 		},
 	})
 }
@@ -173,10 +209,10 @@ func TestAccResourceIndexMappings_allTopLevelKeys(t *testing.T) {
 					resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
 					resource.TestCheckResourceAttrSet(mappingsResourceName, "mappings"),
 					checkStateMappingsTopLevelKeys("dynamic", "_source", "dynamic_templates", "runtime", "properties"),
-					checkStateMappingsDynamic(false),
+					checkStateMappingsDynamic(),
 					checkStateMappingsSourceEnabled(true),
 					checkStateMappingsRuntimeFields("day_of_week"),
-					checkStateMappingsDynamicTemplates(1),
+					checkStateMappingsDynamicTemplates("strings_as_keywords"),
 					checkStateMappingsProperties([]string{"title"}, nil),
 				),
 			},
@@ -188,6 +224,80 @@ func TestAccResourceIndexMappings_allTopLevelKeys(t *testing.T) {
 				},
 				PlanOnly:           true,
 				ExpectNonEmptyPlan: false,
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexMappings_dynamicTemplatesFromIndexTemplate(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexMappingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsDynamicTemplates("text_ja_example"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				PreConfig: func() {
+					setDynamicTemplatesOutOfBand(t, indexName, []any{
+						map[string]any{
+							"template_default": map[string]any{
+								"match_mapping_type": "string",
+								"mapping":            map[string]any{"type": "keyword"},
+							},
+						},
+						map[string]any{
+							"text_ja_example": map[string]any{
+								"path_match": "hoge.example_field.freetext",
+								"mapping":    map[string]any{"type": "text"},
+							},
+						},
+					})
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsDynamicTemplates("text_ja_example"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables: config.Variables{
+					"index_name": config.StringVariable(indexName),
+				},
+				PreConfig: func() {
+					// Omit the declared name so the API no longer has text_ja_example.
+					setDynamicTemplatesOutOfBand(t, indexName, []any{
+						map[string]any{
+							"template_default": map[string]any{
+								"match_mapping_type": "string",
+								"mapping":            map[string]any{"type": "keyword"},
+							},
+						},
+					})
+				},
+				// PlanOnly skips step.Check; ExpectNonEmptyPlan is the assertion
+				// that Read persisted the empty declared set instead of re-pinning.
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
 			},
 		},
 	})
@@ -230,11 +340,10 @@ func TestAccResourceIndexMappings_import(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"index_name": config.StringVariable(indexName),
 				},
-				ResourceName:            mappingsResourceName,
-				ImportState:             true,
-				ImportStateVerify:       true,
-				ImportStateIdFunc:       importStateIDForIndexName(indexName),
-				ImportStateVerifyIgnore: []string{"id"},
+				ResourceName:      mappingsResourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: importStateIDForIndexName(indexName),
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -436,7 +545,7 @@ func TestAccResourceIndexMappings_updateTopLevelKey(t *testing.T) {
 					},
 				},
 				Check: resource.ComposeTestCheckFunc(
-					checkStateMappingsDynamic(false),
+					checkStateMappingsDynamic(),
 					checkStateMappingsProperties([]string{"title"}, nil),
 				),
 			},
@@ -454,6 +563,162 @@ func TestAccResourceIndexMappings_updateTopLevelKey(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccResourceIndexMappings_elasticsearchConnection(t *testing.T) {
+	endpoints := esEndpointsFromEnv()
+	if len(endpoints) == 0 {
+		t.Skip("ELASTICSEARCH_ENDPOINTS must be set to run this test")
+	}
+	endpointVars := make([]config.Variable, 0, len(endpoints))
+	for _, endpoint := range endpoints {
+		endpointVars = append(endpointVars, config.StringVariable(endpoint))
+	}
+
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	apiKey := os.Getenv("ELASTICSEARCH_API_KEY")
+	username := os.Getenv("ELASTICSEARCH_USERNAME")
+	password := os.Getenv("ELASTICSEARCH_PASSWORD")
+
+	checks := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(mappingsResourceName, "index", indexName),
+		resource.TestMatchResourceAttr(mappingsResourceName, "id", indexMappingsIDRegexpForIndex(indexName)),
+		checkStateMappingsProperties([]string{"title"}, nil),
+		resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.#", "1"),
+		resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.0.endpoints.#", fmt.Sprintf("%d", len(endpoints))),
+		resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.0.endpoints.0", endpoints[0]),
+		resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.0.insecure", "true"),
+	}
+	// An api_key, when set, is used exclusively; otherwise username/password are configured.
+	if apiKey != "" {
+		checks = append(checks, resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.0.api_key", apiKey))
+	} else {
+		checks = append(checks,
+			resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.0.username", username),
+			resource.TestCheckResourceAttr(mappingsResourceName, "elasticsearch_connection.0.password", password),
+		)
+	}
+
+	vars := config.Variables{
+		"index_name": config.StringVariable(indexName),
+		"endpoints":  config.ListVariable(endpointVars...),
+		"api_key":    config.StringVariable(apiKey),
+		"username":   config.StringVariable(username),
+		"password":   config.StringVariable(password),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexMappingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          vars,
+				Check:                    resource.ComposeTestCheckFunc(checks...),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+				ConfigVariables:          vars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexMappings_semanticEquality(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{
+		"index_name": config.StringVariable(indexName),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIndexMappingsDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ordered"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsDynamic(),
+					checkStateMappingsProperties([]string{"title", "body"}, nil),
+				),
+			},
+			{
+				// Elasticsearch returns mappings in its own key order; the config order must not cause drift.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("ordered"),
+				ConfigVariables:          vars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+			{
+				// Same mappings with different key order and whitespace.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("reordered"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					checkStateMappingsDynamic(),
+					checkStateMappingsProperties([]string{"title", "body"}, nil),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("reordered"),
+				ConfigVariables:          vars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
+			},
+		},
+	})
+}
+
+func TestAccResourceIndexMappings_invalidMappings(t *testing.T) {
+	indexName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	stepWithMappings := func(mappings string, expectErr *regexp.Regexp) resource.TestStep {
+		return resource.TestStep{
+			ProtoV6ProviderFactories: acctest.Providers,
+			ConfigDirectory:          acctest.NamedTestCaseDirectory("apply"),
+			ConfigVariables: config.Variables{
+				"index_name": config.StringVariable(indexName),
+				"mappings":   config.StringVariable(mappings),
+			},
+			PlanOnly:    true,
+			ExpectError: expectErr,
+		}
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			stepWithMappings("not json", regexp.MustCompile(`Invalid JSON String Value`)),
+			stepWithMappings("[]", regexp.MustCompile(`(?s)expected value to be a JSON\s+object`)),
+		},
+	})
+}
+
+func esEndpointsFromEnv() []string {
+	parts := strings.Split(os.Getenv("ELASTICSEARCH_ENDPOINTS"), ",")
+	endpoints := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if part = strings.TrimSpace(part); part != "" {
+			endpoints = append(endpoints, part)
+		}
+	}
+	return endpoints
 }
 
 func stateMappingsFromResource(s *terraform.State) (map[string]any, error) {
@@ -515,8 +780,8 @@ func checkStateMappingsTopLevelKeys(keys ...string) resource.TestCheckFunc {
 	}
 }
 
-func checkStateMappingsDynamic(expected bool) resource.TestCheckFunc {
-	return checkStateMappingsBoolAt(expected, "dynamic")
+func checkStateMappingsDynamic() resource.TestCheckFunc {
+	return checkStateMappingsBoolAt(false, "dynamic")
 }
 
 func checkStateMappingsSourceEnabled(expected bool) resource.TestCheckFunc {
@@ -584,7 +849,7 @@ func checkStateMappingsRuntimeFields(names ...string) resource.TestCheckFunc {
 	}
 }
 
-func checkStateMappingsDynamicTemplates(minCount int) resource.TestCheckFunc {
+func checkStateMappingsDynamicTemplates(wantNames ...string) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		mappings, err := stateMappingsFromResource(s)
 		if err != nil {
@@ -594,8 +859,26 @@ func checkStateMappingsDynamicTemplates(minCount int) resource.TestCheckFunc {
 		if !ok {
 			return fmt.Errorf("state mappings dynamic_templates is not an array")
 		}
-		if len(templates) < minCount {
-			return fmt.Errorf("state mappings dynamic_templates length %d, want at least %d", len(templates), minCount)
+
+		gotSet := make(map[string]struct{}, len(templates))
+		gotNames := make([]string, 0, len(templates))
+		for i, raw := range templates {
+			entry, ok := raw.(map[string]any)
+			if !ok || len(entry) != 1 {
+				return fmt.Errorf("state mappings dynamic_templates[%d] is not a single-name object", i)
+			}
+			for name := range entry {
+				gotSet[name] = struct{}{}
+				gotNames = append(gotNames, name)
+			}
+		}
+
+		wantSet := make(map[string]struct{}, len(wantNames))
+		for _, name := range wantNames {
+			wantSet[name] = struct{}{}
+		}
+		if !maps.Equal(gotSet, wantSet) {
+			return fmt.Errorf("state mappings dynamic_templates names %v, want %v", gotNames, wantNames)
 		}
 		return nil
 	}
@@ -632,25 +915,34 @@ func deleteIndexOutOfBand(t *testing.T, indexName string) {
 
 func addDynamicMappingField(t *testing.T, indexName, fieldName string, fieldMapping map[string]any) {
 	t.Helper()
+	updateIndexMappingsOutOfBand(t, indexName, map[string]any{
+		"properties": map[string]any{
+			fieldName: fieldMapping,
+		},
+	})
+}
+
+func setDynamicTemplatesOutOfBand(t *testing.T, indexName string, templates []any) {
+	t.Helper()
+	updateIndexMappingsOutOfBand(t, indexName, map[string]any{"dynamic_templates": templates})
+}
+
+func updateIndexMappingsOutOfBand(t *testing.T, indexName string, payload map[string]any) {
+	t.Helper()
 
 	client, err := clients.NewAcceptanceTestingElasticsearchScopedClient()
 	if err != nil {
 		t.Fatalf("failed to create Elasticsearch client: %s", err)
 	}
 
-	payload := map[string]any{
-		"properties": map[string]any{
-			fieldName: fieldMapping,
-		},
-	}
 	body, err := json.Marshal(payload)
 	if err != nil {
-		t.Fatalf("failed to marshal dynamic mapping: %s", err)
+		t.Fatalf("failed to marshal out-of-band mappings: %s", err)
 	}
 
 	diags := esclient.UpdateIndexMappings(context.Background(), client, indexName, string(body))
 	if diags.HasError() {
-		t.Fatalf("failed to add dynamic mapping field: %v", diags)
+		t.Fatalf("failed to update index mappings out of band: %v", diags)
 	}
 }
 

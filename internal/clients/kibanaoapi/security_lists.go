@@ -49,6 +49,12 @@ func CreateListIndex(ctx context.Context, client *Client, spaceID string) (bool,
 	}
 }
 
+// listIndexStatus mirrors the fields we need from the ReadListIndex response.
+type listIndexStatus struct {
+	ListIndex     bool
+	ListItemIndex bool
+}
+
 // ReadListIndex reads the status of .lists and .items data streams for a space.
 // Returns the status of list_index and list_item_index separately, and diagnostics on error.
 func ReadListIndex(ctx context.Context, client *Client, spaceID string) (listIndex bool, listItemIndex bool, diags diag.Diagnostics) {
@@ -57,18 +63,17 @@ func ReadListIndex(ctx context.Context, client *Client, spaceID string) (listInd
 		return false, false, diagutil.FrameworkDiagFromError(err)
 	}
 
-	switch resp.StatusCode() {
-	case http.StatusOK:
-		if resp.JSON200 != nil {
-			return resp.JSON200.ListIndex, resp.JSON200.ListItemIndex, nil
+	// Data streams don't exist on HTTP 404; HandleGetTypedResponse returns (nil, nil) in that case.
+	status, diags := HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *listIndexStatus {
+		if resp.JSON200 == nil {
+			return &listIndexStatus{}
 		}
-		return false, false, nil
-	case http.StatusNotFound:
-		// Data streams don't exist
-		return false, false, nil
-	default:
-		return false, false, diagutil.ReportUnknownHTTPError(resp.StatusCode(), resp.Body)
+		return &listIndexStatus{ListIndex: resp.JSON200.ListIndex, ListItemIndex: resp.JSON200.ListItemIndex}
+	})
+	if diags.HasError() || status == nil {
+		return false, false, diags
 	}
+	return status.ListIndex, status.ListItemIndex, nil
 }
 
 // DeleteListIndex deletes the .lists and .items data streams for a space.

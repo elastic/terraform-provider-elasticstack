@@ -1,11 +1,15 @@
 # Preserve environment and command-line variable values across .env inclusion.
 # The .env file (auto-created from .env.template) may contain defaults that
 # would otherwise silently override values set via workflow matrices or local shell.
+# These defines use make function syntax that shellcheck cannot parse; they
+# are make directives expanded via eval/call below, not shell.
+# shellcheck disable=SC1073,SC1065,SC1064,SC1072
 define _env_guard_save
 _$(1)_ORIGIN := $(origin $(1))
 _$(1)_VALUE  := $($(1))
 endef
 
+# shellcheck disable=SC1073,SC1065,SC1064,SC1072
 define _env_guard_restore
 ifneq ($(filter environment command line,$(_$(1)_ORIGIN)),)
   override $(1) := $(_$(1)_VALUE)
@@ -15,16 +19,20 @@ endef
 # Guard variables present in both .env.template and CI/local usage.
 _ENV_GUARD_VARS := STACK_VERSION FLEET_IMAGE ELASTICSEARCH_PASSWORD KIBANA_PASSWORD
 
+# These eval/foreach invocations expand make function syntax that shellcheck
+# cannot parse; they are make directives, not shell.
+# shellcheck disable=SC1073,SC1065,SC1064,SC1072
 $(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_save,$v)))
 
 -include .env
 
+# shellcheck disable=SC1073,SC1065,SC1064,SC1072
 $(foreach v,$(_ENV_GUARD_VARS),$(eval $(call _env_guard_restore,$v)))
 
 .DEFAULT_GOAL = help
 SHELL := /bin/bash
 
-VERSION ?= 0.16.3
+VERSION ?= 0.17.0
 
 NAME = elasticstack
 BINARY = terraform-provider-${NAME}
@@ -37,6 +45,11 @@ ACCTEST_SHARD_INDEX ?= 0
 ACCTEST_TIMEOUT = 120m
 ACCTEST_COUNT = 1
 TEST ?= ./...
+
+# Optional diff baseline for targeted acceptance test selection.
+TARGETED_TESTACC_BASE ?=
+# Go bool flag value: accepts 0/1/true/false (strconv.ParseBool).
+TARGETED_TESTACC_VERBOSE ?= 0
 
 USE_TLS ?= 0
 COMPOSE_FILE := docker-compose.yml
@@ -70,6 +83,26 @@ ifneq (,$(filter 8.0.% 8.1.%,$(STACK_VERSION)))
 FLEET_IMAGE := elastic/elastic-agent
 endif
 
+# Kibana 8.14+ (the synthetics monitor resource minimum) runs with a stub
+# Synthetics Service: one Elastic-managed location (us_west) whose service URL
+# is unreachable, so monitor pushes fail as they intermittently do on Elastic
+# Cloud. The location manifest is a document seeded into Elasticsearch by the
+# kibana_settings compose service. Older Kibana versions reject these settings.
+SYNTHETICS_STUB_MANIFEST_INDEX := tf-stub-synthetics-manifest
+KIBANA_SYNTHETICS_STUB := $(shell v='$(STACK_VERSION)'; v="$${v%%-*}"; major="$${v%%.*}"; rest="$$(printf '%s\n' "$$v" | cut -d. -f2-)"; minor="$${rest%%.*}"; \
+	if [ "$$major" -gt 8 ] 2>/dev/null || { [ "$$major" -eq 8 ] && [ "$$minor" -ge 14 ]; } 2>/dev/null; then echo 1; fi)
+ifeq ($(KIBANA_SYNTHETICS_STUB),1)
+KIBANA_EXTRA_ARGS := --xpack.uptime.service.manifestUrl=http://elastic:$(ELASTICSEARCH_PASSWORD)@elasticsearch:9200/$(SYNTHETICS_STUB_MANIFEST_INDEX)/_source/manifest \
+	--xpack.uptime.service.username=stub \
+	--xpack.uptime.service.password=stub
+endif
+export KIBANA_SYNTHETICS_STUB KIBANA_EXTRA_ARGS SYNTHETICS_STUB_MANIFEST_INDEX
+
+# Kibana 9.4+ needs extra feature flags and settings (kibana-9.4.yml) that
+# earlier versions reject as unknown. Uses the same version parsing as above.
+KIBANA_9_4_PLUS := $(shell v='$(STACK_VERSION)'; v="$${v%%-*}"; major="$${v%%.*}"; rest="$$(printf '%s\n' "$$v" | cut -d. -f2-)"; minor="$${rest%%.*}"; \
+	if [ "$$major" -gt 9 ] 2>/dev/null || { [ "$$major" -eq 9 ] && [ "$$minor" -ge 4 ]; } 2>/dev/null; then echo 1; fi)
+
 RERUN_FAILS ?= 5
 RERUN_FAILS_MAX_FAILURES ?= 20
 
@@ -102,13 +135,31 @@ testacc-vs-docker:
 testacc: ## Run acceptance tests
 	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --rerun-fails-max-failures=$(RERUN_FAILS_MAX_FAILURES) --packages="$(shell go list ./... | sort | awk '(NR-1) % $(ACCTEST_TOTAL_SHARDS) == $(ACCTEST_SHARD_INDEX)')" -- -p $(ACCTEST_PACKAGE_PARALLELISM) -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
 
+.PHONY: targeted-testacc
+targeted-testacc: ## Run acceptance tests relevant to the current branch diff
+	@set -euo pipefail; \
+	targeted_pkgs="$(TARGETED_PKGS)"; \
+	if [ -z "$${targeted_pkgs}" ]; then \
+		plan=$$(TARGETED_TESTACC_BASE="$(TARGETED_TESTACC_BASE)" go run ./scripts/targeted-testacc/... --total-shards=$(ACCTEST_TOTAL_SHARDS) --verbose=$(TARGETED_TESTACC_VERBOSE)); \
+		targeted_pkgs=$$(printf '%s' "$${plan}" | ACCTEST_SHARD_INDEX=$(ACCTEST_SHARD_INDEX) node -e 'const plan = JSON.parse(require("fs").readFileSync(0, "utf8")); const raw = process.env.ACCTEST_SHARD_INDEX ?? ""; const idx = Number(raw.trim()); if (raw.trim() === "" || !Number.isInteger(idx) || idx < 0) { console.error("invalid ACCTEST_SHARD_INDEX: " + JSON.stringify(raw) + " (expected a nonnegative integer)"); process.exit(1); } const shard = plan.shards[idx] || []; process.stdout.write(shard.join(" "))'); \
+	fi; \
+	if [ -z "$${targeted_pkgs}" ]; then \
+		echo "No acceptance test packages selected for this diff/shard; skipping."; \
+		exit 0; \
+	fi; \
+	TF_ACC=1 go tool gotestsum --format testname --rerun-fails=$(RERUN_FAILS) --rerun-fails-max-failures=$(RERUN_FAILS_MAX_FAILURES) --packages="$${targeted_pkgs}" -- -p $(ACCTEST_PACKAGE_PARALLELISM) -v -count $(ACCTEST_COUNT) -parallel $(ACCTEST_PARALLELISM) $(TESTARGS) -timeout $(ACCTEST_TIMEOUT)
+
+.PHONY: targeted-testacc-dry-run
+targeted-testacc-dry-run: ## Print the JSON shard plan for the current branch diff (does not run tests)
+	@TARGETED_TESTACC_BASE="$(TARGETED_TESTACC_BASE)" go run ./scripts/targeted-testacc/... --total-shards=$(ACCTEST_TOTAL_SHARDS) --verbose=$(TARGETED_TESTACC_VERBOSE) --dry-run
+
 .PHONY: hook-test
 hook-test: ## Run hook JavaScript unit tests
 	@ node --test .agents/hooks/*.test.mjs
 
 .PHONY: test
 test: workflow-test hook-test ## Run unit tests and JS tests
-	go test -v $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
+	go test -v -short $(TEST) $(TESTARGS) -timeout=5m -parallel=4 -count=1
 
 CURL_BASE_OPTS = -sS --retry 5 --retry-all-errors -u $(ELASTICSEARCH_USERNAME):$(ELASTICSEARCH_PASSWORD) -H "Content-Type: application/json"
 CURL_OPTS = $(CURL_BASE_OPTS) -X POST
@@ -139,7 +190,7 @@ docker-kibana: .env  ## Start Kibana node in docker container
 
 .PHONY: docker-fleet
 docker-fleet: .env ## Start Fleet node in docker container
-	@ export KIBANA_CONFIG_FILE=$$(if [ "$(STACK_VERSION)" = "9.4.0" ]; then echo "kibana-9.4.yml"; else echo "kibana.yml"; fi); \
+	@ export KIBANA_CONFIG_FILE=$$(if [ "$(KIBANA_9_4_PLUS)" = "1" ]; then echo "kibana-9.4.yml"; else echo "kibana.yml"; fi); \
 	docker compose -f $(COMPOSE_FILE) up --quiet-pull -d fleet
 
 .PHONY: set-kibana-password
@@ -192,7 +243,7 @@ copy-kibana-ca: .env ## Copy Kibana CA certificate to local machine
 	@ docker compose -f $(COMPOSE_FILE) cp kibana:/certs/rootCA.pem ./kibana-ca.pem
 
 .PHONY: docs-generate
-docs-generate: tools ## Generate documentation for the provider
+docs-generate: ## Generate documentation for the provider
 	@ terraform_version="$$(tr -d '[:space:]' < .terraform-version)"; \
 	TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL=false go tool github.com/hashicorp/terraform-plugin-docs/cmd/tfplugindocs generate --provider-name terraform-provider-elasticstack --tf-version "$$terraform_version"
 
@@ -201,9 +252,10 @@ workflow-generate: ## Generate workflow markdown sources
 	@ gh aw compile
 
 .PHONY: workflow-test
-workflow-test: ## Run unit tests for workflow helpers (Go changelog + kibana-spec-impact, node workflow lib)
-	@ go test ./scripts/kibana-spec-impact/... -count=1
+workflow-test: ## Run unit tests for workflow helpers (Go changelog + kibana-api-gaps, node workflow lib)
+	@ go test ./scripts/kibana-api-gaps/... -count=1
 	@ go test ./scripts/changelog/... -count=1
+	@ go test ./scripts/version-matrix/... -count=1
 	@ node --test .github/scripts/workflows/lib/*.test.mjs
 
 .PHONY: gen
@@ -219,8 +271,11 @@ install: build ## Install built provider into the local terraform cache
 	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 	mv ${BINARY} ~/.terraform.d/plugins/registry.terraform.io/elastic/${NAME}/${VERSION}/${MARCH}
 
+GOLANGCI_LINT_VERSION := v2.15.0
+GORELEASER_VERSION := v2.20.2
+
 $(GOBIN)/golangci-lint: Makefile | $(GOBIN)
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) v2.12.2
+	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/main/install.sh | sh -s -- -b $(GOBIN) $(GOLANGCI_LINT_VERSION)
 
 .PHONY: tools
 tools: $(GOBIN)/golangci-lint  ## Download golangci-lint locally if necessary.
@@ -312,19 +367,21 @@ prep-release: ## Dispatch the release preparation workflow (BUMP=patch|minor|maj
 	  esac; \
 	  gh workflow run prep-release.yml --field bump="$$BUMP"
 
+GORELEASER_RUN := curl -sfL https://goreleaser.com/static/run | VERSION=$(GORELEASER_VERSION) sh -s --
+
 .PHONY: release-snapshot
 release-snapshot: tools ## Make local-only test release to see if it works using "release" command
-	@ go tool github.com/goreleaser/goreleaser/v2 release --snapshot --clean
+	@ $(GORELEASER_RUN) release --snapshot --clean
 
 
 .PHONY: release-no-publish
 release-no-publish: tools check-sign-release ## Make a release without publishing artifacts
-	@ go tool github.com/goreleaser/goreleaser/v2 release --skip=publish,announce,validate  --parallelism=2
+	@ $(GORELEASER_RUN) release --skip=publish,announce,validate  --parallelism=2
 
 
 .PHONY: release
 release: tools check-sign-release check-publish-release ## Build, sign, and upload your release
-	@ go tool github.com/goreleaser/goreleaser/v2 release --clean  --parallelism=4
+	@ $(GORELEASER_RUN) release --clean  --parallelism=4
 
 
 .PHONY: check-sign-release
@@ -349,4 +406,3 @@ release-notes: ## greps UNRELEASED notes from the CHANGELOG
 .PHONY: help
 help: ## this help
 	@ awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n\nTargets:\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-10s\033[0m\t%s\n", $$1, $$2 }' $(MAKEFILE_LIST) | column -s$$'\t' -t
-

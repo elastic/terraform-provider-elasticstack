@@ -97,8 +97,8 @@ resource "elasticstack_kibana_dashboard" "operations" {
   }
 
   query = {
-    language = "kql"
-    text     = ""
+    language   = "kql"
+    expression = ""
   }
 
   pinned_panels = []
@@ -501,8 +501,8 @@ resource "elasticstack_kibana_dashboard" "operations" {
   }
 
   query = {
-    language = "kql"
-    text     = ""
+    language   = "kql"
+    expression = ""
   }
 
   options = {

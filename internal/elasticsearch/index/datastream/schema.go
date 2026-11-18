@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexname"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
@@ -111,5 +112,5 @@ func GetSchema(_ context.Context) schema.Schema {
 
 // indicesElementType returns the element type for the indices list attribute.
 func indicesElementType(ctx context.Context) attr.Type {
-	return GetSchema(ctx).Attributes["indices"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(GetSchema(ctx).Attributes["indices"].GetType())
 }

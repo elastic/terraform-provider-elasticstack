@@ -96,7 +96,7 @@ func extractSortSetting(settings map[string]any, key string) []string {
 	prefixed := "index." + key
 	for _, lookup := range []string{prefixed, key} {
 		if v, ok := settings[lookup]; ok && v != nil {
-			if result := stringSliceFromAny(v); result != nil {
+			if result, resultOk := typeutils.StringSliceFromAny(v); resultOk && result != nil {
 				return result
 			}
 		}

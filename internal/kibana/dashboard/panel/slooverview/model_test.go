@@ -237,6 +237,47 @@ func Test_sloInstanceID_null_preservation(t *testing.T) {
 	assert.True(t, pm.SloOverviewConfig.Single.SloInstanceID.IsNull())
 }
 
+func Test_sloInstanceID_unconfigured_prior_does_not_adopt_concrete_api_value(t *testing.T) {
+	instanceID := "instance-drift"
+	apiSingle := kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable{
+		OverviewMode:  kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewModeSingle,
+		SloId:         "slo-999",
+		SloInstanceId: &instanceID,
+	}
+
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
+	require.NoError(t, config.FromKibanaHTTPAPIsSloSingleOverviewEmbeddable(apiSingle))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{
+		Config: config,
+		Grid: struct {
+			H *float32 `json:"h,omitempty"`
+			W *float32 `json:"w,omitempty"`
+			X float32  `json:"x"`
+			Y float32  `json:"y"`
+		}{X: 0, Y: 0},
+		Type: kbapi.SloOverview,
+	}
+
+	tfPanel := &models.PanelModel{
+		SloOverviewConfig: &models.SloOverviewConfigModel{
+			Single: &models.SloOverviewSingleModel{
+				SloID:         types.StringValue("slo-999"),
+				SloInstanceID: types.StringNull(),
+			},
+		},
+	}
+
+	pm := &models.PanelModel{}
+	*pm = *tfPanel
+	diags := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diags.HasError())
+
+	require.NotNil(t, pm.SloOverviewConfig.Single)
+	assert.True(t, pm.SloOverviewConfig.Single.SloInstanceID.IsNull(),
+		"REQ-009: an unconfigured slo_instance_id must not adopt drift from a concrete API value")
+}
+
 func Test_sloInstanceID_explicit_value_preserved(t *testing.T) {
 	instanceID := "instance-1"
 	apiSingle := kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable{
@@ -275,6 +316,297 @@ func Test_sloInstanceID_explicit_value_preserved(t *testing.T) {
 
 	require.NotNil(t, pm.SloOverviewConfig.Single)
 	assert.Equal(t, types.StringValue("instance-1"), pm.SloOverviewConfig.Single.SloInstanceID)
+}
+
+func Test_sloSingleFromAPI_presentationFields_nullPreservation(t *testing.T) {
+	// Prior left title/description/hide_title/hide_border unset; API returns concrete
+	// values. State must keep them null (REQ-009) instead of adopting the API values.
+	title := "API Title"
+	description := "API Description"
+	hideTitle := true
+	hideBorder := false
+	apiSingle := kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable{
+		OverviewMode: kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewModeSingle,
+		SloId:        "slo-999",
+		Title:        &title,
+		Description:  &description,
+		HideTitle:    &hideTitle,
+		HideBorder:   &hideBorder,
+	}
+
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
+	require.NoError(t, config.FromKibanaHTTPAPIsSloSingleOverviewEmbeddable(apiSingle))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{
+		Config: config,
+		Grid:   kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
+		Type:   kbapi.SloOverview,
+	}
+
+	tfPanel := &models.PanelModel{
+		SloOverviewConfig: &models.SloOverviewConfigModel{
+			Single: &models.SloOverviewSingleModel{
+				SloID:       types.StringValue("slo-999"),
+				Title:       types.StringNull(),
+				Description: types.StringNull(),
+				HideTitle:   types.BoolNull(),
+				HideBorder:  types.BoolNull(),
+			},
+		},
+	}
+
+	pm := &models.PanelModel{}
+	diags := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diags.HasError())
+
+	require.NotNil(t, pm.SloOverviewConfig)
+	require.NotNil(t, pm.SloOverviewConfig.Single)
+	s := pm.SloOverviewConfig.Single
+	assert.True(t, s.Title.IsNull(), "title should remain null")
+	assert.True(t, s.Description.IsNull(), "description should remain null")
+	assert.True(t, s.HideTitle.IsNull(), "hide_title should remain null")
+	assert.True(t, s.HideBorder.IsNull(), "hide_border should remain null")
+}
+
+func Test_sloSingleFromAPI_presentationFields_adoptedWhenPriorKnown(t *testing.T) {
+	// Prior had known presentation fields; API values must be adopted into state.
+	title := "API Title"
+	apiSingle := kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable{
+		OverviewMode: kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewModeSingle,
+		SloId:        "slo-999",
+		Title:        &title,
+	}
+
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
+	require.NoError(t, config.FromKibanaHTTPAPIsSloSingleOverviewEmbeddable(apiSingle))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{
+		Config: config,
+		Grid:   kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
+		Type:   kbapi.SloOverview,
+	}
+
+	tfPanel := &models.PanelModel{
+		SloOverviewConfig: &models.SloOverviewConfigModel{
+			Single: &models.SloOverviewSingleModel{
+				SloID: types.StringValue("slo-999"),
+				Title: types.StringValue("Prior Title"),
+			},
+		},
+	}
+
+	pm := &models.PanelModel{}
+	diags := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diags.HasError())
+
+	require.NotNil(t, pm.SloOverviewConfig)
+	require.NotNil(t, pm.SloOverviewConfig.Single)
+	assert.Equal(t, types.StringValue("API Title"), pm.SloOverviewConfig.Single.Title)
+}
+
+func Test_sloGroupsFromAPI_presentationFields_nullPreservation(t *testing.T) {
+	// Prior left title/description/hide_title/hide_border unset; API returns concrete
+	// values. State must keep them null (REQ-009) instead of adopting the API values.
+	title := "API Groups Title"
+	hideBorder := true
+	apiGroups := kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable{
+		OverviewMode: kbapi.Groups,
+		Title:        &title,
+		HideBorder:   &hideBorder,
+	}
+
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
+	require.NoError(t, config.FromKibanaHTTPAPIsSloGroupOverviewEmbeddable(apiGroups))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{
+		Config: config,
+		Grid: struct {
+			H *float32 `json:"h,omitempty"`
+			W *float32 `json:"w,omitempty"`
+			X float32  `json:"x"`
+			Y float32  `json:"y"`
+		}{X: 0, Y: 0},
+		Type: kbapi.SloOverview,
+	}
+
+	tfPanel := &models.PanelModel{
+		SloOverviewConfig: &models.SloOverviewConfigModel{
+			Groups: &models.SloOverviewGroupsModel{
+				Title:      types.StringNull(),
+				HideBorder: types.BoolNull(),
+			},
+		},
+	}
+
+	pm := &models.PanelModel{}
+	diags := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diags.HasError())
+
+	require.NotNil(t, pm.SloOverviewConfig)
+	require.NotNil(t, pm.SloOverviewConfig.Groups)
+	g := pm.SloOverviewConfig.Groups
+	assert.True(t, g.Title.IsNull(), "title should remain null")
+	assert.True(t, g.HideBorder.IsNull(), "hide_border should remain null")
+}
+
+func Test_sloSingleFromAPI_drilldowns_nullPreservation(t *testing.T) {
+	// API echoes back its server defaults (encode_url=true, open_in_new_tab=false) for a
+	// drilldown whose booleans the prior state left unset. State must keep them null
+	// instead of adopting the API's concrete values (panelkit.ReadURLDrilldownsFromAPI contract).
+	url := "https://example.com"
+	label := "Open dashboard"
+	encodeURLDefault := true
+	openInNewTabDefault := false
+	apiSingle := kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable{
+		OverviewMode: kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewModeSingle,
+		SloId:        "slo-dd",
+		Drilldowns: &[]sloSingleOverviewAPIDrilldown{
+			{Url: url, Label: label, EncodeUrl: &encodeURLDefault, OpenInNewTab: &openInNewTabDefault},
+		},
+	}
+
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
+	require.NoError(t, config.FromKibanaHTTPAPIsSloSingleOverviewEmbeddable(apiSingle))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{
+		Config: config,
+		Grid:   kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
+		Type:   kbapi.SloOverview,
+	}
+
+	tfPanel := &models.PanelModel{
+		SloOverviewConfig: &models.SloOverviewConfigModel{
+			Single: &models.SloOverviewSingleModel{
+				SloID: types.StringValue("slo-dd"),
+				Drilldowns: []models.URLDrilldownModel{
+					{
+						URL:          types.StringValue(url),
+						Label:        types.StringValue(label),
+						EncodeURL:    types.BoolNull(),
+						OpenInNewTab: types.BoolNull(),
+					},
+				},
+			},
+		},
+	}
+
+	pm := &models.PanelModel{}
+	diags := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diags.HasError())
+
+	require.NotNil(t, pm.SloOverviewConfig)
+	require.NotNil(t, pm.SloOverviewConfig.Single)
+	dd := pm.SloOverviewConfig.Single.Drilldowns
+	require.Len(t, dd, 1)
+	assert.Equal(t, types.StringValue(url), dd[0].URL)
+	assert.Equal(t, types.StringValue(label), dd[0].Label)
+	assert.True(t, dd[0].EncodeURL.IsNull(), "encode_url should remain null")
+	assert.True(t, dd[0].OpenInNewTab.IsNull(), "open_in_new_tab should remain null")
+}
+
+func Test_sloSingleFromAPI_drilldowns_adoptedWhenPriorKnown(t *testing.T) {
+	url := "https://example.com"
+	label := "Open dashboard"
+	encodeURL := false
+	openInNewTab := true
+	apiSingle := kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddable{
+		OverviewMode: kbapi.KibanaHTTPAPIsSloSingleOverviewEmbeddableOverviewModeSingle,
+		SloId:        "slo-dd",
+		Drilldowns: &[]sloSingleOverviewAPIDrilldown{
+			{Url: url, Label: label, EncodeUrl: &encodeURL, OpenInNewTab: &openInNewTab},
+		},
+	}
+
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
+	require.NoError(t, config.FromKibanaHTTPAPIsSloSingleOverviewEmbeddable(apiSingle))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{
+		Config: config,
+		Grid:   kbapi.KibanaHTTPAPIsKbnDashboardPanelGrid{X: 0, Y: 0},
+		Type:   kbapi.SloOverview,
+	}
+
+	tfPanel := &models.PanelModel{
+		SloOverviewConfig: &models.SloOverviewConfigModel{
+			Single: &models.SloOverviewSingleModel{
+				SloID: types.StringValue("slo-dd"),
+				Drilldowns: []models.URLDrilldownModel{
+					{
+						URL:          types.StringValue(url),
+						Label:        types.StringValue(label),
+						EncodeURL:    types.BoolValue(true),
+						OpenInNewTab: types.BoolValue(false),
+					},
+				},
+			},
+		},
+	}
+
+	pm := &models.PanelModel{}
+	diags := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diags.HasError())
+
+	dd := pm.SloOverviewConfig.Single.Drilldowns
+	require.Len(t, dd, 1)
+	assert.Equal(t, types.BoolValue(false), dd[0].EncodeURL)
+	assert.Equal(t, types.BoolValue(true), dd[0].OpenInNewTab)
+}
+
+func Test_sloGroupsFromAPI_drilldowns_nullPreservation(t *testing.T) {
+	// Same null-preservation contract as the single-overview case, exercised for the
+	// group-overview embeddable's drilldowns.
+	url := "https://example.com/groups"
+	label := "Open groups dashboard"
+	encodeURLDefault := true
+	openInNewTabDefault := false
+	apiGroups := kbapi.KibanaHTTPAPIsSloGroupOverviewEmbeddable{
+		OverviewMode: kbapi.Groups,
+		Drilldowns: &[]sloGroupOverviewAPIDrilldown{
+			{Url: url, Label: label, EncodeUrl: &encodeURLDefault, OpenInNewTab: &openInNewTabDefault},
+		},
+	}
+
+	var config kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview_Config
+	require.NoError(t, config.FromKibanaHTTPAPIsSloGroupOverviewEmbeddable(apiGroups))
+
+	panel := kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeSloOverview{
+		Config: config,
+		Grid: struct {
+			H *float32 `json:"h,omitempty"`
+			W *float32 `json:"w,omitempty"`
+			X float32  `json:"x"`
+			Y float32  `json:"y"`
+		}{X: 0, Y: 0},
+		Type: kbapi.SloOverview,
+	}
+
+	tfPanel := &models.PanelModel{
+		SloOverviewConfig: &models.SloOverviewConfigModel{
+			Groups: &models.SloOverviewGroupsModel{
+				Drilldowns: []models.URLDrilldownModel{
+					{
+						URL:          types.StringValue(url),
+						Label:        types.StringValue(label),
+						EncodeURL:    types.BoolNull(),
+						OpenInNewTab: types.BoolNull(),
+					},
+				},
+			},
+		},
+	}
+
+	pm := &models.PanelModel{}
+	diags := PopulateFromAPI(pm, tfPanel, panel)
+	require.False(t, diags.HasError())
+
+	require.NotNil(t, pm.SloOverviewConfig)
+	require.NotNil(t, pm.SloOverviewConfig.Groups)
+	dd := pm.SloOverviewConfig.Groups.Drilldowns
+	require.Len(t, dd, 1)
+	assert.Equal(t, types.StringValue(url), dd[0].URL)
+	assert.Equal(t, types.StringValue(label), dd[0].Label)
+	assert.True(t, dd[0].EncodeURL.IsNull(), "encode_url should remain null")
+	assert.True(t, dd[0].OpenInNewTab.IsNull(), "open_in_new_tab should remain null")
 }
 
 func Test_sloOverview_handlerToAPI_single(t *testing.T) {

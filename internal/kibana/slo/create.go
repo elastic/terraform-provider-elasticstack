@@ -26,7 +26,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func createSlo(
@@ -83,7 +82,7 @@ func createSlo(
 		return entitycore.KibanaWriteResult[tfModel]{}, diags
 	}
 
-	planModel.ID = types.StringValue((&clients.CompositeID{ClusterID: req.SpaceID, ResourceID: res.Id}).String())
+	planModel.ID = clients.CompositeIDValue(req.SpaceID, res.Id)
 
 	reconcileSloEnabled(ctx, client, oapi, req.SpaceID, res.Id, desiredEnabled, &planModel, &diags)
 	if diags.HasError() {

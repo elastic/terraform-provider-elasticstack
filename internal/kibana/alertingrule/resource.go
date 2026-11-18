@@ -18,14 +18,12 @@
 package alertingrule
 
 import (
-	"context"
 	_ "embed"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 var (
@@ -34,6 +32,7 @@ var (
 	_ resource.ResourceWithImportState    = newResource()
 	_ resource.ResourceWithValidateConfig = newResource()
 	_ resource.ResourceWithUpgradeState   = newResource()
+	_ resource.ResourceWithModifyPlan     = newResource()
 )
 
 //go:embed resource-description.md
@@ -41,6 +40,7 @@ var resourceDescription string
 
 type Resource struct {
 	*entitycore.KibanaResource[alertingRuleModel]
+	*entitycore.KibanaSpaceImporter
 }
 
 func newResource() *Resource {
@@ -51,27 +51,16 @@ func newResource() *Resource {
 			entitycore.KibanaResourceOptions[alertingRuleModel]{
 				Schema: getSchema,
 				Read:   readAlertingRule,
-				Delete: deleteAlertingRule,
+				Delete: entitycore.SimpleKibanaDelete[alertingRuleModel](kibanaoapi.DeleteAlertingRule),
 				Create: createAlertingRule,
 				Update: updateAlertingRule,
 			},
 		),
+		KibanaSpaceImporter: entitycore.NewKibanaSpaceImporter(path.Root("id"), path.Root("space_id"), path.Root("rule_id")),
 	}
 }
 
 // NewResource is a helper function to simplify the provider implementation.
 func NewResource() resource.Resource {
 	return newResource()
-}
-
-func (r *Resource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
-	composite, diags := clients.CompositeIDFromStr(req.ID)
-	resp.Diagnostics.Append(diags...)
-	if diags.HasError() {
-		return
-	}
-
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("rule_id"), composite.ResourceID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("space_id"), composite.ClusterID)...)
-	resp.Diagnostics.Append(resp.State.SetAttribute(ctx, path.Root("id"), types.StringValue(req.ID))...)
 }

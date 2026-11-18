@@ -20,13 +20,10 @@ package followerindex
 import (
 	"encoding/json"
 
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/follow"
-	"github.com/elastic/go-elasticsearch/v8/typedapi/ccr/resumefollow"
 	estypes "github.com/elastic/go-elasticsearch/v8/typedapi/types"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/ccr"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // apiOperation identifies a CCR lifecycle API call for testable sequencing.
@@ -183,95 +180,4 @@ func parseSettingsRawForCreate(settingsRaw string) (*estypes.IndexSettings, diag
 
 func parseSettingsRawForUpdate(settingsRaw string) (map[string]any, diag.Diagnostics) {
 	return typeutils.UnmarshalJSONDiag[map[string]any](settingsRaw, "Failed to parse settings_raw")
-}
-
-func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
-	req := &follow.Request{
-		LeaderIndex:    model.LeaderIndex.ValueString(),
-		RemoteCluster:  model.RemoteCluster.ValueString(),
-		DataStreamName: typeutils.OptionalString(model.DataStreamName),
-	}
-
-	var diags diag.Diagnostics
-
-	if typeutils.IsKnown(model.SettingsRaw) {
-		settings, settingsDiags := parseSettingsRawForCreate(model.SettingsRaw.ValueString())
-		diags.Append(settingsDiags...)
-		if diags.HasError() {
-			return nil, diags
-		}
-		req.Settings = settings
-	}
-
-	tuning := ccr.TuningParams{
-		MaxOutstandingReadRequests:    model.MaxOutstandingReadRequests,
-		MaxOutstandingWriteRequests:   model.MaxOutstandingWriteRequests,
-		MaxReadRequestOperationCount:  model.MaxReadRequestOperationCount,
-		MaxReadRequestSize:            model.MaxReadRequestSize,
-		MaxRetryDelay:                 model.MaxRetryDelay,
-		MaxWriteBufferCount:           model.MaxWriteBufferCount,
-		MaxWriteBufferSize:            model.MaxWriteBufferSize,
-		MaxWriteRequestOperationCount: model.MaxWriteRequestOperationCount,
-		MaxWriteRequestSize:           model.MaxWriteRequestSize,
-		ReadPollTimeout:               model.ReadPollTimeout,
-	}
-	diags.Append(ccr.ApplyToFollowRequest(tuning, req)...)
-	if diags.HasError() {
-		return nil, diags
-	}
-
-	return req, diags
-}
-
-func buildResumeFollowRequest(model Model) *resumefollow.Request {
-	req := &resumefollow.Request{}
-	tuning := ccr.TuningParams{
-		MaxOutstandingReadRequests:    model.MaxOutstandingReadRequests,
-		MaxOutstandingWriteRequests:   model.MaxOutstandingWriteRequests,
-		MaxReadRequestOperationCount:  model.MaxReadRequestOperationCount,
-		MaxReadRequestSize:            model.MaxReadRequestSize,
-		MaxRetryDelay:                 model.MaxRetryDelay,
-		MaxWriteBufferCount:           model.MaxWriteBufferCount,
-		MaxWriteBufferSize:            model.MaxWriteBufferSize,
-		MaxWriteRequestOperationCount: model.MaxWriteRequestOperationCount,
-		MaxWriteRequestSize:           model.MaxWriteRequestSize,
-		ReadPollTimeout:               model.ReadPollTimeout,
-	}
-	ccr.ApplyToResumeFollowRequest(tuning, req)
-	return req
-}
-
-func mapParametersToModel(params *estypes.FollowerIndexParameters, model Model) Model {
-	p := ccr.TuningParamsFromParameters(params)
-	model.MaxOutstandingReadRequests = p.MaxOutstandingReadRequests
-	model.MaxOutstandingWriteRequests = p.MaxOutstandingWriteRequests
-	model.MaxReadRequestOperationCount = p.MaxReadRequestOperationCount
-	model.MaxReadRequestSize = p.MaxReadRequestSize
-	model.MaxRetryDelay = p.MaxRetryDelay
-	model.MaxWriteBufferCount = p.MaxWriteBufferCount
-	model.MaxWriteBufferSize = p.MaxWriteBufferSize
-	model.MaxWriteRequestOperationCount = p.MaxWriteRequestOperationCount
-	model.MaxWriteRequestSize = p.MaxWriteRequestSize
-	model.ReadPollTimeout = p.ReadPollTimeout
-	return model
-}
-
-func mapFollowerIndexToModel(follower *estypes.FollowerIndex, prior Model) Model {
-	model := prior
-	model.RemoteCluster = types.StringValue(follower.RemoteCluster)
-	model.LeaderIndex = types.StringValue(follower.LeaderIndex)
-	model.Status = types.StringValue(follower.Status.String())
-
-	if follower.Parameters != nil {
-		model = mapParametersToModel(follower.Parameters, model)
-	}
-
-	// delete_index_on_destroy is a local-only attribute that is never returned
-	// by the API. On import the baseline carries no value, so default it to
-	// false to satisfy the documented post-import state.
-	if !typeutils.IsKnown(model.DeleteIndexOnDestroy) {
-		model.DeleteIndexOnDestroy = types.BoolValue(false)
-	}
-
-	return model
 }

@@ -24,14 +24,13 @@ import (
 
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String `tfsdk:"id"`
-	ElasticsearchConnection types.List   `tfsdk:"elasticsearch_connection"`
-	Username                types.String `tfsdk:"username"`
-	Password                types.String `tfsdk:"password"`
-	PasswordHash            types.String `tfsdk:"password_hash"`
-	Enabled                 types.Bool   `tfsdk:"enabled"`
+	entitycore.ElasticsearchConnectionField
+	ID           types.String `tfsdk:"id"`
+	Username     types.String `tfsdk:"username"`
+	Password     types.String `tfsdk:"password"`
+	PasswordHash types.String `tfsdk:"password_hash"`
+	Enabled      types.Bool   `tfsdk:"enabled"`
 }
 
-func (d Data) GetID() types.String                    { return d.ID }
-func (d Data) GetResourceID() types.String            { return d.Username }
-func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+func (d Data) GetID() types.String         { return d.ID }
+func (d Data) GetResourceID() types.String { return d.Username }

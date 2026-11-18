@@ -1,0 +1,100 @@
+// Licensed to Elasticsearch B.V. under one or more contributor
+// license agreements. See the NOTICE file distributed with
+// this work for additional information regarding copyright
+// ownership. Elasticsearch B.V. licenses this file to you under
+// the Apache License, Version 2.0 (the "License"); you may
+// not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+package clients
+
+import (
+	"testing"
+
+	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func TestCompositeIDFromStr(t *testing.T) {
+	t.Run("two segments", func(t *testing.T) {
+		compID, diags := CompositeIDFromStr("cluster-uuid/my-resource")
+		require.False(t, diags.HasError())
+		assert.Equal(t, "cluster-uuid", compID.ClusterID)
+		assert.Equal(t, "my-resource", compID.ResourceID)
+	})
+
+	t.Run("resource segment may contain slashes", func(t *testing.T) {
+		compID, diags := CompositeIDFromStr("cluster-uuid/cal-1/evt-2")
+		require.False(t, diags.HasError())
+		assert.Equal(t, "cluster-uuid", compID.ClusterID)
+		assert.Equal(t, "cal-1/evt-2", compID.ResourceID)
+	})
+
+	t.Run("legacy empty cluster segment", func(t *testing.T) {
+		compID, diags := CompositeIDFromStr("/legacy-resource")
+		require.False(t, diags.HasError())
+		assert.Empty(t, compID.ClusterID)
+		assert.Equal(t, "legacy-resource", compID.ResourceID)
+	})
+
+	t.Run("rejects empty resource segment", func(t *testing.T) {
+		_, diags := CompositeIDFromStr("cluster-uuid/")
+		require.True(t, diags.HasError())
+	})
+
+	t.Run("rejects missing slash", func(t *testing.T) {
+		_, diags := CompositeIDFromStr("not-a-composite-import-id")
+		require.True(t, diags.HasError())
+	})
+}
+
+func TestCompositeIdentityValues(t *testing.T) {
+	t.Run("builds composite id and space id value", func(t *testing.T) {
+		id, space := CompositeIdentityValues("production", "my-resource")
+		assert.Equal(t, "production/my-resource", id.ValueString())
+		assert.Equal(t, "production", space.ValueString())
+	})
+
+	t.Run("matches CompositeIDValue output for the id", func(t *testing.T) {
+		id, _ := CompositeIdentityValues("default", "uuid-1")
+		assert.Equal(t, CompositeIDValue("default", "uuid-1"), id)
+	})
+}
+
+func TestResourceIDFromComposite(t *testing.T) {
+	t.Run("extracts resource segment from composite id", func(t *testing.T) {
+		got := ResourceIDFromComposite(types.StringValue("default/auto-gen-uuid"), types.StringValue("fallback"))
+		assert.Equal(t, "auto-gen-uuid", got.ValueString())
+	})
+
+	t.Run("falls back when id is not composite", func(t *testing.T) {
+		got := ResourceIDFromComposite(types.StringValue("not-composite"), types.StringValue("fallback"))
+		assert.Equal(t, "fallback", got.ValueString())
+	})
+
+	t.Run("falls back when id is null", func(t *testing.T) {
+		got := ResourceIDFromComposite(types.StringNull(), types.StringValue("fallback"))
+		assert.Equal(t, "fallback", got.ValueString())
+	})
+
+	t.Run("falls back when id is unknown", func(t *testing.T) {
+		got := ResourceIDFromComposite(types.StringUnknown(), types.StringValue("fallback"))
+		assert.Equal(t, "fallback", got.ValueString())
+	})
+
+	t.Run("falls back to null id yields null when fallback is the id itself", func(t *testing.T) {
+		id := types.StringNull()
+		got := ResourceIDFromComposite(id, id)
+		assert.True(t, got.IsNull())
+	})
+}

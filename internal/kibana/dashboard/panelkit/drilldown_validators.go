@@ -20,6 +20,7 @@ package panelkit
 import (
 	"context"
 
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
@@ -47,7 +48,7 @@ func (DrilldownItemModeValidator) ValidateObject(_ context.Context, req validato
 		if !ok || av == nil {
 			return false
 		}
-		return !av.IsNull() && !av.IsUnknown()
+		return typeutils.IsKnown(av)
 	}
 	dashboard := attrs["dashboard"]
 	discover := attrs["discover"]

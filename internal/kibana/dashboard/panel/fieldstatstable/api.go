@@ -38,16 +38,8 @@ func (Handler) PanelType() string                 { return panelType }
 func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
 
 func (Handler) ValidatePanelConfig(_ context.Context, attrs map[string]attr.Value, attrPath path.Path) diag.Diagnostics {
-	var diags diag.Diagnostics
-	block := attrs["field_stats_table_config"]
-	if panelkit.AttrConcreteSet(block) {
-		return diags
-	}
-	if panelkit.AttrUnknown(block) {
-		return diags
-	}
-	diags.AddAttributeError(attrPath, "Missing field_stats_table panel configuration", "Field statistics table panels require `field_stats_table_config`.")
-	return diags
+	return panelkit.ValidateConfigBlockPresent(attrs, "field_stats_table_config", attrPath,
+		"Missing field_stats_table panel configuration", "Field statistics table panels require `field_stats_table_config`.")
 }
 
 func (Handler) FromAPI(ctx context.Context, pm, prior *models.PanelModel, item kbapi.DashboardPanelItem) diag.Diagnostics {

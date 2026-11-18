@@ -26,7 +26,9 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[dsModel](
 		entitycore.ComponentKibana,
 		"security_entity_store_status",
-		getDataSourceSchema,
-		readEntityStoreDataSource,
+		entitycore.KibanaDataSourceOptions[dsModel]{
+			Schema: getDataSourceSchema,
+			Read:   readEntityStoreDataSource,
+		},
 	)
 }

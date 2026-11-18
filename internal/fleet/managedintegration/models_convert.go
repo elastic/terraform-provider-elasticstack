@@ -40,6 +40,7 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/policyshape"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
@@ -52,7 +53,7 @@ import (
 
 // packageModel and cloudConnectorModel are the Go representations of the
 // `package` and `cloud_connector` nested attributes (see models.go's field-level
-// doc comment). global_data_tags uses globalDataTagsItemModel in models.go.
+// doc comment). global_data_tags uses globaldatatags.Item.
 type packageModel struct {
 	Name    types.String `tfsdk:"name"`
 	Version types.String `tfsdk:"version"`
@@ -80,6 +81,8 @@ type managedIntegrationInputModel struct {
 	Vars      jsontypes.Normalized `tfsdk:"vars"`
 	Streams   types.Map            `tfsdk:"streams"` // > policyshape.InputStreamModel
 }
+
+func (m managedIntegrationInputModel) GetStreams() types.Map { return m.Streams }
 
 // Map/attribute key constants reused across this file's raw wire-format
 // builders and attr-type helpers. Consolidated into named constants (rather
@@ -120,84 +123,39 @@ func cloudConnectorAttrTypes() map[string]attr.Type {
 // globalDataTagsToModel converts managed_integrations global_data_tags into
 // the Terraform map attribute, or a null map when there are none.
 func globalDataTagsToModel(ctx context.Context, item *kbapi.KibanaHTTPAPIsManagedIntegration, diags *diag.Diagnostics) types.Map {
-	elemType := globalDataTagsElementType()
 	if item == nil || item.GlobalDataTags == nil || len(*item.GlobalDataTags) == 0 {
-		return types.MapNull(elemType)
+		return types.MapNull(globaldatatags.ElementType())
 	}
 
-	map0 := make(map[string]globalDataTagsItemModel, len(*item.GlobalDataTags))
-	seenNames := make(map[string]struct{}, len(*item.GlobalDataTags))
-	for _, tag := range *item.GlobalDataTags {
-		tagPath := path.Root(attrGlobalDataTags).AtMapKey(tag.Name)
-		if _, dup := seenNames[tag.Name]; dup {
-			diags.AddAttributeError(
-				tagPath,
-				"Duplicate global_data_tags name",
-				fmt.Sprintf("API returned global_data_tags name %q more than once.", tag.Name),
-			)
-			continue
-		}
-		seenNames[tag.Name] = struct{}{}
-		tagItem := globalDataTagsItemModel{}
-		if num, err := tag.Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue1(); err == nil {
-			tagItem.NumberValue = types.Float32Value(num)
-		} else if str, err := tag.Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue0(); err == nil {
-			tagItem.StringValue = types.StringValue(str)
-		} else {
-			diags.AddAttributeError(
-				tagPath,
-				"Unsupported global_data_tags value type",
-				fmt.Sprintf("API returned an unsupported value for tag %q; expected string or number.", tag.Name),
-			)
-			continue
-		}
-		map0[tag.Name] = tagItem
+	tags := make([]globaldatatags.Tag[kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value], len(*item.GlobalDataTags))
+	for i, t := range *item.GlobalDataTags {
+		tags[i] = globaldatatags.Tag[kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value]{Name: t.Name, Value: t.Value}
 	}
-
-	if diags.HasError() {
-		return types.MapNull(elemType)
-	}
-
-	return typeutils.MapValueFrom(ctx, map0, elemType, path.Root(attrGlobalDataTags), diags)
+	return globaldatatags.ToModel(ctx, tags, path.Root(attrGlobalDataTags), diags,
+		kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue1,
+		kbapi.KibanaHTTPAPIsManagedIntegration_GlobalDataTags_Value.AsKibanaHTTPAPIsManagedIntegrationGlobalDataTagsValue0,
+	)
 }
 
 // globalDataTagsRawFromModel converts the `global_data_tags` map attribute
 // into request-body global_data_tags using typed union values.
 func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag.Diagnostics) *[]globalDataTagRaw {
-	if !typeutils.IsKnown(tags) {
+	items := globaldatatags.FromModel(ctx, tags, path.Root(attrGlobalDataTags), diags,
+		func(s string) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value, error) {
+			var v kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
+			return v, v.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue0(s)
+		},
+		func(n float32) (kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value, error) {
+			var v kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
+			return v, v.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue1(n)
+		},
+	)
+	if items == nil {
 		return nil
 	}
-	items := typeutils.MapTypeAs[globalDataTagsItemModel](ctx, tags, path.Root(attrGlobalDataTags), diags)
-	if diags.HasError() {
-		return nil
-	}
-
-	raw := make([]globalDataTagRaw, 0, len(items))
-	for key, item := range items {
-		tagPath := path.Root(attrGlobalDataTags).AtMapKey(key)
-		var value kbapi.KibanaHTTPAPIsCreateManagedIntegrationRequest_GlobalDataTags_Value
-		var err error
-		switch {
-		case typeutils.IsKnown(item.StringValue):
-			err = value.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue0(item.StringValue.ValueString())
-		case typeutils.IsKnown(item.NumberValue):
-			err = value.FromKibanaHTTPAPIsCreateManagedIntegrationRequestGlobalDataTagsValue1(item.NumberValue.ValueFloat32())
-		default:
-			diags.AddAttributeError(
-				tagPath,
-				"Invalid global_data_tags entry",
-				"Each entry in global_data_tags must have exactly one of string_value or number_value set.",
-			)
-			continue
-		}
-		if err != nil {
-			diags.AddAttributeError(tagPath, "Failed to encode global_data_tags", err.Error())
-			continue
-		}
-		raw = append(raw, globalDataTagRaw{Name: key, Value: value})
-	}
-	if diags.HasError() {
-		return nil
+	raw := make([]globalDataTagRaw, len(items))
+	for i, t := range items {
+		raw[i] = globalDataTagRaw{Name: t.Name, Value: t.Value}
 	}
 	return &raw
 }
@@ -205,7 +163,7 @@ func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag
 // varsJSONFromAny builds a policyshape.VarsJSONValue from any mapped-format
 // vars value (a bare-value union map from either the create response or the
 // Format=Simplified package-policy response), integration-scoped via
-// lookupCachedPackageInfo so unset package-declared defaults are filled in on
+// policyshape.LookupPackageInfo so unset package-declared defaults are filled in on
 // read, matching internal/fleet/integration_policy/models.go's populateFromAPI.
 func varsJSONFromAny(raw any, packageName, packageVersion string, diags *diag.Diagnostics) policyshape.VarsJSONValue {
 	varsMap := policyshape.VarsAnyToMap(raw)
@@ -219,7 +177,7 @@ func varsJSONFromAny(raw any, packageName, packageVersion string, diags *diag.Di
 		return policyshape.NewVarsJSONNull()
 	}
 
-	v, d := policyshape.NewVarsJSONWithIntegration(string(b), packageName, packageVersion, lookupCachedPackageInfo)
+	v, d := policyshape.NewVarsJSONWithIntegration(string(b), packageName, packageVersion, policyshape.LookupPackageInfo)
 	diags.Append(d...)
 	return v
 }
@@ -240,7 +198,22 @@ func inputsKnownKeySet(inputs policyshape.InputsValue) map[string]struct{} {
 // varsUnionToMap decodes a managed-integration vars map (typed union values,
 // keyed by var name) into a plain map for Normalized JSON encoding. It is
 // generic over the anonymous per-property union type kbapi emits, so the same
-// logic serves both input-level and stream-level vars.
+// logic serves both input-level and stream-level vars. Delegates the
+// marshal/unmarshal round trip to policyshape.VarsAnyToMap, the shared home
+// for vars-shaped conversions (see integration_policy/models.go for another
+// caller).
+//
+// The nil/empty pre-check below is intentionally kept rather than delegated
+// to policyshape.VarsAnyToMap: a nil *map[string]*T passed as vars still
+// marshals to the JSON literal "null" (a typed nil pointer boxed in the
+// `any` parameter is not itself `== nil`), and an empty-but-non-nil map
+// marshals to "{}", which unmarshals back to a non-nil empty map. Either
+// path would fall through to VarsAnyToMap's own nil handling differently
+// than intended here: without this pre-check, a nil vars pointer would make
+// VarsAnyToMap return nil and this function would then (incorrectly) raise
+// an attribute error, and an empty vars map would return an empty map
+// instead of nil. Returning nil directly for the nil/empty case, with no
+// diagnostic, preserves the existing "no vars" behavior exactly.
 //
 // Malformed union payloads are rejected when kbapi unmarshals the HTTP
 // response; json.Marshal here only fails on unsupported Go types, which the
@@ -250,18 +223,9 @@ func varsUnionToMap[T any](vars *map[string]*T, attrPath path.Path, diags *diag.
 	if vars == nil || len(*vars) == 0 {
 		return nil
 	}
-	b, err := json.Marshal(vars)
-	if err != nil {
-		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", err.Error())
-		return nil
-	}
-	if len(b) == 0 || string(b) == "null" {
-		return nil
-	}
-	var out map[string]any
-	if err := json.Unmarshal(b, &out); err != nil {
-		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", err.Error())
-		return nil
+	out := policyshape.VarsAnyToMap(vars)
+	if out == nil {
+		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", "vars did not decode to a JSON object")
 	}
 	return out
 }
@@ -325,36 +289,14 @@ func populateInputsFromManagedIntegration(ctx context.Context, item *kbapi.Kiban
 // decodeInputs produces this so that the request-body builders
 // (applyCreateInputs, buildUpdateBody) don't each independently re-run the
 // reflection-based typeutils.MapTypeAs decode over the same inputs+streams
-// structure -- mirroring internal/fleet/integration_policy/models.go's
-// decodedInput/decodeInputs.
-type decodedManagedIntegrationInput struct {
-	model   managedIntegrationInputModel
-	streams map[string]policyshape.InputStreamModel // nil if streams is null/unknown
-}
+// structure.
+type decodedManagedIntegrationInput = policyshape.DecodedInput[managedIntegrationInputModel]
 
 // decodeInputs decodes the `inputs` attribute, and each input's nested
 // `streams` map, exactly once. Returns nil if `inputs` itself is null/unknown
 // or fails to decode.
 func (m managedIntegrationModel) decodeInputs(ctx context.Context, diags *diag.Diagnostics) map[string]decodedManagedIntegrationInput {
-	if !typeutils.IsKnown(m.Inputs.MapValue) {
-		return nil
-	}
-
-	inputsMap := typeutils.MapTypeAs[managedIntegrationInputModel](ctx, m.Inputs.MapValue, path.Root(attrInputs), diags)
-	if inputsMap == nil {
-		return nil
-	}
-
-	decoded := make(map[string]decodedManagedIntegrationInput, len(inputsMap))
-	for inputID, inputModel := range inputsMap {
-		d := decodedManagedIntegrationInput{model: inputModel}
-		if typeutils.IsKnown(inputModel.Streams) {
-			inputPath := path.Root(attrInputs).AtMapKey(inputID)
-			d.streams = typeutils.MapTypeAs[policyshape.InputStreamModel](ctx, inputModel.Streams, inputPath.AtName("streams"), diags)
-		}
-		decoded[inputID] = d
-	}
-	return decoded
+	return policyshape.DecodeInputs[managedIntegrationInputModel](ctx, m.Inputs, path.Root(attrInputs), diags)
 }
 
 // managedIntegrationRequestOptions controls how a plan model is compiled into
@@ -592,7 +534,7 @@ func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, 
 
 	raw := map[string]any{}
 	for inputID, di := range decoded {
-		in := di.model
+		in := di.Model
 		inputPath := path.Root(attrInputs).AtMapKey(inputID)
 		entry := map[string]any{}
 
@@ -610,9 +552,9 @@ func applyCreateInputs(body *kbapi.PostFleetManagedIntegrationsJSONRequestBody, 
 			entry["vars"] = varsMap
 		}
 
-		if len(di.streams) > 0 || opts.includeEmptyVars {
+		if len(di.Streams) > 0 || opts.includeEmptyVars {
 			streamsRaw := map[string]any{}
-			for streamID, s := range di.streams {
+			for streamID, s := range di.Streams {
 				streamPath := inputPath.AtName("streams").AtMapKey(streamID)
 				streamEntry := map[string]any{}
 				if typeutils.IsKnown(s.Enabled) {
@@ -664,7 +606,7 @@ func (m *managedIntegrationModel) populateFromManagedIntegration(ctx context.Con
 		return diags
 	}
 
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: item.Id}).String())
+	m.ID = clients.CompositeIDValue(spaceID, item.Id)
 	m.PolicyID = types.StringValue(item.Id)
 
 	if spaceIDs != nil && len(*spaceIDs) > 0 {

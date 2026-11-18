@@ -21,7 +21,6 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -30,6 +29,7 @@ import (
 var (
 	MinVersionOutputKafka               = version.Must(version.NewVersion("8.13.0"))
 	MinVersionOutputSSLVerificationMode = version.Must(version.NewVersion("8.10.0"))
+	MinVersionOutputPreset              = version.Must(version.NewVersion("8.12.0"))
 )
 
 var (
@@ -41,7 +41,7 @@ var (
 
 type outputResource struct {
 	*entitycore.KibanaResource[outputModel]
-	*fleet.SpaceImporter
+	*entitycore.SpaceImporter
 }
 
 func newOutputResource() *outputResource {
@@ -57,7 +57,7 @@ func newOutputResource() *outputResource {
 				Update: updateOutput,
 			},
 		),
-		SpaceImporter: fleet.NewSpaceImporter(path.Root("output_id")),
+		SpaceImporter: entitycore.NewSpaceImporter(path.Root("output_id")),
 	}
 }
 

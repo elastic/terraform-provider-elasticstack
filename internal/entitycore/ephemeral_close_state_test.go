@@ -193,16 +193,14 @@ func TestEncodeDecodeUserCloseState_roundTrip(t *testing.T) {
 
 	falseVal := false
 	original := plainGoCloseState{
-		Name:     "test",
-		Count:    42,
-		Enabled:  true,
-		Optional: &falseVal,
-		Tags:     []string{"a", "b"},
-		Headers:  map[string]string{"X-Foo": "bar"},
-		Nested:   nestedPlainGoCloseState{Field: "nested"},
-		embeddedPlainGoCloseState: embeddedPlainGoCloseState{
-			EmbeddedField: "embedded",
-		},
+		Name:          "test",
+		Count:         42,
+		Enabled:       true,
+		Optional:      &falseVal,
+		Tags:          []string{"a", "b"},
+		Headers:       map[string]string{"X-Foo": "bar"},
+		Nested:        nestedPlainGoCloseState{Field: "nested"},
+		EmbeddedField: "embedded",
 	}
 
 	data, encodeDiags := encodeUserCloseState(original)

@@ -1,11 +1,8 @@
 // Example: typed Lens panel without chart-level time_range — the panel uses the dashboard global time picker.
 
 resource "elasticstack_kibana_dashboard" "metric_no_panel_time_range" {
-  title            = "Dashboard with metric panel (no chart time_range)"
-  description      = "Omit time_range on the chart block to defer to the dashboard-level window"
-  time_range       = { from = "now-15m", to = "now" }
-  refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  title       = "Dashboard with metric panel (no chart time_range)"
+  description = "Omit time_range on the chart block to defer to the dashboard time picker"
 
   panels = [{
     type = "vis"

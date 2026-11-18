@@ -25,7 +25,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
+	"github.com/hashicorp/terraform-plugin-framework/resource"
+	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
+	"github.com/hashicorp/terraform-plugin-go/tftypes"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -173,6 +176,57 @@ func TestUpdateStreamsV1ToV2(t *testing.T) {
 		require.NotEmpty(t, diags)
 		assert.True(t, result.IsNull())
 	})
+}
+
+// TestUpgradeV1ToV3_SetsUpgradedStateCleanly drives the upgrader through a real
+// tfsdk.State against the live schema, rather than only inspecting the returned
+// model. Asserting on struct fields cannot catch a zero-value collection whose
+// element type is missing, because that only fails when state is written; the
+// symptom in the field is a "Value Conversion Error ... !!! MISSING TYPE !!!"
+// on plan for anyone upgrading from pre-V3 state. Every collection attribute
+// added to the live model has to be initialised in toV3 for this to pass.
+func TestUpgradeV1ToV3_SetsUpgradedStateCleanly(t *testing.T) {
+	ctx := context.Background()
+
+	prior := integrationPolicyModelV1{
+		ID:                 types.StringValue("policy-id-1"),
+		PolicyID:           types.StringValue("policy-id-1"),
+		Name:               types.StringValue("a name"),
+		Namespace:          types.StringValue("default"),
+		AgentPolicyID:      types.StringValue("agent-policy-1"),
+		AgentPolicyIDs:     types.ListNull(types.StringType),
+		Description:        types.StringValue("a description"),
+		Enabled:            types.BoolValue(true),
+		Force:              types.BoolValue(false),
+		IntegrationName:    types.StringValue("tcp"),
+		IntegrationVersion: types.StringValue("1.16.0"),
+		OutputID:           types.StringNull(),
+		SpaceIDs:           types.SetNull(types.StringType),
+		VarsJSON:           jsontypes.NewNormalizedNull(),
+		Input:              types.ListNull(getInputTypeV1()),
+	}
+
+	rawState := tfsdk.State{Schema: getSchemaV1()}
+	diags := rawState.Set(ctx, &prior)
+	require.False(t, diags.HasError(), "set prior state: %v", diags)
+
+	liveSchema := getSchemaV3()
+	resp := resource.UpgradeStateResponse{
+		State: tfsdk.State{
+			Schema: liveSchema,
+			Raw:    tftypes.NewValue(liveSchema.Type().TerraformType(ctx), nil),
+		},
+	}
+
+	upgradeV1ToV3(ctx, resource.UpgradeStateRequest{State: &rawState}, &resp)
+	require.False(t, resp.Diagnostics.HasError(), "upgrade diagnostics: %v", resp.Diagnostics)
+
+	var got integrationPolicyModel
+	diags = resp.State.Get(ctx, &got)
+	require.False(t, diags.HasError(), "decode upgraded state: %v", diags)
+
+	assert.True(t, got.AdditionalDatastreamsPermissions.IsNull(), "pre-V3 state has no permissions to carry over")
+	assert.Equal(t, types.StringType, got.AdditionalDatastreamsPermissions.ElementType(ctx))
 }
 
 func TestIntegrationPolicyModelV1ToV2(t *testing.T) {

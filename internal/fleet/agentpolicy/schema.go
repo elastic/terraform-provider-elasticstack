@@ -21,34 +21,27 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
-	"github.com/hashicorp/terraform-plugin-framework-validators/float32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/int32validator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/mapvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
-	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/booldefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int32default"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64default"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/mapplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/objectplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/setplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringdefault"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-)
-
-const (
-	globalDataTagStringValueAttr = "string_value"
-	globalDataTagNumberValueAttr = "number_value"
 )
 
 func (r *agentPolicyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
@@ -166,52 +159,10 @@ func getSchema() schema.Schema {
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
-			"global_data_tags": schema.MapNestedAttribute{
-				Description: globalDataTagsDescription,
-				NestedObject: schema.NestedAttributeObject{
-					Attributes: map[string]schema.Attribute{
-						globalDataTagStringValueAttr: schema.StringAttribute{
-							Description: "String value for the field. If this is set, number_value must not be defined.",
-							Optional:    true,
-							Validators: []validator.String{
-								stringvalidator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr)),
-								stringvalidator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
-									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
-								),
-							},
-						},
-						globalDataTagNumberValueAttr: schema.Float32Attribute{
-							Description: "Number value for the field. If this is set, string_value must not be defined.",
-							Optional:    true,
-							Validators: []validator.Float32{
-								float32validator.ConflictsWith(path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr)),
-								float32validator.AtLeastOneOf(
-									path.MatchRelative().AtParent().AtName(globalDataTagStringValueAttr),
-									path.MatchRelative().AtParent().AtName(globalDataTagNumberValueAttr),
-								),
-							},
-						},
-					},
-				},
-				Computed: true,
-				Optional: true,
-				Default: mapdefault.StaticValue(types.MapValueMust(types.ObjectType{
-					AttrTypes: map[string]attr.Type{
-						globalDataTagStringValueAttr: types.StringType,
-						globalDataTagNumberValueAttr: types.Float32Type,
-					},
-				}, map[string]attr.Value{})),
-			},
-			"space_ids": schema.SetAttribute{
-				Description: "The Kibana space IDs that this agent policy should be available in. When not specified, defaults to [\"default\"]. Note: The order of space IDs does not matter as this is a set.",
-				ElementType: types.StringType,
-				Optional:    true,
-				Computed:    true,
-				PlanModifiers: []planmodifier.Set{
-					setplanmodifier.UseStateForUnknown(),
-				},
-			},
+			"global_data_tags": globaldatatags.Schema(map[string]attr.Value{}),
+			"space_ids": kbschema.SpaceIDsAttribute(
+				"The Kibana space IDs that this agent policy should be available in. When not specified, defaults to [\"default\"]. Note: The order of space IDs does not matter as this is a set.",
+			),
 			"required_versions": schema.MapAttribute{
 				Description: "Map of agent versions to target percentages for automatic upgrade. The key is the target version and the value is the percentage of agents to upgrade to that version.",
 				ElementType: types.Int32Type,
@@ -313,6 +264,20 @@ func getSchema() schema.Schema {
 							stringvalidator.OneOf("", "process", "otel"),
 						},
 					},
+					"features_disable_policy_change_acks_enabled": schema.BoolAttribute{
+						Description: "Disable policy change acknowledgements from agents (maps to `agent_features_disable_policy_change_acks_enabled`). Requires Elastic Stack 9.4.0 or above.",
+						Optional:    true,
+					},
+					"features_include_tags_in_events_enabled": schema.BoolAttribute{
+						Description: "Include the agent's tags in events it sends (maps to `agent_features_include_tags_in_events_enabled`). Requires Elastic Stack 9.6.0 or above.",
+						Optional:    true,
+					},
+					"internal": schema.StringAttribute{
+						Description: "Advanced internal agent settings as free-form YAML (maps to `agent_internal`). " +
+							"Kibana provides no stability guarantee for the keys accepted here. Requires Elastic Stack 9.3.0 or above.",
+						Optional:   true,
+						CustomType: customtypes.NormalizedYamlType{},
+					},
 				},
 			},
 			"advanced_monitoring_options": schema.SingleNestedAttribute{
@@ -335,19 +300,19 @@ func getSchema() schema.Schema {
 								Description: "Enable the HTTP monitoring endpoint. When enabled, exposes a /liveness endpoint for health checks.",
 								Optional:    true,
 								Computed:    true,
-								Default:     booldefault.StaticBool(false),
+								Default:     booldefault.StaticBool(defaultHTTPMonitoringEnabled),
 							},
 							"host": schema.StringAttribute{
 								Description: "Host for the HTTP monitoring endpoint.",
 								Optional:    true,
 								Computed:    true,
-								Default:     stringdefault.StaticString("localhost"),
+								Default:     stringdefault.StaticString(defaultHTTPMonitoringHost),
 							},
 							"port": schema.Int32Attribute{
 								Description: "Port for the HTTP monitoring endpoint.",
 								Optional:    true,
 								Computed:    true,
-								Default:     int32default.StaticInt32(6791),
+								Default:     int32default.StaticInt32(defaultHTTPMonitoringPort),
 								Validators: []validator.Int32{
 									int32validator.Between(0, 65535),
 								},
@@ -356,13 +321,13 @@ func getSchema() schema.Schema {
 								Description: "Enable monitoring buffer for the HTTP endpoint.",
 								Optional:    true,
 								Computed:    true,
-								Default:     booldefault.StaticBool(false),
+								Default:     booldefault.StaticBool(defaultHTTPMonitoringBufferEnabled),
 							},
 							"pprof_enabled": schema.BoolAttribute{
 								Description: "Enable /debug/pprof/* profiling endpoints. Warning: enabling this may pose a security risk if the monitoring endpoint is accessible over a network.",
 								Optional:    true,
 								Computed:    true,
-								Default:     booldefault.StaticBool(false),
+								Default:     booldefault.StaticBool(defaultHTTPMonitoringPprofEnabled),
 							},
 						},
 					},
@@ -387,13 +352,13 @@ func getSchema() schema.Schema {
 										Optional:    true,
 										Computed:    true,
 										CustomType:  customtypes.DurationType{},
-										Default:     stringdefault.StaticString("1m"),
+										Default:     stringdefault.StaticString(defaultDiagnosticsInterval),
 									},
 									"burst": schema.Int32Attribute{
 										Description: "Rate limiting burst count for diagnostics requests.",
 										Optional:    true,
 										Computed:    true,
-										Default:     int32default.StaticInt32(1),
+										Default:     int32default.StaticInt32(defaultDiagnosticsBurst),
 									},
 								},
 							},
@@ -410,20 +375,20 @@ func getSchema() schema.Schema {
 										Optional:    true,
 										Computed:    true,
 										CustomType:  customtypes.DurationType{},
-										Default:     stringdefault.StaticString("1s"),
+										Default:     stringdefault.StaticString(defaultDiagnosticsInitDuration),
 									},
 									"backoff_duration": schema.StringAttribute{
 										Description: "Maximum backoff duration between retry attempts (e.g., '1m', '30s').",
 										Optional:    true,
 										Computed:    true,
 										CustomType:  customtypes.DurationType{},
-										Default:     stringdefault.StaticString("1m"),
+										Default:     stringdefault.StaticString(defaultDiagnosticsBackoffDuration),
 									},
 									"max_retries": schema.Int32Attribute{
 										Description: "Maximum number of retry attempts for file uploads.",
 										Optional:    true,
 										Computed:    true,
-										Default:     int32default.StaticInt32(10),
+										Default:     int32default.StaticInt32(defaultDiagnosticsMaxRetries),
 									},
 								},
 							},
@@ -436,7 +401,4 @@ func getSchema() schema.Schema {
 			"kibana_connection": providerschema.GetKbFWConnectionBlock(),
 		},
 	}
-}
-func getGlobalDataTagsAttrTypes() attr.Type {
-	return getSchema().Attributes["global_data_tags"].GetType()
 }

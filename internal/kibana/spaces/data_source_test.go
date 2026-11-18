@@ -25,6 +25,7 @@ import (
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
+	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
@@ -38,30 +39,11 @@ const testImageURL = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYA
 // spaces data source acceptance tests.
 const testSpacesResourceName = "data.elasticstack_kibana_spaces.all_spaces"
 
-// testCheckDataSourceAttrEmptyOrAbsent passes when the flat state attribute is missing
-// or equals "". Optional nested attributes mapped as null are often omitted from state.
-func testCheckDataSourceAttrEmptyOrAbsent(resourceName, attr string) resource.TestCheckFunc {
-	return func(s *terraform.State) error {
-		rs, ok := s.RootModule().Resources[resourceName]
-		if !ok {
-			return fmt.Errorf("resource %q not found in state", resourceName)
-		}
-		v, ok := rs.Primary.Attributes[attr]
-		if !ok {
-			return nil
-		}
-		if v != "" {
-			return fmt.Errorf("%q: expected attribute %q absent or empty, got %q", resourceName, attr, v)
-		}
-		return nil
-	}
-}
-
-// testCheckSpaceAttrByID returns a TestCheckFunc that scans the "spaces" list
-// in state to find the element whose id equals spaceID, then asserts that attr
-// equals value. This avoids hard-coding list indices, which can shift when the
-// Kibana API returns spaces in a different order.
-func testCheckSpaceAttrByID(spaceID, attr, value string) resource.TestCheckFunc {
+// testCheckSpaceByID returns a TestCheckFunc that scans the "spaces" list in
+// state to find the element whose id equals spaceID, then runs check against
+// that element's attribute for attr. This avoids hard-coding list indices, which
+// can shift when the Kibana API returns spaces in a different order.
+func testCheckSpaceByID(spaceID, attr string, check func(got string, present bool) error) resource.TestCheckFunc {
 	return func(s *terraform.State) error {
 		rs, ok := s.RootModule().Resources[testSpacesResourceName]
 		if !ok {
@@ -78,15 +60,45 @@ func testCheckSpaceAttrByID(spaceID, attr, value string) resource.TestCheckFunc 
 		}
 		for i := range count {
 			if attrs[fmt.Sprintf("spaces.%d.id", i)] == spaceID {
-				got := attrs[fmt.Sprintf("spaces.%d.%s", i, attr)]
-				if got != value {
-					return fmt.Errorf("%q spaces[id=%q].%s: expected %q, got %q", testSpacesResourceName, spaceID, attr, value, got)
+				got, present := attrs[fmt.Sprintf("spaces.%d.%s", i, attr)]
+				if err := check(got, present); err != nil {
+					return fmt.Errorf("%q spaces[id=%q].%s: %w", testSpacesResourceName, spaceID, attr, err)
 				}
 				return nil
 			}
 		}
 		return fmt.Errorf("%q: no space with id %q found in state", testSpacesResourceName, spaceID)
 	}
+}
+
+// testCheckSpaceAttrByID asserts that attr of the space with the given id equals value.
+func testCheckSpaceAttrByID(spaceID, attr, value string) resource.TestCheckFunc {
+	return testCheckSpaceByID(spaceID, attr, func(got string, _ bool) error {
+		if got != value {
+			return fmt.Errorf("expected %q, got %q", value, got)
+		}
+		return nil
+	})
+}
+
+// testCheckSpaceAttrSetByID asserts that attr of the space with the given id is present and non-empty.
+func testCheckSpaceAttrSetByID(spaceID, attr string) resource.TestCheckFunc {
+	return testCheckSpaceByID(spaceID, attr, func(got string, present bool) error {
+		if !present || got == "" {
+			return fmt.Errorf("expected attribute to be set")
+		}
+		return nil
+	})
+}
+
+// testCheckSpaceAttrEmptyOrAbsentByID asserts that attr of the space with the given id is absent or empty.
+func testCheckSpaceAttrEmptyOrAbsentByID(spaceID, attr string) resource.TestCheckFunc {
+	return testCheckSpaceByID(spaceID, attr, func(got string, _ bool) error {
+		if got != "" {
+			return fmt.Errorf("expected attribute absent or empty, got %q", got)
+		}
+		return nil
+	})
 }
 
 // TestAccSpacesDataSource verifies the data source returns all expected fields
@@ -100,13 +112,14 @@ func TestAccSpacesDataSource(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(testSpacesResourceName, "id", "spaces"),
-					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.id", "default"),
-					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.name", "Default"),
-					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.description", "This is your default space!"),
-					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.disabled_features.#", "0"),
-					resource.TestCheckResourceAttrSet(testSpacesResourceName, "spaces.0.color"),
-					testCheckDataSourceAttrEmptyOrAbsent(testSpacesResourceName, "spaces.0.image_url"),
-					testCheckDataSourceAttrEmptyOrAbsent(testSpacesResourceName, "spaces.0.solution"),
+					testCheckSpaceAttrByID("default", "id", "default"),
+					testCheckSpaceAttrByID("default", "name", "Default"),
+					testCheckSpaceAttrByID("default", "description", "This is your default space!"),
+					testCheckSpaceAttrByID("default", "disabled_features.#", "0"),
+					testCheckSpaceAttrSetByID("default", "color"),
+					testCheckSpaceAttrEmptyOrAbsentByID("default", "initials"),
+					testCheckSpaceAttrEmptyOrAbsentByID("default", "image_url"),
+					testCheckSpaceAttrEmptyOrAbsentByID("default", "solution"),
 				),
 			},
 		},
@@ -115,10 +128,23 @@ func TestAccSpacesDataSource(t *testing.T) {
 
 // TestAccSpacesDataSource_multipleSpaces verifies the data source returns
 // attributes from more than one space when a second space has been created.
-// The custom space ID uses "tfacc" prefix (t > d) so it reliably sorts after
-// "default" in the list returned by the Kibana API.
 func TestAccSpacesDataSource_multipleSpaces(t *testing.T) {
 	spaceID := "tfacc" + sdkacctest.RandStringFromCharSet(17, sdkacctest.CharSetAlphaNum)
+
+	spaceCountCheck := resource.TestCheckResourceAttrWith(
+		testSpacesResourceName,
+		"spaces.#",
+		func(value string) error {
+			count, err := strconv.Atoi(value)
+			if err != nil {
+				return err
+			}
+			if count < 2 {
+				return fmt.Errorf("expected at least 2 spaces, got %d", count)
+			}
+			return nil
+		},
+	)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() { acctest.PreCheck(t) },
@@ -130,31 +156,34 @@ func TestAccSpacesDataSource_multipleSpaces(t *testing.T) {
 					"space_id": config.StringVariable(spaceID),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					// Default space is always the first element.
-					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.id", "default"),
-					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.name", "Default"),
-					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.description", "This is your default space!"),
+					// Default space — looked up by ID; the list has no ordering contract.
+					testCheckSpaceAttrByID("default", "id", "default"),
+					testCheckSpaceAttrByID("default", "name", "Default"),
+					testCheckSpaceAttrByID("default", "description", "This is your default space!"),
 					// Data source must return at least two spaces.
-					resource.TestCheckResourceAttrWith(
-						testSpacesResourceName,
-						"spaces.#",
-						func(value string) error {
-							count, err := strconv.Atoi(value)
-							if err != nil {
-								return err
-							}
-							if count < 2 {
-								return fmt.Errorf("expected at least 2 spaces, got %d", count)
-							}
-							return nil
-						},
-					),
+					spaceCountCheck,
 					// Custom space — looked up by ID to avoid index-ordering fragility.
 					testCheckSpaceAttrByID(spaceID, "name", "Test Coverage Space"),
 					testCheckSpaceAttrByID(spaceID, "description", "Test space for data source coverage"),
-					testCheckSpaceAttrByID(spaceID, "disabled_features.#", "0"),
+					testCheckSpaceAttrByID(spaceID, "disabled_features.#", "1"),
+					testCheckSpaceAttrByID(spaceID, "disabled_features.0", "ingestManager"),
 					testCheckSpaceAttrByID(spaceID, "initials", "TC"),
 					testCheckSpaceAttrByID(spaceID, "color", "#E8478B"),
+					testCheckSpaceAttrByID(spaceID, "solution", ""),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read_with_solution"),
+				ConfigVariables: config.Variables{
+					"space_id": config.StringVariable(spaceID),
+				},
+				SkipFunc: versionutils.CheckIfVersionIsUnsupported(minSelfManagedVersionForSpaceSolution),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					spaceCountCheck,
+					testCheckSpaceAttrByID(spaceID, "disabled_features.#", "1"),
+					testCheckSpaceAttrByID(spaceID, "disabled_features.0", "ingestManager"),
+					testCheckSpaceAttrByID(spaceID, "solution", "classic"),
 				),
 			},
 		},
@@ -176,7 +205,7 @@ func TestAccSpacesDataSource_noDescription(t *testing.T) {
 					"space_id": config.StringVariable(spaceID),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.id", "default"),
+					testCheckSpaceAttrByID("default", "id", "default"),
 					testCheckSpaceAttrByID(spaceID, "description", ""),
 				),
 			},
@@ -199,7 +228,7 @@ func TestAccSpacesDataSource_withImageURL(t *testing.T) {
 					"space_id": config.StringVariable(spaceID),
 				},
 				Check: resource.ComposeAggregateTestCheckFunc(
-					resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.id", "default"),
+					testCheckSpaceAttrByID("default", "id", "default"),
 					testCheckSpaceAttrByID(spaceID, "image_url", testImageURL),
 				),
 			},
@@ -208,17 +237,27 @@ func TestAccSpacesDataSource_withImageURL(t *testing.T) {
 }
 
 // TestAccSpacesDataSource_withKibanaConnection verifies that the data source
-// correctly reads spaces when an explicit kibana_connection block is provided.
+// correctly reads spaces when an explicit kibana_connection block is provided,
+// covering both the secure (insecure = false) and insecure (insecure = true)
+// variants of the connection block.
 func TestAccSpacesDataSource_withKibanaConnection(t *testing.T) {
 	checks := []resource.TestCheckFunc{
 		resource.TestCheckResourceAttr(testSpacesResourceName, "id", "spaces"),
-		resource.TestCheckResourceAttr(testSpacesResourceName, "spaces.0.id", "default"),
+		testCheckSpaceAttrByID("default", "id", "default"),
 		resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.#", "1"),
 		resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.0.endpoints.#", "1"),
 		resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.0.endpoints.0", strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))),
 		resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.0.insecure", "false"),
 	}
 	checks = append(checks, acctest.KibanaConnectionAuthChecks(testSpacesResourceName)...)
+
+	insecureChecks := []resource.TestCheckFunc{
+		resource.TestCheckResourceAttr(testSpacesResourceName, "id", "spaces"),
+		testCheckSpaceAttrByID("default", "id", "default"),
+		resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.#", "1"),
+		resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.0.insecure", "true"),
+	}
+	insecureChecks = append(insecureChecks, acctest.KibanaConnectionAuthChecks(testSpacesResourceName)...)
 
 	resource.Test(t, resource.TestCase{
 		PreCheck: func() {
@@ -231,6 +270,14 @@ func TestAccSpacesDataSource_withKibanaConnection(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          acctest.KibanaConnectionVariables(config.Variables{}),
 				Check:                    resource.ComposeAggregateTestCheckFunc(checks...),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"insecure": config.BoolVariable(true),
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(insecureChecks...),
 			},
 		},
 	})

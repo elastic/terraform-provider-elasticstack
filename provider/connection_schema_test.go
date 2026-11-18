@@ -28,8 +28,12 @@ import (
 	providerschema "github.com/elastic/terraform-provider-elasticstack/internal/schema"
 	"github.com/elastic/terraform-provider-elasticstack/provider"
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
+	datasourceschema "github.com/hashicorp/terraform-plugin-framework/datasource/schema"
 	fwprovider "github.com/hashicorp/terraform-plugin-framework/provider"
+	fwproviderschema "github.com/hashicorp/terraform-plugin-framework/provider/schema"
 	fwresource "github.com/hashicorp/terraform-plugin-framework/resource"
+	resourceschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 const (
@@ -83,6 +87,63 @@ func TestProviderEntities_ConnectionSchemas(t *testing.T) {
 			t.Fatalf("registered entities missing validation: %s", strings.Join(missing, ", "))
 		}
 	})
+}
+
+func TestProviderEntities_KibanaConnectionHeadersUseSensitiveStringMap(t *testing.T) {
+	ctx := context.Background()
+	registered := collectRegisteredProviderEntities(ctx, provider.NewFrameworkProvider("dev"))
+
+	for _, entity := range registered {
+		if expectedConnectionForEntity(entity) != kibanaConnectionTestKey {
+			continue
+		}
+
+		t.Run(entity.id, func(t *testing.T) {
+			switch {
+			case entity.frameworkRes != nil:
+				resp := fwresource.SchemaResponse{}
+				entity.frameworkRes.Schema(ctx, fwresource.SchemaRequest{}, &resp)
+				assertKibanaHeadersUseSensitiveStringMap(t, resp.Schema.Blocks[kibanaConnectionTestKey])
+			case entity.frameworkDS != nil:
+				resp := datasource.SchemaResponse{}
+				entity.frameworkDS.Schema(ctx, datasource.SchemaRequest{}, &resp)
+				assertKibanaHeadersUseSensitiveStringMap(t, resp.Schema.Blocks[kibanaConnectionTestKey])
+			default:
+				t.Fatalf("entity %q has no supported implementation", entity.id)
+			}
+		})
+	}
+}
+
+func assertKibanaHeadersUseSensitiveStringMap(t *testing.T, block any) {
+	t.Helper()
+
+	switch block := block.(type) {
+	case resourceschema.ListNestedBlock:
+		headers := block.NestedObject.Attributes["headers"].(resourceschema.MapAttribute)
+		assertSensitiveStringMap(t, headers.Optional, headers.Sensitive, headers.ElementType)
+	case datasourceschema.ListNestedBlock:
+		headers := block.NestedObject.Attributes["headers"].(datasourceschema.MapAttribute)
+		assertSensitiveStringMap(t, headers.Optional, headers.Sensitive, headers.ElementType)
+	case fwproviderschema.ListNestedBlock:
+		headers := block.NestedObject.Attributes["headers"].(fwproviderschema.MapAttribute)
+		assertSensitiveStringMap(t, headers.Optional, headers.Sensitive, headers.ElementType)
+	default:
+		t.Fatalf("kibana_connection block has unexpected type %T", block)
+	}
+}
+
+func assertSensitiveStringMap(t *testing.T, optional, sensitive bool, elementType any) {
+	t.Helper()
+	if !optional {
+		t.Fatal("headers must be optional")
+	}
+	if !sensitive {
+		t.Fatal("headers must be sensitive")
+	}
+	if !reflect.DeepEqual(elementType, types.StringType) {
+		t.Fatalf("headers element type is %T, want string", elementType)
+	}
 }
 
 func collectRegisteredProviderEntities(ctx context.Context, frameworkProvider fwprovider.Provider) []registeredProviderEntity {

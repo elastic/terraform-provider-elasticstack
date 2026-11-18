@@ -92,8 +92,7 @@ func UploadSourceMap(ctx context.Context, client *Client, opts UploadSourceMapOp
 		return "", diags
 	}
 
-	if apiResp.HTTPResponse.StatusCode >= 400 {
-		diags.Append(diagutil.ReportUnknownHTTPError(apiResp.HTTPResponse.StatusCode, apiResp.Body)...)
+	if diags.Append(diagutil.HandleStatusResponse(apiResp.HTTPResponse.StatusCode, apiResp.Body, http.StatusOK)...); diags.HasError() {
 		return "", diags
 	}
 
@@ -129,8 +128,7 @@ func ListSourceMaps(ctx context.Context, client *Client, spaceID string, page, p
 		return nil, diags
 	}
 
-	if apiResp.HTTPResponse.StatusCode >= 400 {
-		diags.Append(diagutil.ReportUnknownHTTPError(apiResp.HTTPResponse.StatusCode, apiResp.Body)...)
+	if diags.Append(diagutil.HandleStatusResponse(apiResp.HTTPResponse.StatusCode, apiResp.Body, http.StatusOK)...); diags.HasError() {
 		return nil, diags
 	}
 
@@ -177,13 +175,7 @@ func DeleteSourceMap(ctx context.Context, client *Client, spaceID, artifactID st
 		return diags
 	}
 
-	if apiResp.HTTPResponse.StatusCode == http.StatusNotFound {
-		return diags
-	}
-
-	if apiResp.HTTPResponse.StatusCode >= 400 {
-		diags.Append(diagutil.ReportUnknownHTTPError(apiResp.HTTPResponse.StatusCode, apiResp.Body)...)
-	}
+	diags.Append(diagutil.HandleStatusResponse(apiResp.HTTPResponse.StatusCode, apiResp.Body, http.StatusOK, http.StatusNotFound)...)
 
 	return diags
 }

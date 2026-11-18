@@ -45,3 +45,10 @@ const (
 	attrKQL          = "kql"
 	attrReference    = "reference"
 )
+
+// Endpoint response-action commands on the Security Detections API.
+const (
+	endpointCommandIsolate        = "isolate"
+	endpointCommandKillProcess    = "kill-process"
+	endpointCommandSuspendProcess = "suspend-process"
+)

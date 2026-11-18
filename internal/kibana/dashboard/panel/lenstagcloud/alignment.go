@@ -22,7 +22,10 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 // Kibana's tagcloud renderer materializes a fixed font size range when the
@@ -41,24 +44,16 @@ func fontSizeMatchesKibanaDefault(m *models.FontSizeModel) bool {
 		typeutils.IsKnown(m.Max) && m.Max.ValueFloat64() == tagcloudDefaultFontSizeMax
 }
 
-func alignTagcloudStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	if plan == nil || state == nil {
-		return
-	}
-	alignTagcloudConfigStateFromPlan(ctx, plan.TagcloudConfig, state.TagcloudConfig)
-}
-
 func alignTagcloudConfigStateFromPlan(ctx context.Context, plan, state *models.TagcloudConfigModel) {
 	if plan == nil || state == nil {
 		return
 	}
-	lenscommon.AlignTitleAndDescriptionFromPlan(plan.Title, plan.Description, &state.Title, &state.Description)
-	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.DataSourceJSON, &state.DataSourceJSON, "time_field")
-	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.MetricJSON, &state.MetricJSON)
+	lenscommon.AlignBasicMetricChartStateFromPlan(ctx, &plan.LensChartBaseTFModel, &state.LensChartBaseTFModel, plan.MetricJSON, &state.MetricJSON)
 	lenscommon.PreservePlanJSONIfStateAddsOptionalKeys(plan.TagByJSON.Normalized, &state.TagByJSON.Normalized, "rank_by", "color")
-	lenscommon.PreservePlanJSONWithDefaultsIfSemanticallyEqual(ctx, plan.TagByJSON, &state.TagByJSON)
+	var diags diag.Diagnostics
+	state.TagByJSON = panelkit.PreservePriorJSONWithDefaultsIfEquivalent(ctx, plan.TagByJSON, state.TagByJSON, &diags)
 	// Kibana materializes server-side defaults when the practitioner omits these fields.
-	lenscommon.PreserveNullStringIfStateEquals(plan.Orientation, &state.Orientation, "horizontal")
+	lenscommon.PreserveNullIfStateEquals(plan.Orientation, &state.Orientation, types.StringValue("horizontal"))
 	if plan.FontSize == nil && state.FontSize != nil && fontSizeMatchesKibanaDefault(state.FontSize) {
 		state.FontSize = nil
 	}

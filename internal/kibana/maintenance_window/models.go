@@ -33,11 +33,11 @@ import (
 type Model struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
-	ID             types.String `tfsdk:"id"`
-	SpaceID        types.String `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	Title          types.String `tfsdk:"title"`
 	Enabled        types.Bool   `tfsdk:"enabled"`
-	CustomSchedule Schedule     `tfsdk:"custom_schedule"`
+	CustomSchedule *Schedule    `tfsdk:"custom_schedule"`
 	Scope          *Scope       `tfsdk:"scope"`
 }
 
@@ -69,7 +69,6 @@ type ScheduleRecurring struct {
 
 func (m Model) GetID() types.String         { return m.ID }
 func (m Model) GetResourceID() types.String { return m.ID }
-func (m Model) GetSpaceID() types.String    { return m.SpaceID }
 
 var maintenanceWindowMinVersion = version.Must(version.NewVersion("9.1.0"))
 
@@ -98,7 +97,7 @@ func (m Model) toAPICreateRequest(ctx context.Context) (kbapi.PostMaintenanceWin
 	body.Schedule.Custom.Duration = m.CustomSchedule.Duration.ValueString()
 	body.Schedule.Custom.Start = m.CustomSchedule.Start.ValueString()
 
-	if !m.CustomSchedule.Timezone.IsNull() && !m.CustomSchedule.Timezone.IsUnknown() {
+	if typeutils.IsKnown(m.CustomSchedule.Timezone) {
 		body.Schedule.Custom.Timezone = m.CustomSchedule.Timezone.ValueStringPointer()
 	}
 
@@ -125,16 +124,15 @@ func (m Model) toAPIUpdateRequest(ctx context.Context) (kbapi.PatchMaintenanceWi
 	body := kbapi.PatchMaintenanceWindowIdJSONRequestBody{
 		Enabled: m.Enabled.ValueBoolPointer(),
 		Title:   m.Title.ValueStringPointer(),
-	}
 
-	body.Schedule = &struct {
-		Custom kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest `json:"custom"`
-	}{
-		Custom: kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest{
-			Duration: m.CustomSchedule.Duration.ValueString(),
-			Start:    m.CustomSchedule.Start.ValueString(),
-		},
-	}
+		Schedule: &struct {
+			Custom kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest `json:"custom"`
+		}{
+			Custom: kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRequest{
+				Duration: m.CustomSchedule.Duration.ValueString(),
+				Start:    m.CustomSchedule.Start.ValueString(),
+			},
+		}}
 
 	if typeutils.IsKnown(m.CustomSchedule.Timezone) {
 		body.Schedule.Custom.Timezone = m.CustomSchedule.Timezone.ValueStringPointer()
@@ -155,7 +153,7 @@ func (m *Model) _fromAPIResponse(ctx context.Context, response kbapi.KibanaHTTPA
 	m.Title = types.StringValue(response.Title)
 	m.Enabled = types.BoolValue(response.Enabled)
 
-	m.CustomSchedule = Schedule{
+	m.CustomSchedule = &Schedule{
 		Start:    types.StringValue(response.Schedule.Custom.Start),
 		Duration: kibanacustomtypes.NewAlertingDurationValue(response.Schedule.Custom.Duration),
 		Timezone: types.StringPointerValue(response.Schedule.Custom.Timezone),
@@ -221,24 +219,25 @@ func (m *Model) _fromAPIResponse(ctx context.Context, response kbapi.KibanaHTTPA
 
 /* HELPERS */
 
-func (model *Scope) toAPIRequest() *kbapi.KibanaHTTPAPIsMaintenanceWindowScope {
+func (model *Scope) toAPIRequest() *kbapi.KibanaHTTPAPIsMaintenanceWindowScopeRequest {
 	if model == nil {
 		return nil
 	}
 
-	return &kbapi.KibanaHTTPAPIsMaintenanceWindowScope{
-		Alerting: struct {
-			Query struct {
-				Kql string `json:"kql"`
-			} `json:"query"`
+	alerting := &kbapi.KibanaHTTPAPIsMaintenanceWindowScopeRequest{}
+	alerting.Alerting = &struct {
+		Enabled *bool `json:"enabled,omitempty"`
+		Query   *struct {
+			Kql string `json:"kql"`
+		} `json:"query,omitempty"`
+	}{
+		Query: &struct {
+			Kql string `json:"kql"`
 		}{
-			Query: struct {
-				Kql string `json:"kql"`
-			}{
-				Kql: model.Alerting.Kql.ValueString(),
-			},
+			Kql: model.Alerting.Kql.ValueString(),
 		},
 	}
+	return alerting
 }
 
 func (model *ScheduleRecurring) toAPIRequest(ctx context.Context) (*kbapi.KibanaHTTPAPIsMaintenanceWindowScheduleRecurringRequest, diag.Diagnostics) {

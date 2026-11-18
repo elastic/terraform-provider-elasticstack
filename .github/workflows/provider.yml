@@ -2,10 +2,11 @@
 name: Provider CI
 on:
   push:
-    branches: [main]
+    branches: [main, "renovate/**"]
   pull_request:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
+  merge_group:
 
 permissions:
   contents: read
@@ -38,7 +39,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
         with:
           go-version-file: "go.mod"
           cache: true
@@ -49,6 +50,34 @@ jobs:
       - name: Build
         run: make build-ci
 
+  unit-test:
+    name: Unit Test
+    needs: classify
+    if: needs.classify.outputs.provider_changes == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
+        with:
+          go-version-file: "go.mod"
+          cache: true
+          cache-dependency-path: go.sum
+
+      - name: Get dependencies
+        run: make vendor
+
+      # Dedicated unit-test job: the targeted-testacc selection only covers
+      # packages with acceptance tests, so unit-test-only packages (entitycore,
+      # generated clients, internal/clients, etc.) would otherwise never run
+      # on PRs. This job is not gated on the targeted selection at all.
+      # -skip '^TestAcc' excludes acceptance tests: they are run by the
+      # acceptance matrix (with a live stack), and several *ExplicitConnection
+      # tests hit endpoint/env assertions before the framework's TF_ACC gate,
+      # so they cannot run here without a stack.
+      - name: Unit tests
+        run: go test ./... -count=1 -parallel=4 -timeout=10m -skip '^TestAcc'
+
   lint:
     name: Lint
     needs: classify
@@ -58,12 +87,12 @@ jobs:
       OPENSPEC_TELEMETRY: "0"
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: "24"
           cache: npm
           cache-dependency-path: package-lock.json
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
         with:
           go-version-file: "go.mod"
           cache: true
@@ -91,121 +120,108 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
         with:
           go-version-file: "go.mod"
           cache: true
       - uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9.3.0
         with:
-          version: v2.12.2
+          version: v2.15.0
           args: --max-same-issues=0 --allow-parallel-runners ./...
+
+  load-matrix:
+    name: Load acceptance-test matrix
+    needs: classify
+    if: needs.classify.outputs.provider_changes == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      versions: ${{ steps.load.outputs.versions }}
+      flags: ${{ steps.load.outputs.flags }}
+      has_packages: ${{ steps.targeted.outputs.has_packages }}
+      shards: ${{ steps.targeted.outputs.shards }}
+      packages_0: ${{ steps.targeted.outputs.packages_0 }}
+      packages_1: ${{ steps.targeted.outputs.packages_1 }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+          # The targeted-testacc selector diffs HEAD^1..HEAD of the PR merge commit.
+          fetch-depth: 2
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
+        with:
+          go-version-file: "go.mod"
+          cache: true
+      - id: load
+        run: go run ./scripts/version-matrix load-matrix
+      # Preparation boundary: the targeted shard plan is computed once here,
+      # before the matrix jobs fan out, instead of per matrix job.
+      - id: targeted
+        name: compute-packages — prepare targeted acceptance plan
+        shell: bash
+        run: ./.github/scripts/targeted-testacc-compute.sh
+        env:
+          EVENT_NAME: ${{ github.event_name }}
 
   test:
     name: Matrix Acceptance Test
     needs:
       - classify
       - build
+      - load-matrix
     if: needs.classify.outputs.provider_changes == 'true'
     permissions:
       contents: read
       issues: write
       pull-requests: write
-    runs-on: ${{ matrix.runner == 'ubuntu-22.04' && 'ubuntu-22.04' || 'ubuntu-latest' }}
+    runs-on: ${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].runner }}
     env:
       ELASTIC_PASSWORD: password
       TF_ELASTICSTACK_INCLUDE_EXPERIMENTAL: true
 
-    timeout-minutes: 60
+    timeout-minutes: 75
     strategy:
       fail-fast: false
       matrix:
-        version:
-          - "8.5.3"
-          - "8.6.2"
-          - "8.7.1"
-          - "8.8.2"
-          - "8.9.2"
-          - "8.10.4"
-          - "8.11.4"
-          - "8.12.2"
-          - "8.13.4"
-          - "8.14.3"
-          - "8.15.5"
-          - "8.16.6"
-          - "8.17.10"
-          - "8.18.8"
-          - "8.19.17"
-          - "9.0.8"
-          - "9.1.10"
-          - "9.2.8"
-          - "9.3.6"
-          - "9.4.2"
-          - "9.5.0-SNAPSHOT"
-        shard: [0, 1]
-        include:
-          - version: "8.0.1"
-            shard: 0
-            fleetImage: elastic/elastic-agent
-            runner: "ubuntu-22.04"
-          - version: "8.0.1"
-            shard: 1
-            fleetImage: elastic/elastic-agent
-            runner: "ubuntu-22.04"
-          - version: "8.1.3"
-            shard: 0
-            fleetImage: elastic/elastic-agent
-            runner: "ubuntu-22.04"
-          - version: "8.1.3"
-            shard: 1
-            fleetImage: elastic/elastic-agent
-            runner: "ubuntu-22.04"
-          - version: "8.2.3"
-            shard: 0
-            runner: "ubuntu-22.04"
-          - version: "8.2.3"
-            shard: 1
-            runner: "ubuntu-22.04"
-          - version: "8.3.3"
-            shard: 0
-            runner: "ubuntu-22.04"
-          - version: "8.3.3"
-            shard: 1
-            runner: "ubuntu-22.04"
-          - version: "8.4.3"
-            shard: 0
-            runner: "ubuntu-22.04"
-          - version: "8.4.3"
-            shard: 1
-            runner: "ubuntu-22.04"
+        version: ${{ fromJson(needs['load-matrix'].outputs.versions) }}
+        shard: ${{ fromJson(needs['load-matrix'].outputs.shards) }}
     steps:
+      # A zero-package pull-request plan keeps one no-op job per stack
+      # version (so provider changes never skip the test job) while every
+      # costly step below stays skipped; has_packages gates them all.
       - name: Free up disk space
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         run: |
           sudo rm -rf /usr/share/dotnet
           sudo rm -rf /usr/local/lib/android
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        if: needs['load-matrix'].outputs.has_packages == 'true'
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         with:
           go-version-file: "go.mod"
           cache: true
       - name: Read pinned Terraform version
         id: terraform-version
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         run: echo "version=$(tr -d '[:space:]' < .terraform-version)" >> "$GITHUB_OUTPUT"
       - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         with:
           terraform_version: ${{ steps.terraform-version.outputs.version }}
           terraform_wrapper: false
 
       - name: Get dependencies
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         run: make vendor
 
       - name: Pre-pull fleet image
-        if: matrix.fleetImage
+        if: "fromJson(needs['load-matrix'].outputs.flags)[matrix.version].prePullFleet && needs['load-matrix'].outputs.has_packages == 'true'"
         timeout-minutes: 5
         run: |
           for i in {1..3}; do
-            echo "Attempt $i: pulling ${{ matrix.fleetImage }}:${{ matrix.version }}..."
-            if timeout 90 docker pull "${{ matrix.fleetImage }}:${{ matrix.version }}"; then
+            echo "Attempt $i: pulling ${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}:${{ matrix.version }}..."
+            if timeout 90 docker pull "${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}:${{ matrix.version }}"; then
               echo "Fleet image pulled successfully"
               exit 0
             fi
@@ -216,15 +232,17 @@ jobs:
           exit 1
 
       - name: Start stack with docker compose
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         timeout-minutes: 10
         run: make docker-fleet
         env:
           STACK_VERSION: ${{ matrix.version }}
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
           KIBANA_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
-          FLEET_IMAGE: ${{ matrix.fleetImage || 'docker.elastic.co/elastic-agent/elastic-agent' }}
+          FLEET_IMAGE: ${{ fromJson(needs['load-matrix'].outputs.flags)[matrix.version].fleetImage }}
 
       - name: Wait for stack readiness
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         run: |
           for i in {1..60}; do
             if curl -fsS -u "elastic:${ELASTIC_PASSWORD}" http://localhost:9200/_cluster/health > /dev/null; then
@@ -250,32 +268,37 @@ jobs:
 
       - id: get-api-key
         name: Get ES API key
+        if: needs['load-matrix'].outputs.has_packages == 'true'
         run: |-
           echo "apikey=$(make create-es-api-key | jq -r .encoded)" >> "$GITHUB_OUTPUT"
         env:
           ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
 
-      - id: setup-fleet
-        name: Setup Fleet
-        if: matrix.version == '8.10.4' || matrix.version == '8.11.4' || matrix.version == '8.12.2' || matrix.version == '8.13.4' || matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.10' || matrix.version == '9.0.8' || matrix.version == '9.1.10' || matrix.version == '9.2.8' || matrix.version == '9.3.6' || endsWith(matrix.version, '-SNAPSHOT')
-        run: |-
-          make setup-kibana-fleet
-        env:
-          ELASTICSEARCH_PASSWORD: ${{ env.ELASTIC_PASSWORD }}
-          FLEET_NAME: "fleet"
-
       - id: force-install-synthetics
         name: Force install synthetics
-        if: matrix.version == '8.14.3' || matrix.version == '8.15.5' || matrix.version == '8.16.6' || matrix.version == '8.17.10'
+        if: "needs['load-matrix'].outputs.has_packages == 'true' && fromJson(needs['load-matrix'].outputs.flags)[matrix.version].forceSynthetics"
         run: |-
           for i in {1..5}; do curl -s -H "Authorization: ApiKey ${{ steps.get-api-key.outputs.apikey }}" --header "Content-Type: application/json" --header "kbn-xsrf: true" --request POST --data '{ "force": true }' http://localhost:5601/api/fleet/epm/packages/synthetics/1.2.2 && break || sleep 15; done
 
       - name: TF acceptance tests
         id: tf-acceptance
-        timeout-minutes: 45
+        if: needs['load-matrix'].outputs.has_packages == 'true'
+        timeout-minutes: 60
         continue-on-error: ${{ endsWith(matrix.version, '-SNAPSHOT') }}
-        run: make testacc ACCTEST_TOTAL_SHARDS=2 ACCTEST_SHARD_INDEX=${{ matrix.shard }}
+        run: |
+          # The prepared plan assigned this shard its final package list;
+          # no re-sharding happens here. Pull requests run the targeted
+          # list, everything else runs the fixed full-suite shards.
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"
+          else
+            make testacc ACCTEST_TOTAL_SHARDS=2 \
+              ACCTEST_SHARD_INDEX=${{ matrix.shard }}
+          fi
         env:
+          TARGETED_PKGS: >-
+            ${{ needs['load-matrix'].outputs[format('packages_{0}',
+            matrix.shard)] }}
           TF_ACC: "1"
           STACK_VERSION: ${{ matrix.version }}
           ELASTICSEARCH_ENDPOINTS: "http://localhost:9200"
@@ -328,20 +351,22 @@ jobs:
             }
 
       - name: Docker compose logs
-        if: failure() || steps.tf-acceptance.outcome == 'failure'
+        if: >-
+          (failure() || steps.tf-acceptance.outcome == 'failure')
+          && needs['load-matrix'].outputs.has_packages == 'true'
         run: docker compose logs --no-color
         env:
           STACK_VERSION: ${{ matrix.version }}
 
       - name: Tear down docker compose stack
-        if: always()
+        if: always() && needs['load-matrix'].outputs.has_packages == 'true'
         run: make docker-clean
         env:
           STACK_VERSION: ${{ matrix.version }}
 
   gate:
     name: Provider Gate
-    needs: [classify, build, golangci-lint, lint, test]
+    needs: [classify, build, golangci-lint, lint, load-matrix, test, unit-test]
     if: always()
     runs-on: ubuntu-latest
     steps:
@@ -356,7 +381,9 @@ jobs:
           PROVIDER_GATE_BUILD_RESULT: ${{ needs.build.result }}
           PROVIDER_GATE_LINT_RESULT: ${{ needs.lint.result }}
           PROVIDER_GATE_GOLANGCI_LINT_RESULT: ${{ needs['golangci-lint'].result }}
+          PROVIDER_GATE_LOAD_MATRIX_RESULT: ${{ needs['load-matrix'].result }}
           PROVIDER_GATE_TEST_RESULT: ${{ needs.test.result }}
+          PROVIDER_GATE_UNIT_TEST_RESULT: ${{ needs['unit-test'].result }}
         with:
           script: |
             const gate = require('${{ github.workspace }}/.github/scripts/workflows/lib/runners/gate.js');
@@ -373,7 +400,7 @@ jobs:
       pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+      - uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7
         with:
           go-version-file: go.mod
           cache: true
