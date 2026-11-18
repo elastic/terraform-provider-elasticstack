@@ -110,7 +110,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 		return
 	}
 
-	diags = planModel.populateFromAPI(ctx, pkg, policy)
+	diags = planModel.populateFromAPI(ctx, pkg, policy, false)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return

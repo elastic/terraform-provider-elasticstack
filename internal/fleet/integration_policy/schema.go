@@ -109,8 +109,9 @@ func getSchemaV3() schema.Schema {
 				Required:    true,
 			},
 			attrOutputID: schema.StringAttribute{
-				Description: "The ID of the output to send data to. When not specified, the default output of the agent policy will be used.",
-				Optional:    true,
+				Description: "The ID of the output to send data to. When not specified, the default output of the agent policy will be used. " +
+					"Removing `output_id` from configuration does not clear it on the server; the previously assigned output is retained and state remains null.",
+				Optional: true,
 			},
 			attrAdditionalDatastreamsPermissions: schema.ListAttribute{
 				Description: additionalDatastreamsPermissionsDescription,

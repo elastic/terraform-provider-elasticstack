@@ -104,7 +104,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
 - `inputs` (Attributes Map) Integration inputs mapped by input ID. (see [below for nested schema](#nestedatt--inputs))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
-- `output_id` (String) The ID of the output to send data to. When not specified, the default output of the agent policy will be used.
+- `output_id` (String) The ID of the output to send data to. When not specified, the default output of the agent policy will be used. Removing `output_id` from configuration does not clear it on the server; the previously assigned output is retained and state remains null.
 - `policy_id` (String) Unique identifier of the integration policy.
 - `space_ids` (Set of String) The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. Note: The order of space IDs does not matter as this is a set.
 - `vars_json` (String, Sensitive) Integration-level variables as JSON. Variables vary depending on the integration package.

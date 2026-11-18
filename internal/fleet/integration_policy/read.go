@@ -24,7 +24,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
-	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadRequest, resp *resource.ReadResponse) {
@@ -93,15 +92,10 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	diags = stateModel.populateFromAPI(ctx, pkg, policy)
+	diags = stateModel.populateFromAPI(ctx, pkg, policy, isImport)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
-	}
-
-	// On import there is no configuration yet, so output_id must be taken from the API.
-	if isImport {
-		stateModel.OutputID = types.StringPointerValue(policy.OutputId)
 	}
 
 	// If state didn't have input configured and this is not an import, ensure we don't add it now
