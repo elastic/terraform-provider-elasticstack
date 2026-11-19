@@ -20,8 +20,10 @@ package agentpolicy_test
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"regexp"
 	"testing"
 
@@ -36,6 +38,7 @@ import (
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/stretchr/testify/require"
 )
 
 var minVersionAgentPolicy = version.Must(version.NewVersion("8.6.0"))
@@ -1616,6 +1619,101 @@ func TestAccResourceAgentPolicyKibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_agent_policy.test_policy", "kibana_connection.0.endpoints.0"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_agent_policy.test_policy", "policy_id"),
 				}, acctest.KibanaConnectionAuthChecks("elasticstack_fleet_agent_policy.test_policy")...)...),
+			},
+		},
+	})
+}
+
+// checkAgentPolicyOutputsOnServer asserts the data and monitoring output IDs
+// Fleet stored, so a change that quietly sets or clears them on the server
+// cannot pass on the strength of Terraform state alone. It checks
+// elasticstack_fleet_agent_policy.test_policy.
+func checkAgentPolicyOutputsOnServer(want string) resource.TestCheckFunc {
+	const resourceName = "elasticstack_fleet_agent_policy.test_policy"
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		policy, diags := fleet.GetAgentPolicy(context.Background(), client.GetFleetClient(), rs.Primary.ID, "")
+		if diags.HasError() {
+			return diagutil.FwDiagsAsError(diags)
+		}
+		if policy == nil {
+			return fmt.Errorf("agent policy id=%v not found", rs.Primary.ID)
+		}
+
+		for name, got := range map[string]*string{
+			"data_output_id":       policy.DataOutputId,
+			"monitoring_output_id": policy.MonitoringOutputId,
+		} {
+			if got == nil || *got != want {
+				return fmt.Errorf("%s on the server = %v, want %q", name, got, want)
+			}
+		}
+		return nil
+	}
+}
+
+// TestAccResourceAgentPolicy_outputSetOutsideTerraform covers data_output_id and
+// monitoring_output_id assigned outside Terraform (e.g. in the Kibana UI) while
+// the configuration leaves them unset: apply must succeed, state must stay null
+// and the server must keep the assigned output.
+func TestAccResourceAgentPolicy_outputSetOutsideTerraform(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionAgentPolicy, versionutils.FlavorAny)
+
+	const resourceName = "elasticstack_fleet_agent_policy.test_policy"
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	outputID := policyName + "-output"
+	vars := func(description string) config.Variables {
+		return config.Variables{
+			"policy_name": config.StringVariable(policyName),
+			"description": config.StringVariable(description),
+		}
+	}
+	var agentPolicyID string
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars("created"),
+				Check: func(s *terraform.State) error {
+					agentPolicyID = s.RootModule().Resources[resourceName].Primary.ID
+					return nil
+				},
+			},
+			{
+				// The description change forces an update while the outputs are assigned on the server.
+				PreConfig: func() {
+					body, err := json.Marshal(map[string]any{
+						"name":                 "Policy " + policyName,
+						"namespace":            "default",
+						"data_output_id":       outputID,
+						"monitoring_output_id": outputID,
+					})
+					require.NoError(t, err)
+					_, err = acctest.FleetAPIRequest(http.MethodPut, "/api/fleet/agent_policies/"+agentPolicyID, string(body))
+					require.NoError(t, err)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars("updated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "description", "updated"),
+					resource.TestCheckNoResourceAttr(resourceName, "data_output_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "monitoring_output_id"),
+					checkAgentPolicyOutputsOnServer(outputID),
+				),
 			},
 		},
 	})

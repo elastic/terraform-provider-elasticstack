@@ -124,7 +124,7 @@ func (model integrationPolicyModel) GetVersionRequirements(ctx context.Context) 
 // aliases of the shared policyshape.InputModel/InputStreamModel types; see
 // policyshape_aliases.go.
 
-func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, data *kbapi.PackagePolicy) diag.Diagnostics {
+func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, data *kbapi.PackagePolicy, isImport bool) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -172,7 +172,16 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 	model.Description = types.StringPointerValue(data.Description)
 	model.IntegrationName = types.StringValue(data.Package.Name)
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
-	model.OutputID = types.StringPointerValue(data.OutputId)
+	// From 9.0.0 the Fleet update API treats an omitted output_id as "preserve
+	// the existing value", so an output_id set outside Terraform (e.g. in the
+	// Kibana UI, even as an empty string) keeps being returned by the API. When output_id is not
+	// configured (null), keep it null in state; writing the API value would fail
+	// with "Provider produced inconsistent result after apply: .output_id: was
+	// null, but now ...". On import there is no configuration yet, so take the
+	// API value.
+	if isImport || !model.OutputID.IsNull() {
+		model.OutputID = types.StringPointerValue(data.OutputId)
+	}
 
 	if data.AdditionalDatastreamsPermissions != nil && len(*data.AdditionalDatastreamsPermissions) > 0 {
 		perms, d := types.ListValueFrom(ctx, types.StringType, *data.AdditionalDatastreamsPermissions)
