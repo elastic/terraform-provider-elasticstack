@@ -89,6 +89,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	}
 
 	planHadInput := inputsConfigured(planModel.Inputs)
+	plannedInputs := planModel.Inputs
 
 	if policy.Package == nil {
 		resp.Diagnostics.AddError(
@@ -104,7 +105,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 		return
 	}
 
-	diags = planModel.populateFromAPI(ctx, pkg, policy)
+	diags = planModel.populateFromAPI(ctx, pkg, policy, false)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
@@ -113,7 +114,7 @@ func (r *integrationPolicyResource) Create(ctx context.Context, req resource.Cre
 	// If plan didn't have input configured, ensure we don't add it now
 	// This prevents "Provider produced inconsistent result" errors
 	if !planHadInput {
-		planModel.Inputs = NewInputsNull(getInputsElementType())
+		planModel.Inputs = inputsWhenUnconfigured(plannedInputs)
 	}
 
 	diags = resp.State.Set(ctx, planModel)

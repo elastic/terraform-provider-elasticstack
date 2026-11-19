@@ -124,7 +124,7 @@ func (model integrationPolicyModel) GetVersionRequirements(ctx context.Context) 
 // aliases of the shared policyshape.InputModel/InputStreamModel types; see
 // policyshape_aliases.go.
 
-func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, data *kbapi.PackagePolicy) diag.Diagnostics {
+func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, data *kbapi.PackagePolicy, isImport bool) diag.Diagnostics {
 	if data == nil {
 		return nil
 	}
@@ -172,7 +172,16 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 	model.Description = types.StringPointerValue(data.Description)
 	model.IntegrationName = types.StringValue(data.Package.Name)
 	model.IntegrationVersion = types.StringValue(data.Package.Version)
-	model.OutputID = types.StringPointerValue(data.OutputId)
+	// From 9.0.0 the Fleet update API treats an omitted output_id as "preserve
+	// the existing value", so an output_id set outside Terraform (e.g. in the
+	// Kibana UI, even as an empty string) keeps being returned by the API. When output_id is not
+	// configured (null), keep it null in state; writing the API value would fail
+	// with "Provider produced inconsistent result after apply: .output_id: was
+	// null, but now ...". On import there is no configuration yet, so take the
+	// API value.
+	if isImport || !model.OutputID.IsNull() {
+		model.OutputID = types.StringPointerValue(data.OutputId)
+	}
 
 	if data.AdditionalDatastreamsPermissions != nil && len(*data.AdditionalDatastreamsPermissions) > 0 {
 		perms, d := types.ListValueFrom(ctx, types.StringType, *data.AdditionalDatastreamsPermissions)
@@ -217,16 +226,16 @@ func (model *integrationPolicyModel) populateFromAPI(ctx context.Context, pkg *k
 func (model *integrationPolicyModel) populateInputsFromAPI(ctx context.Context, pkg *kbapi.KibanaHTTPAPIsGetPackageInfo, inputs kbapi.PackagePolicyMappedInputs, diags *diag.Diagnostics) {
 	// Handle input population based on context:
 	// 1. If model.Inputs is unknown: we're importing or reading fresh state → populate from API
-	// 2. If model.Inputs is known and null/empty: user explicitly didn't configure inputs → don't populate (avoid inconsistent state)
+	// 2. If model.Inputs is known and empty: user configured `inputs = {}` → don't populate, keep the empty map (avoid inconsistent state)
 	// 3. If model.Inputs is known and has values: user configured inputs → populate from API
 
 	isInputKnown := typeutils.IsKnown(model.Inputs)
 	isInputNullOrEmpty := model.Inputs.IsNull() || (isInputKnown && len(model.Inputs.Elements()) == 0)
 
-	// Case 2: Known and null/empty - user explicitly didn't configure inputs
+	// Case 2: Known and empty - user explicitly configured no inputs
 	if isInputNullOrEmpty && isInputKnown {
-		// Don't populate to avoid "Provider produced inconsistent result" error
-		model.Inputs = NewInputsNull(getInputsElementType())
+		// Keep the empty map: populating it from the API or replacing it with
+		// null would cause a "Provider produced inconsistent result" error
 		return
 	}
 	// Case 1 & 3: Unknown (import/fresh read) or known with values - populate from API
@@ -416,4 +425,16 @@ func (model integrationPolicyModel) toAPIInputsFromInputsAttribute(decoded map[s
 	}
 
 	return &result
+}
+
+// inputsWhenUnconfigured returns the state value of `inputs` when the user did
+// not configure any input: a known empty map stays an empty map (`inputs = {}`
+// in the configuration), anything else becomes null. Terraform requires the
+// value after apply to equal the planned value, so a configured empty map must
+// not be replaced by null.
+func inputsWhenUnconfigured(configured InputsValue) InputsValue {
+	if typeutils.IsKnown(configured) && len(configured.Elements()) == 0 {
+		return configured
+	}
+	return NewInputsNull(getInputsElementType())
 }
