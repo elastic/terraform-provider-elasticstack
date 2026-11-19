@@ -541,3 +541,57 @@ func TestPopulateFromAPI_SpaceIDs_Null_vs_EmptyList(t *testing.T) {
 		})
 	}
 }
+
+// An explicitly configured empty `inputs` map must round-trip as an empty map:
+// Terraform rejects a read-after-apply value of null when the plan held `{}`.
+func TestPopulateFromAPI_Inputs_KnownEmptyStaysEmpty(t *testing.T) {
+	ctx := context.Background()
+
+	emptyInputs, diags := NewInputsValueFrom(ctx, getInputsElementType(), map[string]integrationPolicyInputsModel{})
+	require.False(t, diags.HasError())
+
+	model := &integrationPolicyModel{
+		Inputs:   emptyInputs,
+		SpaceIDs: types.SetNull(types.StringType),
+	}
+	data := &kbapi.PackagePolicy{
+		Id:   "test-id",
+		Name: "test-policy",
+		Package: &kbapi.KibanaHTTPAPIsPackagePolicyPackage{
+			Name:    "elastic_agent",
+			Version: "2.9.6",
+		},
+	}
+
+	diags = model.populateFromAPI(ctx, nil, data)
+	require.False(t, diags.HasError(), "populateFromAPI produced unexpected error diags: %v", diags)
+	require.False(t, model.Inputs.IsNull(), "a configured empty inputs map must not become null")
+	require.False(t, model.Inputs.IsUnknown())
+	require.Empty(t, model.Inputs.Elements())
+}
+
+func TestInputsWhenUnconfigured(t *testing.T) {
+	ctx := context.Background()
+
+	emptyInputs, diags := NewInputsValueFrom(ctx, getInputsElementType(), map[string]integrationPolicyInputsModel{})
+	require.False(t, diags.HasError())
+
+	t.Run("null stays null", func(t *testing.T) {
+		got := inputsWhenUnconfigured(NewInputsNull(getInputsElementType()))
+		require.True(t, got.IsNull())
+	})
+
+	t.Run("unknown becomes null", func(t *testing.T) {
+		got := inputsWhenUnconfigured(InputsValue{MapValue: basetypes.NewMapUnknown(getInputsElementType())})
+		require.True(t, got.IsNull())
+		require.False(t, got.IsUnknown())
+	})
+
+	t.Run("known empty map stays an empty map", func(t *testing.T) {
+		got := inputsWhenUnconfigured(emptyInputs)
+		require.False(t, got.IsNull())
+		require.False(t, got.IsUnknown())
+		require.Empty(t, got.Elements())
+		require.True(t, got.Equal(emptyInputs))
+	})
+}
