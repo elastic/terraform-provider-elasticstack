@@ -22,6 +22,7 @@ import (
 	_ "embed"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"regexp"
 	"slices"
 	"testing"
@@ -50,6 +51,10 @@ var (
 	minVersionGCPVertexAI          = version.Must(version.NewVersion("8.17.0"))
 	minVersionSpaceIDs             = version.Must(version.NewVersion("9.1.0"))
 	minVersionGCPPubSub            = version.Must(version.NewVersion("8.13.0"))
+
+	// From 9.0.0, Fleet keeps a package policy's output_id when an update omits it;
+	// earlier versions clear it.
+	minVersionFleetKeepsOmittedOutputID = version.Must(version.NewVersion("9.0.0"))
 
 	minVersionAdditionalDatastreamsPermissions = version.Must(version.NewVersion("9.1.0"))
 )
@@ -1330,4 +1335,193 @@ func checkResourceIntegrationPolicyDestroy(s *terraform.State) error {
 
 	}
 	return nil
+}
+
+// checkPackagePolicyOutputIDOnServer asserts the output_id Fleet stored, so a
+// change that quietly sets or clears it on the server cannot pass on the
+// strength of Terraform state alone. An empty want matches an absent or empty
+// output_id. It checks elasticstack_fleet_integration_policy.test_policy.
+func checkPackagePolicyOutputIDOnServer(want string) resource.TestCheckFunc {
+	const resourceName = "elasticstack_fleet_integration_policy.test_policy"
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		policy, diags := fleet.GetPackagePolicy(context.Background(), client.GetFleetClient(), rs.Primary.ID, "")
+		if diags.HasError() {
+			return diagutil.FwDiagsAsError(diags)
+		}
+		if policy == nil {
+			return fmt.Errorf("integration policy id=%v not found", rs.Primary.ID)
+		}
+
+		got := ""
+		if policy.OutputId != nil {
+			got = *policy.OutputId
+		}
+		if got != want {
+			return fmt.Errorf("output_id on the server = %q, want %q", got, want)
+		}
+		return nil
+	}
+}
+
+// outputIDAfterOmittingUpdate returns the output_id Fleet is expected to hold
+// after an update that omits output_id, when outputID was assigned before it:
+// 9.0.0 and later (and serverless) keep it, earlier versions clear it.
+func outputIDAfterOmittingUpdate(t *testing.T, outputID string) string {
+	t.Helper()
+
+	keeps, err := versionutils.CheckIfVersionIsSupported(minVersionFleetKeepsOmittedOutputID)()
+	require.NoError(t, err)
+	if keeps {
+		return outputID
+	}
+	return ""
+}
+
+// setPackagePolicyOutputIDOutsideTerraform assigns outputID to the package
+// policy through the Fleet API, as a user would in the Kibana UI.
+func setPackagePolicyOutputIDOutsideTerraform(t *testing.T, policyID, agentPolicyID, name, outputID string) {
+	t.Helper()
+
+	body, err := json.Marshal(map[string]any{
+		"name":       name,
+		"namespace":  "default",
+		"policy_ids": []string{agentPolicyID},
+		"output_id":  outputID,
+	})
+	require.NoError(t, err)
+
+	_, err = acctest.FleetAPIRequest(http.MethodPut, "/api/fleet/package_policies/"+policyID, string(body))
+	require.NoError(t, err)
+}
+
+// TestAccResourceIntegrationPolicy_outputIDSetOutsideTerraform covers an output
+// assigned to the policy outside Terraform (e.g. in the Kibana UI) while
+// output_id is not configured: apply must succeed and state must stay null.
+// From 9.0.0 the server keeps the assigned output; earlier versions clear it.
+// It also covers an empty-string output_id on the server.
+func TestAccResourceIntegrationPolicy_outputIDSetOutsideTerraform(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutputID, versionutils.FlavorAny)
+
+	const resourceName = "elasticstack_fleet_integration_policy.test_policy"
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	outputID := policyName + "-output"
+	outputIDAfterUpdate := outputIDAfterOmittingUpdate(t, outputID)
+	vars := func(description string) config.Variables {
+		return config.Variables{
+			"policy_name": config.StringVariable(policyName),
+			"description": config.StringVariable(description),
+		}
+	}
+	var policyID, agentPolicyID string
+
+	// Not parallel: the shared "system" package is uninstalled by other tests' destroy.
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars("created"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "output_id"),
+					checkPackagePolicyOutputIDOnServer(""),
+					func(s *terraform.State) error {
+						policyID = s.RootModule().Resources[resourceName].Primary.ID
+						agentPolicyID = s.RootModule().Resources["elasticstack_fleet_agent_policy.test_policy"].Primary.ID
+						return nil
+					},
+				),
+			},
+			{
+				// The description change forces an update while the output is assigned on the server.
+				PreConfig: func() {
+					setPackagePolicyOutputIDOutsideTerraform(t, policyID, agentPolicyID, policyName, outputID)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars("updated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "description", "updated"),
+					resource.TestCheckNoResourceAttr(resourceName, "output_id"),
+					checkPackagePolicyOutputIDOnServer(outputIDAfterUpdate),
+				),
+			},
+			{
+				PreConfig: func() {
+					setPackagePolicyOutputIDOutsideTerraform(t, policyID, agentPolicyID, policyName, "")
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars("updated again"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "description", "updated again"),
+					resource.TestCheckNoResourceAttr(resourceName, "output_id"),
+					checkPackagePolicyOutputIDOnServer(""),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceIntegrationPolicy_outputIDRemoved covers importing a policy
+// with an output assigned, and removing a configured output_id: the apply
+// succeeds and state becomes null. From 9.0.0 Fleet keeps the omitted
+// output_id on the server; earlier versions clear it.
+func TestAccResourceIntegrationPolicy_outputIDRemoved(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionOutputID, versionutils.FlavorAny)
+
+	const resourceName = "elasticstack_fleet_integration_policy.test_policy"
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	outputID := policyName + "-output"
+	outputIDAfterUpdate := outputIDAfterOmittingUpdate(t, outputID)
+	vars := config.Variables{"policy_name": config.StringVariable(policyName)}
+
+	// Not parallel: the shared "system" package is uninstalled by other tests' destroy.
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceIntegrationPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_output"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "output_id", outputID),
+					checkPackagePolicyOutputIDOnServer(outputID),
+				),
+			},
+			{
+				// Import has no configuration to compare against, so output_id must come from the API.
+				// space_ids is ignored: the create response omits it, so state only picks it up on a
+				// later read, while import reads it straight away.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_output"),
+				ConfigVariables:          vars,
+				ResourceName:             resourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"inputs", "vars_json", "space_ids"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("without_output"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "output_id"),
+					checkPackagePolicyOutputIDOnServer(outputIDAfterUpdate),
+				),
+			},
+		},
+	})
 }

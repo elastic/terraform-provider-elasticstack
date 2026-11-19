@@ -92,7 +92,7 @@ func (r *integrationPolicyResource) Read(ctx context.Context, req resource.ReadR
 		return
 	}
 
-	diags = stateModel.populateFromAPI(ctx, pkg, policy)
+	diags = stateModel.populateFromAPI(ctx, pkg, policy, isImport)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
