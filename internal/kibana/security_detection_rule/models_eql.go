@@ -72,6 +72,14 @@ func toEqlRuleCreateProps(ctx context.Context, d Data) (kbapi.SecurityDetections
 		tiebreakerField := d.TiebreakerField.ValueString()
 		eqlRule.TiebreakerField = &tiebreakerField
 	}
+	if typeutils.IsKnown(d.EventCategoryOverride) {
+		eventCategoryOverride := d.EventCategoryOverride.ValueString()
+		eqlRule.EventCategoryOverride = &eventCategoryOverride
+	}
+	if typeutils.IsKnown(d.TimestampField) {
+		timestampField := d.TimestampField.ValueString()
+		eqlRule.TimestampField = &timestampField
+	}
 
 	// Convert to union type
 	err := createProps.FromSecurityDetectionsAPIEqlRuleCreateProps(eqlRule)
@@ -118,6 +126,14 @@ func toEqlRuleUpdateProps(ctx context.Context, d Data) (kbapi.SecurityDetections
 		tiebreakerField := d.TiebreakerField.ValueString()
 		eqlRule.TiebreakerField = &tiebreakerField
 	}
+	if typeutils.IsKnown(d.EventCategoryOverride) {
+		eventCategoryOverride := d.EventCategoryOverride.ValueString()
+		eqlRule.EventCategoryOverride = &eventCategoryOverride
+	}
+	if typeutils.IsKnown(d.TimestampField) {
+		timestampField := d.TimestampField.ValueString()
+		eqlRule.TimestampField = &timestampField
+	}
 
 	// Convert to union type
 	err := updateProps.FromSecurityDetectionsAPIEqlRuleUpdateProps(eqlRule)
@@ -141,6 +157,8 @@ func updateFromEqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEql
 	diags.Append(d.updateFiltersFromAPI(ctx, rule.Filters)...)
 
 	d.TiebreakerField = typeutils.StringishPointerValue(rule.TiebreakerField)
+	d.EventCategoryOverride = typeutils.StringishPointerValue(rule.EventCategoryOverride)
+	d.TimestampField = typeutils.StringishPointerValue(rule.TimestampField)
 
 	return diags
 }

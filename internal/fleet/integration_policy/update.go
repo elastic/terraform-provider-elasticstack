@@ -95,6 +95,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 
 	stateHadInput := inputsConfigured(stateModel.Inputs)
 	planHadInput := inputsConfigured(planModel.Inputs)
+	plannedInputs := planModel.Inputs
 
 	if policy.Package == nil {
 		resp.Diagnostics.AddError(
@@ -118,7 +119,7 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 
 	// If state didn't have input configured, ensure we don't add it now
 	if !stateHadInput && !planHadInput {
-		planModel.Inputs = NewInputsNull(getInputsElementType())
+		planModel.Inputs = inputsWhenUnconfigured(plannedInputs)
 	}
 
 	diags = resp.State.Set(ctx, planModel)

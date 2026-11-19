@@ -19,7 +19,9 @@ package config
 
 import (
 	"context"
+	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -29,6 +31,15 @@ import (
 )
 
 type kibanaOapiConfig kibanaoapi.Config
+
+var reservedKibanaHeaderNames = map[string]struct{}{
+	"authorization":     {},
+	"content-length":    {},
+	"host":              {},
+	"kbn-xsrf":          {},
+	"trailer":           {},
+	"transfer-encoding": {},
+}
 
 func newKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfiguration, base baseConfig) (kibanaOapiConfig, fwdiags.Diagnostics) {
 	config, diags := buildKibanaOapiConfigFromFramework(ctx, cfg, base)
@@ -87,6 +98,34 @@ func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigu
 
 		var cas []string
 		diags.Append(kibConfig.CACerts.ElementsAs(ctx, &cas, true)...)
+
+		var headers map[string]string
+		if typeutils.IsKnown(kibConfig.Headers) {
+			diags.Append(kibConfig.Headers.ElementsAs(ctx, &headers, true)...)
+		}
+		configuredNames := make(map[string]string, len(headers))
+		headerNames := make([]string, 0, len(headers))
+		for name := range headers {
+			headerNames = append(headerNames, name)
+		}
+		sort.Strings(headerNames)
+		for _, name := range headerNames {
+			normalizedName := strings.ToLower(strings.TrimSpace(name))
+			if _, reserved := reservedKibanaHeaderNames[normalizedName]; reserved {
+				diags.AddError(
+					"Invalid Kibana custom header",
+					fmt.Sprintf("Header %q is a reserved header name and cannot be configured.", name),
+				)
+			}
+			if configuredName, exists := configuredNames[normalizedName]; exists {
+				diags.AddError(
+					"Invalid Kibana custom headers",
+					fmt.Sprintf("Headers %q and %q differ only by case and cannot both be configured.", configuredName, name),
+				)
+			} else {
+				configuredNames[normalizedName] = name
+			}
+		}
 		if diags.HasError() {
 			return kibanaOapiConfig{}, diags
 		}
@@ -97,6 +136,13 @@ func buildKibanaOapiConfigFromFramework(ctx context.Context, cfg ProviderConfigu
 
 		if len(cas) > 0 {
 			config.CACerts = cas
+		}
+
+		if len(headers) > 0 {
+			config.Headers = make(map[string]string, len(headers))
+			for name, value := range headers {
+				config.Headers[strings.TrimSpace(name)] = strings.TrimSpace(value)
+			}
 		}
 
 		if typeutils.IsKnown(kibConfig.Insecure) {
@@ -180,5 +226,7 @@ func (k kibanaOapiConfig) withNonURLEnvironmentOverrides() kibanaOapiConfig {
 }
 
 func (k kibanaOapiConfig) toFleetConfig() fleetConfig {
-	return fleetConfig(k)
+	config := fleetConfig(k)
+	config.Headers = nil
+	return config
 }

@@ -102,6 +102,8 @@ the offending key. The first two are provider-managed. Go derives the other four
 put the configured value on the wire. During the same pass, normalize each key for comparison and
 reject a second key that differs from an earlier key only by case, naming both conflicting keys;
 otherwise Go's canonical header map plus nondeterministic map iteration could choose either value.
+Trim leading and trailing whitespace from accepted header names and values before storing them in the
+client configuration, matching the existing Elasticsearch connection-header behavior.
 
 These diagnostics block use of the affected connection before it sends its first request.
 Provider-level configuration is built during provider configuration, while a new entity-local scoped

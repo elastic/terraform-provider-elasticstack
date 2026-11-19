@@ -36,8 +36,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/knownvalue"
 	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/hashicorp/terraform-plugin-testing/tfjsonpath"
 )
 
 const osqueryResponseActionQuery = "SELECT * FROM processes WHERE pid IN (SELECT DISTINCT pid FROM connections WHERE remote_address NOT LIKE '10.%'" +
@@ -344,6 +346,9 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "severity", "high"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "70"),
 					resource.TestCheckResourceAttr(resourceName, "tiebreaker_field", "@timestamp"),
+					resource.TestCheckResourceAttr(resourceName, "event_category_override", "event.type"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_field", "event.ingested"),
+					testAccCheckEqlOptionalFieldsInKibana(new("event.type"), new("event.ingested")),
 					resource.TestCheckResourceAttr(resourceName, "data_view_id", "eql-data-view-id"),
 					resource.TestCheckResourceAttr(resourceName, "namespace", "eql-namespace"),
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Custom EQL Rule Name"),
@@ -396,6 +401,11 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttrSet(resourceName, "id"),
 					resource.TestCheckResourceAttrSet(resourceName, "rule_id"),
 				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -412,6 +422,9 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "rule_name_override", "Updated Custom EQL Rule Name"),
 					resource.TestCheckResourceAttr(resourceName, "timestamp_override", "process.end"),
 					resource.TestCheckResourceAttr(resourceName, "timestamp_override_fallback_disabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "event_category_override", "event.kind"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_field", "@timestamp"),
+					testAccCheckEqlOptionalFieldsInKibana(new("event.kind"), new("@timestamp")),
 
 					// Check risk score mapping
 					resource.TestCheckResourceAttr(resourceName, "risk_score_mapping.#", "1"),
@@ -466,6 +479,21 @@ func TestAccResourceSecurityDetectionRule_EQL(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.duration", "45m"),
 					resource.TestCheckResourceAttr(resourceName, "alert_suppression.missing_fields_strategy", "doNotSuppress"),
 				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(updatedRuleName),
+				},
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateVerify: true,
 			},
 		},
 	})
@@ -1710,6 +1738,53 @@ func testAccCheckSecurityDetectionRuleDestroy(s *terraform.State) error {
 	return nil
 }
 
+// testAccCheckEqlOptionalFieldsInKibana reads the rule from Kibana, independent of Terraform state,
+// and compares its EQL optional fields. A nil want means Kibana must not hold the field.
+func testAccCheckEqlOptionalFieldsInKibana(wantEventCategoryOverride, wantTimestampField *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[securityDetectionRuleResourceName]
+		if !ok {
+			return fmt.Errorf("not found: %s", securityDetectionRuleResourceName)
+		}
+		compID, diags := clients.CompositeIDFromStr(rs.Primary.ID)
+		if diags.HasError() {
+			return fmt.Errorf("invalid resource ID %q: %v", rs.Primary.ID, diags)
+		}
+
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+		ruleObjectID := uuid.MustParse(compID.ResourceID)
+		response, err := client.GetKibanaOapiClient().API.ReadRuleWithResponse(context.Background(), compID.ClusterID, &kbapi.ReadRuleParams{Id: &ruleObjectID})
+		if err != nil {
+			return fmt.Errorf("failed to read security detection rule: %w", err)
+		}
+		if response.JSON200 == nil {
+			return fmt.Errorf("unexpected status code when reading security detection rule: %d", response.StatusCode())
+		}
+		rule, err := response.JSON200.AsSecurityDetectionsAPIEqlRule()
+		if err != nil {
+			return fmt.Errorf("failed to parse EQL rule: %w", err)
+		}
+
+		fields := []struct {
+			name      string
+			got, want *string
+		}{
+			{"event_category_override", rule.EventCategoryOverride, wantEventCategoryOverride},
+			{"timestamp_field", rule.TimestampField, wantTimestampField},
+		}
+		for _, field := range fields {
+			got, want := typeutils.StringishPointerValue(field.got), typeutils.StringishPointerValue(field.want)
+			if !got.Equal(want) {
+				return fmt.Errorf("Kibana rule %s: got %s, want %s", field.name, got, want)
+			}
+		}
+		return nil
+	}
+}
+
 func TestAccResourceSecurityDetectionRule_AlertsFilter(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minResponseActionVersionSupport, versionutils.FlavorAny)
 
@@ -2233,6 +2308,7 @@ func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 	resourceName := securityDetectionRuleResourceName
 	createRuleName := testAccRandomizedRuleName("test-eql-rule-minimal")
 	updatedRuleName := testAccRandomizedRuleName("test-eql-rule-minimal-updated")
+	var resourceID string
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -2277,7 +2353,15 @@ func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 					resource.TestCheckNoResourceAttr(resourceName, "alert_suppression"),
 					resource.TestCheckNoResourceAttr(resourceName, "building_block_type"),
 					resource.TestCheckNoResourceAttr(resourceName, "tiebreaker_field"),
+					resource.TestCheckNoResourceAttr(resourceName, "event_category_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_field"),
+					testAccCheckEqlOptionalFieldsInKibana(nil, nil),
 				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPostRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectEmptyPlan(),
+					},
+				},
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
@@ -2291,10 +2375,100 @@ func TestAccResourceSecurityDetectionRule_EQLMinimal(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "description", "Updated minimal test EQL security detection rule"),
 					resource.TestCheckResourceAttr(resourceName, "severity", "medium"),
 					resource.TestCheckResourceAttr(resourceName, "risk_score", "55"),
+					resource.TestCheckResourceAttr(resourceName, "event_category_override", "event.type"),
+					resource.TestCheckResourceAttr(resourceName, "timestamp_field", "event.ingested"),
+					testAccCheckEqlOptionalFieldsInKibana(new("event.type"), new("event.ingested")),
 				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(createRuleName),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "event_category_override"),
+					resource.TestCheckNoResourceAttr(resourceName, "timestamp_field"),
+					testAccCheckEqlOptionalFieldsInKibana(nil, nil),
+					resource.TestCheckResourceAttrWith(resourceName, "id", func(id string) error {
+						resourceID = id
+						return nil
+					}),
+				),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+					},
+				},
+			},
+			{
+				// RefreshState steps cannot carry configuration, so their own plan is a destroy;
+				// the following PlanOnly step checks the plan against the unchanged configuration.
+				ProtoV6ProviderFactories: acctest.Providers,
+				PreConfig: func() {
+					testAccSetEventCategoryOverrideInKibana(t, resourceID, "event.kind")
+				},
+				RefreshState:       true,
+				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "event_category_override", "event.kind"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"name": config.StringVariable(createRuleName),
+				},
+				PlanOnly:           true,
+				ExpectNonEmptyPlan: true,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PostApplyPreRefresh: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionUpdate),
+						plancheck.ExpectKnownValue(resourceName, tfjsonpath.New("event_category_override"), knownvalue.Null()),
+					},
+				},
 			},
 		},
 	})
+}
+
+// testAccSetEventCategoryOverrideInKibana changes the rule directly through the Kibana API, outside Terraform.
+func testAccSetEventCategoryOverrideInKibana(t *testing.T, resourceID, eventCategoryOverride string) {
+	t.Helper()
+
+	compID, diags := clients.CompositeIDFromStr(resourceID)
+	if diags.HasError() {
+		t.Fatalf("invalid resource ID %q: %v", resourceID, diags)
+	}
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		t.Fatalf("failed to create client: %v", err)
+	}
+
+	ruleObjectID := uuid.MustParse(compID.ResourceID)
+	var patchProps kbapi.SecurityDetectionsAPIRulePatchProps
+	err = patchProps.FromSecurityDetectionsAPIEqlRulePatchProps(kbapi.SecurityDetectionsAPIEqlRulePatchProps{
+		Id:                    &ruleObjectID,
+		Type:                  new(kbapi.SecurityDetectionsAPIEqlRulePatchPropsTypeEql),
+		EventCategoryOverride: &eventCategoryOverride,
+	})
+	if err != nil {
+		t.Fatalf("failed to build patch properties: %v", err)
+	}
+
+	response, err := client.GetKibanaOapiClient().API.PatchRuleWithResponse(context.Background(), compID.ClusterID, patchProps)
+	if err != nil {
+		t.Fatalf("failed to patch security detection rule: %v", err)
+	}
+	if response.StatusCode() != 200 {
+		t.Fatalf("unexpected status code when patching security detection rule: %d: %s", response.StatusCode(), string(response.Body))
+	}
 }
 
 func TestAccResourceSecurityDetectionRule_ESQLMinimal(t *testing.T) {

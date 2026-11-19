@@ -694,6 +694,18 @@ func GetSchema() schema.Schema {
 				MarkdownDescription: "Sets the tiebreaker field. Required for EQL rules when event.dataset is not provided.",
 				Optional:            true,
 			},
+			"event_category_override": schema.StringAttribute{
+				MarkdownDescription: "Field containing the event classification, such as `process`, `file`, or `network`, " +
+					"that the event category of the EQL query is matched against. Kibana uses `event.category` when unset. " +
+					"Optional for eql rules.",
+				Optional: true,
+			},
+			"timestamp_field": schema.StringAttribute{
+				MarkdownDescription: "Field containing the event timestamp used to sort a sequence of events in the EQL query. " +
+					"Kibana uses `@timestamp` when unset. This differs from `timestamp_override`, " +
+					"which sets the time field used to query events within the rule's time range. Optional for eql rules.",
+				Optional: true,
+			},
 
 			// Machine Learning-specific fields
 			"anomaly_threshold": schema.Int64Attribute{

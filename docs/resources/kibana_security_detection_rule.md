@@ -181,6 +181,7 @@ resource "elasticstack_kibana_security_detection_rule" "with_connector_action" {
 - `concurrent_searches` (Number) Number of concurrent searches for threat intelligence. Optional for threat_match rules.
 - `data_view_id` (String) Data view ID for the rule. Not supported for esql and machine_learning rule types.
 - `enabled` (Boolean) Determines whether the rule is enabled.
+- `event_category_override` (String) Field containing the event classification, such as `process`, `file`, or `network`, that the event category of the EQL query is matched against. Kibana uses `event.category` when unset. Optional for eql rules.
 - `exceptions_list` (Attributes List) Array of exception containers to prevent the rule from generating alerts. (see [below for nested schema](#nestedatt--exceptions_list))
 - `false_positives` (List of String) String array used to describe common reasons why the rule may issue false-positive alerts.
 - `filters` (String) Query and filter context array to define alert conditions as JSON. Supports complex filter structures including bool queries, term filters, range filters, etc. Available for all rule types.
@@ -224,6 +225,7 @@ resource "elasticstack_kibana_security_detection_rule" "with_connector_action" {
 - `timeline_id` (String) Timeline template ID for the rule.
 - `timeline_title` (String) Timeline template title for the rule.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
+- `timestamp_field` (String) Field containing the event timestamp used to sort a sequence of events in the EQL query. Kibana uses `@timestamp` when unset. This differs from `timestamp_override`, which sets the time field used to query events within the rule's time range. Optional for eql rules.
 - `timestamp_override` (String) Field name to use for timestamp override. Available for all rule types.
 - `timestamp_override_fallback_disabled` (Boolean) Disables timestamp override fallback. Available for all rule types.
 - `to` (String) Time to which data is analyzed each time the rule runs, using a date math range.
@@ -326,6 +328,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

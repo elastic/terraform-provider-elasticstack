@@ -19,5 +19,8 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   to          = "now"
   interval    = "10m"
   index       = ["winlogbeat-*", "sysmon-*"]
+
+  event_category_override = "event.type"
+  timestamp_field         = "event.ingested"
 }
 

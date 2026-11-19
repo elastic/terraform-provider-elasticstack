@@ -8,7 +8,8 @@ while the action variant SHALL make it write-only. The attribute SHALL be availa
 where the Kibana connection block is used without entity-specific schema changes. Entity-local
 managed-resource and data-source header values SHALL remain in Terraform state as sensitive values;
 action header values SHALL be excluded from state; and ephemeral header values SHALL follow
-Terraform's ephemeral-state semantics.
+Terraform's ephemeral-state semantics. The provider SHALL trim leading and trailing whitespace from
+configured header names and values before validation and use.
 
 #### Scenario: Provider-level kibana block accepts headers
 

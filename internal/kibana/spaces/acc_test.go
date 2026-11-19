@@ -21,8 +21,13 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"regexp"
+	"slices"
 	"strings"
+	"sync/atomic"
 	"testing"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
@@ -462,4 +467,116 @@ func TestAccSpaceResourceFromSDK(t *testing.T) {
 			},
 		},
 	})
+}
+
+func TestAccSpacesDataSource_withKibanaConnectionHeaders(t *testing.T) {
+	acctest.SkipIfNotAcceptanceTest(t)
+
+	upstreamEndpoint := strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))
+	if upstreamEndpoint == "" {
+		t.Fatal("KIBANA_ENDPOINT must be set")
+	}
+
+	const (
+		headerName  = "X-Elasticstack-Entity-Acc-Test"
+		headerValue = "entity-header-value"
+	)
+	proxy := acctest.NewRecordingProxy(t, upstreamEndpoint)
+	t.Setenv("KIBANA_ENDPOINT", proxy.URL())
+	acctest.PreCheckWithExplicitKibanaEndpoint(t)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: acctest.KibanaConnectionVariables(config.Variables{
+					"header_name":  config.StringVariable(headerName),
+					"header_value": config.StringVariable(headerValue),
+				}),
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testSpacesResourceName, "id", "spaces"),
+					resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.0.headers.%", "1"),
+					resource.TestCheckResourceAttr(testSpacesResourceName, "kibana_connection.0.headers."+headerName, headerValue),
+					func(_ *terraform.State) error {
+						if slices.Contains(proxy.HeaderValues(headerName), headerValue) {
+							return nil
+						}
+						return fmt.Errorf("recording proxy received %d requests but no %s header with value %q", proxy.RequestCount(), headerName, headerValue)
+					},
+				),
+			},
+		},
+	})
+}
+
+func TestAccSpacesDataSource_withoutKibanaConnectionHeaders(t *testing.T) {
+	acctest.SkipIfNotAcceptanceTest(t)
+
+	upstreamEndpoint := strings.TrimSpace(os.Getenv("KIBANA_ENDPOINT"))
+	if upstreamEndpoint == "" {
+		t.Fatal("KIBANA_ENDPOINT must be set")
+	}
+
+	proxy := acctest.NewRecordingProxy(t, upstreamEndpoint)
+	t.Setenv("KIBANA_ENDPOINT", proxy.URL())
+	acctest.PreCheckWithExplicitKibanaEndpoint(t)
+	variables := acctest.KibanaConnectionVariables(config.Variables{})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          variables,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testSpacesResourceName, "id", "spaces"),
+					resource.TestCheckNoResourceAttr(testSpacesResourceName, "kibana_connection.0.headers"),
+					func(_ *terraform.State) error {
+						if proxy.RequestCount() == 0 {
+							return fmt.Errorf("recording proxy received no requests")
+						}
+						return nil
+					},
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          variables,
+				PlanOnly:                 true,
+			},
+		},
+	})
+}
+
+func TestAccSpacesDataSource_rejectsCaseInsensitiveDuplicateHeadersBeforeRequest(t *testing.T) {
+	acctest.SkipIfNotAcceptanceTest(t)
+
+	var requestCount atomic.Int64
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		requestCount.Add(1)
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv("KIBANA_ENDPOINT", server.URL)
+
+	resource.Test(t, resource.TestCase{
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables: config.Variables{
+					"kibana_endpoint": config.StringVariable(server.URL),
+				},
+				ExpectError: regexp.MustCompile(`(?s)(X-Proxy-Token.*x-proxy-token|x-proxy-token.*X-Proxy-Token)`),
+			},
+		},
+	})
+
+	if got := requestCount.Load(); got != 0 {
+		t.Fatalf("Kibana received %d requests, want 0", got)
+	}
 }
