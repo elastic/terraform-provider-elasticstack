@@ -104,7 +104,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
 - `inputs` (Attributes Map) Integration inputs mapped by input ID. (see [below for nested schema](#nestedatt--inputs))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
-- `output_id` (String) The ID of the output to send data to. When not specified, the default output of the agent policy will be used. When `output_id` is not configured, it remains null in state. Removing it from configuration does not clear it on the server on Kibana 9.0 and later; the previously assigned output is retained. Earlier versions clear an output that is not configured, including one assigned outside Terraform, on the next update.
+- `output_id` (String) The ID of the output to send data to. When not specified, the default output of the agent policy will be used. When `output_id` is not configured it stays null in state, so an output assigned outside Terraform is not reported as drift. Removing `output_id` from the configuration only omits it from the update request, and the result depends on the Elastic Stack version: 9.0 and later keep the previously assigned output, while 8.x versions clear it on the next update.
 - `policy_id` (String) Unique identifier of the integration policy.
 - `space_ids` (Set of String) The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. Note: The order of space IDs does not matter as this is a set.
 - `vars_json` (String, Sensitive) Integration-level variables as JSON. Variables vary depending on the integration package.
