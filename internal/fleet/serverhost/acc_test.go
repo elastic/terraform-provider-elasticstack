@@ -156,6 +156,38 @@ func TestAccResourceFleetServerHost(t *testing.T) {
 	})
 }
 
+// The data source lookup by default = true is tested in this package because it
+// changes the stack-wide default host, like TestAccResourceFleetServerHost above:
+// non-parallel tests only run one after another within a package.
+func TestAccDataSourceFleetServerHost_default(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionFleetServerHost, versionutils.FlavorAny)
+
+	suffix := sdkacctest.RandStringFromCharSet(12, sdkacctest.CharSetAlphaNum)
+	const (
+		hostResource      = "elasticstack_fleet_server_host.test"
+		defaultDataSource = "data.elasticstack_fleet_server_host.test"
+	)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceFleetServerHostDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
+				ConfigVariables:          config.Variables{"suffix": config.StringVariable(suffix)},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttrPair(defaultDataSource, "id", hostResource, "host_id"),
+					resource.TestCheckResourceAttrPair(defaultDataSource, "host_id", hostResource, "host_id"),
+					resource.TestCheckResourceAttr(defaultDataSource, "name", "Data Source Default Server Host "+suffix),
+					resource.TestCheckResourceAttr(defaultDataSource, "default", "true"),
+					resource.TestCheckResourceAttr("data.elasticstack_fleet_server_host.by_id", "default", "true"),
+				),
+			},
+		},
+	})
+}
+
 func TestAccResourceFleetServerHost_computedID(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionFleetServerHost, versionutils.FlavorAny)
 
