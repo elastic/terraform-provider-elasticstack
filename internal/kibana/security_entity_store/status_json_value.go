@@ -180,10 +180,6 @@ func NewStatusJSONNull() StatusJSONValue {
 	return StatusJSONValue{Normalized: jsontypes.NewNormalizedNull()}
 }
 
-func NewStatusJSONUnknown() StatusJSONValue {
-	return StatusJSONValue{Normalized: jsontypes.NewNormalizedUnknown()}
-}
-
 func NewStatusJSONValue(value string) StatusJSONValue {
 	return StatusJSONValue{Normalized: jsontypes.NewNormalizedValue(value)}
 }
