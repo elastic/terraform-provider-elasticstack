@@ -75,6 +75,23 @@ func TestUnwrapJSON200(t *testing.T) {
 	})
 }
 
+func TestUnwrapJSONStatus(t *testing.T) {
+	t.Run("returns value when non-nil", func(t *testing.T) {
+		val := "hello"
+		got, diags := UnwrapJSONStatus(&val, "thing", http.StatusCreated)
+		require.False(t, diags.HasError())
+		assert.Equal(t, &val, got)
+	})
+
+	t.Run("reports the given status code when nil", func(t *testing.T) {
+		got, diags := UnwrapJSONStatus[string](nil, "alerting v2 rule", http.StatusCreated)
+		assert.Nil(t, got)
+		require.True(t, diags.HasError())
+		assert.Equal(t, "Failed to parse alerting v2 rule response", diags[0].Summary())
+		assert.Equal(t, "API returned 201 but response body was nil", diags[0].Detail())
+	})
+}
+
 func TestHandleStatusResponse(t *testing.T) {
 	t.Run("returns nil for accepted status codes", func(t *testing.T) {
 		assert.False(t, HandleStatusResponse(http.StatusOK, nil, http.StatusOK, http.StatusNotFound).HasError())
