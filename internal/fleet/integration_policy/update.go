@@ -21,7 +21,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	fleetutils "github.com/elastic/terraform-provider-elasticstack/internal/fleet"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
@@ -78,9 +77,11 @@ func (r *integrationPolicyResource) Update(ctx context.Context, req resource.Upd
 	}
 
 	// Update using the operational space from STATE
-	// The API will handle adding/removing policy from spaces based on space_ids in body
-	policy, diags := fleet.UpdatePackagePolicy(ctx, fleetClient, policyID, spaceID, body)
-
+	// The API will handle adding/removing policy from spaces based on space_ids in body.
+	// The simplified update drops input- and stream-level config written by
+	// Kibana or other Kibana features (e.g. APM API keys, Osquery packs), so it
+	// is snapshotted first and written back afterwards.
+	policy, diags := updatePackagePolicyPreservingInputConfig(ctx, fleetClient, policyID, spaceID, body)
 	resp.Diagnostics.Append(diags...)
 	if resp.Diagnostics.HasError() {
 		return
