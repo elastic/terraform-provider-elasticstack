@@ -86,29 +86,31 @@ function runScript({ root, stubDir, env }) {
   return { stdout: res.stdout, stderr: res.stderr, status: res.status, outputs };
 }
 
-test("non-PR event → fixed shards [0,1], has_packages=true, no selector invoked", () => {
-  const stubs = makeStubs();
-  try {
-    const { outputs } = runScript({
-      ...stubs,
-      env: { EVENT_NAME: "push" },
-    });
-    assert.equal(outputs.has_packages, "true");
-    assert.equal(outputs.shards, "[0,1]");
-    assert.equal(outputs.packages_0, "");
-    assert.equal(outputs.packages_1, "");
-    assert.equal(
-      readFileSync(path.join(stubs.root, "log", "git.log"), "utf8"),
-      "",
-    );
-    assert.equal(
-      readFileSync(path.join(stubs.root, "log", "go.log"), "utf8"),
-      "",
-    );
-  } finally {
-    rmSync(stubs.root, { recursive: true, force: true });
-  }
-});
+for (const eventName of ["push", "workflow_dispatch", "merge_group"]) {
+  test(`${eventName} event → fixed shards [0,1], has_packages=true, no selector invoked`, () => {
+    const stubs = makeStubs();
+    try {
+      const { outputs } = runScript({
+        ...stubs,
+        env: { EVENT_NAME: eventName },
+      });
+      assert.equal(outputs.has_packages, "true");
+      assert.equal(outputs.shards, "[0,1]");
+      assert.equal(outputs.packages_0, "");
+      assert.equal(outputs.packages_1, "");
+      assert.equal(
+        readFileSync(path.join(stubs.root, "log", "git.log"), "utf8"),
+        "",
+      );
+      assert.equal(
+        readFileSync(path.join(stubs.root, "log", "go.log"), "utf8"),
+        "",
+      );
+    } finally {
+      rmSync(stubs.root, { recursive: true, force: true });
+    }
+  });
+}
 
 test("PR event with HEAD^1 available → selector invoked once with --base, no shard index", () => {
   const stubs = makeStubs({
