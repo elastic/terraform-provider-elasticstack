@@ -1,3 +1,12 @@
+## [Unreleased]
+
+### Changes
+
+- Fix `elasticstack_kibana_security_exception_item` with `namespace_type = "agnostic"` reporting a successful destroy while the item remained in Kibana. ([#5505](https://github.com/elastic/terraform-provider-elasticstack/pull/5505))
+- Fix `elasticstack_fleet_integration_policy` apply failing with "inconsistent result after apply: .output_id: was null" when `output_id` is unset in configuration but assigned on the policy outside Terraform, or removed from configuration. ([#5435](https://github.com/elastic/terraform-provider-elasticstack/pull/5435))
+- Stop `elasticstack_fleet_integration_policy` from failing with "Provider produced inconsistent result after apply" when `inputs` is configured as an empty map. ([#5500](https://github.com/elastic/terraform-provider-elasticstack/pull/5500))
+- Add `event_category_override` and `timestamp_field` to EQL rules in `elasticstack_kibana_security_detection_rule`. ([#5477](https://github.com/elastic/terraform-provider-elasticstack/pull/5477))
+
 ## [0.17.0] - 2026-11-10
 
 ### Breaking changes
