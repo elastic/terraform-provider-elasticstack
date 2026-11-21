@@ -1036,6 +1036,40 @@ func TestAccResourceAnomalyDetectionJobCustomSettingsOwnedThenOmitted(t *testing
 	})
 }
 
+// TestAccResourceAnomalyDetectionJobDescriptionRemoved removes description from
+// the configuration. The update used to skip the field, so Elasticsearch kept
+// the old value and the read-after-write failed with "Provider produced
+// inconsistent result after apply".
+func TestAccResourceAnomalyDetectionJobDescriptionRemoved(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-desc-removed-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+	vars := config.Variables{"job_id": config.StringVariable(jobID)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckResourceAttr(addr, "description", "Job description that is removed later"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("remove"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "job_id", jobID),
+					resource.TestCheckNoResourceAttr(addr, "description"),
+				),
+			},
+		},
+	})
+}
+
 // TestAccResourceAnomalyDetectionJobNestedCustomSettings guards the update path
 // for jobs whose custom_settings contain a nested object. The generated
 // updatejob.Response types custom_settings as map[string]string, so decoding the
