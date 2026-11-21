@@ -32,6 +32,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -124,6 +125,8 @@ func TestAccResourceMLTrainedModelAlias_reassign(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", modelAlias),
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", acctest.AccTestTrainedModelID),
+					resource.TestMatchResourceAttr(mlTrainedModelAliasResourceAddress, "id",
+						regexp.MustCompile(`^[A-Za-z0-9_-]{22}/`+regexp.QuoteMeta(modelAlias)+`$`)),
 				),
 			},
 			{
@@ -136,6 +139,8 @@ func TestAccResourceMLTrainedModelAlias_reassign(t *testing.T) {
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", modelAlias),
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", acctest.AccTestTrainedModelID2),
+					resource.TestMatchResourceAttr(mlTrainedModelAliasResourceAddress, "id",
+						regexp.MustCompile(`^[A-Za-z0-9_-]{22}/`+regexp.QuoteMeta(modelAlias)+`$`)),
 				),
 			},
 		},
@@ -207,6 +212,8 @@ func TestAccResourceMLTrainedModelAlias_updateReassignFlag(t *testing.T) {
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", modelAlias),
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", modelID),
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "reassign", "true"),
+					resource.TestMatchResourceAttr(mlTrainedModelAliasResourceAddress, "id",
+						regexp.MustCompile(`^[A-Za-z0-9_-]{22}/`+regexp.QuoteMeta(modelAlias)+`$`)),
 				),
 			},
 			{
@@ -220,7 +227,162 @@ func TestAccResourceMLTrainedModelAlias_updateReassignFlag(t *testing.T) {
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", modelAlias),
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", modelID),
 					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "reassign", "false"),
+					resource.TestMatchResourceAttr(mlTrainedModelAliasResourceAddress, "id",
+						regexp.MustCompile(`^[A-Za-z0-9_-]{22}/`+regexp.QuoteMeta(modelAlias)+`$`)),
 				),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLTrainedModelAlias_changeAlias(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, version.Must(version.NewVersion("8.8.0")), versionutils.FlavorAny)
+	acctest.EnsureTrainedModel(t)
+
+	modelID := acctest.AccTestTrainedModelID
+	oldAlias := fmt.Sprintf("test-alias-old-%s%s", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum), sdkacctest.RandStringFromCharSet(1, sdkacctest.CharSetAlpha))
+	newAlias := fmt.Sprintf("test-alias-new-%s%s", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum), sdkacctest.RandStringFromCharSet(1, sdkacctest.CharSetAlpha))
+
+	t.Cleanup(func() {
+		deleteMLTrainedModelAliasBestEffort(t.Context(), t, oldAlias)
+		deleteMLTrainedModelAliasBestEffort(t.Context(), t, newAlias)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceMLTrainedModelAliasDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: map[string]config.Variable{
+					"model_alias": config.StringVariable(oldAlias),
+					"model_id":    config.StringVariable(modelID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", oldAlias),
+					resource.TestMatchResourceAttr(mlTrainedModelAliasResourceAddress, "id",
+						regexp.MustCompile(`^[A-Za-z0-9_-]{22}/`+regexp.QuoteMeta(oldAlias)+`$`)),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: map[string]config.Variable{
+					"model_alias": config.StringVariable(newAlias),
+					"model_id":    config.StringVariable(modelID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(mlTrainedModelAliasResourceAddress, plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", newAlias),
+					resource.TestMatchResourceAttr(mlTrainedModelAliasResourceAddress, "id",
+						regexp.MustCompile(`^[A-Za-z0-9_-]{22}/`+regexp.QuoteMeta(newAlias)+`$`)),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLTrainedModelAlias_invalidAliasSuffix(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, version.Must(version.NewVersion("8.8.0")), versionutils.FlavorAny)
+	acctest.EnsureTrainedModel(t)
+
+	modelID := acctest.AccTestTrainedModelID
+	invalidAlias := fmt.Sprintf("test-alias-invalid-%s9", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum))
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: map[string]config.Variable{
+					"model_alias": config.StringVariable(invalidAlias),
+					"model_id":    config.StringVariable(modelID),
+				},
+				ExpectError: regexp.MustCompile(`must not end with a digit`),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLTrainedModelAlias_reassignFalse(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, version.Must(version.NewVersion("8.8.0")), versionutils.FlavorAny)
+	acctest.EnsureTrainedModel(t)
+
+	modelID := acctest.AccTestTrainedModelID
+	modelAlias := fmt.Sprintf("test-alias-noreassign-%s%s", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum), sdkacctest.RandStringFromCharSet(1, sdkacctest.CharSetAlpha))
+
+	t.Cleanup(func() {
+		deleteMLTrainedModelAliasBestEffort(t.Context(), t, modelAlias)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceMLTrainedModelAliasDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: map[string]config.Variable{
+					"model_alias": config.StringVariable(modelAlias),
+					"model_id":    config.StringVariable(modelID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", modelAlias),
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_id", modelID),
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "reassign", "false"),
+					resource.TestMatchResourceAttr(mlTrainedModelAliasResourceAddress, "id",
+						regexp.MustCompile(`^[A-Za-z0-9_-]{22}/`+regexp.QuoteMeta(modelAlias)+`$`)),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLTrainedModelAlias_invalidImportID(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, version.Must(version.NewVersion("8.8.0")), versionutils.FlavorAny)
+	acctest.EnsureTrainedModel(t)
+
+	modelID := acctest.AccTestTrainedModelID
+	modelAlias := fmt.Sprintf("test-alias-badimport-%s%s", sdkacctest.RandStringFromCharSet(9, sdkacctest.CharSetAlphaNum), sdkacctest.RandStringFromCharSet(1, sdkacctest.CharSetAlpha))
+
+	t.Cleanup(func() {
+		deleteMLTrainedModelAliasBestEffort(t.Context(), t, modelAlias)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceMLTrainedModelAliasDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: map[string]config.Variable{
+					"model_alias": config.StringVariable(modelAlias),
+					"model_id":    config.StringVariable(modelID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlTrainedModelAliasResourceAddress, "model_alias", modelAlias),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: map[string]config.Variable{
+					"model_alias": config.StringVariable(modelAlias),
+					"model_id":    config.StringVariable(modelID),
+				},
+				ResourceName:      mlTrainedModelAliasResourceAddress,
+				ImportState:       true,
+				ImportStateKind:   resource.ImportBlockWithID,
+				ImportStateVerify: false,
+				ImportStateId:     "not-a-composite-import-id",
+				ExpectError:       regexp.MustCompile(`Wrong resource ID`),
 			},
 		},
 	})
