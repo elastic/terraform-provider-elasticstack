@@ -18,8 +18,7 @@
 package agentdownloadsource
 
 import (
-	"context"
-
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/validators"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 )
 
@@ -34,36 +33,15 @@ const keyAttributeName = "key"
 
 var sslSubattrNames = []string{"certificate_authorities", "certificate", keyAttributeName, "key_wo"}
 
-// sslAtLeastOneSubattrValidator rejects an ssl object whose sub-attributes
-// are all null, so a practitioner cannot send an ssl object the Fleet API
-// would persist as a present-but-empty object. Unknown values (the whole
-// object or any child) intentionally defer validation: they may resolve to a
-// set value later in the apply.
-type sslAtLeastOneSubattrValidator struct{}
-
-func (sslAtLeastOneSubattrValidator) Description(_ context.Context) string {
-	return "At least one of certificate_authorities, certificate, key, or key_wo must be set"
-}
-
-func (v sslAtLeastOneSubattrValidator) MarkdownDescription(ctx context.Context) string {
-	return v.Description(ctx)
-}
-
-func (sslAtLeastOneSubattrValidator) ValidateObject(_ context.Context, req validator.ObjectRequest, resp *validator.ObjectResponse) {
-	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
-		return
-	}
-
-	attrs := req.ConfigValue.Attributes()
-	for _, name := range sslSubattrNames {
-		if attr, ok := attrs[name]; ok && !attr.IsNull() {
-			return
-		}
-	}
-
-	resp.Diagnostics.AddAttributeError(
-		req.Path,
-		sslAtLeastOneSubattrSummary,
-		sslAtLeastOneSubattrMessage,
-	)
+// sslAtLeastOneSubattrValidator returns an object validator rejecting an ssl object whose
+// sub-attributes are all null, so a practitioner cannot send an ssl object the Fleet API would
+// persist as a present-but-empty object. Unknown values (the whole object or any child)
+// intentionally defer validation: they may resolve to a set value later in the apply.
+func sslAtLeastOneSubattrValidator() validator.Object {
+	return validators.AtLeastOneOfNestedAttrsValidator(validators.AtLeastOneOfNestedAttrsOpts{
+		AttrNames:   sslSubattrNames,
+		Summary:     sslAtLeastOneSubattrSummary,
+		Detail:      sslAtLeastOneSubattrMessage,
+		Description: "At least one of certificate_authorities, certificate, key, or key_wo must be set",
+	})
 }

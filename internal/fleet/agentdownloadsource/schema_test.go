@@ -40,7 +40,7 @@ func TestSchemaSsl(t *testing.T) {
 	sslAttr, ok := getSchema(ctx).Attributes["ssl"].(schema.SingleNestedAttribute)
 	require.True(t, ok, "ssl attribute must exist as a single nested attribute")
 	require.True(t, sslAttr.Optional, "ssl must be Optional")
-	require.Equal(t, []validator.Object{sslAtLeastOneSubattrValidator{}}, sslAttr.Validators)
+	require.Equal(t, []validator.Object{sslAtLeastOneSubattrValidator()}, sslAttr.Validators)
 
 	cas, ok := sslAttr.Attributes["certificate_authorities"].(schema.ListAttribute)
 	require.True(t, ok)
