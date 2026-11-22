@@ -4894,10 +4894,10 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 --------------------------------------------------------------------------------
 
 Dependency : github.com/oapi-codegen/runtime
-Version: v1.8.0
+Version: v1.9.1
 Licence type (autodetected): Apache-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/oapi-codegen/runtime@v1.8.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/oapi-codegen/runtime@v1.9.1/LICENSE:
 
                                  Apache License
                            Version 2.0, January 2004
@@ -16477,10 +16477,10 @@ SOFTWARE.
 --------------------------------------------------------------------------------
 
 Dependency : github.com/oapi-codegen/nullable
-Version: v1.1.0
+Version: v1.2.0
 Licence type (autodetected): Apache-2.0
 
-Contents of probable licence file $GOMODCACHE/github.com/oapi-codegen/nullable@v1.1.0/LICENSE:
+Contents of probable licence file $GOMODCACHE/github.com/oapi-codegen/nullable@v1.2.0/LICENSE:
 
 Copyright 2024 oapi-codegen
 
