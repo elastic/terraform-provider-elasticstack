@@ -31,20 +31,14 @@ import (
 func (d Data) investigationFieldsToAPI(ctx context.Context) (*kbapi.SecurityDetectionsAPIInvestigationFields, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	if !typeutils.IsKnown(d.InvestigationFields) || len(d.InvestigationFields.Elements()) == 0 {
+	apiFieldNames := toAPIList(ctx, d.InvestigationFields, path.Root("investigation_fields"), &diags,
+		func(fieldName string, _ typeutils.ListMeta) kbapi.SecurityDetectionsAPINonEmptyString {
+			return kbapi.SecurityDetectionsAPINonEmptyString(fieldName)
+		})
+
+	if apiFieldNames == nil {
 		return nil, diags
 	}
-
-	fieldNames := make([]string, len(d.InvestigationFields.Elements()))
-	fieldDiag := d.InvestigationFields.ElementsAs(ctx, &fieldNames, false)
-	if fieldDiag.HasError() {
-		diags.Append(fieldDiag...)
-		return nil, diags
-	}
-
-	// Convert to API type
-	apiFieldNames := make([]kbapi.SecurityDetectionsAPINonEmptyString, len(fieldNames))
-	copy(apiFieldNames, fieldNames)
 
 	return &kbapi.SecurityDetectionsAPIInvestigationFields{
 		FieldNames: apiFieldNames,
@@ -53,16 +47,15 @@ func (d Data) investigationFieldsToAPI(ctx context.Context) (*kbapi.SecurityDete
 
 // convertInvestigationFieldsToModel converts kbapi.SecurityDetectionsAPIInvestigationFields to Terraform model
 func convertInvestigationFieldsToModel(ctx context.Context, apiInvestigationFields *kbapi.SecurityDetectionsAPIInvestigationFields) (types.List, diag.Diagnostics) {
-	var diags diag.Diagnostics
-
-	if apiInvestigationFields == nil || len(apiInvestigationFields.FieldNames) == 0 {
-		return types.ListNull(types.StringType), diags
+	var fieldNames []kbapi.SecurityDetectionsAPINonEmptyString
+	if apiInvestigationFields != nil {
+		fieldNames = apiInvestigationFields.FieldNames
 	}
 
-	fieldNames := make([]string, len(apiInvestigationFields.FieldNames))
-	copy(fieldNames, apiInvestigationFields.FieldNames)
-
-	return typeutils.SliceToListTypeString(ctx, fieldNames, path.Root("investigation_fields"), &diags), diags
+	return toModelList(ctx, fieldNames, types.StringType,
+		func(fieldName kbapi.SecurityDetectionsAPINonEmptyString) string {
+			return string(fieldName)
+		})
 }
 
 // Helper function to update investigation fields from API response

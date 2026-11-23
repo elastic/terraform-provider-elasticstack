@@ -24,7 +24,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
@@ -176,4 +178,44 @@ func updateListFieldFromAPI[T any](
 		return converter(ctx, slice)
 	}
 	return nullList, nil
+}
+
+// toAPIList converts a types.List into an API slice using the provided per-item
+// converter. Returns nil when list is unknown, null, or empty — matching the
+// nil-means-absent convention expected by the generated API client.
+func toAPIList[TfModel, APIItem any](
+	ctx context.Context,
+	list types.List,
+	p path.Path,
+	diags *diag.Diagnostics,
+	convert func(TfModel, typeutils.ListMeta) APIItem,
+) []APIItem {
+	if !typeutils.IsKnown(list) || len(list.Elements()) == 0 {
+		return nil
+	}
+	return typeutils.ListTypeToSlice(ctx, list, p, diags, convert)
+}
+
+// toModelList converts an API slice into a types.List using the provided per-item
+// converter. Returns a null list of elemType when apiItems is empty.
+func toModelList[APIItem, TfModel any](
+	ctx context.Context,
+	apiItems []APIItem,
+	elemType attr.Type,
+	convert func(APIItem) TfModel,
+) (types.List, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
+	if len(apiItems) == 0 {
+		return types.ListNull(elemType), diags
+	}
+
+	models := make([]TfModel, 0, len(apiItems))
+	for _, item := range apiItems {
+		models = append(models, convert(item))
+	}
+
+	listValue, listDiags := types.ListValueFrom(ctx, elemType, models)
+	diags.Append(listDiags...)
+	return listValue, diags
 }
