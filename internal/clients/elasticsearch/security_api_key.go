@@ -60,49 +60,88 @@ func UpdateAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 	return diags
 }
 
-// GetAPIKey reads the API key identified by id. restrictToOwned mirrors the
-// resource's `restrict_to_owned` attribute: when true, the request is scoped
-// to keys owned by the currently authenticated user, so a key that exists
-// but is owned by a different user comes back empty, which this function
-// treats the same as "not found" - i.e. the resource is treated as
-// non-existent rather than erroring. When false (the default), the lookup is
-// not scoped by owner at all.
+// GetAPIKey reads the API key identified by id.
+//
+// Like DeleteAPIKey, an id-scoped Get API key request is only authorized under
+// the narrower `manage_own_api_key` cluster privilege when `owner: true` is
+// set on the request; looking a key up by id without `owner` requires a
+// broader privilege (`manage_api_key`, `read_security` or higher) but returns
+// the key regardless of who owns it.
+//
+// GetAPIKey therefore first looks the key up scoped to the current
+// authenticated user (`owner: true`), which covers the common case with just
+// `manage_own_api_key`. If that does not return the key (for example because
+// it is owned by a different user) and restrictToOwned is false, it retries
+// without the owner filter. When restrictToOwned is true (the resource's
+// `restrict_to_owned` attribute), no fallback is attempted, so a key that
+// exists but is owned by a different user is treated as non-existent: nil is
+// returned without an error diagnostic, the same as for a key that does not
+// exist at all.
 func GetAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, restrictToOwned bool) (*types.ApiKey, fwdiag.Diagnostics) {
 	var diags fwdiag.Diagnostics
 
+	apiKey, err := getAPIKey(ctx, apiClient, id, true)
+	if err == nil && apiKey != nil {
+		return apiKey, diags
+	}
+
+	if restrictToOwned {
+		if err != nil {
+			diags.AddError("Unable to get an apikey", err.Error())
+		}
+		return nil, diags
+	}
+
+	// Fall back to a lookup that is not scoped by owner. This requires a
+	// broader privilege than `manage_own_api_key`, but finds keys owned by
+	// other users too.
+	ownedErr := err
+	apiKey, err = getAPIKey(ctx, apiClient, id, false)
+	if err != nil {
+		detail := err.Error()
+		if ownedErr == nil {
+			detail = fmt.Sprintf(
+				`No API key "%s" owned by the current authenticated user was found, and looking it up regardless of owner failed: %s. `+
+					`Looking up API keys owned by other users requires the "manage_api_key" or "read_security" cluster privilege; `+
+					`set "restrict_to_owned" to true to treat keys owned by other users as non-existent instead.`,
+				id, detail,
+			)
+		}
+		diags.AddError("Unable to get an apikey", detail)
+		return nil, diags
+	}
+
+	return apiKey, diags
+}
+
+// getAPIKey issues a single Get API key request for id with the given owner
+// flag. It returns nil, nil when Elasticsearch reports no matching key (an
+// HTTP 404 or an empty `api_keys` list).
+func getAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedClient, id string, owner bool) (*types.ApiKey, error) {
 	typedClient := apiClient.GetESClient()
 
 	req := typedClient.Security.GetApiKey().Id(id)
-	if restrictToOwned {
+	if owner {
 		req = req.Owner(true)
 	}
 
 	res, err := req.Do(ctx)
 	if err != nil {
 		if IsNotFoundElasticsearchError(err) {
-			return nil, diags
+			return nil, nil
 		}
-		diags.AddError("Unable to get an apikey", err.Error())
-		return nil, diags
+		return nil, err
 	}
 
-	if len(res.ApiKeys) == 0 {
-		// Not found, or (when owner is true) found but not owned by the
-		// current authenticated user. Both cases are treated as "does not
-		// exist" so the resource disappears from state instead of erroring.
-		return nil, diags
+	switch len(res.ApiKeys) {
+	case 0:
+		return nil, nil
+	case 1:
+		apiKey := res.ApiKeys[0]
+		return &apiKey, nil
+	default:
+		return nil, fmt.Errorf(`expected a single API key with id "%s", got %d`, id, len(res.ApiKeys))
 	}
-
-	if len(res.ApiKeys) != 1 {
-		diags.AddError(
-			"Unable to find an apikey in the cluster",
-			fmt.Sprintf(`Unable to find "%s" apikey in the cluster`, id),
-		)
-		return nil, diags
-	}
-
-	apiKey := res.ApiKeys[0]
-	return &apiKey, diags
 }
 
 // DeleteAPIKey invalidates the API key identified by id.
@@ -128,14 +167,14 @@ func DeleteAPIKey(ctx context.Context, apiClient *clients.ElasticsearchScopedCli
 	var diags fwdiag.Diagnostics
 
 	invalidated, err := invalidateAPIKey(ctx, apiClient, id, true)
-	if err != nil && IsNotFoundElasticsearchError(err) {
-		return diags
-	}
 	if err == nil && invalidated {
 		return diags
 	}
 
 	if restrictToOwned {
+		if IsNotFoundElasticsearchError(err) {
+			return diags
+		}
 		if err != nil {
 			diags.AddError("Unable to delete an apikey", err.Error())
 			return diags

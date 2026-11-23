@@ -2,7 +2,9 @@
 
 ## Purpose
 TBD - created by archiving change elasticsearch-security-api-key-ephemeral. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: Ephemeral resource registration (REQ-EPH-001)
 
 The provider SHALL register the ephemeral resource factory via an `EphemeralResources()` method on the `Provider` type in `provider/plugin_framework.go`. The factory SHALL return a new instance of the ephemeral resource type implementing `ephemeral.EphemeralResource`, `EphemeralResourceWithConfigure`, and `EphemeralResourceWithClose`.
@@ -42,7 +44,7 @@ The provider SHALL register the ephemeral resource factory via an `EphemeralReso
 
 `Close()` SHALL be called by Terraform after the apply completes. The provider SHALL:
 - When `invalidate_on_close = false` (default): perform no action. The API key persists in Elasticsearch until it expires or is manually invalidated.
-- When `invalidate_on_close = true`: call the Elasticsearch Invalidate API key API (`POST /_security/api_key/invalidate`) using the `key_id` from the `Open()` result. After invalidation, the key SHALL be immediately unusable.
+- When `invalidate_on_close = true`: call the Elasticsearch Invalidate API key API (`POST /_security/api_key/invalidate`) using the `key_id` from the `Open()` result, with `owner=true` and without retrying with `owner=false`. The key is always owned by the connection that opened it, so the `manage_own_api_key` cluster privilege is sufficient. After invalidation, the key SHALL be immediately unusable.
 
 #### Scenario: Close with invalidate_on_close = false
 
@@ -55,7 +57,7 @@ The provider SHALL register the ephemeral resource factory via an `EphemeralReso
 
 - GIVEN `invalidate_on_close = true` in the ephemeral resource configuration
 - WHEN Terraform calls Close after the apply completes
-- THEN the provider SHALL call `POST /_security/api_key/invalidate` with the `key_id` from the result
+- THEN the provider SHALL call `POST /_security/api_key/invalidate` with the `key_id` from the result and `owner=true`
 - AND the API key SHALL be marked as invalidated in Elasticsearch
 
 #### Scenario: Run interrupted before Close is called
@@ -165,4 +167,3 @@ The implementation of the ephemeral resource SHALL NOT modify any existing file 
 - GIVEN an existing `elasticstack_elasticsearch_security_api_key` managed resource in state
 - WHEN the provider version is upgraded to include the ephemeral resource
 - THEN the managed resource CRUD operations SHALL behave identically to before the upgrade
-

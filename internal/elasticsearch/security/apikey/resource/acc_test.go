@@ -486,6 +486,59 @@ func TestAccResourceSecurityAPIKeyExplicitConnection(t *testing.T) {
 	})
 }
 
+// TestAccResourceSecurityAPIKeyManageOwnAPIKeyOnly covers keys managed through
+// a connection whose user only holds the manage_own_api_key cluster
+// privilege (plus monitor). Create, refresh and destroy must all succeed without
+// manage_api_key, with both restrict_to_owned = false (default) and true.
+func TestAccResourceSecurityAPIKeyManageOwnAPIKeyOnly(t *testing.T) {
+	name := "tf-acc-own-" + sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum)
+	endpoints := apiKeyESEndpoints()
+	if len(endpoints) == 0 {
+		t.Fatal("ELASTICSEARCH_ENDPOINTS must contain at least one endpoint")
+	}
+
+	versionutils.SkipIfUnsupported(t, apikey.MinVersion, versionutils.FlavorAny)
+
+	endpointVars := make([]config.Variable, len(endpoints))
+	for i, ep := range endpoints {
+		endpointVars[i] = config.StringVariable(ep)
+	}
+	vars := config.Variables{
+		"name":      config.StringVariable(name),
+		"endpoints": config.ListVariable(endpointVars...),
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceSecurityAPIKeyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.default", "name", name+"-default"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.default", "restrict_to_owned", "false"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.default", "key_id"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.default", "encoded"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.restricted", "name", name+"-restricted"),
+					resource.TestCheckResourceAttr("elasticstack_elasticsearch_security_api_key.restricted", "restrict_to_owned", "true"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.restricted", "key_id"),
+					resource.TestCheckResourceAttrSet("elasticstack_elasticsearch_security_api_key.restricted", "encoded"),
+				),
+			},
+			{
+				// A refresh and re-plan with the limited user must not error or
+				// produce a diff.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+			},
+		},
+	})
+}
+
 func apiKeyESEndpoints() []string {
 	rawEndpoints := os.Getenv("ELASTICSEARCH_ENDPOINTS")
 	parts := strings.Split(rawEndpoints, ",")
@@ -511,17 +564,16 @@ func checkResourceSecurityAPIKeyDestroy(s *terraform.State) error {
 		}
 		compID, _ := clients.CompositeIDFromStr(rs.Primary.ID)
 
-		apiKey, diags := elasticsearch.GetAPIKey(context.Background(), client, compID.ResourceID, true)
+		// restrictToOwned=false: the acceptance client must also see keys owned
+		// by other users (e.g. keys created through a resource-level
+		// elasticsearch_connection with a different user).
+		apiKey, diags := elasticsearch.GetAPIKey(context.Background(), client, compID.ResourceID, false)
 		if diags.HasError() {
 			return fmt.Errorf("Unable to get API key %v", diags)
 		}
 
-		// GetAPIKey scopes the lookup to owner:true, so a key that has been
-		// invalidated (and is thus no longer owned/visible from this
-		// perspective in some cases) can legitimately come back as nil. That
-		// is equivalent to the key no longer existing/being accessible, so
-		// treat it as successfully destroyed rather than dereferencing a nil
-		// pointer.
+		// Invalidated keys are eventually removed from Elasticsearch, so a key
+		// that is no longer found at all has been destroyed too.
 		if apiKey == nil {
 			continue
 		}

@@ -98,6 +98,43 @@ func newSequencedDeleteServer(t *testing.T, deleteResponses []string, deleteRequ
 	}))
 }
 
+type sequencedResponse struct {
+	status int
+	body   string
+}
+
+// newSequencedGetServer returns an httptest.Server that responds to
+// successive GET /_security/api_key requests with responses, in order,
+// recording the query string of each request in queries (the `owner` flag is
+// sent as a query parameter on the Get API key request). Used to test
+// GetAPIKey's owner=true-then-unscoped fallback, which issues up to two
+// requests.
+func newSequencedGetServer(t *testing.T, responses []sequencedResponse, queries *[]string) *httptest.Server {
+	t.Helper()
+	var callCount int
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Elastic-Product", "Elasticsearch")
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method == http.MethodGet && r.URL.Path == "/_security/api_key" {
+			idx := callCount
+			callCount++
+			if queries != nil {
+				*queries = append(*queries, r.URL.RawQuery)
+			}
+			if idx >= len(responses) {
+				w.WriteHeader(http.StatusBadRequest)
+				fmt.Fprint(w, `{"error":"unexpected extra get request"}`)
+				return
+			}
+			w.WriteHeader(responses[idx].status)
+			fmt.Fprint(w, responses[idx].body)
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+		fmt.Fprintf(w, `{"error":"unexpected request: %s %s"}`, r.Method, r.URL.Path)
+	}))
+}
+
 func TestGetAPIKey_RestrictToOwnedTrue_NotFoundTreatedAsNonExistent(t *testing.T) {
 	t.Parallel()
 	var lastQuery string
@@ -111,10 +148,33 @@ func TestGetAPIKey_RestrictToOwnedTrue_NotFoundTreatedAsNonExistent(t *testing.T
 	require.Contains(t, lastQuery, "owner=true")
 }
 
-func TestGetAPIKey_RestrictToOwnedFalse_DoesNotFilterByOwner(t *testing.T) {
+func TestGetAPIKey_RestrictToOwnedTrue_404TreatedAsNonExistentWithoutFallback(t *testing.T) {
 	t.Parallel()
-	var lastQuery string
-	srv := newAPIKeyServer(t, `{"api_keys":[{"id":"some-id","name":"k","creation":0,"invalidated":false,"username":"other","realm":"default"}]}`, "", &lastQuery)
+	// Elasticsearch answers an id-scoped Get API key request that matches no
+	// key with HTTP 404 and an empty `api_keys` list.
+	var queries []string
+	srv := newSequencedGetServer(t, []sequencedResponse{
+		{status: http.StatusNotFound, body: `{"api_keys":[]}`},
+	}, &queries)
+	defer srv.Close()
+
+	apiKey, diags := GetAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", true)
+
+	require.False(t, diags.HasError())
+	require.Nil(t, apiKey)
+	require.Len(t, queries, 1, "restrict_to_owned=true must not fall back to an unscoped lookup")
+	require.Contains(t, queries[0], "owner=true")
+}
+
+func TestGetAPIKey_RestrictToOwnedFalse_OwnedKeyFoundWithoutFallback(t *testing.T) {
+	t.Parallel()
+	// The common case: the key is owned by the connection's user, so the
+	// owner=true lookup (authorized by `manage_own_api_key` alone) finds it
+	// and no unscoped lookup is made.
+	var queries []string
+	srv := newSequencedGetServer(t, []sequencedResponse{
+		{status: http.StatusOK, body: `{"api_keys":[{"id":"some-id","name":"k","creation":0,"invalidated":false,"username":"me","realm":"default"}]}`},
+	}, &queries)
 	defer srv.Close()
 
 	apiKey, diags := GetAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", false)
@@ -122,7 +182,64 @@ func TestGetAPIKey_RestrictToOwnedFalse_DoesNotFilterByOwner(t *testing.T) {
 	require.False(t, diags.HasError())
 	require.NotNil(t, apiKey)
 	require.Equal(t, "some-id", apiKey.Id)
-	require.NotContains(t, lastQuery, "owner=true")
+	require.Len(t, queries, 1)
+	require.Contains(t, queries[0], "owner=true")
+}
+
+func TestGetAPIKey_RestrictToOwnedFalse_FallsBackWhenNotOwned(t *testing.T) {
+	t.Parallel()
+	var queries []string
+	srv := newSequencedGetServer(t, []sequencedResponse{
+		{status: http.StatusNotFound, body: `{"api_keys":[]}`},
+		{status: http.StatusOK, body: `{"api_keys":[{"id":"some-id","name":"k","creation":0,"invalidated":false,"username":"other","realm":"default"}]}`},
+	}, &queries)
+	defer srv.Close()
+
+	apiKey, diags := GetAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", false)
+
+	require.False(t, diags.HasError())
+	require.NotNil(t, apiKey)
+	require.Equal(t, "some-id", apiKey.Id)
+	require.Len(t, queries, 2, "expected an owner=true lookup followed by an unscoped fallback")
+	require.Contains(t, queries[0], "owner=true")
+	require.NotContains(t, queries[1], "owner=true")
+}
+
+func TestGetAPIKey_RestrictToOwnedFalse_NotFoundAnywhere(t *testing.T) {
+	t.Parallel()
+	var queries []string
+	srv := newSequencedGetServer(t, []sequencedResponse{
+		{status: http.StatusNotFound, body: `{"api_keys":[]}`},
+		{status: http.StatusNotFound, body: `{"api_keys":[]}`},
+	}, &queries)
+	defer srv.Close()
+
+	apiKey, diags := GetAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", false)
+
+	require.False(t, diags.HasError())
+	require.Nil(t, apiKey)
+	require.Len(t, queries, 2)
+}
+
+func TestGetAPIKey_RestrictToOwnedFalse_FallbackForbiddenExplainsPrivileges(t *testing.T) {
+	t.Parallel()
+	// A connection holding only `manage_own_api_key` is not allowed to look
+	// up keys regardless of owner. The resulting error should point at the
+	// missing privilege and the restrict_to_owned escape hatch.
+	var queries []string
+	srv := newSequencedGetServer(t, []sequencedResponse{
+		{status: http.StatusNotFound, body: `{"api_keys":[]}`},
+		{status: http.StatusForbidden, body: `{"error":{"type":"security_exception","reason":"action [cluster:admin/xpack/security/api_key/get] is unauthorized"},"status":403}`},
+	}, &queries)
+	defer srv.Close()
+
+	apiKey, diags := GetAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", false)
+
+	require.True(t, diags.HasError())
+	require.Nil(t, apiKey)
+	require.Len(t, queries, 2)
+	require.Contains(t, diags[0].Detail(), "manage_api_key")
+	require.Contains(t, diags[0].Detail(), "restrict_to_owned")
 }
 
 func TestGetAPIKey_Found(t *testing.T) {
@@ -213,4 +330,60 @@ func TestDeleteAPIKey_RestrictToOwnedFalse_ErrorsWhenBothAttemptsFail(t *testing
 
 	require.True(t, diags.HasError())
 	require.Len(t, bodies, 2, "expected both the owner=true attempt and the owner=false fallback to have been made")
+}
+
+// newNotFoundThenDeleteServer returns an httptest.Server whose first
+// DELETE /_security/api_key request fails with HTTP 404 and whose later
+// requests (if any) report id as invalidated. Request bodies are recorded in
+// bodies.
+func newNotFoundThenDeleteServer(t *testing.T, id string, bodies *[]string) *httptest.Server {
+	t.Helper()
+	var callCount int
+	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("X-Elastic-Product", "Elasticsearch")
+		w.Header().Set("Content-Type", "application/json")
+		if r.Method != http.MethodDelete || r.URL.Path != "/_security/api_key" {
+			w.WriteHeader(http.StatusBadRequest)
+			fmt.Fprintf(w, `{"error":"unexpected request: %s %s"}`, r.Method, r.URL.Path)
+			return
+		}
+		body, _ := io.ReadAll(r.Body)
+		*bodies = append(*bodies, string(body))
+		callCount++
+		if callCount == 1 {
+			w.WriteHeader(http.StatusNotFound)
+			fmt.Fprint(w, `{"error":{"type":"resource_not_found_exception","reason":"no API key owned by requesting user found"},"status":404}`)
+			return
+		}
+		fmt.Fprintf(w, `{"invalidated_api_keys":["%s"],"previously_invalidated_api_keys":[],"error_count":0}`, id)
+	}))
+}
+
+func TestDeleteAPIKey_RestrictToOwnedFalse_FallsBackWhenOwnerTrueReturnsNotFound(t *testing.T) {
+	t.Parallel()
+	// A 404 on the owner=true attempt only means no key owned by the current
+	// user matched; it must not be treated as a successful delete without
+	// trying the unscoped fallback.
+	var bodies []string
+	srv := newNotFoundThenDeleteServer(t, "some-id", &bodies)
+	defer srv.Close()
+
+	diags := DeleteAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", false)
+
+	require.False(t, diags.HasError())
+	require.Len(t, bodies, 2)
+	require.Contains(t, bodies[0], `"owner":true`)
+	require.Contains(t, bodies[1], `"owner":false`)
+}
+
+func TestDeleteAPIKey_RestrictToOwnedTrue_NotFoundIsSuccess(t *testing.T) {
+	t.Parallel()
+	var bodies []string
+	srv := newNotFoundThenDeleteServer(t, "some-id", &bodies)
+	defer srv.Close()
+
+	diags := DeleteAPIKey(context.Background(), newAPIKeyScopedClient(t, srv), "some-id", true)
+
+	require.False(t, diags.HasError())
+	require.Len(t, bodies, 1, "restrict_to_owned=true must not fall back to an unscoped delete")
 }
