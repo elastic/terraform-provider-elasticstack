@@ -23,17 +23,26 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func deleteExceptionItem(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, _ ExceptionItemModel) diag.Diagnostics {
+func deleteExceptionItem(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model ExceptionItemModel) diag.Diagnostics {
 	oapiClient := client.GetKibanaOapiClient()
 
-	id := resourceID
-	params := &kbapi.DeleteExceptionListItemParams{
-		Id: &id,
-	}
+	return kibanaoapi.DeleteExceptionListItem(ctx, oapiClient, spaceID, exceptionItemDeleteParams(resourceID, model.NamespaceType))
+}
 
-	paramsDiags := kibanaoapi.DeleteExceptionListItem(ctx, oapiClient, spaceID, params)
-	return paramsDiags
+// The delete endpoint defaults namespace_type to "single", so an agnostic item
+// is reported as not found - and treated as already deleted - unless the item's
+// own namespace_type is sent with the request.
+func exceptionItemDeleteParams(itemID string, namespaceType types.String) *kbapi.DeleteExceptionListItemParams {
+	id := itemID
+	params := &kbapi.DeleteExceptionListItemParams{Id: &id}
+	if typeutils.IsKnown(namespaceType) {
+		nsType := kbapi.SecurityExceptionsAPIExceptionNamespaceType(namespaceType.ValueString())
+		params.NamespaceType = &nsType
+	}
+	return params
 }
