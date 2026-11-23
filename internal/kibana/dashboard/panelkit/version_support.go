@@ -25,3 +25,8 @@ import "github.com/hashicorp/go-version"
 // ml_anomaly_swimlane, ml_single_metric_viewer). Empirical testing showed Kibana 9.4.0 rejects
 // these panel types (HTTP 400); 9.5.0-SNAPSHOT accepts them.
 var MinKibanaAPISupport95 = version.Must(version.NewVersion("9.5.0-SNAPSHOT"))
+
+// MinKibanaAPISupportDurationFormatParams is the first Kibana release that accepts
+// decimals and compact on a Lens duration format. Versions 9.4.0–9.4.4 and
+// 9.5.0–9.5.1 reject that combination.
+var MinKibanaAPISupportDurationFormatParams = version.Must(version.NewVersion("9.5.2"))

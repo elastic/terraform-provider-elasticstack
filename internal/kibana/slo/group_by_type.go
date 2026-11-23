@@ -152,12 +152,6 @@ func NewGroupByNull() GroupByValue {
 	}
 }
 
-func NewGroupByUnknown() GroupByValue {
-	return GroupByValue{
-		ListValue: basetypes.NewListUnknown(types.StringType),
-	}
-}
-
 func NewGroupByValue(elements []attr.Value) (GroupByValue, diag.Diagnostics) {
 	listValue, diags := basetypes.NewListValue(types.StringType, elements)
 	return GroupByValue{

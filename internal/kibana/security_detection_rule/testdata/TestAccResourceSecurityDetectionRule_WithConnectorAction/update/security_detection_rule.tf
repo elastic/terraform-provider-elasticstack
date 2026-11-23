@@ -72,7 +72,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
     })
     group = "default"
     frequency = {
-      notify_when = "onActiveAlert"
+      notify_when = "onThrottleInterval"
       summary     = true
       throttle    = "5m"
     }

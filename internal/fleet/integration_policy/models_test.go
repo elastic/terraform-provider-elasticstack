@@ -31,12 +31,9 @@ import (
 )
 
 func TestOutputIdHandling(t *testing.T) {
-	t.Run("populateFromAPI", func(t *testing.T) {
-		model := &integrationPolicyModel{}
-		outputID := "test-output-id"
-		testID := "test-id"
-		data := &kbapi.PackagePolicy{
-			Id:      testID,
+	apiPolicy := func(outputID string) *kbapi.PackagePolicy {
+		return &kbapi.PackagePolicy{
+			Id:      "test-id",
 			Name:    "test-policy",
 			Enabled: true,
 			Package: &kbapi.KibanaHTTPAPIsPackagePolicyPackage{
@@ -45,10 +42,38 @@ func TestOutputIdHandling(t *testing.T) {
 			},
 			OutputId: &outputID,
 		}
+	}
 
-		diags := model.populateFromAPI(context.Background(), nil, data)
+	t.Run("populateFromAPI", func(t *testing.T) {
+		model := &integrationPolicyModel{OutputID: types.StringValue("configured-output-id")}
+
+		diags := model.populateFromAPI(context.Background(), nil, apiPolicy("test-output-id"), false)
 		require.Empty(t, diags)
 		require.Equal(t, "test-output-id", model.OutputID.ValueString())
+	})
+
+	t.Run("populateFromAPI keeps unconfigured output_id null", func(t *testing.T) {
+		model := &integrationPolicyModel{OutputID: types.StringNull()}
+
+		diags := model.populateFromAPI(context.Background(), nil, apiPolicy("set-outside-terraform"), false)
+		require.Empty(t, diags)
+		require.True(t, model.OutputID.IsNull())
+	})
+
+	t.Run("populateFromAPI keeps unconfigured output_id null when the server has an empty string", func(t *testing.T) {
+		model := &integrationPolicyModel{OutputID: types.StringNull()}
+
+		diags := model.populateFromAPI(context.Background(), nil, apiPolicy(""), false)
+		require.Empty(t, diags)
+		require.True(t, model.OutputID.IsNull())
+	})
+
+	t.Run("populateFromAPI sets output_id on import", func(t *testing.T) {
+		model := &integrationPolicyModel{OutputID: types.StringNull()}
+
+		diags := model.populateFromAPI(context.Background(), nil, apiPolicy("imported-output-id"), true)
+		require.Empty(t, diags)
+		require.Equal(t, "imported-output-id", model.OutputID.ValueString())
 	})
 
 	t.Run("toAPIModel", func(t *testing.T) {
@@ -69,7 +94,7 @@ func TestOutputIdHandling(t *testing.T) {
 		body, diags := model.toAPIModel(context.Background(), feat)
 		require.Empty(t, diags)
 
-		raw, err := body.MarshalJSON()
+		raw, err := json.Marshal(body)
 		require.NoError(t, err)
 
 		var decoded map[string]any
@@ -145,7 +170,7 @@ func TestConditionHandling(t *testing.T) {
 		body, diags := model.toAPIModel(ctx, integrationPolicyFeatures{SupportsPolicyIDs: true, SupportsOutputID: true, SupportsCondition: true})
 		require.False(t, diags.HasError())
 
-		raw, err := body.MarshalJSON()
+		raw, err := json.Marshal(body)
 		require.NoError(t, err)
 
 		var decoded map[string]any
@@ -172,7 +197,7 @@ func TestConditionHandling(t *testing.T) {
 		body, diags := model.toAPIModel(ctx, integrationPolicyFeatures{SupportsPolicyIDs: true, SupportsOutputID: true, SupportsCondition: true})
 		require.False(t, diags.HasError())
 
-		raw, err := body.MarshalJSON()
+		raw, err := json.Marshal(body)
 		require.NoError(t, err)
 
 		var decoded map[string]any
@@ -267,7 +292,7 @@ func TestConditionHandling(t *testing.T) {
 		require.NoError(t, data.Inputs.FromPackagePolicyMappedInputs(respInputs))
 
 		model := &integrationPolicyModel{}
-		diags := model.populateFromAPI(ctx, nil, data)
+		diags := model.populateFromAPI(ctx, nil, data, false)
 		require.False(t, diags.HasError())
 
 		inputsMap := model.Inputs.Elements()
@@ -305,7 +330,7 @@ func TestConditionHandling(t *testing.T) {
 		require.NoError(t, data.Inputs.FromPackagePolicyMappedInputs(respInputs))
 
 		model := &integrationPolicyModel{}
-		diags := model.populateFromAPI(ctx, nil, data)
+		diags := model.populateFromAPI(ctx, nil, data, false)
 		require.False(t, diags.HasError())
 
 		inputsMap := model.Inputs.Elements()
@@ -355,7 +380,7 @@ func TestAdditionalDatastreamsPermissionsHandling(t *testing.T) {
 		body, diags := model.toAPIModel(ctx, feat)
 		require.False(t, diags.HasError())
 
-		raw, err := body.MarshalJSON()
+		raw, err := json.Marshal(body)
 		require.NoError(t, err)
 
 		var decoded map[string]any
@@ -419,7 +444,7 @@ func TestAdditionalDatastreamsPermissionsHandling(t *testing.T) {
 		}
 
 		model := &integrationPolicyModel{}
-		require.False(t, model.populateFromAPI(ctx, nil, data).HasError())
+		require.False(t, model.populateFromAPI(ctx, nil, data, false).HasError())
 
 		var got []string
 		require.False(t, model.AdditionalDatastreamsPermissions.ElementsAs(ctx, &got, false).HasError())
@@ -443,7 +468,7 @@ func TestAdditionalDatastreamsPermissionsHandling(t *testing.T) {
 				}
 
 				model := &integrationPolicyModel{}
-				require.False(t, model.populateFromAPI(ctx, nil, data).HasError())
+				require.False(t, model.populateFromAPI(ctx, nil, data, false).HasError())
 				require.True(t, model.AdditionalDatastreamsPermissions.IsNull(),
 					"an empty response must map to null so it matches a config that omits the attribute")
 			})
@@ -524,7 +549,7 @@ func TestPopulateFromAPI_SpaceIDs_Null_vs_EmptyList(t *testing.T) {
 				SpaceIds: tc.apiValue,
 			}
 
-			diags := model.populateFromAPI(ctx, nil, data)
+			diags := model.populateFromAPI(ctx, nil, data, false)
 			require.False(t, diags.HasError(), "populateFromAPI produced unexpected error diags: %v", diags)
 
 			if tc.wantNull {
@@ -540,4 +565,58 @@ func TestPopulateFromAPI_SpaceIDs_Null_vs_EmptyList(t *testing.T) {
 			}
 		})
 	}
+}
+
+// An explicitly configured empty `inputs` map must round-trip as an empty map:
+// Terraform rejects a read-after-apply value of null when the plan held `{}`.
+func TestPopulateFromAPI_Inputs_KnownEmptyStaysEmpty(t *testing.T) {
+	ctx := context.Background()
+
+	emptyInputs, diags := NewInputsValueFrom(ctx, getInputsElementType(), map[string]integrationPolicyInputsModel{})
+	require.False(t, diags.HasError())
+
+	model := &integrationPolicyModel{
+		Inputs:   emptyInputs,
+		SpaceIDs: types.SetNull(types.StringType),
+	}
+	data := &kbapi.PackagePolicy{
+		Id:   "test-id",
+		Name: "test-policy",
+		Package: &kbapi.KibanaHTTPAPIsPackagePolicyPackage{
+			Name:    "elastic_agent",
+			Version: "2.9.6",
+		},
+	}
+
+	diags = model.populateFromAPI(ctx, nil, data, false)
+	require.False(t, diags.HasError(), "populateFromAPI produced unexpected error diags: %v", diags)
+	require.False(t, model.Inputs.IsNull(), "a configured empty inputs map must not become null")
+	require.False(t, model.Inputs.IsUnknown())
+	require.Empty(t, model.Inputs.Elements())
+}
+
+func TestInputsWhenUnconfigured(t *testing.T) {
+	ctx := context.Background()
+
+	emptyInputs, diags := NewInputsValueFrom(ctx, getInputsElementType(), map[string]integrationPolicyInputsModel{})
+	require.False(t, diags.HasError())
+
+	t.Run("null stays null", func(t *testing.T) {
+		got := inputsWhenUnconfigured(NewInputsNull(getInputsElementType()))
+		require.True(t, got.IsNull())
+	})
+
+	t.Run("unknown becomes null", func(t *testing.T) {
+		got := inputsWhenUnconfigured(InputsValue{MapValue: basetypes.NewMapUnknown(getInputsElementType())})
+		require.True(t, got.IsNull())
+		require.False(t, got.IsUnknown())
+	})
+
+	t.Run("known empty map stays an empty map", func(t *testing.T) {
+		got := inputsWhenUnconfigured(emptyInputs)
+		require.False(t, got.IsNull())
+		require.False(t, got.IsUnknown())
+		require.Empty(t, got.Elements())
+		require.True(t, got.Equal(emptyInputs))
+	})
 }

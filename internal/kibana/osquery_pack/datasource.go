@@ -29,7 +29,9 @@ func NewDataSource() datasource.DataSource {
 	return entitycore.NewKibanaDataSource[dataSourceModel](
 		entitycore.ComponentKibana,
 		"osquery_pack",
-		getDataSourceSchema,
-		readOsqueryPackDataSource,
+		entitycore.KibanaDataSourceOptions[dataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readOsqueryPackDataSource,
+		},
 	)
 }

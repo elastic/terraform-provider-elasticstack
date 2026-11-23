@@ -56,18 +56,18 @@ func TestPartitionLegendFromTreemapAndMosaicLegend_FullyPopulated(t *testing.T) 
 	nested := true
 	truncateAfterLines := float32(3)
 
-	treemapSize := kbapi.KibanaHTTPAPIsLegendSizeL
-	treemapVisibility := kbapi.KibanaHTTPAPIsTreemapLegendVisibilityVisible
-	treemapAPI := &kbapi.KibanaHTTPAPIsTreemapLegend{
+	treemapSize := kbapi.KibanaHTTPAPIsVisLegendSizeL
+	treemapVisibility := kbapi.KibanaHTTPAPIsVisTreemapLegendVisibilityVisible
+	treemapAPI := &kbapi.KibanaHTTPAPIsVisTreemapLegend{
 		Nested:             &nested,
 		Size:               &treemapSize,
 		TruncateAfterLines: &truncateAfterLines,
 		Visibility:         &treemapVisibility,
 	}
 
-	mosaicSize := kbapi.KibanaHTTPAPIsLegendSizeL
-	mosaicVisibility := kbapi.KibanaHTTPAPIsMosaicLegendVisibilityVisible
-	mosaicAPI := &kbapi.KibanaHTTPAPIsMosaicLegend{
+	mosaicSize := kbapi.KibanaHTTPAPIsVisLegendSizeL
+	mosaicVisibility := kbapi.KibanaHTTPAPIsVisMosaicLegendVisibilityVisible
+	mosaicAPI := &kbapi.KibanaHTTPAPIsVisMosaicLegend{
 		Nested:             &nested,
 		Size:               &mosaicSize,
 		TruncateAfterLines: &truncateAfterLines,
@@ -92,8 +92,8 @@ func TestPartitionLegendFromTreemapAndMosaicLegend_FullyPopulated(t *testing.T) 
 func TestPartitionLegendFromTreemapAndMosaicLegend_PartiallyPopulated(t *testing.T) {
 	t.Parallel()
 
-	treemapAPI := &kbapi.KibanaHTTPAPIsTreemapLegend{}
-	mosaicAPI := &kbapi.KibanaHTTPAPIsMosaicLegend{}
+	treemapAPI := &kbapi.KibanaHTTPAPIsVisTreemapLegend{}
+	mosaicAPI := &kbapi.KibanaHTTPAPIsVisMosaicLegend{}
 
 	treemapModel := &models.PartitionLegendModel{}
 	PartitionLegendFromTreemapLegend(treemapModel, treemapAPI)
@@ -125,20 +125,20 @@ func TestPartitionLegendToTreemapAndMosaicLegend_FullyPopulated(t *testing.T) {
 	a.NotNil(treemap.Nested)
 	a.True(*treemap.Nested)
 	a.NotNil(treemap.Size)
-	a.Equal(kbapi.KibanaHTTPAPIsLegendSizeS, *treemap.Size)
+	a.Equal(kbapi.KibanaHTTPAPIsVisLegendSizeS, *treemap.Size)
 	a.NotNil(treemap.TruncateAfterLines)
 	a.InDelta(float32(5), *treemap.TruncateAfterLines, 0)
 	a.NotNil(treemap.Visibility)
-	a.Equal(kbapi.KibanaHTTPAPIsTreemapLegendVisibilityHidden, *treemap.Visibility)
+	a.Equal(kbapi.KibanaHTTPAPIsVisTreemapLegendVisibilityHidden, *treemap.Visibility)
 
 	a.NotNil(mosaic.Nested)
 	a.True(*mosaic.Nested)
 	a.NotNil(mosaic.Size)
-	a.Equal(kbapi.KibanaHTTPAPIsLegendSizeS, *mosaic.Size)
+	a.Equal(kbapi.KibanaHTTPAPIsVisLegendSizeS, *mosaic.Size)
 	a.NotNil(mosaic.TruncateAfterLines)
 	a.InDelta(float32(5), *mosaic.TruncateAfterLines, 0)
 	a.NotNil(mosaic.Visibility)
-	a.Equal(kbapi.KibanaHTTPAPIsMosaicLegendVisibilityHidden, *mosaic.Visibility)
+	a.Equal(kbapi.KibanaHTTPAPIsVisMosaicLegendVisibilityHidden, *mosaic.Visibility)
 }
 
 func TestPartitionLegendToTreemapAndMosaicLegend_UnknownFields(t *testing.T) {
@@ -159,11 +159,11 @@ func TestPartitionLegendToTreemapAndMosaicLegend_UnknownFields(t *testing.T) {
 	assert.Nil(t, treemap.Visibility)
 	require := assert.New(t)
 	require.NotNil(treemap.Size)
-	require.Equal(kbapi.KibanaHTTPAPIsLegendSizeAuto, *treemap.Size)
+	require.Equal(kbapi.KibanaHTTPAPIsVisLegendSizeAuto, *treemap.Size)
 
 	assert.Nil(t, mosaic.Nested)
 	assert.Nil(t, mosaic.TruncateAfterLines)
 	assert.Nil(t, mosaic.Visibility)
 	require.NotNil(mosaic.Size)
-	require.Equal(kbapi.KibanaHTTPAPIsLegendSizeAuto, *mosaic.Size)
+	require.Equal(kbapi.KibanaHTTPAPIsVisLegendSizeAuto, *mosaic.Size)
 }

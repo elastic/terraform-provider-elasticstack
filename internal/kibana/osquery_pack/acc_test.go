@@ -574,7 +574,7 @@ func TestAccDataSourceOsqueryPack_missingPack(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("read"),
 				ConfigVariables:          vars,
 				PlanOnly:                 true,
-				ExpectError:              regexp.MustCompile(`Osquery pack not found`),
+				ExpectError:              regexp.MustCompile(`kibana_osquery_pack not found`),
 			},
 		},
 	})

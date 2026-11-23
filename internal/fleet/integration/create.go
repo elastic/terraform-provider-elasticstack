@@ -68,6 +68,10 @@ func writeIntegration(
 		installOptions.SkipDataStreamRollover = planModel.SkipDataStreamRollover.ValueBoolPointer()
 	}
 
+	if typeutils.IsKnown(planModel.AllowOutdatedVersion) {
+		installOptions.AllowOutdatedVersion = planModel.AllowOutdatedVersion.ValueBoolPointer()
+	}
+
 	installOptions.SpaceID = scope.id
 
 	installDiags := fleet.InstallPackage(ctx, fleetClient, name, version, installOptions)
@@ -105,7 +109,7 @@ func writeIntegration(
 		}
 	}
 
-	planModel.ID = types.StringValue(getPackageID(name, version))
+	planModel.ID = types.StringValue(typeutils.HashedPackageID(name, version))
 
 	if planModel.SpaceID.IsUnknown() {
 		planModel.SpaceID = installedKibanaSpaceID(pkg)
@@ -174,7 +178,7 @@ func waitForFleetIntegrationInstalledState(
 	scope spaceScope,
 	installed func(*kbapi.KibanaHTTPAPIsGetPackageInfo) bool,
 ) error {
-	return asyncutils.WaitForStateTransition(ctx, "fleet integration", getPackageID(name, version), func(ctx context.Context) (bool, error) {
+	return asyncutils.WaitForStateTransition(ctx, "fleet integration", typeutils.HashedPackageID(name, version), func(ctx context.Context) (bool, error) {
 		pkg, getDiags := fleet.GetPackage(ctx, fleetClient, name, version, scope.id)
 		if getDiags.HasError() {
 			return false, fmt.Errorf("failed to read package installation status: %v", getDiags)

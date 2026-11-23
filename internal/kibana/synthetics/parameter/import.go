@@ -61,7 +61,7 @@ func (r *Resource) ImportState(ctx context.Context, request resource.ImportState
 	}
 
 	spaceID = clients.EffectiveSpaceID(spaceID)
-	compositeID := (&clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}).String()
+	compositeID := clients.CompositeIDValue(spaceID, resourceID).ValueString()
 
 	response.Diagnostics.Append(response.State.SetAttribute(ctx, path.Root("id"), compositeID)...)
 	response.Diagnostics.Append(response.State.SetAttribute(ctx, path.Root("space_id"), spaceID)...)

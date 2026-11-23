@@ -14,8 +14,8 @@ resource "elasticstack_kibana_dashboard" "test" {
     value = 30000
   }
   query = {
-    language = "kql"
-    text     = ""
+    language   = "kql"
+    expression = ""
   }
   panels = [{
     type = "vis"

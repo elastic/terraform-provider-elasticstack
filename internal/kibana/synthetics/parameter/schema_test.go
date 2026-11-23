@@ -40,13 +40,13 @@ func Test_roundtrip(t *testing.T) {
 		id             string
 		namespaces     []string
 		omitNamespaces bool
-		request        kboapi.SyntheticsParameterRequest
+		request        kboapi.KibanaHTTPAPIsParameterRequest
 	}{
 		{
 			name:       "only required fields",
 			id:         "id-1",
 			namespaces: []string{"ns-1"},
-			request: kboapi.SyntheticsParameterRequest{
+			request: kboapi.KibanaHTTPAPIsParameterRequest{
 				Key:   "key-1",
 				Value: "value-1",
 			},
@@ -55,7 +55,7 @@ func Test_roundtrip(t *testing.T) {
 			name:       "all fields",
 			id:         "id-2",
 			namespaces: []string{"*"},
-			request: kboapi.SyntheticsParameterRequest{
+			request: kboapi.KibanaHTTPAPIsParameterRequest{
 				Key:               "key-2",
 				Value:             "value-2",
 				Description:       new("description-2"),
@@ -67,7 +67,7 @@ func Test_roundtrip(t *testing.T) {
 			name:       "only description",
 			id:         "id-3",
 			namespaces: []string{"ns-3"},
-			request: kboapi.SyntheticsParameterRequest{
+			request: kboapi.KibanaHTTPAPIsParameterRequest{
 				Key:         "key-3",
 				Value:       "value-3",
 				Description: new("description-3"),
@@ -77,7 +77,7 @@ func Test_roundtrip(t *testing.T) {
 			name:       "only tags",
 			id:         "id-4",
 			namespaces: []string{"ns-4"},
-			request: kboapi.SyntheticsParameterRequest{
+			request: kboapi.KibanaHTTPAPIsParameterRequest{
 				Key:         "key-4",
 				Value:       "value-4",
 				Description: new("description-4"),
@@ -87,7 +87,7 @@ func Test_roundtrip(t *testing.T) {
 			name:       "all namespaces",
 			id:         "id-5",
 			namespaces: []string{"ns-5"},
-			request: kboapi.SyntheticsParameterRequest{
+			request: kboapi.KibanaHTTPAPIsParameterRequest{
 				Key:         "key-5",
 				Value:       "value-5",
 				Description: new("description-5"),
@@ -99,7 +99,7 @@ func Test_roundtrip(t *testing.T) {
 			name:           "namespaces omitted",
 			id:             "id-6",
 			omitNamespaces: true,
-			request: kboapi.SyntheticsParameterRequest{
+			request: kboapi.KibanaHTTPAPIsParameterRequest{
 				Key:   "key-6",
 				Value: "value-6",
 			},

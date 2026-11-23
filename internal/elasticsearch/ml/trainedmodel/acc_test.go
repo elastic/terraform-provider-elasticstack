@@ -82,10 +82,7 @@ func TestAccDataSourceMLTrainedModel_notFound(t *testing.T) {
 				ConfigVariables: config.Variables{
 					"model_id": config.StringVariable(modelID),
 				},
-				Check: resource.ComposeTestCheckFunc(
-					resource.TestCheckResourceAttr(dataSourceAddress, "model_id", modelID),
-					resource.TestCheckResourceAttr(dataSourceAddress, "id", ""),
-				),
+				ExpectError: regexp.MustCompile(`elasticsearch_ml_trained_model not found`),
 			},
 		},
 	})

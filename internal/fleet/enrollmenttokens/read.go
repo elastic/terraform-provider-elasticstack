@@ -28,46 +28,52 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, config enrollmentTokensModel) (enrollmentTokensModel, diag.Diagnostics) {
+// policyFilter returns the optional policy filter taken from the configured
+// policy_id. The envelope's placeholder resource identity must not be used
+// here, since "_" is also a valid policy_id value.
+func policyFilter(config enrollmentTokensModel) string {
+	if config.PolicyID.IsNull() || config.PolicyID.IsUnknown() {
+		return ""
+	}
+	return config.PolicyID.ValueString()
+}
+
+func readDataSource(ctx context.Context, kbClient *clients.KibanaScopedClient, _ string, spaceID string, config enrollmentTokensModel) (enrollmentTokensModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	fleetClient := kbClient.GetFleetClient()
 
 	var tokens []kbapi.KibanaHTTPAPIsEnrollmentApiKey
-	policyID := config.PolicyID.ValueString()
-	spaceID := config.SpaceID.ValueString()
+	policyID := policyFilter(config)
 
-	// Query enrollment tokens with space context if needed
-	if policyID == "" {
+	switch {
+	case policyID == "":
 		tokens, diags = fleet.GetEnrollmentTokens(ctx, fleetClient, spaceID)
-	} else {
-		// Get tokens by policy, with space awareness if specified
-		if spaceID != "" && spaceID != "default" {
-			tokens, diags = fleet.GetEnrollmentTokensByPolicyInSpace(ctx, fleetClient, policyID, spaceID)
-		} else {
-			tokens, diags = fleet.GetEnrollmentTokensByPolicy(ctx, fleetClient, policyID)
-		}
+	case spaceID != "" && spaceID != "default":
+		tokens, diags = fleet.GetEnrollmentTokensByPolicyInSpace(ctx, fleetClient, policyID, spaceID)
+	default:
+		tokens, diags = fleet.GetEnrollmentTokensByPolicy(ctx, fleetClient, policyID)
 	}
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	if policyID != "" {
 		config.ID = types.StringValue(policyID)
+		config.PolicyID = types.StringValue(policyID)
 	} else {
 		hash, err := typeutils.StringToHash(fleetClient.URL)
 		if err != nil {
 			diags.AddError(err.Error(), "")
-			return config, diags
+			return config, false, diags
 		}
 		config.ID = types.StringPointerValue(hash)
 	}
-
 	pDiags := (&config).populateFromAPI(ctx, tokens)
 	diags.Append(pDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
-	return config, diags
+	return config, true, diags
 }

@@ -19,7 +19,9 @@ package agentbuilderagent_test
 
 import (
 	"fmt"
+	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -27,8 +29,10 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/versionutils"
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -40,6 +44,8 @@ const (
 var (
 	minKibanaAgentBuilderAPIVersion         = agentbuilder.MinCoreAPIVersion
 	minKibanaAgentBuilderWorkflowAPIVersion = agentbuilder.MinExtendedAPIVersion
+
+	minKibanaAgentBuilderAccessControlAPIVersion = agentbuilder.MinAccessControlAPIVersion
 )
 
 // testCheckToolAttrPair asserts that whichever tools.* entry has the given
@@ -91,6 +97,7 @@ func TestAccResourceAgentBuilderAgent(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "agent_id", agentID),
 					resource.TestCheckResourceAttr(resourceID, "id", "default/"+agentID),
+					resource.TestCheckResourceAttr(resourceID, "space_id", "default"),
 					resource.TestCheckResourceAttr(resourceID, "name", "Test Agent"),
 					resource.TestCheckResourceAttr(resourceID, "description", "A test agent for acceptance testing"),
 					resource.TestCheckResourceAttr(resourceID, "labels.#", "2"),
@@ -123,10 +130,13 @@ func TestAccResourceAgentBuilderAgent(t *testing.T) {
 				Check: resource.ComposeAggregateTestCheckFunc(
 					resource.TestCheckResourceAttr(resourceID, "agent_id", agentID),
 					resource.TestCheckResourceAttr(resourceID, "id", "default/"+agentID),
+					resource.TestCheckResourceAttr(resourceID, "space_id", "default"),
 					resource.TestCheckResourceAttr(resourceID, "name", "Updated Test Agent"),
 					resource.TestCheckResourceAttr(resourceID, "description", "An updated test agent"),
 					resource.TestCheckResourceAttr(resourceID, "labels.#", "3"),
+					resource.TestCheckTypeSetElemAttr(resourceID, "labels.*", "updated"),
 					resource.TestCheckResourceAttr(resourceID, "tools.#", "2"),
+					resource.TestCheckTypeSetElemAttr(resourceID, "tools.*", "platform.core.list_indices"),
 					resource.TestCheckResourceAttr(resourceID, "instructions", "You are an updated helpful assistant. Use the available tools wisely."),
 				),
 			},
@@ -171,6 +181,26 @@ func TestAccResourceAgentBuilderAgentSpace(t *testing.T) {
 					return s.RootModule().Resources[resourceID].Primary.ID, nil
 				},
 				ImportStateVerify: true,
+			},
+			{
+				// Changing space_id must force a destroy-then-create, matching
+				// the attribute's documented RequiresReplace plan modifier.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("change_space"),
+				ConfigVariables: config.Variables{
+					"agent_id":     config.StringVariable(agentID),
+					"space_id":     config.StringVariable(spaceID),
+					"new_space_id": config.StringVariable(fmt.Sprintf("test-space-2-%s", uuid.New().String()[:8])),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceID, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "agent_id", agentID),
+					resource.TestCheckResourceAttrPair(resourceID, "space_id", "elasticstack_kibana_space.changed", "space_id"),
+				),
 			},
 		},
 	})
@@ -389,7 +419,51 @@ func TestAccResourceAgentBuilderAgentAvatar(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
-				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_no_avatar"),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_avatar"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				},
+				ResourceName: testResourceID,
+				ImportState:  true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[testResourceID].Primary.ID, nil
+				},
+				ImportStateVerify: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit_avatar"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "name", "Avatar Test Agent Renamed"),
+					resource.TestCheckResourceAttr(testResourceID, "avatar_color", "#BFDBFF"),
+					resource.TestCheckResourceAttr(testResourceID, "avatar_symbol", "TA"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omit_avatar"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				},
+				PlanOnly: true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_avatar"),
+				ConfigVariables: config.Variables{
+					"agent_id": config.StringVariable(agentID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "avatar_color", "#FFDDC1"),
+					resource.TestCheckResourceAttr(testResourceID, "avatar_symbol", "TB"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("clear_avatar"),
 				ConfigVariables: config.Variables{
 					"agent_id": config.StringVariable(agentID),
 				},
@@ -449,6 +523,8 @@ func TestAccResourceAgentBuilderAgentSkillIds(t *testing.T) {
 					resource.TestCheckResourceAttr(testResourceID, "name", "Test Agent With Skills"),
 					resource.TestCheckResourceAttr(testResourceID, "skill_ids.#", "1"),
 					resource.TestCheckTypeSetElemAttr(testResourceID, "skill_ids.*", skillID),
+					resource.TestCheckResourceAttr(testResourceID, "tools.#", "0"),
+					resource.TestCheckResourceAttr(testResourceID, "labels.#", "0"),
 				),
 			},
 			{
@@ -545,6 +621,237 @@ func TestAccDataSourceKibanaAgentBuilderAgentWorkflowTool(t *testing.T) {
 					resource.TestCheckResourceAttrPair(dataSourceID, "tools.0.workflow_id", "elasticstack_kibana_agentbuilder_workflow.test", "workflow_id"),
 					resource.TestCheckResourceAttrPair(dataSourceID, "tools.0.workflow_configuration_yaml", "elasticstack_kibana_agentbuilder_workflow.test", "configuration_yaml"),
 				),
+			},
+		},
+	})
+}
+
+func accessControlTestVars(agentID string) config.Variables {
+	return config.Variables{"agent_id": config.StringVariable(agentID)}
+}
+
+// setOutOfBandAuth mirrors the acceptance-test provider auth precedence: API
+// key (KIBANA_API_KEY, then ELASTICSEARCH_API_KEY) first, then Basic auth
+// (KIBANA_* then ELASTICSEARCH_* credentials).
+func setOutOfBandAuth(req *http.Request) {
+	apiKey := os.Getenv("KIBANA_API_KEY")
+	if apiKey == "" {
+		apiKey = os.Getenv("ELASTICSEARCH_API_KEY")
+	}
+	if apiKey != "" {
+		req.Header.Set("Authorization", "ApiKey "+apiKey)
+		return
+	}
+	user, pass := os.Getenv("KIBANA_USERNAME"), os.Getenv("KIBANA_PASSWORD")
+	if user == "" {
+		user, pass = os.Getenv("ELASTICSEARCH_USERNAME"), os.Getenv("ELASTICSEARCH_PASSWORD")
+	}
+	req.SetBasicAuth(user, pass)
+}
+
+func setServerAccessMode(t *testing.T, agentID, mode string) {
+	t.Helper()
+	endpoint := os.Getenv("KIBANA_ENDPOINT")
+	if endpoint == "" {
+		t.Fatal("KIBANA_ENDPOINT must be set")
+	}
+	body := fmt.Sprintf(`{"access_control":{"access_mode":%q}}`, mode)
+	req, err := http.NewRequest(http.MethodPut, strings.TrimRight(endpoint, "/")+"/api/agent_builder/agents/"+agentID, strings.NewReader(body))
+	if err != nil {
+		t.Fatal(err)
+	}
+	setOutOfBandAuth(req)
+	req.Header.Set("kbn-xsrf", "true")
+	req.Header.Set("Content-Type", "application/json")
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("setting access mode out-of-band failed: %s", resp.Status)
+	}
+}
+
+func TestAccResourceAgentBuilderAgentAccessControl(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAccessControlAPIVersion, versionutils.FlavorAny)
+
+	agentID := "test-agent-ac-" + uuid.New().String()[:8]
+	vars := accessControlTestVars(agentID)
+	mode := func(m string) resource.TestCheckFunc {
+		return resource.TestCheckResourceAttr(testResourceID, "access_control.access_mode", m)
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("invalid_mode"),
+				ConfigVariables:          vars,
+				ExpectError:              regexp.MustCompile(`(?s)access_mode.*(must be one of|value must be)`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_block"),
+				ConfigVariables:          vars,
+				ExpectError:              regexp.MustCompile(`(?s)access_mode.*(required|attribute)`),
+			},
+			{
+				// A live 9.5.x cluster assigns "public" when access_control is omitted.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_default"),
+				ConfigVariables:          vars,
+				Check:                    resource.TestCheckResourceAttrSet(testResourceID, "access_control.access_mode"),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create_default"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check:                    mode("private"),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_shared"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					mode("shared"),
+					resource.TestCheckNoResourceAttr(testResourceID, "avatar_color"),
+					resource.TestCheckNoResourceAttr(testResourceID, "avatar_symbol"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_shared"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_public"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					mode("public"),
+					resource.TestCheckNoResourceAttr(testResourceID, "avatar_color"),
+					resource.TestCheckNoResourceAttr(testResourceID, "avatar_symbol"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_public"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_public"),
+				ConfigVariables:          vars,
+				ResourceName:             testResourceID,
+				ImportState:              true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[testResourceID].Primary.ID, nil
+				},
+				ImportStateVerify: true,
+			},
+			{
+				// Relinquish management while another attribute changes. The server
+				// mode is changed out-of-band first; the update must not send
+				// access_control, so the out-of-band mode survives.
+				PreConfig:                func() { setServerAccessMode(t, agentID, "private") },
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_no_access_control"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(testResourceID, "name", "Access Control Agent Renamed"),
+					mode("private"),
+					resource.TestCheckNoResourceAttr(testResourceID, "avatar_color"),
+					resource.TestCheckNoResourceAttr(testResourceID, "avatar_symbol"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_no_access_control"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+			},
+		},
+	})
+}
+
+func TestAccResourceAgentBuilderAgentAccessControlDrift(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAccessControlAPIVersion, versionutils.FlavorAny)
+
+	agentID := "test-agent-acd-" + uuid.New().String()[:8]
+	vars := accessControlTestVars(agentID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("configured"),
+				ConfigVariables:          vars,
+				Check:                    resource.TestCheckResourceAttr(testResourceID, "access_control.access_mode", "shared"),
+			},
+			{
+				PreConfig:                func() { setServerAccessMode(t, agentID, "private") },
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("configured"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+				ExpectNonEmptyPlan:       true,
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("configured"),
+				ConfigVariables:          vars,
+				Check:                    resource.TestCheckResourceAttr(testResourceID, "access_control.access_mode", "shared"),
+			},
+			{
+				// Unmanaged: the omitted attribute adopts the server mode without a diff.
+				PreConfig:                func() { setServerAccessMode(t, agentID, "private") },
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unmanaged"),
+				ConfigVariables:          vars,
+				Check:                    resource.TestCheckResourceAttr(testResourceID, "access_control.access_mode", "private"),
+			},
+			{
+				PreConfig:                func() { setServerAccessMode(t, agentID, "public") },
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("unmanaged"),
+				ConfigVariables:          vars,
+				PlanOnly:                 true,
+			},
+		},
+	})
+}
+
+func TestAccResourceAgentBuilderAgentAccessControlOlderStack(t *testing.T) {
+	versionutils.SkipIfUnsupportedConstraints(t, version.MustConstraints(version.NewConstraint(">= 9.3.0, < 9.5.0")), versionutils.FlavorStateful)
+
+	agentID := "test-agent-aco-" + uuid.New().String()[:8]
+	vars := accessControlTestVars(agentID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("access_control"),
+				ConfigVariables:          vars,
+				ExpectError:              regexp.MustCompile(`access_control attribute requires Elastic Stack v9\.5\.0`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("omitted"),
+				ConfigVariables:          vars,
+				Check:                    resource.TestCheckNoResourceAttr(testResourceID, "access_control.access_mode"),
 			},
 		},
 	})

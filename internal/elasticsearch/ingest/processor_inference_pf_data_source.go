@@ -75,8 +75,6 @@ func (m *processorInferenceModel) MarshalBody() (any, diag.Diagnostics) {
 		body.TargetField = m.TargetField.ValueString()
 	}
 
-	typeutils.BoolDefault(&m.IgnoreFailure, false)
-
 	return body, diags
 }
 

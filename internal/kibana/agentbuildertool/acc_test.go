@@ -29,6 +29,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -109,8 +110,10 @@ func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
 					resource.TestCheckResourceAttr(resourceID, "description", "Updated ES|QL tool"),
 					resource.TestCheckResourceAttr(resourceID, "tags.#", "3"),
+					// configuration changed between create and update: the update step
+					// adds a SORT stage not present in the create step's query.
 					resource.TestMatchResourceAttr(resourceID, "configuration",
-						regexp.MustCompile(`FROM logs-\*`)),
+						regexp.MustCompile(`SORT @timestamp DESC`)),
 				),
 			},
 			{
@@ -126,6 +129,61 @@ func TestAccResourceAgentBuilderToolEsql(t *testing.T) {
 				ImportStateIdFunc: func(s *terraform.State) (string, error) {
 					return s.RootModule().Resources[resourceID].Primary.ID, nil
 				},
+			},
+			{
+				// tags set to an explicit empty collection, distinct from omitting
+				// the attribute entirely (covered by TestAccResourceAgentBuilderToolEsqlSpace).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_tags"),
+				ConfigVariables: config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
+					resource.TestCheckResourceAttr(resourceID, "tags.#", "0"),
+				),
+			},
+			{
+				// Import after setting tags = [] to confirm the empty set round-trips
+				// through Read without drifting to null (see populateFromAPI).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("empty_tags"),
+				ConfigVariables: config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				},
+				ResourceName:      resourceID,
+				ImportState:       true,
+				ImportStateVerify: true,
+				ImportStateIdFunc: func(s *terraform.State) (string, error) {
+					return s.RootModule().Resources[resourceID].Primary.ID, nil
+				},
+			},
+		},
+	})
+}
+
+// TestAccResourceAgentBuilderToolEsqlTimeouts exercises the entitycore-injected
+// timeouts block, which otherwise has zero acceptance-test coverage.
+func TestAccResourceAgentBuilderToolEsqlTimeouts(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minKibanaAgentBuilderAPIVersion, versionutils.FlavorAny)
+
+	toolID := "test-esql-timeouts-" + uuid.New().String()[:8]
+	resourceID := testAccAgentBuilderEsqlResourceName
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheckWithWorkflowsEnabled(t, minKibanaAgentBuilderAPIVersion) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("with_timeouts"),
+				ConfigVariables: config.Variables{
+					"tool_id": config.StringVariable(toolID),
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
+					resource.TestCheckResourceAttr(resourceID, "type", "esql"),
+					resource.TestCheckResourceAttr(resourceID, "timeouts.create", "5m"),
+				),
 			},
 		},
 	})
@@ -156,7 +214,7 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "space_id", "default"),
 					resource.TestCheckResourceAttr(resourceID, "type", "esql"),
 					resource.TestCheckResourceAttr(resourceID, "kibana_connection.#", "1"),
-					resource.TestCheckResourceAttrSet(resourceID, "kibana_connection.0.endpoints.0"),
+					resource.TestCheckResourceAttr(resourceID, "kibana_connection.0.endpoints.0", acctest.KibanaConnectionEndpoint()),
 					resource.TestCheckResourceAttrSet(resourceID, "configuration"),
 					resource.TestCheckNoResourceAttr(resourceID, "kibana_connection.0.insecure"),
 				),
@@ -187,6 +245,7 @@ func TestAccResourceAgentBuilderToolEsqlKibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceID, "tags.#", "3"),
 					resource.TestCheckTypeSetElemAttr(resourceID, "tags.*", "updated"),
 					resource.TestCheckResourceAttr(resourceID, "kibana_connection.#", "1"),
+					resource.TestCheckResourceAttr(resourceID, "kibana_connection.0.insecure", "true"),
 				),
 			},
 			{
@@ -212,6 +271,7 @@ func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
 
 	toolID := "test-esql-tool-" + uuid.New().String()[:8]
 	spaceID := fmt.Sprintf("test-space-%s", uuid.New().String()[:8])
+	spaceID2 := fmt.Sprintf("test-space2-%s", uuid.New().String()[:8])
 	resourceID := testAccAgentBuilderEsqlResourceName
 	spaceResourceID := "elasticstack_kibana_space.test"
 
@@ -248,6 +308,24 @@ func TestAccResourceAgentBuilderToolEsqlSpace(t *testing.T) {
 					return s.RootModule().Resources[resourceID].Primary.ID, nil
 				},
 				ImportStateVerify: true,
+			},
+			{
+				// Changing space_id must force replacement (RequiresReplace plan modifier).
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update_space"),
+				ConfigVariables: config.Variables{
+					"tool_id":  config.StringVariable(toolID),
+					"space_id": config.StringVariable(spaceID2),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceID, plancheck.ResourceActionReplace),
+					},
+				},
+				Check: resource.ComposeAggregateTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceID, "tool_id", toolID),
+					resource.TestCheckResourceAttr(resourceID, "space_id", spaceID2),
+				),
 			},
 		},
 	})

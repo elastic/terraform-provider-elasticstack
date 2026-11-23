@@ -18,7 +18,6 @@
 package customtypes
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -238,71 +237,6 @@ func normalizeIndexSettings(m map[string]any) map[string]any {
 		out[e.nk] = e.val
 	}
 	return out
-}
-
-// CanonicalIndexSettingsJSON returns compact JSON for the same effective index settings as raw,
-// in the nested shape Elasticsearch uses (e.g. {"index":{"number_of_shards":"3"}}).
-// It applies the same flattening, index.-prefix normalization, and stringification as semantic equality.
-//
-// When the same logical setting appears as both a top-level key and under a nested path (e.g.
-// number_of_shards alongside index.number_of_shards), normalizeIndexSettings applies a deterministic
-// merge: values whose original flat key contained a dot (nested/dotted source) overwrite values
-// from single-segment keys sharing the same canonical index.* key. Object keys in the output are
-// sorted recursively so repeated calls return an identical byte string.
-func CanonicalIndexSettingsJSON(raw string) (string, error) {
-	var top any
-	if err := json.Unmarshal([]byte(strings.TrimSpace(raw)), &top); err != nil {
-		return "", fmt.Errorf("unmarshal settings JSON: %w", err)
-	}
-	if top == nil {
-		return "", fmt.Errorf("settings must be a JSON object, not null")
-	}
-	m, ok := top.(map[string]any)
-	if !ok {
-		return "", fmt.Errorf("settings must be a JSON object")
-	}
-	flatNorm := normalizeIndexSettings(typeutils.FlattenMap(m))
-	nested := UnflattenDottedMap(flatNorm)
-	b, err := marshalSettingsJSONSorted(nested)
-	if err != nil {
-		return "", fmt.Errorf("marshal canonical settings: %w", err)
-	}
-	return string(b), nil
-}
-
-// marshalSettingsJSONSorted marshals maps with sorted keys at every object level so canonical
-// settings strings are stable across Go releases and map iteration order.
-func marshalSettingsJSONSorted(v any) ([]byte, error) {
-	switch t := v.(type) {
-	case map[string]any:
-		keys := make([]string, 0, len(t))
-		for k := range t {
-			keys = append(keys, k)
-		}
-		sort.Strings(keys)
-		var buf bytes.Buffer
-		buf.WriteByte('{')
-		for i, k := range keys {
-			if i > 0 {
-				buf.WriteByte(',')
-			}
-			keyBytes, err := json.Marshal(k)
-			if err != nil {
-				return nil, err
-			}
-			buf.Write(keyBytes)
-			buf.WriteByte(':')
-			valBytes, err := marshalSettingsJSONSorted(t[k])
-			if err != nil {
-				return nil, err
-			}
-			buf.Write(valBytes)
-		}
-		buf.WriteByte('}')
-		return buf.Bytes(), nil
-	default:
-		return json.Marshal(t)
-	}
 }
 
 // UnflattenDottedMap turns dotted keys (after normalizeIndexSettings, e.g. index.number_of_shards)

@@ -85,10 +85,6 @@ func TestMemorySize_ValidateAttribute(t *testing.T) {
 			memorySize: NewMemorySizeNull(),
 		},
 		{
-			name:       "null is valid",
-			memorySize: NewMemorySizeUnknown(),
-		},
-		{
 			name:       "valid memory sizes are valid - bytes",
 			memorySize: NewMemorySizeValue("1024"),
 		},
@@ -202,26 +198,8 @@ func TestMemorySize_StringSemanticEquals(t *testing.T) {
 			expectedEqual: true,
 		},
 		{
-			name:          "null is not equal to unknown",
-			memorySize:    NewMemorySizeNull(),
-			otherVal:      NewMemorySizeUnknown(),
-			expectedEqual: false,
-		},
-		{
 			name:          "null is not equal to a string value",
 			memorySize:    NewMemorySizeNull(),
-			otherVal:      NewMemorySizeValue("128mb"),
-			expectedEqual: false,
-		},
-		{
-			name:          "two unknown values are semantically equal",
-			memorySize:    NewMemorySizeUnknown(),
-			otherVal:      NewMemorySizeUnknown(),
-			expectedEqual: true,
-		},
-		{
-			name:          "unknown is not equal to a string value",
-			memorySize:    NewMemorySizeUnknown(),
 			otherVal:      NewMemorySizeValue("128mb"),
 			expectedEqual: false,
 		},
@@ -303,11 +281,6 @@ func TestMemorySize_ParseBytes(t *testing.T) {
 		{
 			name:          "null value should error",
 			memorySize:    NewMemorySizeNull(),
-			expectedError: true,
-		},
-		{
-			name:          "unknown value should error",
-			memorySize:    NewMemorySizeUnknown(),
 			expectedError: true,
 		},
 		{

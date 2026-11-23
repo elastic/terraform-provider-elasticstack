@@ -28,13 +28,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 )
 
-func alignGaugeStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	if plan == nil || state == nil {
-		return
-	}
-	alignGaugeConfigStateFromPlan(ctx, plan.GaugeConfig, state.GaugeConfig)
-}
-
 func alignGaugeConfigStateFromPlan(ctx context.Context, plan, state *models.GaugeConfigModel) {
 	if plan == nil || state == nil {
 		return

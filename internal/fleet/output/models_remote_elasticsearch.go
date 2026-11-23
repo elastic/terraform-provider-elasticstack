@@ -21,6 +21,7 @@ import (
 	"context"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -40,15 +41,12 @@ func (model *outputModel) fromAPIRemoteElasticsearchModel(ctx context.Context, d
 	})
 
 	// Preserve configured secret when Fleet omits/redacts it in read responses.
-	if data.ServiceToken != nil {
-		model.ServiceToken = types.StringPointerValue(data.ServiceToken)
-	} else if model.ServiceToken.IsNull() || model.ServiceToken.IsUnknown() {
-		model.ServiceToken = types.StringNull()
-	}
+	model.ServiceToken = typeutils.PreserveRedactedSecret(data.ServiceToken, model.ServiceToken)
 
 	model.SyncIntegrations = types.BoolPointerValue(data.SyncIntegrations)
 	model.SyncUninstalledIntegrations = types.BoolPointerValue(data.SyncUninstalledIntegrations)
 	model.WriteToLogsStreams = types.BoolPointerValue(data.WriteToLogsStreams)
+	model.Preset = typeutils.StringishPointerValue(data.Preset)
 
 	return
 }
@@ -70,6 +68,7 @@ func (model outputModel) toAPICreateRemoteElasticsearchModel(ctx context.Context
 		IsDefault:                   f.IsDefault,
 		IsDefaultMonitoring:         f.IsDefaultMonitoring,
 		Name:                        f.Name,
+		Preset:                      (*kbapi.KibanaHTTPAPIsNewOutputRemoteElasticsearchPreset)(typeutils.OptionalString(model.Preset)),
 		ServiceToken:                model.ServiceToken.ValueStringPointer(),
 		Ssl:                         f.Ssl,
 		SyncIntegrations:            model.SyncIntegrations.ValueBoolPointer(),
@@ -106,6 +105,7 @@ func (model outputModel) toAPIUpdateRemoteElasticsearchModel(ctx context.Context
 		IsDefault:                   f.IsDefault,
 		IsDefaultMonitoring:         f.IsDefaultMonitoring,
 		Name:                        f.Name,
+		Preset:                      (*kbapi.KibanaHTTPAPIsUpdateOutputRemoteElasticsearchPreset)(typeutils.OptionalString(model.Preset)),
 		ServiceToken:                model.ServiceToken.ValueStringPointer(),
 		Ssl:                         f.Ssl,
 		SyncIntegrations:            model.SyncIntegrations.ValueBoolPointer(),

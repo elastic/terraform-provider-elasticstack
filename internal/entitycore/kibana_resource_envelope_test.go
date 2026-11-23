@@ -19,6 +19,7 @@ package entitycore
 
 import (
 	"context"
+	"fmt"
 	"maps"
 	"testing"
 
@@ -802,6 +803,19 @@ func TestNewKibanaResource_Read_multiSlashIDFallback(t *testing.T) {
 	require.True(t, readCalled, "readFunc should be called")
 	require.Equal(t, "fallback-name", receivedResourceID, "fallback should use GetResourceID")
 	require.Equal(t, "fallback-space", receivedSpaceID, "fallback should use GetSpaceID")
+}
+
+func Test_resolveKibanaResourceIdentity_slashInPlainResourceIDWithoutOptIn(t *testing.T) {
+	t.Parallel()
+
+	model := testKibanaResourceModel{
+		ID:      types.StringNull(),
+		Name:    types.StringValue("team/a"),
+		SpaceID: types.StringValue("custom"),
+	}
+	resourceID, spaceID := resolveKibanaResourceIdentity(model)
+	require.Equal(t, "team/a", resourceID)
+	require.Equal(t, "custom", spaceID)
 }
 
 // =============================================================================
@@ -2954,4 +2968,58 @@ func TestKibanaResource_Update_versionReqDiagsStopUpdate(t *testing.T) {
 	}
 	require.Contains(t, summaries, "version requirements error",
 		"diagnostic from GetVersionRequirements must be appended; got: %v", summaries)
+}
+
+func TestNewKibanaResource_write_propagatesPrivateStateToCallbacks(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+
+	for _, isUpdate := range []bool{false, true} {
+		t.Run(fmt.Sprintf("isUpdate=%t", isUpdate), func(t *testing.T) {
+			t.Parallel()
+			factory := newTestConfiguredFactory(ctx, t)
+			private := make(envelopeTestPrivateData)
+			var captured PrivateStateStorage
+			writeFn := func(
+				ctx context.Context,
+				client *clients.KibanaScopedClient,
+				req KibanaWriteRequest[testKibanaResourceModel],
+			) (KibanaWriteResult[testKibanaResourceModel], diag.Diagnostics) {
+				captured = req.Private
+				require.NotNil(t, captured)
+				diags := captured.SetKey(ctx, "probe", []byte("stored"))
+				if diags.HasError() {
+					return KibanaWriteResult[testKibanaResourceModel]{Model: req.Plan}, diags
+				}
+				return testKibanaWriteFuncFound(ctx, client, req)
+			}
+			opts := defaultTestKibanaResourceOptions()
+			opts.Create = writeFn
+			opts.Update = writeFn
+			r := NewKibanaResource[testKibanaResourceModel](ComponentKibana, "test_entity", opts)
+			r.client = factory
+
+			plan := makeTestKibanaResourceCreatePlan(ctx, t, tftypes.NewValue(tftypes.String, "default/my-resource"), tftypes.NewValue(tftypes.String, "default"))
+			inv := resourceWriteInvocation{
+				plan:         plan,
+				config:       kibanaTestConfig(plan),
+				privateState: private,
+				isUpdate:     isUpdate,
+			}
+			outState := tfsdk.State{
+				Raw:    tftypes.NewValue(testKibanaResourceObjectType(), nil),
+				Schema: testKibanaResourceSchemaWithConnectionBlock(ctx),
+			}
+			inv.outState = &outState
+			if isUpdate {
+				prior := makeTestKibanaResourceState(ctx, t, "default/my-resource")
+				inv.priorState = &prior
+			}
+
+			diags := r.runKibanaWrite(ctx, inv)
+			require.False(t, diags.HasError(), "%v", diags)
+			require.Equal(t, private, captured)
+			require.Equal(t, []byte("stored"), private["probe"])
+		})
+	}
 }

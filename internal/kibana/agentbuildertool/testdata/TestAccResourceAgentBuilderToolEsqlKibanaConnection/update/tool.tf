@@ -52,5 +52,6 @@ resource "elasticstack_kibana_agentbuilder_tool" "test_esql" {
     api_key   = var.api_key != "" ? var.api_key : null
     username  = var.username != "" ? var.username : null
     password  = var.password != "" ? var.password : null
+    insecure  = true
   }
 }

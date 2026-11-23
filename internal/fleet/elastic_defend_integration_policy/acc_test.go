@@ -21,9 +21,11 @@ import (
 	"context"
 	"fmt"
 	"regexp"
+	"slices"
 	"sort"
 	"testing"
 
+	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	fleetclient "github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
@@ -38,6 +40,7 @@ import (
 
 var minVersionElasticDefend = version.Must(version.NewVersion("8.14.0"))
 var minVersionElasticDefendPolicyIDs = version.Must(version.NewVersion("8.15.0"))
+var minVersionElasticDefendAdditionalDatastreamsPermissions = version.Must(version.NewVersion("9.1.0"))
 var minVersionElasticDefendSpaceIDs = version.Must(version.NewVersion("9.1.0"))
 
 const (
@@ -85,6 +88,7 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.registry", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.security", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.authentication", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.credential_access", "true"),
 					// Windows malware
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.mode", "prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.blocklist", "true"),
@@ -93,9 +97,12 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.ransomware.mode", "prevent"),
 					resource.TestCheckResourceAttrSet(resourceName, "policy.windows.ransomware.supported"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.memory_protection.mode", "detect"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.memory_protection.custom_yara_signatures", "true"),
 					resource.TestCheckResourceAttrSet(resourceName, "policy.windows.memory_protection.supported"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.behavior_protection.mode", "prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.behavior_protection.reputation_service", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.device_control.enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.device_control.usb_storage", "deny_all"),
 					resource.TestCheckResourceAttrSet(resourceName, "policy.windows.behavior_protection.supported"),
 					// Windows popup
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.malware.message", "Malware detected"),
@@ -106,6 +113,8 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.memory_protection.enabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.behavior_protection.message", ""),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.behavior_protection.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.device_control.message", "Windows device blocked"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.device_control.enabled", "true"),
 					// Windows antivirus_registration
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.antivirus_registration.mode", "enabled"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.antivirus_registration.enabled", "true"),
@@ -115,14 +124,21 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					// Mac events
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.process", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.file", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.dns", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.security", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.malware.mode", "prevent"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.ransomware.mode", "prevent"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.ransomware.supported", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.malware.blocklist", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.malware.on_write_scan", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.malware.notify_user", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.memory_protection.mode", "prevent"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.memory_protection.custom_yara_signatures", "false"),
 					resource.TestCheckResourceAttrSet(resourceName, "policy.mac.memory_protection.supported"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.behavior_protection.mode", "detect"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.behavior_protection.reputation_service", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.device_control.enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.device_control.usb_storage", "read_only"),
 					resource.TestCheckResourceAttrSet(resourceName, "policy.mac.behavior_protection.supported"),
 					// Mac popup
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.malware.message", "Mac malware alert"),
@@ -131,6 +147,10 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.memory_protection.enabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.behavior_protection.message", ""),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.behavior_protection.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.ransomware.message", "Mac ransomware blocked"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.ransomware.enabled", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.device_control.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.device_control.enabled", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.logging.file", "warning"),
 					// Linux events
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.process", "true"),
@@ -138,9 +158,12 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.file", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.session_data", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.tty_io", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.dns", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.malware.mode", "detect"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.malware.blocklist", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.malware.on_write_scan", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.memory_protection.mode", "prevent"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.memory_protection.custom_yara_signatures", "true"),
 					resource.TestCheckResourceAttrSet(resourceName, "policy.linux.memory_protection.supported"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.behavior_protection.mode", "detect"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.behavior_protection.reputation_service", "true"),
@@ -180,6 +203,7 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.registry", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.security", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.authentication", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.events.credential_access", "false"),
 					// Windows malware
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.mode", "detect"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.blocklist", "false"),
@@ -187,8 +211,11 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.malware.on_write_scan", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.ransomware.mode", "detect"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.memory_protection.mode", "prevent"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.memory_protection.custom_yara_signatures", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.behavior_protection.mode", "detect"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.behavior_protection.reputation_service", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.device_control.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.device_control.usb_storage", "audit"),
 					// Windows popup
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.malware.message", ""),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.malware.enabled", "false"),
@@ -198,6 +225,8 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.memory_protection.enabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.behavior_protection.message", ""),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.behavior_protection.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.device_control.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.windows.popup.device_control.enabled", "false"),
 					// Windows antivirus_registration
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.antivirus_registration.mode", "sync_with_malware_prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.windows.antivirus_registration.enabled", "false"),
@@ -208,10 +237,17 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.process", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.network", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.file", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.dns", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.events.security", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.malware.mode", "detect"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.ransomware.mode", "detect"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.ransomware.supported", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.memory_protection.mode", "detect"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.memory_protection.custom_yara_signatures", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.behavior_protection.mode", "prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.behavior_protection.reputation_service", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.device_control.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.device_control.usb_storage", "deny_all"),
 					// Mac popup
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.malware.message", ""),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.malware.enabled", "false"),
@@ -219,6 +255,10 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.memory_protection.enabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.behavior_protection.message", ""),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.behavior_protection.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.ransomware.message", ""),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.ransomware.enabled", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.device_control.message", "Mac device blocked"),
+					resource.TestCheckResourceAttr(resourceName, "policy.mac.popup.device_control.enabled", "true"),
 					resource.TestCheckResourceAttr(resourceName, "policy.mac.logging.file", "error"),
 					// Linux events
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.process", "true"),
@@ -226,9 +266,12 @@ func TestAccResourceElasticDefendIntegrationPolicy(t *testing.T) {
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.file", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.session_data", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.tty_io", "true"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.events.dns", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.malware.mode", "prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.malware.blocklist", "false"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.malware.on_write_scan", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.memory_protection.mode", "detect"),
+					resource.TestCheckResourceAttr(resourceName, "policy.linux.memory_protection.custom_yara_signatures", "false"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.behavior_protection.mode", "prevent"),
 					resource.TestCheckResourceAttr(resourceName, "policy.linux.behavior_protection.reputation_service", "false"),
 					// Linux popup
@@ -685,19 +728,32 @@ func TestAccResourceElasticDefendIntegrationPolicy_preset(t *testing.T) {
 }
 
 // TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace verifies that
-// policy_id accepts an explicit user-supplied value and that changing it
-// triggers RequiresReplace (destroy-before-create). The replacement plan is
-// never applied, since the resource always derives its own policy_id from
-// the bootstrap create response regardless of what is configured.
+// an empty policy_id is rejected at plan time, that an explicit policy_id is
+// used as the package policy ID on create and can be imported, and that
+// changing it triggers RequiresReplace (destroy-before-create) and removes the
+// previous policy.
 func TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace(t *testing.T) {
 	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
 
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	explicitPolicyID := fmt.Sprintf("%s-policy-id", policyName)
+	changedPolicyID := fmt.Sprintf("%s-policy-id-changed", policyName)
+	var generatedPolicyID string
 
 	resource.Test(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
 		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
 		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_policy_id"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"policy_id":   config.StringVariable(""),
+				},
+				PlanOnly:    true,
+				ExpectError: regexp.MustCompile(`(?i)string length must be at least 1`),
+			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
@@ -706,6 +762,7 @@ func TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace(t *testing.T)
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttrSet(resourceName, "policy_id"),
+					captureResourceAttr(resourceName, "policy_id", &generatedPolicyID),
 				),
 			},
 			{
@@ -713,17 +770,91 @@ func TestAccResourceElasticDefendIntegrationPolicy_policyIDReplace(t *testing.T)
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_policy_id"),
 				ConfigVariables: config.Variables{
 					"policy_name": config.StringVariable(policyName),
+					"policy_id":   config.StringVariable(explicitPolicyID),
 				},
 				ConfigPlanChecks: resource.ConfigPlanChecks{
-					PostApplyPreRefresh: []plancheck.PlanCheck{
+					PreApply: []plancheck.PlanCheck{
 						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
 					},
 				},
-				PlanOnly:           true,
-				ExpectNonEmptyPlan: true,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "policy_id", explicitPolicyID),
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile(`^(default/)?`+regexp.QuoteMeta(explicitPolicyID)+`$`)),
+					checkDefendPolicyDeleted(&generatedPolicyID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_policy_id"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"policy_id":   config.StringVariable(explicitPolicyID),
+				},
+				ResourceName:      resourceName,
+				ImportState:       true,
+				ImportStateId:     explicitPolicyID,
+				ImportStateVerify: true,
+				// description is Optional-only (unmanaged): import starts with a blank
+				// model (all-null), so it stays null even when Kibana has a value.
+				ImportStateVerifyIgnore: []string{"force", "description"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("explicit_policy_id"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(policyName),
+					"policy_id":   config.StringVariable(changedPolicyID),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(resourceName, plancheck.ResourceActionDestroyBeforeCreate),
+					},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "policy_id", changedPolicyID),
+					resource.TestMatchResourceAttr(resourceName, "id", regexp.MustCompile(`^(default/)?`+regexp.QuoteMeta(changedPolicyID)+`$`)),
+					checkDefendPolicyDeleted(&explicitPolicyID),
+				),
 			},
 		},
 	})
+}
+
+// captureResourceAttr stores the named attribute's value in dst so a later
+// step can refer to it.
+func captureResourceAttr(resourceName, attr string, dst *string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found", resourceName)
+		}
+		*dst = rs.Primary.Attributes[attr]
+		return nil
+	}
+}
+
+// checkDefendPolicyDeleted verifies that the Elastic Defend policy with the
+// given ID no longer exists, e.g. after a replacement.
+func checkDefendPolicyDeleted(policyID *string) resource.TestCheckFunc {
+	return func(_ *terraform.State) error {
+		if *policyID == "" {
+			return fmt.Errorf("no policy ID to check")
+		}
+
+		apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		policy, diags := fleetclient.GetDefendPackagePolicy(context.Background(), apiClient.GetFleetClient(), *policyID, "")
+		if diags.HasError() {
+			return fmt.Errorf("error checking policy %q: %v", *policyID, diags)
+		}
+		if policy != nil {
+			return fmt.Errorf("Elastic Defend policy %q still exists after replacement", *policyID)
+		}
+		return nil
+	}
 }
 
 func testImportStateIDFunc(resourceName string) resource.ImportStateIdFunc {
@@ -849,4 +980,273 @@ func checkResourceElasticDefendPolicyDestroy(s *terraform.State) error {
 		}
 	}
 	return nil
+}
+
+// checkDefendAdditionalDatastreamsPermissions asserts what Fleet actually
+// stored for the Defend policy rather than relying on Terraform state alone.
+func checkDefendAdditionalDatastreamsPermissions(want ...string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		policy, diags := fleetclient.GetDefendPackagePolicy(context.Background(), apiClient.GetFleetClient(), rs.Primary.Attributes["policy_id"], "")
+		if diags.HasError() {
+			return fmt.Errorf("error reading policy: %v", diags)
+		}
+		if policy == nil {
+			return fmt.Errorf("Elastic Defend policy %q not found", rs.Primary.Attributes["policy_id"])
+		}
+
+		var got []string
+		if policy.AdditionalDatastreamsPermissions != nil {
+			got = *policy.AdditionalDatastreamsPermissions
+		}
+		if !slices.Equal(got, want) {
+			return fmt.Errorf("additional_datastreams_permissions on the server = %v, want %v", got, want)
+		}
+		return nil
+	}
+}
+
+// setDefendAdditionalDatastreamsPermissionsOutOfBand grants permissions on the
+// Defend policy directly through the Fleet API.
+func setDefendAdditionalDatastreamsPermissionsOutOfBand(resourceAddress string, permissions ...string) resource.TestCheckFunc {
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceAddress]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceAddress)
+		}
+
+		apiClient, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+		fleetClient := apiClient.GetFleetClient()
+		policyID := rs.Primary.Attributes["policy_id"]
+
+		policy, diags := fleetclient.GetDefendPackagePolicy(context.Background(), fleetClient, policyID, "")
+		if diags.HasError() || policy == nil {
+			return fmt.Errorf("error reading policy %q: %v", policyID, diags)
+		}
+
+		name := policy.Name
+		req := kbapi.PackagePolicyUpdateRequestTypedInputs{
+			Name:                             &name,
+			Namespace:                        policy.Namespace,
+			PolicyId:                         policy.PolicyId,
+			AdditionalDatastreamsPermissions: &permissions,
+		}
+		if _, diags := fleetclient.UpdateDefendPackagePolicy(context.Background(), fleetClient, policyID, "", req); diags.HasError() {
+			return fmt.Errorf("error updating policy %q out of band: %v", policyID, diags)
+		}
+		return nil
+	}
+}
+
+// TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissions
+// covers setting, widening, retaining on removal from configuration, and
+// clearing with an explicit empty list.
+func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissions(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefendAdditionalDatastreamsPermissions, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	varsOmitted := func() config.Variables {
+		return config.Variables{"policy_name": config.StringVariable(policyName)}
+	}
+	varsWithPerms := func(perms ...config.Variable) config.Variables {
+		v := varsOmitted()
+		// ListVariable(nil...) serializes as null, so force a non-nil slice to
+		// get an explicit empty list when no permissions are passed.
+		if perms == nil {
+			perms = []config.Variable{}
+		}
+		v["additional_datastreams_permissions"] = config.ListVariable(perms...)
+		return v
+	}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          varsWithPerms(config.StringVariable("logs-nginx-*")),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-nginx-*"),
+					checkDefendAdditionalDatastreamsPermissions("logs-nginx-*"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          varsWithPerms(config.StringVariable("logs-nginx-*")),
+				ResourceName:             resourceName,
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateIdFunc:        testImportStateIDFunc(resourceName),
+				ImportStateVerifyIgnore:  []string{"force", "kibana_connection", "space_ids"},
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          varsWithPerms(config.StringVariable("logs-nginx-*"), config.StringVariable("metrics-redis-*")),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-nginx-*"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.1", "metrics-redis-*"),
+					checkDefendAdditionalDatastreamsPermissions("logs-nginx-*", "metrics-redis-*"),
+				),
+			},
+			{
+				// Removing the attribute from configuration retains the prior value.
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          varsOmitted(),
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "2"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-nginx-*"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.1", "metrics-redis-*"),
+					checkDefendAdditionalDatastreamsPermissions("logs-nginx-*", "metrics-redis-*"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          varsWithPerms(),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "0"),
+					checkDefendAdditionalDatastreamsPermissions(),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissionsEmptyList
+// verifies that an explicit empty list on create stays an empty list, and that
+// removing the attribute afterwards keeps it empty without a diff.
+func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissionsEmptyList(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefendAdditionalDatastreamsPermissions, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables: config.Variables{
+					"policy_name":                        config.StringVariable(policyName),
+					"additional_datastreams_permissions": config.ListVariable(),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "0"),
+					checkDefendAdditionalDatastreamsPermissions(),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          config.Variables{"policy_name": config.StringVariable(policyName)},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "0"),
+					checkDefendAdditionalDatastreamsPermissions(),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissionsOutOfBand
+// verifies that permissions granted outside Terraform are adopted into state
+// and are not revoked when the attribute is never configured.
+func TestAccResourceElasticDefendIntegrationPolicyAdditionalDatastreamsPermissionsOutOfBand(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefendAdditionalDatastreamsPermissions, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"policy_name": config.StringVariable(policyName)}
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr(resourceName, "additional_datastreams_permissions.#"),
+					setDefendAdditionalDatastreamsPermissionsOutOfBand(resourceName, "logs-oob-*"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          vars,
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{plancheck.ExpectEmptyPlan()},
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.#", "1"),
+					resource.TestCheckResourceAttr(resourceName, "additional_datastreams_permissions.0", "logs-oob-*"),
+					checkDefendAdditionalDatastreamsPermissions("logs-oob-*"),
+				),
+			},
+		},
+	})
+}
+
+// TestAccResourceElasticDefendIntegrationPolicy_additionalDatastreamsPermissionsVersionGate
+// is best effort: it only runs on stacks older than 9.1.0.
+func TestAccResourceElasticDefendIntegrationPolicy_additionalDatastreamsPermissionsVersionGate(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionElasticDefend, versionutils.FlavorAny)
+
+	unsupported, err := versionutils.CheckIfVersionIsUnsupported(minVersionElasticDefendAdditionalDatastreamsPermissions)()
+	if err != nil {
+		t.Fatalf("failed to check stack version: %v", err)
+	}
+	if !unsupported {
+		t.Skip("stack supports additional_datastreams_permissions; skipping version gate test")
+	}
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceElasticDefendPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables: config.Variables{
+					"policy_name":                        config.StringVariable(policyName),
+					"additional_datastreams_permissions": config.ListVariable(config.StringVariable("logs-nginx-*")),
+				},
+				ExpectError: regexp.MustCompile(`(?s)(Unsupported server version|9\.1\.0)`),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("permissions"),
+				ConfigVariables:          config.Variables{"policy_name": config.StringVariable(policyName)},
+				Check:                    resource.TestCheckNoResourceAttr(resourceName, "additional_datastreams_permissions.#"),
+			},
+		},
+	})
 }

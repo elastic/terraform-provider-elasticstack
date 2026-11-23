@@ -104,7 +104,7 @@ resource "elasticstack_fleet_integration_policy" "sample" {
 - `force` (Boolean) Force operations, such as creation and deletion, to occur.
 - `inputs` (Attributes Map) Integration inputs mapped by input ID. (see [below for nested schema](#nestedatt--inputs))
 - `kibana_connection` (Block List) Kibana connection configuration block. (see [below for nested schema](#nestedblock--kibana_connection))
-- `output_id` (String) The ID of the output to send data to. When not specified, the default output of the agent policy will be used.
+- `output_id` (String) The ID of the output to send data to. When not specified, the default output of the agent policy will be used. When `output_id` is not configured it stays null in state, so an output assigned outside Terraform is not reported as drift. Removing `output_id` from the configuration only omits it from the update request, and the result depends on the Elastic Stack version: 9.0 and later keep the previously assigned output, while 8.x versions clear it on the next update.
 - `policy_id` (String) Unique identifier of the integration policy.
 - `space_ids` (Set of String) The Kibana space IDs where this integration policy is available. When set, must match the space_ids of the referenced agent policy. Note: The order of space IDs does not matter as this is a set.
 - `vars_json` (String, Sensitive) Integration-level variables as JSON. Variables vary depending on the integration package.
@@ -167,6 +167,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

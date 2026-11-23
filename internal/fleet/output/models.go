@@ -33,8 +33,8 @@ import (
 
 type outputModel struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.KibanaConnectionField
 	ID                          types.String                    `tfsdk:"id"`
-	KibanaConnection            types.List                      `tfsdk:"kibana_connection"`
 	OutputID                    types.String                    `tfsdk:"output_id"`
 	Name                        types.String                    `tfsdk:"name"`
 	Type                        types.String                    `tfsdk:"type"`
@@ -51,11 +51,11 @@ type outputModel struct {
 	SyncIntegrations            types.Bool                      `tfsdk:"sync_integrations"`
 	SyncUninstalledIntegrations types.Bool                      `tfsdk:"sync_uninstalled_integrations"`
 	WriteToLogsStreams          types.Bool                      `tfsdk:"write_to_logs_streams"`
+	Preset                      types.String                    `tfsdk:"preset"`
 }
 
-func (model outputModel) GetID() types.String             { return model.ID }
-func (model outputModel) GetResourceID() types.String     { return model.OutputID }
-func (model outputModel) GetKibanaConnection() types.List { return model.KibanaConnection }
+func (model outputModel) GetID() types.String         { return model.ID }
+func (model outputModel) GetResourceID() types.String { return model.OutputID }
 
 func (model outputModel) GetSpaceID() types.String {
 	return fleet.SpaceIDFromSetOrDefault(model.SpaceIDs, "")
@@ -68,20 +68,15 @@ func (model outputModel) GetVersionRequirements(ctx context.Context) ([]entityco
 	var reqs []entitycore.VersionRequirement
 
 	if sslModel := typeutils.ObjectTypeAs[outputSslModel](ctx, model.Ssl, path.Root("ssl"), nil); sslModel != nil {
-		if typeutils.IsKnown(sslModel.VerificationMode) {
-			reqs = append(reqs, entitycore.VersionRequirement{
-				MinVersion:   *MinVersionOutputSSLVerificationMode,
-				ErrorMessage: fmt.Sprintf("ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String()),
-			})
-		}
+		reqs = entitycore.AppendVersionRequirementIf(reqs, typeutils.IsKnown(sslModel.VerificationMode),
+			MinVersionOutputSSLVerificationMode, "ssl.verification_mode requires server version %s or higher", MinVersionOutputSSLVerificationMode.String())
 	}
 
-	if model.Type.ValueString() == outputTypeKafka {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *MinVersionOutputKafka,
-			ErrorMessage: fmt.Sprintf("Kafka output type requires server version %s or higher", MinVersionOutputKafka.String()),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs, typeutils.IsKnown(model.Preset),
+		MinVersionOutputPreset, "preset requires server version %s or higher", MinVersionOutputPreset.String())
+
+	reqs = entitycore.AppendVersionRequirementIf(reqs, model.Type.ValueString() == outputTypeKafka,
+		MinVersionOutputKafka, "Kafka output type requires server version %s or higher", MinVersionOutputKafka.String())
 
 	return reqs, nil
 }
@@ -179,6 +174,7 @@ func (model *outputModel) fromAPICommonFields(ctx context.Context, d commonOutpu
 	model.DefaultIntegrations = types.BoolPointerValue(d.isDefault)
 	model.DefaultMonitoring = types.BoolPointerValue(d.isDefaultMonitoring)
 	model.ConfigYaml = configYamlFromAPI(d.configYaml)
+	model.Preset = types.StringNull()
 	if !isImport && existingConfigYaml.IsNull() {
 		model.ConfigYaml = customtypes.NewNormalizedYamlNull()
 	}

@@ -37,9 +37,6 @@ type ContentConnectorData struct {
 
 func (data ContentConnectorData) GetID() fwtypes.String         { return data.ID }
 func (data ContentConnectorData) GetResourceID() fwtypes.String { return data.ConnectorID }
-func (data ContentConnectorData) GetElasticsearchConnection() fwtypes.List {
-	return data.ElasticsearchConnection
-}
 
 var (
 	_ entitycore.ElasticsearchResourceModel = ContentConnectorData{}

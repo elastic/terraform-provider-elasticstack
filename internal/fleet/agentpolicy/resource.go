@@ -41,6 +41,14 @@ var (
 	MinVersionAgentFeatures       = version.Must(version.NewVersion("8.7.0"))
 	MinVersionAdvancedMonitoring  = version.Must(version.NewVersion("8.16.0"))
 	MinVersionAdvancedSettings    = version.Must(version.NewVersion("8.17.0"))
+	// MinVersionAgentInternal is the minimum stack version for advanced_settings.internal (agent_internal).
+	MinVersionAgentInternal = version.Must(version.NewVersion("9.3.0"))
+	// MinVersionFeaturesDisablePolicyChangeAcksEnabled is the minimum stack version for
+	// advanced_settings.features_disable_policy_change_acks_enabled.
+	MinVersionFeaturesDisablePolicyChangeAcksEnabled = version.Must(version.NewVersion("9.4.0"))
+	// MinVersionFeaturesIncludeTagsInEventsEnabled is the minimum stack version for
+	// advanced_settings.features_include_tags_in_events_enabled.
+	MinVersionFeaturesIncludeTagsInEventsEnabled = version.Must(version.NewVersion("9.6.0"))
 	// MinVersionTamperProtection is the minimum stack version for setting agent policy tamper protection (is_protected).
 	MinVersionTamperProtection = version.Must(version.NewVersion("8.10.0"))
 )

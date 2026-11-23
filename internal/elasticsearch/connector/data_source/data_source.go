@@ -25,10 +25,12 @@ import (
 // NewContentConnectorDataSource returns the Plugin Framework data source for
 // elasticstack_elasticsearch_connector.
 func NewContentConnectorDataSource() datasource.DataSource {
-	return entitycore.NewElasticsearchDataSource(
+	return entitycore.NewElasticsearchDataSource[ContentConnectorDataSourceModel](
 		entitycore.ComponentElasticsearch,
 		"connector",
-		dataSourceSchemaFactory,
-		readContentConnectorDataSource,
+		entitycore.ElasticsearchDataSourceOptions[ContentConnectorDataSourceModel]{
+			Schema: dataSourceSchemaFactory,
+			Read:   readContentConnectorDataSource,
+		},
 	)
 }

@@ -111,9 +111,26 @@ The workflow SHALL run on a daily schedule and SHALL support manual execution vi
 - **WHEN** a maintainer dispatches the workflow manually
 - **THEN** the workflow SHALL run the same computation and comparison as the scheduled run
 
+### Requirement: Default stack version follows the latest GA in the pinned list
+
+After computing the desired list, the workflow SHALL run `go run ./scripts/version-matrix sync-env`, which SHALL set the `STACK_VERSION=` line of `.env.template` to the highest non-`-SNAPSHOT` version in the pinned artifact and leave every other line unchanged. The step SHALL be idempotent and SHALL run on every execution, independent of whether the pinned list changed. If the file changed, the workflow SHALL commit `.env.template` together with the pinned artifact to the standing branch and the standing pull request SHALL cover both changes. The step SHALL fail if the artifact contains no GA version or the template has no `STACK_VERSION=` line.
+
+#### Scenario: Template lags the pinned list
+
+- **GIVEN** the pinned artifact's highest GA version is `9.5.5` and `.env.template` has `STACK_VERSION=9.4.0`
+- **AND** the computed desired list equals the pinned artifact
+- **WHEN** the workflow runs
+- **THEN** it SHALL update `.env.template` to `STACK_VERSION=9.5.5` and push it to the standing branch
+
+#### Scenario: Template already current
+
+- **GIVEN** `.env.template` already matches the highest GA version in the pinned artifact and the desired list is unchanged
+- **WHEN** the workflow runs
+- **THEN** it SHALL NOT commit or push
+
 ### Requirement: No-op when the desired list is unchanged
 
-When the computed desired list is identical to the pinned artifact, the system SHALL NOT create a commit, SHALL NOT push to the standing branch, and SHALL NOT modify any existing open pull request from that branch.
+When the computed desired list is identical to the pinned artifact, and `.env.template` already matches the latest GA version, the system SHALL NOT create a commit, SHALL NOT push to the standing branch, and SHALL NOT modify any existing open pull request from that branch.
 
 #### Scenario: Unchanged list leaves an open red PR alone
 

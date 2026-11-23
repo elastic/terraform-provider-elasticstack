@@ -596,6 +596,7 @@ var transformers = []TransformFunc{
 	transformKibanaPaths,
 	transformFleetPaths,
 	removeBrokenDiscriminator,
+	fixStreamsForkWhere,
 	fixPutSecurityRoleName,
 	fixGetSpacesParams,
 	fixSpaceResponseSchemas,
@@ -850,6 +851,11 @@ func transformKibanaPaths(schema *Schema) {
 	// Synthetics_getPrivateLocation (already a named component used by the GET endpoints).
 	// Point the POST 200 response at that component so the generated client uses the
 	// typed struct instead of map[string]interface{}.
+	// Upstream no longer publishes that component, so extract it from the inline
+	// GET /api/synthetics/private_locations/{id} response schema.
+	schema.MustGetPath("/api/synthetics/private_locations/{id}").Get.CreateRef(
+		schema, "Synthetics_getPrivateLocation", "responses.200.content.application/json.schema",
+	)
 	syntheticsPrivateLocationsPath := schema.MustGetPath("/api/synthetics/private_locations")
 	syntheticsPrivateLocationsPath.Post.Set(
 		"responses.200.content.application/json.schema",
@@ -862,6 +868,12 @@ func transformKibanaPaths(schema *Schema) {
 	syntheticsPrivateLocationsPath.Post.Set(
 		"requestBody.content.application/json.schema.properties.geo.properties.lon.format",
 		"double",
+	)
+	// Upstream inlines the parameter response schemas; extract them as named
+	// components so the generated client exposes typed structs.
+	schema.Components.CreateRef(schema, "Synthetics_postParameterResponse", "schemas.create_param_response.oneOf.1")
+	schema.MustGetPath("/api/synthetics/params/{id}").Get.CreateRef(
+		schema, "Synthetics_getParameterResponse", "responses.200.content.application/json.schema",
 	)
 	schema.Components.Set(
 		"schemas.Synthetics_getPrivateLocation.properties.geo.properties.lat.format",
@@ -1009,6 +1021,25 @@ func removeBrokenDiscriminator(schema *Schema) {
 	for path, method := range brokenDiscriminatorPaths {
 		schema.MustGetPath(path).MustGetEndpoint(method).Delete("requestBody.content.application/json.schema.discriminator")
 	}
+
+	// The discriminators on the color and url format params have no mapping
+	// and their oneOf branches are inline schemas, which oapi-codegen rejects.
+	schema.Components.Delete("schemas.Kibana_HTTP_APIs_kbn-field-format-color.properties.params.discriminator")
+	schema.Components.Delete("schemas.Kibana_HTTP_APIs_kbn-field-format-url.properties.params.discriminator")
+}
+
+// fixStreamsForkWhere collapses the recursive `where` condition on the streams
+// fork request body to a free-form value. Upstream inlines the and/or/not
+// condition tree instead of referencing a component, and oapi-codegen expands
+// that into ~23k generated types (a ~3x larger kibana.gen.go that lint cannot
+// process). The provider does not use this endpoint.
+func fixStreamsForkWhere(schema *Schema) {
+	const whereKey = "requestBody.content.application/json.schema.properties.where"
+	path, ok := schema.Paths["/api/streams/{name}/_fork"]
+	if !ok || path == nil || path.Post == nil || !path.Post.Has(whereKey) {
+		return
+	}
+	path.Post.Set(whereKey, Map{"description": "Condition that selects the documents routed to the forked stream."})
 }
 
 func fixPutSecurityRoleName(schema *Schema) {
@@ -1124,18 +1155,18 @@ func fixDashboardPanelItemRefs(schema *Schema) {
 // fixVisByValueConfig restores the previous by-value vis config shape that
 // oapi-codegen and the dashboard Lens converters expect.
 //
-// Upstream now emits vis config.anyOf.0 as allOf(lensApiConfig, chrome).
+// Upstream now emits vis config.anyOf.0 as allOf(visApiConfig, chrome).
 // oapi-codegen drops the chart union and keeps only chrome, so generated
 // VisConfig0 has no As*ByValuePanel helpers and leaf charts lose
 // drilldowns/time_range/hide_*. This transform:
 //  1. copies chrome properties onto each leaf chart schema
-//  2. flattens lensApiConfig.anyOf to those leaves
+//  2. flattens visApiConfig.anyOf to those leaves
 //  3. renames leaves to *ByValuePanel (the names the provider already uses)
 //  4. inlines that leaf union as vis config.anyOf.0 (so VisConfig0 keeps As* helpers)
 func fixVisByValueConfig(schema *Schema) {
 	const (
 		visByValueKey = "schemas.Kibana_HTTP_APIs_kbn-dashboard-panel-type-vis.properties.config.anyOf.0"
-		lensKey       = "schemas.Kibana_HTTP_APIs_lensApiConfig"
+		lensKey       = "schemas.Kibana_HTTP_APIs_visApiConfig"
 	)
 
 	byValue, ok := schema.Components.GetMap(visByValueKey)
@@ -1214,7 +1245,7 @@ func fixVisByValueConfig(schema *Schema) {
 	}
 	lens.Set("anyOf", newAnyOf)
 	// Inline the leaf union so oapi-codegen emits VisConfig0 with As*ByValuePanel
-	// methods. A $ref to lensApiConfig would alias the type away.
+	// methods. A $ref to visApiConfig would alias the type away.
 	schema.Components.Set(visByValueKey, Map{"anyOf": cloneSchemaValue(newAnyOf)})
 }
 
@@ -1625,11 +1656,13 @@ func transformFleetPaths(schema *Schema) {
 
 	epmPoliciesPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.items.items")
 
-	epmPolicyPath.Put.CreateRef(schema, "package_policy_request_typed_inputs", "requestBody.content.application/json.schema.anyOf.0")
+	epmPolicyPath.Put.CreateRef(schema, "package_policy_update_request_typed_inputs", "requestBody.content.application/json.schema.anyOf.0")
 	epmPolicyPath.Put.CreateRef(schema, "package_policy_request_mapped_inputs", "requestBody.content.application/json.schema.anyOf.1")
-	epmPolicyPath.Put.CreateRef(schema, "package_policy_request", "requestBody.content.application/json.schema")
+	epmPolicyPath.Put.CreateRef(schema, "package_policy_update_request", "requestBody.content.application/json.schema")
 
-	epmPoliciesPath.Post.Set("requestBody.content.application/json.schema", epmPolicyPath.Put.MustGetMap("requestBody.content.application/json.schema"))
+	epmPoliciesPath.Post.CreateRef(schema, "package_policy_create_request_typed_inputs", "requestBody.content.application/json.schema.anyOf.0")
+	epmPoliciesPath.Post.CreateRef(schema, "package_policy_request_mapped_inputs", "requestBody.content.application/json.schema.anyOf.1")
+	epmPoliciesPath.Post.CreateRef(schema, "package_policy_create_request", "requestBody.content.application/json.schema")
 
 	epmPolicyPath.Get.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
 	epmPolicyPath.Put.CreateRef(schema, "package_policy", "responses.200.content.application/json.schema.properties.item")
@@ -1654,6 +1687,7 @@ func transformFleetPaths(schema *Schema) {
 	// to point at a single short-named ref via CreateRef.
 	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.Kibana_HTTP_APIs_simplified_create_package_policy_request.properties.package")
 	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.Kibana_HTTP_APIs_update_package_policy_request.properties.package")
+	schema.Components.CreateRef(schema, "package_policy_request_package", "schemas.Kibana_HTTP_APIs_create_package_policy_request.properties.package")
 
 	// Request-side mapped (simplified) inputs/streams
 	schema.Components.CreateRef(schema, "package_policy_request_mapped_input", "schemas.Kibana_HTTP_APIs_simplified_create_package_policy_request.properties.inputs.additionalProperties")
@@ -1662,6 +1696,7 @@ func transformFleetPaths(schema *Schema) {
 	// Request-side typed inputs/streams (sourced from the underlying
 	// update_package_policy_request component for the same chain-ref reason).
 	schema.Components.CreateRef(schema, "package_policy_request_typed_input", "schemas.Kibana_HTTP_APIs_update_package_policy_request.properties.inputs.items")
+	schema.Components.CreateRef(schema, "package_policy_request_typed_input", "schemas.Kibana_HTTP_APIs_create_package_policy_request.properties.inputs.items")
 	schema.Components.CreateRef(schema, "package_policy_request_typed_input_stream", "schemas.package_policy_request_typed_input.properties.streams.items")
 }
 
@@ -1828,6 +1863,11 @@ func fixSyntheticsMonitorModels(schema *Schema) {
 	monitorPath := schema.MustGetPath("/api/synthetics/monitors/{id}")
 	requestDescription := "The request body should contain monitor attributes. The required and default fields differ depending on the monitor type."
 
+	// Upstream now publishes separate create/edit request schemas (the edit one
+	// is a flat partial object). The provider shares one union request type for
+	// both operations, so point PUT at the create schema.
+	monitorPath.Put.Set("requestBody.content.application/json.schema", monitorsPath.Post.MustGet("requestBody.content.application/json.schema"))
+
 	monitorsPath.Post.Set("requestBody.content.application/json.schema.description", requestDescription)
 	monitorPath.Put.Set("requestBody.content.application/json.schema.description", requestDescription)
 	monitorsPath.Post.Set("requestBody.content.application/json.schema.type", "object")
@@ -1966,12 +2006,64 @@ func fixSyntheticsMonitorModels(schema *Schema) {
 		"type": "object",
 	})
 
-	schema.Components.Set("schemas.Synthetics_commonMonitorFields.properties.alert", Map{"$ref": "#/components/schemas/synthetics_monitor_alert"})
-	schema.Components.Set("schemas.Synthetics_commonMonitorFields.properties.params", Map{"type": "object"})
-	schema.Components.Set("schemas.Synthetics_icmpMonitorFields.allOf.1.properties.wait", Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}})
-	schema.Components.Set("schemas.Synthetics_httpMonitorFields.allOf.1.properties.max_redirects", Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}})
-	schema.Components.Set("schemas.Synthetics_httpMonitorFields.allOf.1.properties.ssl", Map{"$ref": "#/components/schemas/synthetics_ssl_config"})
-	schema.Components.Set("schemas.Synthetics_tcpMonitorFields.allOf.1.properties.ssl", Map{"$ref": "#/components/schemas/synthetics_ssl_config"})
+	// Upstream publishes monitor fields as flat Kibana_HTTP_APIs_*MonitorFields
+	// components with loosely typed ("any JSON value" / anyOf) properties. Narrow
+	// them to the concrete types the provider works with.
+	numberOrString := Map{"oneOf": Slice{Map{"type": "string"}, Map{"type": "number"}}}
+	for _, monitorType := range []string{"http", "tcp", "icmp", "browser"} {
+		props := fmt.Sprintf("schemas.Kibana_HTTP_APIs_%sMonitorFields.properties", monitorType)
+		schema.Components.Set(props+".alert", Map{"$ref": "#/components/schemas/synthetics_monitor_alert"})
+		schema.Components.Set(props+".params", Map{"type": "object"})
+		schema.Components.Set(props+".schedule", Map{"type": "number"})
+		schema.Components.Set(props+".timeout", Map{"type": "number"})
+		if _, ok := schema.Components.Get(props + ".ssl"); ok {
+			schema.Components.Set(props+".ssl", Map{"$ref": "#/components/schemas/synthetics_ssl_config"})
+		}
+		for _, objectProp := range []string{"check", "proxy_headers", "response", "playwright_options"} {
+			if _, ok := schema.Components.Get(props + "." + objectProp); ok {
+				schema.Components.Set(props+"."+objectProp, Map{"type": "object"})
+			}
+		}
+	}
+	stringArray := Map{"type": "array", "items": Map{"type": "string"}}
+	narrowed := map[string]map[string]Map{
+		"http": {
+			"password": {"type": "string"}, "proxy_url": {"type": "string"},
+			"service.name": {"type": "string"}, "username": {"type": "string"},
+		},
+		"tcp": {
+			"proxy_url": {"type": "string"}, "service.name": {"type": "string"},
+			"proxy_use_local_resolver": {"type": "boolean"},
+			"check.send":               {"type": "string"}, "check.receive": {"type": "string"},
+		},
+		"icmp": {"service.name": {"type": "string"}},
+		"browser": {
+			"service.name": {"type": "string"}, "ignore_https_errors": {"type": "boolean"},
+			"synthetics_args": stringArray,
+			"screenshots":     {"type": "string", "enum": Slice{"on", "off", "only-on-failure"}},
+		},
+	}
+	requiredFields := map[string]Slice{
+		"http":    {"name", "url", "type"},
+		"tcp":     {"name", "host", "type"},
+		"icmp":    {"name", "host", "type"},
+		"browser": {"name", "inline_script", "type"},
+	}
+	for monitorType, overrides := range narrowed {
+		base := fmt.Sprintf("schemas.Kibana_HTTP_APIs_%sMonitorFields", monitorType)
+		// Property names such as "service.name" contain dots, so write them
+		// straight into the properties map rather than via a dotted path.
+		properties := schema.Components.MustGetMap(base + ".properties")
+		for prop, def := range overrides {
+			properties[prop] = def
+		}
+		for _, prop := range []string{"locations", "private_locations", "tags"} {
+			schema.Components.Set(base+".properties."+prop, stringArray)
+		}
+		schema.Components.Set(base+".required", requiredFields[monitorType])
+	}
+	schema.Components.Set("schemas.Kibana_HTTP_APIs_icmpMonitorFields.properties.wait", numberOrString)
+	schema.Components.Set("schemas.Kibana_HTTP_APIs_httpMonitorFields.properties.max_redirects", numberOrString)
 
 	responseRef := Map{"$ref": "#/components/schemas/synthetics_monitor"}
 	monitorsPath.Post.Set("responses.200.content.application/json.schema", responseRef)
@@ -1990,6 +2082,10 @@ func fixSyntheticsMonitorParams(schema *Schema) {
 	collapseToFirstOneOf := func(paramIndex int) {
 		key := fmt.Sprintf("parameters.%d.schema", paramIndex)
 		oneOfKey := fmt.Sprintf("%s.oneOf.0", key)
+		// Newer upstream specs already publish these as plain arrays.
+		if _, ok := getEndpoint.Get(oneOfKey); !ok {
+			return
+		}
 		getEndpoint.Set(key, getEndpoint.MustGetMap(oneOfKey))
 	}
 

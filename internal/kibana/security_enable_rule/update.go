@@ -46,7 +46,7 @@ func writeSecurityEnableRule(
 		model.DisableOnDestroy = types.BoolValue(true)
 	}
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: fmt.Sprintf("%s:%s", key, value)}).String())
+	model.ID = clients.CompositeIDValue(spaceID, fmt.Sprintf("%s:%s", key, value))
 
 	diags.Append(kibanaoapi.EnableRulesByTag(ctx, oapiClient, spaceID, key, value)...)
 	if diags.HasError() {

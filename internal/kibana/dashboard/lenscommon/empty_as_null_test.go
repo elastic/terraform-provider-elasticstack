@@ -52,6 +52,8 @@ func TestOperationSupportsEmptyAsNull(t *testing.T) {
 // empty_as_null default so the gating is asserted uniformly across chart families.
 var emptyAsNullPopulators = map[string]func(map[string]any) map[string]any{
 	"PopulateLensMetricDefaults":         PopulateLensMetricDefaults,
+	"PopulateXYMetricDefaults":           PopulateXYMetricDefaults,
+	"PopulateDatatableMetricDefaults":    PopulateDatatableMetricDefaults,
 	"PopulateMetricChartMetricDefaults":  PopulateMetricChartMetricDefaults,
 	"PopulateGaugeMetricDefaults":        PopulateGaugeMetricDefaults,
 	"PopulatePieChartMetricDefaults":     PopulatePieChartMetricDefaults,

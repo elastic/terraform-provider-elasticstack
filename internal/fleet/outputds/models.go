@@ -31,19 +31,22 @@ import (
 
 type outputModel struct {
 	entitycore.KibanaConnectionField
-	ID      types.String `tfsdk:"id"`
-	SpaceID types.String `tfsdk:"space_id"`
-	Outputs types.List   `tfsdk:"outputs"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
+	Outputs types.List `tfsdk:"outputs"`
 }
 
-func (model *outputModel) populateFromAPI(ctx context.Context, unions []kbapi.OutputUnion) (diags diag.Diagnostics) {
-	model.ID = types.StringValue("outputs")
-	model.Outputs = typeutils.SliceToListType(ctx, unions, getOutputItemElemType(ctx), path.Root("outputs"), &diags,
+func (m outputModel) GetID() types.String         { return m.ID }
+func (m outputModel) GetResourceID() types.String { return types.StringValue("outputs") }
+
+func (m *outputModel) populateFromAPI(ctx context.Context, unions []kbapi.OutputUnion) (diags diag.Diagnostics) {
+	m.ID = types.StringValue("outputs")
+	m.Outputs = typeutils.SliceToListType(ctx, unions, getOutputItemElemType(ctx), path.Root("outputs"), &diags,
 		func(union kbapi.OutputUnion, meta typeutils.ListMeta) outputItemModel {
-			model := outputItemModel{}
-			diags := model.populateFromAPI(ctx, &union)
+			item := outputItemModel{}
+			diags := item.populateFromAPI(ctx, &union)
 			meta.Diags.Append(diags...)
-			return model
+			return item
 		})
 
 	return

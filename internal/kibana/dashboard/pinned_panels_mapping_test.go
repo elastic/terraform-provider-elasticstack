@@ -24,7 +24,6 @@ import (
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
@@ -34,9 +33,8 @@ import (
 
 func testPinnedDashboardModelMinimalQuery() *models.DashboardQueryModel {
 	return &models.DashboardQueryModel{
-		Language: types.StringValue("kql"),
-		Text:     types.StringValue(""),
-		JSON:     jsontypes.NewNormalizedNull(),
+		Language:   types.StringValue("kql"),
+		Expression: types.StringValue(""),
 	}
 }
 
@@ -56,13 +54,13 @@ func newPinnedDashboardModelBase(pinned []models.PinnedPanelModel) *models.Dashb
 	}
 }
 
-func pinnedFixtureOptionsList(field string) models.PinnedPanelModel {
+func pinnedFixtureOptionsList() models.PinnedPanelModel {
 	return models.PinnedPanelModel{
 		Type: types.StringValue(panelTypeOptionsListControl),
 		OptionsListControlConfig: &models.OptionsListControlConfigModel{
 			ByField: &models.OptionsListControlByFieldModel{
 				DataViewID: types.StringValue("dv"),
-				FieldName:  types.StringValue(field),
+				FieldName:  types.StringValue("status"),
 			},
 		},
 	}
@@ -142,7 +140,7 @@ func Test_dashboardModel_mapPinnedPanelsFromAPI_unsetVsEmptyAndDrift(t *testing.
 
 	t.Run("prior nil + API one entry yields one populated entry", func(t *testing.T) {
 		t.Parallel()
-		src := newPinnedDashboardModelBase([]models.PinnedPanelModel{pinnedFixtureOptionsList("status")})
+		src := newPinnedDashboardModelBase([]models.PinnedPanelModel{pinnedFixtureOptionsList()})
 		api := mustAPIPinnedItems(t, src)
 		require.NotNil(t, api)
 
@@ -271,7 +269,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		t.Parallel()
 		diags := &diag.Diagnostics{}
 		m := newPinnedDashboardModelBase([]models.PinnedPanelModel{
-			pinnedFixtureOptionsList("status"),
+			pinnedFixtureOptionsList(),
 		})
 		req := dashboardToAPIUpdateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())
@@ -287,7 +285,7 @@ func Test_dashboardModel_toAPIRequests_pinnedPanelsJSONShape(t *testing.T) {
 		t.Parallel()
 		diags := &diag.Diagnostics{}
 		m := newPinnedDashboardModelBase([]models.PinnedPanelModel{
-			pinnedFixtureOptionsList("status"),
+			pinnedFixtureOptionsList(),
 		})
 		req := dashboardToAPICreateRequest(ctx, m, diags)
 		require.False(t, diags.HasError())

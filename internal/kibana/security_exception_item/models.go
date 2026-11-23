@@ -36,7 +36,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // MinVersionExpireTime defines the minimum server version required for expire_time field
@@ -44,9 +43,9 @@ var MinVersionExpireTime = version.Must(version.NewVersion("8.7.2"))
 
 type ExceptionItemModel struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String         `tfsdk:"id"`
-	KibanaConnection types.List           `tfsdk:"kibana_connection"`
-	SpaceID          types.String         `tfsdk:"space_id"`
+	entitycore.KibanaConnectionField
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	ItemID           types.String         `tfsdk:"item_id"`
 	ListID           types.String         `tfsdk:"list_id"`
 	Name             types.String         `tfsdk:"name"`
@@ -57,6 +56,7 @@ type ExceptionItemModel struct {
 	Tags             types.Set            `tfsdk:"tags"`
 	Meta             jsontypes.Normalized `tfsdk:"meta"`
 	Entries          types.List           `tfsdk:"entries"`
+	RequiredComments types.List           `tfsdk:"required_comments"`
 	Comments         types.List           `tfsdk:"comments"`
 	ExpireTime       timetypes.RFC3339    `tfsdk:"expire_time"`
 	CreatedAt        types.String         `tfsdk:"created_at"`
@@ -68,13 +68,8 @@ type ExceptionItemModel struct {
 
 func (m ExceptionItemModel) GetID() types.String { return m.ID }
 func (m ExceptionItemModel) GetResourceID() types.String {
-	if compID, _ := clients.CompositeIDFromStr(m.ID.ValueString()); compID != nil {
-		return types.StringValue(compID.ResourceID)
-	}
-	return m.ItemID
+	return clients.ResourceIDFromComposite(m.ID, m.ItemID)
 }
-func (m ExceptionItemModel) GetSpaceID() types.String        { return m.SpaceID }
-func (m ExceptionItemModel) GetKibanaConnection() types.List { return m.KibanaConnection }
 
 var _ entitycore.KibanaResourceModel = ExceptionItemModel{}
 
@@ -92,8 +87,10 @@ func (m ExceptionItemModel) GetVersionRequirements(_ context.Context) ([]entityc
 var _ entitycore.WithVersionRequirements = ExceptionItemModel{}
 
 type CommentModel struct {
-	ID      types.String `tfsdk:"id"`
-	Comment types.String `tfsdk:"comment"`
+	ID        types.String `tfsdk:"id"`
+	Comment   types.String `tfsdk:"comment"`
+	CreatedAt types.String `tfsdk:"created_at"`
+	CreatedBy types.String `tfsdk:"created_by"`
 }
 
 type EntryModel struct {
@@ -117,6 +114,35 @@ type NestedEntryModel struct {
 	Operator types.String `tfsdk:"operator"`
 	Value    types.String `tfsdk:"value"`
 	Values   types.List   `tfsdk:"values"`
+}
+
+// resetEntryModelFields nulls every EntryModel value field (value/values/list/entries)
+// except the one named active, so a converter for one entry type can't leave stale data
+// from another entry type on the model. Pass "" to null out all of them.
+func resetEntryModelFields(entry *EntryModel, active string) {
+	if active != attrValue {
+		entry.Value = types.StringNull()
+	}
+	if active != attrValues {
+		entry.Values = types.ListNull(types.StringType)
+	}
+	if active != entryTypeList {
+		entry.List = types.ObjectNull(getListAttrTypes())
+	}
+	if active != attrEntries {
+		entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
+	}
+}
+
+// resetNestedEntryModelFields nulls every NestedEntryModel value field (value/values)
+// except the one named active. Pass "" to null out all of them.
+func resetNestedEntryModelFields(entry *NestedEntryModel, active string) {
+	if active != attrValue {
+		entry.Value = types.StringNull()
+	}
+	if active != attrValues {
+		entry.Values = types.ListNull(types.StringType)
+	}
 }
 
 // convertEntriesToAPI converts Terraform entry models to API entry models
@@ -143,199 +169,6 @@ func convertEntriesToAPI(ctx context.Context, entries types.List) (kbapi.Securit
 	}
 
 	return apiEntries, diags
-}
-
-// convertMatchEntryToAPI converts a match entry to API format
-func convertMatchEntryToAPI(
-	entry EntryModel,
-	field kbapi.SecurityExceptionsAPINonEmptyString,
-	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
-) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
-
-	// Validate required field
-	if !typeutils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
-		diags.AddError("Invalid Configuration", "Attribute 'value' is required when type is 'match'")
-		return result, diags
-	}
-
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatch{
-		Type:     entryTypeMatch,
-		Field:    field,
-		Operator: operator,
-		Value:    entry.Value.ValueString(),
-	}
-	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatch(apiEntry); err != nil {
-		diags.AddError("Failed to create match entry", err.Error())
-	}
-
-	return result, diags
-}
-
-// convertMatchAnyEntryToAPI converts a match_any entry to API format
-func convertMatchAnyEntryToAPI(
-	ctx context.Context,
-	entry EntryModel,
-	field kbapi.SecurityExceptionsAPINonEmptyString,
-	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
-) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
-
-	// Validate required field
-	if !typeutils.IsKnown(entry.Values) {
-		diags.AddError("Invalid Configuration", "Attribute 'values' is required when type is 'match_any'")
-		return result, diags
-	}
-
-	values := typeutils.ListTypeAs[string](ctx, entry.Values, path.Empty(), &diags)
-	if diags.HasError() {
-		return result, diags
-	}
-
-	if len(values) == 0 {
-		diags.AddError("Invalid Configuration", "Attribute 'values' must contain at least one value when type is 'match_any'")
-		return result, diags
-	}
-
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatchAny{
-		Type:     entryTypeMatchAny,
-		Field:    field,
-		Operator: operator,
-		Value:    values,
-	}
-	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatchAny(apiEntry); err != nil {
-		diags.AddError("Failed to create match_any entry", err.Error())
-	}
-
-	return result, diags
-}
-
-// convertListEntryToAPI converts a list entry to API format
-func convertListEntryToAPI(
-	ctx context.Context,
-	entry EntryModel,
-	field kbapi.SecurityExceptionsAPINonEmptyString,
-	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
-) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
-
-	// Validate required field
-	if !typeutils.IsKnown(entry.List) {
-		diags.AddError("Invalid Configuration", "Attribute 'list' is required when type is 'list'")
-		return result, diags
-	}
-
-	var listModel EntryListModel
-	diags.Append(entry.List.As(ctx, &listModel, basetypes.ObjectAsOptions{})...)
-	if diags.HasError() {
-		return result, diags
-	}
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryList{
-		Type:     entryTypeList,
-		Field:    field,
-		Operator: operator,
-	}
-	apiEntry.List.Id = listModel.ID.ValueString()
-	apiEntry.List.Type = kbapi.SecurityExceptionsAPIListType(listModel.Type.ValueString())
-	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryList(apiEntry); err != nil {
-		diags.AddError("Failed to create list entry", err.Error())
-	}
-
-	return result, diags
-}
-
-// convertExistsEntryToAPI converts an exists entry to API format
-func convertExistsEntryToAPI(
-	field kbapi.SecurityExceptionsAPINonEmptyString,
-	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
-) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
-
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryExists{
-		Type:     entryTypeExists,
-		Field:    field,
-		Operator: operator,
-	}
-	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryExists(apiEntry); err != nil {
-		diags.AddError("Failed to create exists entry", err.Error())
-	}
-
-	return result, diags
-}
-
-// convertWildcardEntryToAPI converts a wildcard entry to API format
-func convertWildcardEntryToAPI(
-	entry EntryModel,
-	field kbapi.SecurityExceptionsAPINonEmptyString,
-	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
-) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
-
-	// Validate required field
-	if !typeutils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
-		diags.AddError("Invalid Configuration", "Attribute 'value' is required when type is 'wildcard'")
-		return result, diags
-	}
-
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatchWildcard{
-		Type:     "wildcard",
-		Field:    field,
-		Operator: operator,
-		Value:    entry.Value.ValueString(),
-	}
-	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatchWildcard(apiEntry); err != nil {
-		diags.AddError("Failed to create wildcard entry", err.Error())
-	}
-
-	return result, diags
-}
-
-// convertNestedEntryArrayToAPI converts nested entries to API format
-func convertNestedEntryArrayToAPI(ctx context.Context, entry EntryModel, field kbapi.SecurityExceptionsAPINonEmptyString) (kbapi.SecurityExceptionsAPIExceptionListItemEntry, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var result kbapi.SecurityExceptionsAPIExceptionListItemEntry
-
-	// Validate required field
-	if !typeutils.IsKnown(entry.Entries) {
-		diags.AddError("Invalid Configuration", "Attribute 'entries' is required when type is 'nested'")
-		return result, diags
-	}
-
-	nestedEntries := typeutils.ListTypeAs[NestedEntryModel](ctx, entry.Entries, path.Empty(), &diags)
-	if diags.HasError() {
-		return result, diags
-	}
-
-	if len(nestedEntries) == 0 {
-		diags.AddError("Invalid Configuration", "Attribute 'entries' must contain at least one entry when type is 'nested'")
-		return result, diags
-	}
-
-	apiNestedEntries := make([]kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, 0, len(nestedEntries))
-	for _, ne := range nestedEntries {
-		nestedAPIEntry, d := convertNestedEntryToAPI(ctx, ne)
-		diags.Append(d...)
-		if d.HasError() {
-			continue
-		}
-		apiNestedEntries = append(apiNestedEntries, nestedAPIEntry)
-	}
-
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryNested{
-		Type:    "nested",
-		Field:   field,
-		Entries: apiNestedEntries,
-	}
-	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryNested(apiEntry); err != nil {
-		diags.AddError("Failed to create nested entry", err.Error())
-	}
-
-	return result, diags
 }
 
 // convertEntryToAPI converts a single Terraform entry model to an API entry model
@@ -366,115 +199,6 @@ func convertEntryToAPI(ctx context.Context, entry EntryModel) (kbapi.SecurityExc
 	}
 }
 
-// convertNestedMatchEntryToAPI converts a nested match entry to API format
-func convertNestedMatchEntryToAPI(
-	entry NestedEntryModel,
-	field kbapi.SecurityExceptionsAPINonEmptyString,
-	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
-) (kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var result kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem
-
-	// Validate required field
-	if !typeutils.IsKnown(entry.Value) || entry.Value.ValueString() == "" {
-		diags.AddError("Invalid Configuration", "Attribute 'value' is required for nested entry when type is 'match'")
-		return result, diags
-	}
-
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatch{
-		Type:     entryTypeMatch,
-		Field:    field,
-		Operator: operator,
-		Value:    entry.Value.ValueString(),
-	}
-	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatch(apiEntry); err != nil {
-		diags.AddError("Failed to create nested match entry", err.Error())
-	}
-
-	return result, diags
-}
-
-// convertNestedMatchAnyEntryToAPI converts a nested match_any entry to API format
-func convertNestedMatchAnyEntryToAPI(
-	ctx context.Context,
-	entry NestedEntryModel,
-	field kbapi.SecurityExceptionsAPINonEmptyString,
-	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
-) (kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var result kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem
-
-	// Validate required field
-	if !typeutils.IsKnown(entry.Values) {
-		diags.AddError("Invalid Configuration", "Attribute 'values' is required for nested entry when type is 'match_any'")
-		return result, diags
-	}
-
-	values := typeutils.ListTypeAs[string](ctx, entry.Values, path.Empty(), &diags)
-	if diags.HasError() {
-		return result, diags
-	}
-
-	if len(values) == 0 {
-		diags.AddError("Invalid Configuration", "Attribute 'values' must contain at least one value for nested entry when type is 'match_any'")
-		return result, diags
-	}
-
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryMatchAny{
-		Type:     entryTypeMatchAny,
-		Field:    field,
-		Operator: operator,
-		Value:    values,
-	}
-	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryMatchAny(apiEntry); err != nil {
-		diags.AddError("Failed to create nested match_any entry", err.Error())
-	}
-
-	return result, diags
-}
-
-// convertNestedExistsEntryToAPI converts a nested exists entry to API format
-func convertNestedExistsEntryToAPI(
-	field kbapi.SecurityExceptionsAPINonEmptyString,
-	operator kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator,
-) (kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var result kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem
-
-	apiEntry := kbapi.SecurityExceptionsAPIExceptionListItemEntryExists{
-		Type:     "exists",
-		Field:    field,
-		Operator: operator,
-	}
-	if err := result.FromSecurityExceptionsAPIExceptionListItemEntryExists(apiEntry); err != nil {
-		diags.AddError("Failed to create nested exists entry", err.Error())
-	}
-
-	return result, diags
-}
-
-// convertNestedEntryToAPI converts a nested entry model to an API nested entry model
-func convertNestedEntryToAPI(ctx context.Context, entry NestedEntryModel) (kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var result kbapi.SecurityExceptionsAPIExceptionListItemEntryNestedEntryItem
-
-	entryType := entry.Type.ValueString()
-	operator := kbapi.SecurityExceptionsAPIExceptionListItemEntryOperator(entry.Operator.ValueString())
-	field := entry.Field.ValueString()
-
-	switch entryType {
-	case entryTypeMatch:
-		return convertNestedMatchEntryToAPI(entry, field, operator)
-	case entryTypeMatchAny:
-		return convertNestedMatchAnyEntryToAPI(ctx, entry, field, operator)
-	case entryTypeExists:
-		return convertNestedExistsEntryToAPI(field, operator)
-	default:
-		diags.AddError("Invalid nested entry type", fmt.Sprintf("Unknown nested entry type: %s. Only 'match', 'match_any', and 'exists' are allowed.", entryType))
-		return result, diags
-	}
-}
-
 // convertEntriesFromAPI converts API entry models to Terraform entry models
 func convertEntriesFromAPI(ctx context.Context, apiEntries kbapi.SecurityExceptionsAPIExceptionListItemEntryArray) (types.List, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -500,99 +224,6 @@ func convertEntriesFromAPI(ctx context.Context, apiEntries kbapi.SecurityExcepti
 	}, entries)
 	diags.Append(d...)
 	return list, diags
-}
-
-// convertMatchOrWildcardEntryFromAPI converts match or wildcard entries from API format
-func convertMatchOrWildcardEntryFromAPI(entryMap map[string]any, entry *EntryModel) {
-	if value, ok := entryMap["value"].(string); ok {
-		entry.Value = types.StringValue(value)
-	} else {
-		entry.Value = types.StringNull()
-	}
-	entry.Values = types.ListNull(types.StringType)
-	entry.List = types.ObjectNull(getListAttrTypes())
-	entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
-}
-
-// convertMatchAnyEntryFromAPI converts match_any entries from API format
-func convertMatchAnyEntryFromAPI(ctx context.Context, entryMap map[string]any, entry *EntryModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	if values, ok := entryMap["value"].([]any); ok {
-		strValues := make([]string, 0, len(values))
-		for _, v := range values {
-			if str, ok := v.(string); ok {
-				strValues = append(strValues, str)
-			}
-		}
-		list, d := types.ListValueFrom(ctx, types.StringType, strValues)
-		diags.Append(d...)
-		entry.Values = list
-	} else {
-		entry.Values = types.ListNull(types.StringType)
-	}
-	entry.Value = types.StringNull()
-	entry.List = types.ObjectNull(getListAttrTypes())
-	entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
-	return diags
-}
-
-// convertListEntryFromAPI converts list entries from API format
-func convertListEntryFromAPI(ctx context.Context, entryMap map[string]any, entry *EntryModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	if listData, ok := entryMap["list"].(map[string]any); ok {
-		listModel := EntryListModel{
-			ID:   types.StringValue(listData["id"].(string)),
-			Type: types.StringValue(listData["type"].(string)),
-		}
-		obj, d := types.ObjectValueFrom(ctx, getListAttrTypes(), listModel)
-		diags.Append(d...)
-		entry.List = obj
-	} else {
-		entry.List = types.ObjectNull(getListAttrTypes())
-	}
-	entry.Value = types.StringNull()
-	entry.Values = types.ListNull(types.StringType)
-	entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
-	return diags
-}
-
-// convertExistsEntryFromAPI converts exists entries from API format
-func convertExistsEntryFromAPI(entry *EntryModel) {
-	entry.Value = types.StringNull()
-	entry.Values = types.ListNull(types.StringType)
-	entry.List = types.ObjectNull(getListAttrTypes())
-	entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
-}
-
-// convertNestedEntryFromAPI converts nested entries from API format
-func convertNestedEntryFromAPI(ctx context.Context, entryMap map[string]any, entry *EntryModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	// Nested entries don't have an operator field in the API
-	entry.Operator = types.StringNull()
-	if entriesData, ok := entryMap["entries"].([]any); ok {
-		nestedEntries := make([]NestedEntryModel, 0, len(entriesData))
-		for _, neData := range entriesData {
-			if neMap, ok := neData.(map[string]any); ok {
-				ne, d := convertNestedEntryFromMap(ctx, neMap)
-				diags.Append(d...)
-				if !d.HasError() {
-					nestedEntries = append(nestedEntries, ne)
-				}
-			}
-		}
-		list, d := types.ListValueFrom(ctx, types.ObjectType{AttrTypes: getNestedEntryAttrTypes()}, nestedEntries)
-		diags.Append(d...)
-		entry.Entries = list
-	} else {
-		entry.Entries = types.ListNull(types.ObjectType{AttrTypes: getNestedEntryAttrTypes()})
-	}
-	entry.Value = types.StringNull()
-	entry.Values = types.ListNull(types.StringType)
-	entry.List = types.ObjectNull(getListAttrTypes())
-	return diags
 }
 
 // convertEntryFromAPI converts a single API entry to a Terraform entry model
@@ -638,76 +269,10 @@ func convertEntryFromAPI(ctx context.Context, apiEntry kbapi.SecurityExceptionsA
 		d := convertListEntryFromAPI(ctx, entryMap, &entry)
 		diags.Append(d...)
 	case entryTypeExists:
-		convertExistsEntryFromAPI(&entry)
+		resetEntryModelFields(&entry, "")
 	case entryTypeNested:
 		d := convertNestedEntryFromAPI(ctx, entryMap, &entry)
 		diags.Append(d...)
-	}
-
-	return entry, diags
-}
-
-// convertNestedMatchFromMap converts nested match entries from map format
-func convertNestedMatchFromMap(entryMap map[string]any, entry *NestedEntryModel) {
-	if value, ok := entryMap["value"].(string); ok {
-		entry.Value = types.StringValue(value)
-	} else {
-		entry.Value = types.StringNull()
-	}
-	entry.Values = types.ListNull(types.StringType)
-}
-
-// convertNestedMatchAnyFromMap converts nested match_any entries from map format
-func convertNestedMatchAnyFromMap(ctx context.Context, entryMap map[string]any, entry *NestedEntryModel) diag.Diagnostics {
-	var diags diag.Diagnostics
-
-	if values, ok := entryMap["value"].([]any); ok {
-		strValues := make([]string, 0, len(values))
-		for _, v := range values {
-			if str, ok := v.(string); ok {
-				strValues = append(strValues, str)
-			}
-		}
-		list, d := types.ListValueFrom(ctx, types.StringType, strValues)
-		diags.Append(d...)
-		entry.Values = list
-	} else {
-		entry.Values = types.ListNull(types.StringType)
-	}
-	entry.Value = types.StringNull()
-	return diags
-}
-
-// convertNestedExistsFromMap converts nested exists entries from map format
-func convertNestedExistsFromMap(entry *NestedEntryModel) {
-	entry.Value = types.StringNull()
-	entry.Values = types.ListNull(types.StringType)
-}
-
-// convertNestedEntryFromMap converts a map representation of nested entry to a model
-func convertNestedEntryFromMap(ctx context.Context, entryMap map[string]any) (NestedEntryModel, diag.Diagnostics) {
-	var diags diag.Diagnostics
-	var entry NestedEntryModel
-
-	if entryType, ok := entryMap["type"].(string); ok {
-		entry.Type = types.StringValue(entryType)
-	}
-	if field, ok := entryMap["field"].(string); ok {
-		entry.Field = types.StringValue(field)
-	}
-	if operator, ok := entryMap["operator"].(string); ok {
-		entry.Operator = types.StringValue(operator)
-	}
-
-	entryType := entry.Type.ValueString()
-	switch entryType {
-	case entryTypeMatch:
-		convertNestedMatchFromMap(entryMap, &entry)
-	case entryTypeMatchAny:
-		d := convertNestedMatchAnyFromMap(ctx, entryMap, &entry)
-		diags.Append(d...)
-	case entryTypeExists:
-		convertNestedExistsFromMap(&entry)
 	}
 
 	return entry, diags
@@ -748,8 +313,10 @@ func getNestedEntryAttrTypes() map[string]attr.Type {
 // getCommentAttrTypes returns the attribute types for comment objects
 func getCommentAttrTypes() map[string]attr.Type {
 	return map[string]attr.Type{
-		"id":      types.StringType,
-		"comment": types.StringType,
+		"id":          types.StringType,
+		"comment":     types.StringType,
+		attrCreatedAt: types.StringType,
+		attrCreatedBy: types.StringType,
 	}
 }
 
@@ -816,17 +383,6 @@ func (m *ExceptionItemModel) setCommonProps(
 	}
 }
 
-func (m *ExceptionItemModel) commentModels(ctx context.Context, diags *diag.Diagnostics) []CommentModel {
-	if !typeutils.IsKnown(m.Comments) {
-		return nil
-	}
-	comments := typeutils.ListTypeAs[CommentModel](ctx, m.Comments, path.Empty(), diags)
-	if diags.HasError() || len(comments) == 0 {
-		return nil
-	}
-	return comments
-}
-
 // toCreateRequest converts the Terraform model to API create request
 func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.CreateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
@@ -886,11 +442,11 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 		genericReq.ExpireTime = &expireTime
 	}
 
-	if comments := m.commentModels(ctx, &diags); comments != nil {
-		commentsArray := make(kbapi.SecurityExceptionsAPICreateExceptionListItemCommentArray, len(comments))
-		for i, comment := range comments {
+	if required, known := requiredCommentTexts(m.RequiredComments); known && len(required) > 0 {
+		commentsArray := make(kbapi.SecurityExceptionsAPICreateExceptionListItemCommentArray, len(required))
+		for i, text := range required {
 			commentsArray[i] = kbapi.SecurityExceptionsAPICreateExceptionListItemComment{
-				Comment: comment.Comment.ValueString(),
+				Comment: text,
 			}
 		}
 		genericReq.Comments = &commentsArray
@@ -909,8 +465,18 @@ func (m *ExceptionItemModel) toCreateRequest(ctx context.Context) (*kbapi.Create
 	return req, diags
 }
 
-// toUpdateRequest converts the Terraform model to API update request
-func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID string) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
+// updateCommentsArray is the comments array shape an update-request body
+// carries.
+type updateCommentsArray = kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray
+
+// toUpdateRequest converts the Terraform model to API update request. comments
+// carries the reconciled append body from the update path; it is nil when no
+// required text is missing, so the request omits comments entirely.
+func (m *ExceptionItemModel) toUpdateRequest(
+	ctx context.Context,
+	resourceID string,
+	comments *updateCommentsArray,
+) (*kbapi.UpdateExceptionListItemJSONRequestBody, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
 	entries, d := convertEntriesToAPI(ctx, m.Entries)
@@ -963,14 +529,8 @@ func (m *ExceptionItemModel) toUpdateRequest(ctx context.Context, resourceID str
 		genericReq.ExpireTime = &expireTime
 	}
 
-	if comments := m.commentModels(ctx, &diags); comments != nil {
-		commentsArray := make(kbapi.SecurityExceptionsAPIUpdateExceptionListItemCommentArray, len(comments))
-		for i, comment := range comments {
-			commentsArray[i] = kbapi.SecurityExceptionsAPIUpdateExceptionListItemComment{
-				Comment: comment.Comment.ValueString(),
-			}
-		}
-		genericReq.Comments = &commentsArray
+	if comments != nil {
+		genericReq.Comments = comments
 	}
 	if diags.HasError() {
 		return nil, diags
@@ -1045,8 +605,10 @@ func (m *ExceptionItemModel) fromAPI(ctx context.Context, apiResp *kbapi.Securit
 		comments := make([]CommentModel, len(apiResp.Comments))
 		for i, comment := range apiResp.Comments {
 			comments[i] = CommentModel{
-				ID:      typeutils.StringishValue(comment.Id),
-				Comment: typeutils.StringishValue(comment.Comment),
+				ID:        typeutils.StringishValue(comment.Id),
+				Comment:   typeutils.StringishValue(comment.Comment),
+				CreatedAt: types.StringValue(comment.CreatedAt.Format(kbschema.KibanaTimestampLayout)),
+				CreatedBy: types.StringValue(comment.CreatedBy),
 			}
 		}
 		list, d := types.ListValueFrom(ctx, types.ObjectType{

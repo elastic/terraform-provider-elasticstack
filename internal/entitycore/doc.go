@@ -36,17 +36,19 @@
 //	    ID types.String `tfsdk:"id"`
 //	}
 //
-//	func readMyEntity(ctx context.Context, client *clients.KibanaScopedClient, model myModel) (myModel, diag.Diagnostics) {
-//	    // API call and model population …
-//	    return model, nil
+//	func readMyEntity(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, model myModel) (myModel, bool, diag.Diagnostics) {
+//	    // API call and model population …; return found=false when the entity does not exist
+//	    return model, true, nil
 //	}
 //
 //	func NewDataSource() datasource.DataSource {
 //	    return entitycore.NewKibanaDataSource[myModel](
 //	        entitycore.ComponentKibana,
 //	        "my_entity",
-//	        getDataSourceSchema, // func(ctx context.Context) datasource.Schema, without kibana_connection block
-//	        readMyEntity,
+//	        entitycore.KibanaDataSourceOptions[myModel]{
+//	            Schema: getDataSourceSchema, // func(ctx context.Context) datasource.Schema, without kibana_connection block
+//	            Read:   readMyEntity,
+//	        },
 //	    )
 //	}
 //

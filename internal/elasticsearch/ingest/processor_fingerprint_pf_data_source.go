@@ -58,8 +58,6 @@ func (m *processorFingerprintModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	body.Method = typeutils.StringDefault(&m.Method, "SHA-1")
 
-	typeutils.BoolDefault(&m.IgnoreFailure, false)
-
 	return body, diags
 }
 

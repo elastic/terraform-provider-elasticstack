@@ -37,7 +37,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanelTypeMosaic)
+	return string(kbapi.KibanaHTTPAPIsVisMosaicNoESQLByValuePanelTypeMosaic)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -105,9 +105,9 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	prior := lenscommon.SnapshotAndResetBlock(&blocks.MosaicConfig)
 	return lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.MosaicConfig, prior,
-		attrs.AsKibanaHTTPAPIsMosaicNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsMosaicESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsMosaicNoESQLByValuePanel) bool {
+		attrs.AsKibanaHTTPAPIsVisMosaicNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsVisMosaicESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsVisMosaicNoESQLByValuePanel) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
 		mosaicConfigFromAPINoESQL,
@@ -125,7 +125,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignMosaicStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignMosaicConfigStateFromPlan(ctx, plan.MosaicConfig, state.MosaicConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

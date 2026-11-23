@@ -30,8 +30,8 @@ import (
 type Model struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
-	ID                types.String   `tfsdk:"id"`
-	SpaceID           types.String   `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	Key               types.String   `tfsdk:"key"`
 	Value             types.String   `tfsdk:"value"`
 	Description       types.String   `tfsdk:"description"`
@@ -47,22 +47,15 @@ func (m Model) GetResourceID() types.String {
 	if m.ID.IsNull() || m.ID.IsUnknown() {
 		return types.StringNull()
 	}
-	compID, diags := clients.CompositeIDFromStr(m.ID.ValueString())
-	if !diags.HasError() {
-		return types.StringValue(compID.ResourceID)
-	}
-	return m.ID
+	return clients.ResourceIDFromComposite(m.ID, m.ID)
 }
-
-func (m Model) GetSpaceID() types.String { return m.SpaceID }
 
 func (m *Model) setCompositeIdentity(spaceID, resourceID string) {
 	spaceID = clients.EffectiveSpaceID(spaceID)
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: resourceID}).String())
-	m.SpaceID = types.StringValue(spaceID)
+	m.ID, m.SpaceID = clients.CompositeIdentityValues(spaceID, resourceID)
 }
 
-func (m Model) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequest {
+func (m Model) toParameterRequest(forUpdate bool) kboapi.KibanaHTTPAPIsParameterRequest {
 	// share_across_spaces is not allowed to be set when updating an existing
 	// global parameter.
 	var shareAcrossSpaces *bool
@@ -70,7 +63,7 @@ func (m Model) toParameterRequest(forUpdate bool) kboapi.SyntheticsParameterRequ
 		shareAcrossSpaces = m.ShareAcrossSpaces.ValueBoolPointer()
 	}
 
-	return kboapi.SyntheticsParameterRequest{
+	return kboapi.KibanaHTTPAPIsParameterRequest{
 		Key:         m.Key.ValueString(),
 		Value:       m.Value.ValueString(),
 		Description: new(m.Description.ValueString()),

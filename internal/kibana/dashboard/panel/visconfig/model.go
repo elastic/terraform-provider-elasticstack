@@ -20,6 +20,7 @@ package visconfig
 import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/lenscommon"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 )
 
@@ -58,31 +59,11 @@ func hasLensByValueChartTypeAtRoot(m map[string]any) bool {
 	return ok && s != ""
 }
 
-func panelHasTypedConfig(pm *models.PanelModel) bool {
-	if pm == nil {
-		return false
-	}
-	return pm.MarkdownConfig != nil ||
-		pm.TimeSliderControlConfig != nil ||
-		pm.SloBurnRateConfig != nil ||
-		pm.SloOverviewConfig != nil ||
-		pm.SloErrorBudgetConfig != nil ||
-		pm.EsqlControlConfig != nil ||
-		pm.OptionsListControlConfig != nil ||
-		pm.RangeSliderControlConfig != nil ||
-		pm.SyntheticsStatsOverviewConfig != nil ||
-		pm.SyntheticsMonitorsConfig != nil ||
-		pm.VisConfig != nil ||
-		pm.ImageConfig != nil ||
-		pm.SloAlertsConfig != nil ||
-		pm.DiscoverSessionConfig != nil
-}
-
 func priorPanelUsesConfigJSONOnly(prior *models.PanelModel) bool {
 	if prior == nil || !typeutils.IsKnown(prior.ConfigJSON) {
 		return false
 	}
-	return !panelHasTypedConfig(prior)
+	return !panelkit.PanelHasTypedConfig(prior)
 }
 
 func configPriorForVisRead(tfPanel, pm *models.PanelModel) *models.VisConfigModel {

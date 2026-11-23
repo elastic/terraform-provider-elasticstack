@@ -19,6 +19,8 @@ package datastreamlifecycle
 
 import (
 	"context"
+
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
@@ -96,5 +98,5 @@ func getSchemaFactory(_ context.Context) schema.Schema {
 }
 
 func downsamplingElementType(ctx context.Context) attr.Type {
-	return getSchemaFactory(ctx).Attributes["downsampling"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getSchemaFactory(ctx).Attributes["downsampling"].GetType())
 }

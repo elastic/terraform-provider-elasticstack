@@ -19,7 +19,6 @@ package resource
 
 import (
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/connector"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -31,32 +30,8 @@ import (
 
 var secretHasher = writeonlyhash.New("elasticsearch_connector")
 
-const (
-	privateStateUnavailableSummary = "Failed to persist write-only secret hash"
-	privateStateUnavailableDetail  = "internal: private state writer unavailable; drift detection will not function. This is a bug."
-)
-
 func secretHashKey(mapKey string) string {
 	return secretHasher.PrivateStateKey(`configuration_values["` + mapKey + `"].secret_value`)
-}
-
-// encodeSecretHashForPrivateState wraps a bcrypt hash as a JSON string. The
-// Terraform Plugin Framework rejects private-state values that are not valid
-// JSON, so raw bcrypt bytes (which contain '$' and other non-JSON characters)
-// must be JSON-encoded before storage.
-func encodeSecretHashForPrivateState(hash []byte) ([]byte, error) {
-	return json.Marshal(string(hash))
-}
-
-func decodeSecretHashFromPrivateState(raw []byte) ([]byte, error) {
-	if len(raw) == 0 {
-		return nil, nil
-	}
-	var stored string
-	if err := json.Unmarshal(raw, &stored); err != nil {
-		return nil, err
-	}
-	return []byte(stored), nil
 }
 
 // secretHashKeysToClear reports the configuration keys whose private-state
@@ -86,7 +61,7 @@ func storeSecretHashes(
 	if private == nil {
 		for _, elem := range configMap {
 			if typeutils.IsKnown(elem.SecretValue) {
-				diags.AddError(privateStateUnavailableSummary, privateStateUnavailableDetail)
+				writeonlyhash.AddPrivateStateUnavailableError(diags)
 				return
 			}
 		}
@@ -98,26 +73,19 @@ func storeSecretHashes(
 		}
 		value := elem.SecretValue.ValueString()
 
-		// bcrypt is intentionally slow (cost 10). Skip re-hashing when the
-		// existing hash already verifies the value — common on no-op applies
-		// where ModifyPlan triggered an update for non-secret reasons.
 		existingRaw, getDiags := private.GetKey(ctx, secretHashKey(key))
 		diags.Append(getDiags...)
 		if diags.HasError() {
 			return
 		}
-		if existing, err := decodeSecretHashFromPrivateState(existingRaw); err == nil && len(existing) > 0 && secretHasher.Matches(value, existing) {
+		existing, err := secretHasher.DecodeFromPrivateState(existingRaw)
+		if err == nil && secretHasher.IsUpToDate(value, existing) {
 			continue
 		}
 
-		hash, err := secretHasher.Compute(value)
-		if err != nil {
-			diags.AddError("Failed to hash write-only attribute", err.Error())
-			return
-		}
-		encoded, err := encodeSecretHashForPrivateState(hash)
-		if err != nil {
-			diags.AddError("Failed to encode write-only secret hash", err.Error())
+		encoded, hashDiags := secretHasher.ComputeForPrivateState(value)
+		diags.Append(hashDiags...)
+		if diags.HasError() {
 			return
 		}
 		diags.Append(private.SetKey(ctx, secretHashKey(key), encoded)...)
@@ -135,7 +103,7 @@ func clearRemovedSecretHashes(
 		return
 	}
 	if private == nil {
-		diags.AddError(privateStateUnavailableSummary, privateStateUnavailableDetail)
+		writeonlyhash.AddPrivateStateUnavailableError(diags)
 		return
 	}
 	for _, key := range keys {

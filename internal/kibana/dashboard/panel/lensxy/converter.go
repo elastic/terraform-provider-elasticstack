@@ -35,7 +35,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsXyChartNoESQLByValuePanelTypeXy)
+	return string(kbapi.KibanaHTTPAPIsVisXyChartNoESQLByValuePanelTypeXy)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -53,8 +53,8 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	prior := lenscommon.SnapshotAndResetBlock(&blocks.XYChartConfig)
 	return lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.XYChartConfig, prior,
-		attrs.AsKibanaHTTPAPIsXyChartNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsXyChartESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsVisXyChartNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsVisXyChartESQLByValuePanel,
 		nil, // xy charts carry their data source per layer, not on a single top-level field.
 		xyChartConfigFromAPINoESQL,
 		xyChartConfigFromAPIESQL,

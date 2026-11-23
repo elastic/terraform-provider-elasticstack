@@ -49,6 +49,9 @@ engine:
 # agent run. The daily guardrail (max-daily-ai-credits, default 5000/day)
 # still applies.
 max-ai-credits: -1
+# The daily guardrail is also disabled: it fails closed ("Daily AIC accounting
+# record could not be resolved") when prior runs lack resolvable AIC usage.
+max-daily-ai-credits: -1
 permissions:
   issues: read
 tools:

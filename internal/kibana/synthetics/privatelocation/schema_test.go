@@ -212,8 +212,8 @@ func Test_normalizePostResponse(t *testing.T) {
 	assert.Equal(t, "new-label", *loc.Label)
 	assert.Equal(t, "new-policy", *loc.AgentPolicyId)
 
-	// tags end up in AdditionalProperties
-	tags := tagsFromAdditionalProperties(loc)
+	// tags are parsed into the typed Tags field
+	tags := tagsFromAPIResponse(loc)
 	require.Len(t, tags, 2)
 	assert.Equal(t, "created", tags[0])
 	assert.Equal(t, "fresh", tags[1])

@@ -33,6 +33,15 @@ resource "elasticstack_fleet_integration" "test_integration" {
   version = "1.16.0"
   force   = true
 }
+
+# Pin an older, non-latest version of another package.
+resource "elasticstack_fleet_integration" "pinned_older_version" {
+  name    = "nginx"
+  version = "1.1.0"
+
+  # Requires Kibana 9.6+. Setting this attribute, even to false, is rejected on older servers.
+  allow_outdated_version = true
+}
 ```
 
 ### Pinning a package version explicitly
@@ -66,6 +75,7 @@ resource "elasticstack_fleet_integration" "test_integration" {
 
 ### Optional
 
+- `allow_outdated_version` (Boolean) Set to true to allow installing a version older than the latest available. Bypasses only the out-of-date version check. Setting this attribute, even to `false`, requires server version 9.6.0 or higher.
 - `force` (Boolean) Set to true to force the requested action.
 - `ignore_constraints` (Boolean) Set to true to ignore constraint errors during package installation.
 - `ignore_mapping_update_errors` (Boolean) Set to true to ignore mapping update errors during package installation.
@@ -89,6 +99,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

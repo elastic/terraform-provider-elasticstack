@@ -56,7 +56,7 @@ Optional:
 
 Required:
 
-- `name` (String) Name of the read index.
+- `name` (String) Name or Elasticsearch multi-target expression for the read index or data stream targets.
 
 Optional:
 
@@ -65,6 +65,10 @@ Optional:
 - `is_hidden` (Boolean) If true, the alias is hidden.
 - `routing` (String) Value used to route indexing and search operations to a specific shard.
 - `search_routing` (String) Value used to route search operations to a specific shard.
+
+Read-Only:
+
+- `concrete_indices` (Set of String) Concrete indices or data streams currently attached to the alias for this expression.
 
 
 <a id="nestedatt--timeouts"></a>
@@ -83,7 +87,7 @@ Optional:
 
 Required:
 
-- `name` (String) Name of the write index.
+- `name` (String) Name of the write index. Multi-target expressions are not supported.
 
 Optional:
 

@@ -22,9 +22,9 @@ import (
 	"fmt"
 	"math"
 	"slices"
-	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
+	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/globaldatatags"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -62,8 +62,8 @@ func agentFeaturesFromPolicy(p *kbapi.KibanaHTTPAPIsAgentPolicyResponse) []apiAg
 }
 
 type agentPolicyModel struct {
+	entitycore.KibanaConnectionField
 	ID                        types.String         `tfsdk:"id"`
-	KibanaConnection          types.List           `tfsdk:"kibana_connection"`
 	PolicyID                  types.String         `tfsdk:"policy_id"`
 	Name                      types.String         `tfsdk:"name"`
 	Namespace                 types.String         `tfsdk:"namespace"`
@@ -161,22 +161,8 @@ func (model *agentPolicyModel) populateFromAPI(ctx context.Context, data *kbapi.
 		}
 	}
 
-	if data.InactivityTimeout != nil {
-		// Convert seconds to duration string
-		seconds := int64(*data.InactivityTimeout)
-		d := time.Duration(seconds) * time.Second
-		model.InactivityTimeout = customtypes.NewDurationValue(d.Truncate(time.Second).String())
-	} else {
-		model.InactivityTimeout = customtypes.NewDurationNull()
-	}
-	if data.UnenrollTimeout != nil {
-		// Convert seconds to duration string
-		seconds := int64(*data.UnenrollTimeout)
-		d := time.Duration(seconds) * time.Second
-		model.UnenrollmentTimeout = customtypes.NewDurationValue(d.Truncate(time.Second).String())
-	} else {
-		model.UnenrollmentTimeout = customtypes.NewDurationNull()
-	}
+	model.InactivityTimeout = customtypes.NewDurationFromSeconds(data.InactivityTimeout)
+	model.UnenrollmentTimeout = customtypes.NewDurationFromSeconds(data.UnenrollTimeout)
 	if tags := typeutils.Deref(data.GlobalDataTags); tags != nil {
 		diags := diag.Diagnostics{}
 

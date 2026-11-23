@@ -64,32 +64,34 @@ type ContentConnectorDataSourceModel struct {
 	SyncNow                          fwtypes.Bool         `tfsdk:"sync_now"`
 }
 
+// GetID returns the composite data source id.
+func (m ContentConnectorDataSourceModel) GetID() fwtypes.String { return m.ID }
+
+// GetResourceID returns the configured connector_id.
+func (m ContentConnectorDataSourceModel) GetResourceID() fwtypes.String { return m.ConnectorID }
+
 var _ entitycore.WithVersionRequirements = ContentConnectorDataSourceModel{}
 
 func readContentConnectorDataSource(
 	ctx context.Context,
 	client *clients.ElasticsearchScopedClient,
+	connectorID string,
 	model ContentConnectorDataSourceModel,
-) (ContentConnectorDataSourceModel, diag.Diagnostics) {
+) (ContentConnectorDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	connectorID := model.ConnectorID.ValueString()
 	resp, getDiags := esclient.GetConnector(ctx, client, connectorID)
 	diags.Append(getDiags...)
 	if diags.HasError() {
-		return model, diags
+		return model, false, diags
 	}
 
 	if resp == nil {
-		diags.AddError(
-			"Connector not found",
-			fmt.Sprintf("Connector %q was not found.", connectorID),
-		)
-		return model, diags
+		return model, false, diags
 	}
 
 	populateContentConnectorDataSourceFromAPI(ctx, client, connectorID, resp, &model, &diags)
-	return model, diags
+	return model, !diags.HasError(), diags
 }
 
 func populateContentConnectorDataSourceFromAPI(

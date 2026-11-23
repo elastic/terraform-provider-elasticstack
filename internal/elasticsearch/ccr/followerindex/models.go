@@ -83,18 +83,18 @@ func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
 		req.Settings = settings
 	}
 
-	tuning := ccr.TuningParams{
-		MaxOutstandingReadRequests:    model.MaxOutstandingReadRequests,
-		MaxOutstandingWriteRequests:   model.MaxOutstandingWriteRequests,
-		MaxReadRequestOperationCount:  model.MaxReadRequestOperationCount,
-		MaxReadRequestSize:            model.MaxReadRequestSize,
-		MaxRetryDelay:                 model.MaxRetryDelay,
-		MaxWriteBufferCount:           model.MaxWriteBufferCount,
-		MaxWriteBufferSize:            model.MaxWriteBufferSize,
-		MaxWriteRequestOperationCount: model.MaxWriteRequestOperationCount,
-		MaxWriteRequestSize:           model.MaxWriteRequestSize,
-		ReadPollTimeout:               model.ReadPollTimeout,
-	}
+	tuning := ccr.NewTuningParamsFromModel(
+		model.MaxOutstandingReadRequests,
+		model.MaxOutstandingWriteRequests,
+		model.MaxReadRequestOperationCount,
+		model.MaxReadRequestSize,
+		model.MaxRetryDelay,
+		model.MaxWriteBufferCount,
+		model.MaxWriteBufferSize,
+		model.MaxWriteRequestOperationCount,
+		model.MaxWriteRequestSize,
+		model.ReadPollTimeout,
+	)
 	diags.Append(ccr.ApplyToFollowRequest(tuning, req)...)
 	if diags.HasError() {
 		return nil, diags
@@ -105,18 +105,18 @@ func buildFollowRequest(model Model) (*follow.Request, diag.Diagnostics) {
 
 func buildResumeFollowRequest(model Model) *resumefollow.Request {
 	req := &resumefollow.Request{}
-	tuning := ccr.TuningParams{
-		MaxOutstandingReadRequests:    model.MaxOutstandingReadRequests,
-		MaxOutstandingWriteRequests:   model.MaxOutstandingWriteRequests,
-		MaxReadRequestOperationCount:  model.MaxReadRequestOperationCount,
-		MaxReadRequestSize:            model.MaxReadRequestSize,
-		MaxRetryDelay:                 model.MaxRetryDelay,
-		MaxWriteBufferCount:           model.MaxWriteBufferCount,
-		MaxWriteBufferSize:            model.MaxWriteBufferSize,
-		MaxWriteRequestOperationCount: model.MaxWriteRequestOperationCount,
-		MaxWriteRequestSize:           model.MaxWriteRequestSize,
-		ReadPollTimeout:               model.ReadPollTimeout,
-	}
+	tuning := ccr.NewTuningParamsFromModel(
+		model.MaxOutstandingReadRequests,
+		model.MaxOutstandingWriteRequests,
+		model.MaxReadRequestOperationCount,
+		model.MaxReadRequestSize,
+		model.MaxRetryDelay,
+		model.MaxWriteBufferCount,
+		model.MaxWriteBufferSize,
+		model.MaxWriteRequestOperationCount,
+		model.MaxWriteRequestSize,
+		model.ReadPollTimeout,
+	)
 	ccr.ApplyToResumeFollowRequest(tuning, req)
 	return req
 }

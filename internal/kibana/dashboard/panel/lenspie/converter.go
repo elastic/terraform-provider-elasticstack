@@ -41,7 +41,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsPieNoESQLByValuePanelTypePie)
+	return string(kbapi.KibanaHTTPAPIsVisPieNoESQLByValuePanelTypePie)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -118,9 +118,9 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	prior := lenscommon.SnapshotAndResetBlock(&blocks.PieChartConfig)
 	return lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.PieChartConfig, prior,
-		attrs.AsKibanaHTTPAPIsPieNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsPieESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsPieNoESQLByValuePanel) bool {
+		attrs.AsKibanaHTTPAPIsVisPieNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsVisPieESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsVisPieNoESQLByValuePanel) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
 		pieChartConfigFromAPINoESQL,
@@ -138,7 +138,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignPieStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignPieConfigStateFromPlan(ctx, plan.PieChartConfig, state.PieChartConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

@@ -96,36 +96,6 @@ func TransformSlice[T1 any, T2 any](_ context.Context, value []T1, p path.Path, 
 	return elems
 }
 
-// TransformSliceToMap converts []T1 to map[string]T2 via the iteratee.
-func TransformSliceToMap[T1 any, T2 any](_ context.Context, value []T1, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta ListMeta) (key string, elem T2)) map[string]T2 {
-	if value == nil {
-		return nil
-	}
-
-	elems := make(map[string]T2, len(value))
-	for i, v := range value {
-		k, v := iteratee(v, ListMeta{Index: i, Path: p.AtListIndex(i), Diags: diags})
-		elems[k] = v
-	}
-
-	return elems
-}
-
-// TransformMapToSlice converts map[string]T1 to []T2 via the iteratee.
-func TransformMapToSlice[T1 any, T2 any](_ context.Context, value map[string]T1, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta MapMeta) T2) []T2 {
-	if value == nil {
-		return nil
-	}
-
-	elems := make([]T2, 0, len(value))
-	for k, v := range value {
-		v := iteratee(v, MapMeta{Key: k, Path: p.AtMapKey(k), Diags: diags})
-		elems = append(elems, v)
-	}
-
-	return elems
-}
-
 func convertToAttrDiags(diags diag.Diagnostics, path path.Path) diag.Diagnostics {
 	var nd diag.Diagnostics
 	for _, d := range diags {

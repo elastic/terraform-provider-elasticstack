@@ -35,24 +35,45 @@ func readAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, r
 		return state, false, diags
 	}
 
-	diags = readAliasIntoModel(ctx, aliasName, indices, &state)
+	retainVirtualState := state.desiredEmptyAfterWrite || state.isVirtualState(ctx)
+	diags = readAliasIntoModelWithResolution(ctx, aliasName, indices, &state, func(ctx context.Context, expression string) (elasticsearch.ResolvedIndexTargets, diag.Diagnostics) {
+		return elasticsearch.ResolveIndexExpression(ctx, client, expression, aliasName)
+	})
 	if diags.HasError() {
 		return state, false, diags
 	}
 
 	// Check if the alias was found
-	if state.WriteIndex.IsNull() && state.ReadIndices.IsNull() {
+	if state.WriteIndex.IsNull() && state.ReadIndices.IsNull() && !retainVirtualState {
 		return state, false, nil
 	}
 
 	return state, true, nil
 }
 
-// readAliasIntoModel populates the provided model from alias API response.
-func readAliasIntoModel(ctx context.Context, aliasName string, indices map[string]esTypes.IndexAliases, model *tfModel) diag.Diagnostics {
+func readAliasIntoModelWithResolution(
+	ctx context.Context,
+	aliasName string,
+	indices map[string]esTypes.IndexAliases,
+	model *tfModel,
+	resolveIndexExpression resolveIndexExpressionFunc,
+) diag.Diagnostics {
+	return readAliasIntoModelWithReadState(ctx, aliasName, indices, model, resolveIndexExpression)
+}
+
+func readAliasIntoModelWithReadState(
+	ctx context.Context,
+	aliasName string,
+	indices map[string]esTypes.IndexAliases,
+	model *tfModel,
+	resolveIndexExpression resolveIndexExpressionFunc,
+) diag.Diagnostics {
 	if len(indices) == 0 {
+		if resolveIndexExpression != nil && (model.desiredEmptyAfterWrite || model.isVirtualState(ctx)) {
+			return nil
+		}
 		model.WriteIndex = types.ObjectNull(getIndexAttrTypes(ctx))
-		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: getIndexAttrTypes(ctx)})
+		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: getReadIndexAttrTypes(ctx)})
 		return nil
 	}
 
@@ -64,9 +85,16 @@ func readAliasIntoModel(ctx context.Context, aliasName string, indices map[strin
 	}
 
 	if len(aliasData) == 0 {
+		if resolveIndexExpression != nil && (model.desiredEmptyAfterWrite || model.isVirtualState(ctx)) {
+			return nil
+		}
 		model.WriteIndex = types.ObjectNull(getIndexAttrTypes(ctx))
-		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: getIndexAttrTypes(ctx)})
+		model.ReadIndices = types.SetNull(types.ObjectType{AttrTypes: getReadIndexAttrTypes(ctx)})
 		return nil
+	}
+
+	if resolveIndexExpression != nil {
+		return model.populateReadState(ctx, aliasName, aliasData, resolveIndexExpression)
 	}
 
 	return model.populateFromAPI(ctx, aliasName, aliasData)

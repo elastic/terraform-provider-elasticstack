@@ -155,7 +155,10 @@ Optional:
 
 - `download_target_directory` (String) Target directory for downloading agent updates.
 - `download_timeout` (String) Timeout for downloading agent updates (e.g., '2h', '30m').
+- `features_disable_policy_change_acks_enabled` (Boolean) Disable policy change acknowledgements from agents (maps to `agent_features_disable_policy_change_acks_enabled`). Requires Elastic Stack 9.4.0 or above.
+- `features_include_tags_in_events_enabled` (Boolean) Include the agent's tags in events it sends (maps to `agent_features_include_tags_in_events_enabled`). Requires Elastic Stack 9.6.0 or above.
 - `go_max_procs` (Number) Maximum number of CPUs that the agent can use (GOMAXPROCS). Set to 0 to use all available CPUs.
+- `internal` (String) Advanced internal agent settings as free-form YAML (maps to `agent_internal`). Kibana provides no stability guarantee for the keys accepted here. Requires Elastic Stack 9.3.0 or above.
 - `logging_files_interval` (String) Interval for log file rotation (e.g., '30s', '1m', '1h').
 - `logging_files_keepfiles` (Number) Number of rotated log files to keep.
 - `logging_files_rotateeverybytes` (Number) Rotate log files when they reach this size in bytes.
@@ -183,6 +186,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

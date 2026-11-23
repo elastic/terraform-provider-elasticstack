@@ -35,9 +35,9 @@ const (
 
 type integrationModel struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.KibanaConnectionField
 
 	ID                        types.String `tfsdk:"id"`
-	KibanaConnection          types.List   `tfsdk:"kibana_connection"`
 	Name                      types.String `tfsdk:"name"`
 	Version                   types.String `tfsdk:"version"`
 	Force                     types.Bool   `tfsdk:"force"`
@@ -45,6 +45,7 @@ type integrationModel struct {
 	IgnoreMappingUpdateErrors types.Bool   `tfsdk:"ignore_mapping_update_errors"`
 	SkipDataStreamRollover    types.Bool   `tfsdk:"skip_data_stream_rollover"`
 	IgnoreConstraints         types.Bool   `tfsdk:"ignore_constraints"`
+	AllowOutdatedVersion      types.Bool   `tfsdk:"allow_outdated_version"`
 	SkipDestroy               types.Bool   `tfsdk:"skip_destroy"`
 	SpaceID                   types.String `tfsdk:"space_id"`
 }
@@ -54,7 +55,7 @@ func (m integrationModel) GetID() types.String {
 }
 
 func (m integrationModel) GetResourceID() types.String {
-	return types.StringValue(getPackageID(m.Name.ValueString(), m.Version.ValueString()))
+	return types.StringValue(typeutils.HashedPackageID(m.Name.ValueString(), m.Version.ValueString()))
 }
 
 func (m integrationModel) GetSpaceID() types.String {
@@ -62,10 +63,6 @@ func (m integrationModel) GetSpaceID() types.String {
 		return types.StringValue("")
 	}
 	return m.SpaceID
-}
-
-func (m integrationModel) GetKibanaConnection() types.List {
-	return m.KibanaConnection
 }
 
 func (m integrationModel) IsUnscopedSpace() bool {
@@ -78,24 +75,17 @@ var _ entitycore.WithVersionRequirements = integrationModel{}
 func (m integrationModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var reqs []entitycore.VersionRequirement
 
-	if typeutils.IsKnown(m.IgnoreMappingUpdateErrors) && m.IgnoreMappingUpdateErrors.ValueBool() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *MinVersionIgnoreMappingUpdateErrors,
-			ErrorMessage: "The 'ignore_mapping_update_errors' parameter requires server version " + MinVersionIgnoreMappingUpdateErrors.String() + " or higher.",
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs,
+		typeutils.IsKnown(m.IgnoreMappingUpdateErrors) && m.IgnoreMappingUpdateErrors.ValueBool(),
+		MinVersionIgnoreMappingUpdateErrors, "The 'ignore_mapping_update_errors' parameter requires server version %s or higher.", MinVersionIgnoreMappingUpdateErrors.String())
 
-	if typeutils.IsKnown(m.SkipDataStreamRollover) && m.SkipDataStreamRollover.ValueBool() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *MinVersionSkipDataStreamRollover,
-			ErrorMessage: "The 'skip_data_stream_rollover' parameter requires server version " + MinVersionSkipDataStreamRollover.String() + " or higher.",
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs,
+		typeutils.IsKnown(m.SkipDataStreamRollover) && m.SkipDataStreamRollover.ValueBool(),
+		MinVersionSkipDataStreamRollover, "The 'skip_data_stream_rollover' parameter requires server version %s or higher.", MinVersionSkipDataStreamRollover.String())
+
+	reqs = entitycore.AppendVersionRequirementIf(reqs,
+		typeutils.IsKnown(m.AllowOutdatedVersion),
+		MinVersionAllowOutdatedVersion, "The 'allow_outdated_version' parameter requires server version %s or higher.", MinVersionAllowOutdatedVersion.String())
 
 	return reqs, nil
-}
-
-func getPackageID(name string, version string) string {
-	hash, _ := typeutils.StringToHash(name + version)
-	return *hash
 }

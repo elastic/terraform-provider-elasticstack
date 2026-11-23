@@ -19,13 +19,16 @@ package kibanaoapi_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 	"time"
 
 	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -410,4 +413,193 @@ func Test_CreateUpdateAlertingRule_RequestBuildError(t *testing.T) {
 			require.Contains(t, errDetail, "unsupported type: chan int")
 		})
 	}
+}
+
+func TestFindAlertingRules_collectsEveryPage(t *testing.T) {
+	t.Parallel()
+
+	var pages []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodGet, r.Method)
+		assert.Equal(t, "/s/ops/api/alerting/rules/_find", r.URL.Path)
+		query := r.URL.Query()
+		perPage, err := strconv.ParseFloat(query.Get("per_page"), 32)
+		assert.NoError(t, err)
+		assert.InDelta(t, 100, perPage, 0)
+		assert.Equal(t, "name", query.Get("sort_field"))
+		assert.Equal(t, "asc", query.Get("sort_order"))
+		assert.Empty(t, query.Get("filter"))
+		pages = append(pages, query.Get("page"))
+
+		w.Header().Set("Content-Type", "application/json")
+		switch query.Get("page") {
+		case "1":
+			_, err = fmt.Fprintf(w, `{"page":1,"per_page":100,"total":2,"data":[%s]}`, findRuleJSON("id-1", "a-rule"))
+		case "2":
+			_, err = fmt.Fprintf(w, `{"page":2,"per_page":100,"total":2,"data":[%s]}`, findRuleJSON("id-2", "b-rule"))
+		default:
+			assert.Failf(t, "unexpected page", "%q", query.Get("page"))
+			return
+		}
+		assert.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	client, err := kibanaoapi.NewClient(kibanaoapi.Config{URL: server.URL})
+	require.NoError(t, err)
+
+	rules, diags := kibanaoapi.FindAlertingRules(context.Background(), client, "ops", nil)
+	require.False(t, diags.HasError(), "diags: %v", diags)
+	require.Equal(t, []string{"id-1", "id-2"}, findRuleIDs(rules))
+	require.Equal(t, []string{"1", "2"}, pages)
+}
+
+func TestFindAlertingRules_stopsOnEmptyPage(t *testing.T) {
+	t.Parallel()
+
+	var pages int
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		pages++
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Query().Get("page") {
+		case "1":
+			_, err := fmt.Fprintf(w, `{"page":1,"per_page":100,"total":3,"data":[%s]}`, findRuleJSON("id-1", "a-rule"))
+			assert.NoError(t, err)
+		case "2":
+			_, err := w.Write([]byte(`{"page":2,"per_page":100,"total":3,"data":[]}`))
+			assert.NoError(t, err)
+		default:
+			assert.Failf(t, "unexpected page", "%q", r.URL.Query().Get("page"))
+		}
+	}))
+	t.Cleanup(server.Close)
+
+	client, err := kibanaoapi.NewClient(kibanaoapi.Config{URL: server.URL})
+	require.NoError(t, err)
+
+	rules, diags := kibanaoapi.FindAlertingRules(context.Background(), client, "default", nil)
+	require.False(t, diags.HasError(), "diags: %v", diags)
+	require.Equal(t, []string{"id-1"}, findRuleIDs(rules))
+	require.Equal(t, 2, pages)
+}
+
+func TestFindAlertingRules_totalAbove10000IsError(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		if r.URL.Query().Get("page") != "1" {
+			_, err := w.Write([]byte(`{"page":2,"per_page":100,"total":10001,"data":[]}`))
+			assert.NoError(t, err)
+			return
+		}
+		_, err := fmt.Fprintf(w, `{"page":1,"per_page":100,"total":10001,"data":[%s]}`, findRuleJSON("id-1", "a-rule"))
+		assert.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	client, err := kibanaoapi.NewClient(kibanaoapi.Config{URL: server.URL})
+	require.NoError(t, err)
+
+	rules, diags := kibanaoapi.FindAlertingRules(context.Background(), client, "default", nil)
+	require.True(t, diags.HasError())
+	require.Nil(t, rules)
+	require.Contains(t, diags[0].Summary()+" "+diags[0].Detail(), "filter")
+}
+
+func TestFindAlertingRules_laterPageFailureDiscardsEarlierResults(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Query().Get("page") == "1" {
+			w.Header().Set("Content-Type", "application/json")
+			_, err := fmt.Fprintf(w, `{"page":1,"per_page":100,"total":2,"data":[%s]}`, findRuleJSON("id-1", "a-rule"))
+			assert.NoError(t, err)
+			return
+		}
+		w.WriteHeader(http.StatusInternalServerError)
+		_, err := w.Write([]byte(`{"message":"page exploded"}`))
+		assert.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	client, err := kibanaoapi.NewClient(kibanaoapi.Config{URL: server.URL})
+	require.NoError(t, err)
+
+	rules, diags := kibanaoapi.FindAlertingRules(context.Background(), client, "default", nil)
+	require.True(t, diags.HasError())
+	require.Nil(t, rules)
+	require.Contains(t, diags[0].Detail(), "page exploded")
+}
+
+func TestFindAlertingRules_missingEndpointIsAPIError(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+		_, err := w.Write([]byte(`{"statusCode":404,"error":"Not Found","message":"Not Found"}`))
+		assert.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	client, err := kibanaoapi.NewClient(kibanaoapi.Config{URL: server.URL})
+	require.NoError(t, err)
+
+	rules, diags := kibanaoapi.FindAlertingRules(context.Background(), client, "default", new(`alert.attributes.enabled: true`))
+	require.True(t, diags.HasError())
+	require.Nil(t, rules)
+	require.Contains(t, diags[0].Detail(), "Not Found")
+}
+
+func TestFindAlertingRules_rejectedFilterIncludesAPIBody(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, `alert.attributes.name: "`, r.URL.Query().Get("filter"))
+		w.WriteHeader(http.StatusInternalServerError)
+		_, err := w.Write([]byte(`{"message":"bad kql"}`))
+		assert.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	client, err := kibanaoapi.NewClient(kibanaoapi.Config{URL: server.URL})
+	require.NoError(t, err)
+
+	filter := `alert.attributes.name: "`
+	rules, diags := kibanaoapi.FindAlertingRules(context.Background(), client, "default", &filter)
+	require.True(t, diags.HasError())
+	require.Nil(t, rules)
+	message := diags[0].Summary() + " " + diags[0].Detail()
+	require.Contains(t, message, "bad kql")
+	require.Contains(t, message, "filter")
+}
+
+func TestFindAlertingRules_changedPagesAreNotAnError(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, err := fmt.Fprintf(w, `{"page":1,"per_page":100,"total":2,"data":[%s]}`, findRuleJSON("id-1", "a-rule"))
+		assert.NoError(t, err)
+	}))
+	t.Cleanup(server.Close)
+
+	client, err := kibanaoapi.NewClient(kibanaoapi.Config{URL: server.URL})
+	require.NoError(t, err)
+
+	rules, diags := kibanaoapi.FindAlertingRules(context.Background(), client, "default", nil)
+	require.False(t, diags.HasError(), "diags: %v", diags)
+	require.Equal(t, []string{"id-1", "id-1"}, findRuleIDs(rules))
+}
+
+func findRuleJSON(id, name string) string {
+	return fmt.Sprintf(`{"id":%q,"name":%q,"consumer":"alerts","rule_type_id":".index-threshold","enabled":true,"tags":[],"schedule":{"interval":"1m"},"actions":[],"params":{}}`, id, name)
+}
+
+func findRuleIDs(rules []models.AlertingRule) []string {
+	ids := make([]string, 0, len(rules))
+	for _, rule := range rules {
+		ids = append(ids, rule.RuleID)
+	}
+	return ids
 }

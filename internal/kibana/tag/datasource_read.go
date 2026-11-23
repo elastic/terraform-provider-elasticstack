@@ -31,14 +31,13 @@ import (
 func readTagsDataSource(
 	ctx context.Context,
 	client *clients.KibanaScopedClient,
+	_ string,
+	spaceID string,
 	config tagsDataSourceModel,
-) (tagsDataSourceModel, diag.Diagnostics) {
+) (tagsDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	spaceID := clients.DefaultSpaceID
-	if typeutils.IsKnown(config.SpaceID) && config.SpaceID.ValueString() != "" {
-		spaceID = config.SpaceID.ValueString()
-	}
+	spaceID = clients.EffectiveSpaceID(spaceID)
 	config.SpaceID = types.StringValue(spaceID)
 
 	oapiClient := client.GetKibanaOapiClient()
@@ -46,26 +45,21 @@ func readTagsDataSource(
 	tags, listDiags := listAllTags(ctx, oapiClient, spaceID, query, kibanaoapi.ListTags)
 	diags.Append(listDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	diags.Append(config.setTags(ctx, tags)...)
-	return config, diags
+	return config, !diags.HasError(), diags
 }
 
 type listTagsPageFunc func(context.Context, *kibanaoapi.Client, string, *kbapi.GetTagsParams) (*kibanaoapi.TagListResult, diag.Diagnostics)
 
 func listAllTags(ctx context.Context, client *kibanaoapi.Client, spaceID string, query *string, listPage listTagsPageFunc) ([]kibanaoapi.TagDetail, diag.Diagnostics) {
-	var (
-		collected []kibanaoapi.TagDetail
-		page      float32 = 1
-		total     float32
-	)
-
-	for {
+	return kibanaoapi.CollectAllPages(func(page int) ([]kibanaoapi.TagDetail, int, diag.Diagnostics) {
+		pageNum := float32(page)
 		perPage := kibanaoapi.TagListMaxPerPage()
 		params := &kbapi.GetTagsParams{
-			Page:    &page,
+			Page:    &pageNum,
 			PerPage: &perPage,
 		}
 		if query != nil && *query != "" {
@@ -74,19 +68,9 @@ func listAllTags(ctx context.Context, client *kibanaoapi.Client, spaceID string,
 
 		result, diags := listPage(ctx, client, spaceID, params)
 		if diags.HasError() {
-			return nil, diags
+			return nil, 0, diags
 		}
 
-		collected = append(collected, result.Tags...)
-		if total == 0 {
-			total = result.Total
-		}
-
-		if len(collected) >= int(total) || len(result.Tags) == 0 {
-			break
-		}
-		page++
-	}
-
-	return collected, nil
+		return result.Tags, int(result.Total), nil
+	})
 }

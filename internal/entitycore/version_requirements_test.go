@@ -83,6 +83,29 @@ func TestSingleVersionRequirement(t *testing.T) {
 	require.Nil(t, reqs[0].VersionCheck)
 }
 
+func TestAppendVersionRequirementIf(t *testing.T) {
+	t.Parallel()
+
+	minVersion := version.Must(version.NewVersion("8.15.0"))
+
+	var reqs []VersionRequirement
+	reqs = AppendVersionRequirementIf(reqs, false, minVersion, "unused requires %s", minVersion.String())
+	require.Empty(t, reqs)
+
+	reqs = AppendVersionRequirementIf(reqs, true, minVersion, "feature requires %s or higher", minVersion.String())
+	require.Len(t, reqs, 1)
+	require.Equal(t, *minVersion, reqs[0].MinVersion)
+	require.Equal(t, "feature requires 8.15.0 or higher", reqs[0].ErrorMessage)
+	require.Nil(t, reqs[0].AttributePath)
+	require.Nil(t, reqs[0].VersionCheck)
+
+	otherVersion := version.Must(version.NewVersion("9.0.0"))
+	reqs = AppendVersionRequirementIf(reqs, true, otherVersion, "other requires %s", otherVersion.String())
+	require.Len(t, reqs, 2)
+	require.Equal(t, *otherVersion, reqs[1].MinVersion)
+	require.Equal(t, "other requires 9.0.0", reqs[1].ErrorMessage)
+}
+
 func TestEnforceVersionRequirementsCustomCheck(t *testing.T) {
 	t.Parallel()
 

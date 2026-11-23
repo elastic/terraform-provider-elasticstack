@@ -63,7 +63,7 @@ func Test_populatePanelConfigJSONDefaults_legacyMetric(t *testing.T) {
 				"attributes": {
 					"type": "legacy_metric",
 					"filters": [],
-					"metric": {"field": "bytes", "operation": "last_value", "show_array_values": false},
+					"metric": {"field": "bytes", "operation": "last_value", "show_array_values": false, "color": {"type": "auto"}, "size": "m"},
 					"dataset": {"type": "dataView", "id": "metrics-*"}
 				}
 			}`,
@@ -81,7 +81,7 @@ func Test_populatePanelConfigJSONDefaults_legacyMetric(t *testing.T) {
 				"attributes": {
 					"type": "legacy_metric",
 					"filters": [],
-					"metric": {"field": "bytes", "operation": "last_value", "show_array_values": false}
+					"metric": {"field": "bytes", "operation": "last_value", "show_array_values": false, "color": {"type": "auto"}, "size": "m"}
 				}
 			}`,
 		},
@@ -567,10 +567,13 @@ func Test_populatePanelConfigJSONDefaults_xy(t *testing.T) {
 				require.Len(t, y0, 2)
 				assert.Equal(t, false, y0[0].(map[string]any)["empty_as_null"])
 				assert.Equal(t, false, y0[1].(map[string]any)["empty_as_null"])
+				assert.Equal(t, "y", y0[0].(map[string]any)["axis"])
+				assert.Equal(t, "y", y0[1].(map[string]any)["axis"])
 				// Second layer: one y metric
 				y1 := layers[1].(map[string]any)["y"].([]any)
 				require.Len(t, y1, 1)
 				assert.Equal(t, false, y1[0].(map[string]any)["fit"])
+				assert.Equal(t, "y", y1[0].(map[string]any)["axis"])
 			},
 		},
 		{
@@ -632,7 +635,7 @@ func Test_populatePanelConfigJSONDefaults_datatable(t *testing.T) {
 				"attributes": {
 					"type": "datatable",
 					"filters": [],
-					"metrics": [{"operation": "count", "empty_as_null": false, "fit": false, "color": {"type": "auto"}}]
+					"metrics": [{"operation": "count", "empty_as_null": false, "fit": false, "color": {"type": "auto"}, "visible": true, "alignment": "right"}]
 				}
 			}`,
 		},

@@ -36,7 +36,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanelTypeGauge)
+	return string(kbapi.KibanaHTTPAPIsVisGaugeNoESQLByValuePanelTypeGauge)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -156,9 +156,9 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	prior := lenscommon.SnapshotAndResetBlock(&blocks.GaugeConfig)
 	return lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.GaugeConfig, prior,
-		attrs.AsKibanaHTTPAPIsGaugeNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsGaugeESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsGaugeNoESQLByValuePanel) bool {
+		attrs.AsKibanaHTTPAPIsVisGaugeNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsVisGaugeESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsVisGaugeNoESQLByValuePanel) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
 		gaugeConfigFromAPI,
@@ -176,7 +176,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignGaugeStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignGaugeConfigStateFromPlan(ctx, plan.GaugeConfig, state.GaugeConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

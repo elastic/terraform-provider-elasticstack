@@ -40,6 +40,21 @@ const (
 	drilldownURLOpenInNewTabDefault = false
 )
 
+// URLDrilldownAPIItem builds a URLDrilldownAPIItemData from the four scalar
+// fields shared by every generated per-panel drilldown struct. Every panel's
+// BuildURLDrilldownItems extract closure maps its generated struct's Url,
+// Label, EncodeUrl, and OpenInNewTab fields identically; calling this here
+// keeps that mapping in one place instead of duplicating the literal at each
+// call site.
+func URLDrilldownAPIItem(url, label string, encodeURL, openInNewTab *bool) URLDrilldownAPIItemData {
+	return URLDrilldownAPIItemData{
+		URL:          url,
+		Label:        label,
+		EncodeUrl:    encodeURL,
+		OpenInNewTab: openInNewTab,
+	}
+}
+
 // BuildURLDrilldownItems converts a pointer to a slice of a panel's generated
 // drilldown struct into []URLDrilldownAPIItemData, sharing the nil/empty guard and
 // make+loop shape that would otherwise be duplicated in every panel package. extract

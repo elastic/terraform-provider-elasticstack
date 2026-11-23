@@ -19,14 +19,207 @@ package config
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
+	"reflect"
 	"testing"
 
+	kibanaoapi "github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
 	"github.com/hashicorp/terraform-plugin-framework/attr"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/stretchr/testify/require"
 )
+
+func TestNewFromFramework_providerKibanaHeadersReachRequest(t *testing.T) {
+	receivedHeaders := make(chan http.Header, 1)
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		receivedHeaders <- r.Header.Clone()
+		w.WriteHeader(http.StatusOK)
+	}))
+	t.Cleanup(server.Close)
+	t.Setenv(PreferConfiguredKibanaEndpointEnvVar, "true")
+
+	providerConfig := ProviderConfiguration{
+		Kibana: []KibanaConnection{
+			{
+				Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+					" X-Proxy-Token ": types.StringValue(" secret "),
+				}),
+				Endpoints: types.ListValueMust(types.StringType, []attr.Value{
+					types.StringValue(server.URL),
+				}),
+				CACerts: types.ListNull(types.StringType),
+			},
+		},
+	}
+
+	configuredClient, diags := NewFromFramework(context.Background(), providerConfig, "test")
+	require.False(t, diags.HasError())
+	kibanaClient, err := kibanaoapi.NewClient(*configuredClient.KibanaOapi)
+	require.NoError(t, err)
+
+	response, err := kibanaClient.HTTP.Get(kibanaClient.URL)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = response.Body.Close() })
+
+	require.Equal(t, "secret", (<-receivedHeaders).Get("X-Proxy-Token"))
+}
+
+func TestKibanaConnection_headersUseSingleStringValues(t *testing.T) {
+	headers, ok := reflect.TypeFor[KibanaConnection]().FieldByName("Headers")
+
+	require.True(t, ok)
+	require.Equal(t, reflect.TypeFor[types.Map](), headers.Type)
+	require.Equal(t, "headers", headers.Tag.Get("tfsdk"))
+}
+
+func Test_newKibanaOapiConfigFromFramework_trimsHeaderWhitespace(t *testing.T) {
+	providerConfig := ProviderConfiguration{
+		Kibana: []KibanaConnection{
+			{
+				Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+					" X-Proxy-Token ": types.StringValue(" secret "),
+				}),
+				Endpoints: types.ListNull(types.StringType),
+				CACerts:   types.ListNull(types.StringType),
+			},
+		},
+	}
+
+	kibanaCfg, diags := newKibanaOapiConfigFromFramework(context.Background(), providerConfig, baseConfig{})
+
+	require.False(t, diags.HasError())
+	require.Equal(t, map[string]string{"X-Proxy-Token": "secret"}, kibanaCfg.Headers)
+}
+
+func Test_newKibanaOapiConfigFromFramework_rejectsReservedHeaderNamesCaseInsensitively(t *testing.T) {
+	configuredNames := []string{
+		"aUtHoRiZaTiOn",
+		"AUTHORIZATION",
+		"KbN-XsRf",
+		"KBN-XSRF",
+		"hOsT",
+		"HOST",
+		"cOnTeNt-LeNgTh",
+		"CONTENT-LENGTH",
+		"tRaNsFeR-EnCoDiNg",
+		"TRANSFER-ENCODING",
+		"tRaIlEr",
+		"TRAILER",
+	}
+
+	for _, configuredName := range configuredNames {
+		providerConfig := ProviderConfiguration{
+			Kibana: []KibanaConnection{
+				{
+					Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+						configuredName: types.StringValue("value"),
+					}),
+					Endpoints: types.ListNull(types.StringType),
+					CACerts:   types.ListNull(types.StringType),
+				},
+			},
+		}
+
+		_, diags := newKibanaOapiConfigFromFramework(context.Background(), providerConfig, baseConfig{})
+
+		require.Len(t, diags, 1)
+		require.Contains(t, diags[0].Detail(), `"`+configuredName+`"`)
+	}
+}
+
+func Test_newKibanaOapiConfigFromFramework_rejectsCaseInsensitiveDuplicateHeaderNames(t *testing.T) {
+	const (
+		firstConfiguredName  = "X-Proxy-Token"
+		secondConfiguredName = "x-pRoXy-ToKeN"
+	)
+	providerConfig := ProviderConfiguration{
+		Kibana: []KibanaConnection{
+			{
+				Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+					firstConfiguredName:  types.StringValue("first"),
+					secondConfiguredName: types.StringValue("second"),
+				}),
+				Endpoints: types.ListNull(types.StringType),
+				CACerts:   types.ListNull(types.StringType),
+			},
+		},
+	}
+
+	_, diags := newKibanaOapiConfigFromFramework(context.Background(), providerConfig, baseConfig{})
+
+	require.Len(t, diags, 1)
+	require.Contains(t, diags[0].Detail(), `"`+firstConfiguredName+`"`)
+	require.Contains(t, diags[0].Detail(), `"`+secondConfiguredName+`"`)
+}
+
+func Test_newKibanaOapiConfigFromFramework_reportsCaseInsensitiveDuplicateHeaderNamesDeterministically(t *testing.T) {
+	providerConfig := ProviderConfiguration{
+		Kibana: []KibanaConnection{
+			{
+				Headers: types.MapValueMust(types.StringType, map[string]attr.Value{
+					"X-PROXY-TOKEN": types.StringValue("first"),
+					"X-Proxy-Token": types.StringValue("second"),
+					"x-proxy-token": types.StringValue("third"),
+				}),
+				Endpoints: types.ListNull(types.StringType),
+				CACerts:   types.ListNull(types.StringType),
+			},
+		},
+	}
+
+	_, diags := newKibanaOapiConfigFromFramework(context.Background(), providerConfig, baseConfig{})
+
+	require.Len(t, diags, 2)
+	require.Equal(t, `Headers "X-PROXY-TOKEN" and "X-Proxy-Token" differ only by case and cannot both be configured.`, diags[0].Detail())
+	require.Equal(t, `Headers "X-PROXY-TOKEN" and "x-proxy-token" differ only by case and cannot both be configured.`, diags[1].Detail())
+}
+
+func Test_newKibanaOapiConfigFromFramework_preservesNilHeadersForOmittedNullAndEmptyMaps(t *testing.T) {
+	tests := []struct {
+		name           string
+		providerConfig ProviderConfiguration
+	}{
+		{
+			name: "omitted",
+		},
+		{
+			name: "null",
+			providerConfig: ProviderConfiguration{
+				Kibana: []KibanaConnection{
+					{
+						Headers:   types.MapNull(types.StringType),
+						Endpoints: types.ListNull(types.StringType),
+						CACerts:   types.ListNull(types.StringType),
+					},
+				},
+			},
+		},
+		{
+			name: "empty",
+			providerConfig: ProviderConfiguration{
+				Kibana: []KibanaConnection{
+					{
+						Headers:   types.MapValueMust(types.StringType, map[string]attr.Value{}),
+						Endpoints: types.ListNull(types.StringType),
+						CACerts:   types.ListNull(types.StringType),
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			kibanaCfg, diags := newKibanaOapiConfigFromFramework(context.Background(), tt.providerConfig, baseConfig{})
+
+			require.False(t, diags.HasError())
+			require.Nil(t, kibanaCfg.Headers)
+		})
+	}
+}
 
 func kibanaMultipleAuthWarningDiag() fwdiags.Diagnostics {
 	var d fwdiags.Diagnostics

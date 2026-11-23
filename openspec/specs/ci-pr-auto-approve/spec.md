@@ -240,13 +240,19 @@ Every commit in a `version-matrix` category pull request SHALL be authored by `g
 
 ### Requirement: Version-matrix file allowlist
 
-Every changed file path in a `version-matrix` category pull request SHALL be exactly `.github/versions/acceptance-test-matrix.json`.
+Every changed file path in a `version-matrix` category pull request SHALL be either `.github/versions/acceptance-test-matrix.json` or `.env.template`.
 
-#### Scenario: Only the pinned versions artifact is allowed
+#### Scenario: Only the pinned versions artifact and env template are allowed
 
-- **GIVEN** a `version-matrix` pull request changes only `.github/versions/acceptance-test-matrix.json`
+- **GIVEN** a `version-matrix` pull request changes only `.github/versions/acceptance-test-matrix.json`, `.env.template`, or both
 - **WHEN** gates run
 - **THEN** the file-path gate for that category SHALL pass
+
+#### Scenario: Other files are rejected
+
+- **GIVEN** a `version-matrix` pull request also changes any other file
+- **WHEN** gates run
+- **THEN** the file-path gate for that category SHALL fail
 
 #### Scenario: Additional file blocks approval
 

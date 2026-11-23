@@ -39,17 +39,17 @@ import (
 
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String                                      `tfsdk:"id"`
-	ElasticsearchConnection types.List                                        `tfsdk:"elasticsearch_connection"`
-	Name                    types.String                                      `tfsdk:"name"`
-	Description             types.String                                      `tfsdk:"description"`
-	Applications            types.Set                                         `tfsdk:"applications"`
-	Global                  customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"global"`
-	Cluster                 types.Set                                         `tfsdk:"cluster"`
-	Indices                 types.Set                                         `tfsdk:"indices"`
-	RemoteIndices           types.Set                                         `tfsdk:"remote_indices"`
-	Metadata                jsontypes.Normalized                              `tfsdk:"metadata"`
-	RunAs                   types.Set                                         `tfsdk:"run_as"`
+	entitycore.ElasticsearchConnectionField
+	ID            types.String                                      `tfsdk:"id"`
+	Name          types.String                                      `tfsdk:"name"`
+	Description   types.String                                      `tfsdk:"description"`
+	Applications  types.Set                                         `tfsdk:"applications"`
+	Global        customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"global"`
+	Cluster       types.Set                                         `tfsdk:"cluster"`
+	Indices       types.Set                                         `tfsdk:"indices"`
+	RemoteIndices types.Set                                         `tfsdk:"remote_indices"`
+	Metadata      jsontypes.Normalized                              `tfsdk:"metadata"`
+	RunAs         types.Set                                         `tfsdk:"run_as"`
 }
 
 type ApplicationData struct {
@@ -489,9 +489,8 @@ func (data *Data) fromAPIModel(ctx context.Context, role *elasticsearch.Role) di
 	return diags
 }
 
-func (data Data) GetID() types.String                    { return data.ID }
-func (data Data) GetResourceID() types.String            { return data.Name }
-func (data Data) GetElasticsearchConnection() types.List { return data.ElasticsearchConnection }
+func (data Data) GetID() types.String         { return data.ID }
+func (data Data) GetResourceID() types.String { return data.Name }
 
 var _ entitycore.WithVersionRequirements = Data{}
 
@@ -500,25 +499,12 @@ var _ entitycore.WithVersionRequirements = Data{}
 func (data Data) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	var reqs []entitycore.VersionRequirement
 
-	if typeutils.IsKnown(data.Description) {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion: *MinSupportedDescriptionVersion,
-			ErrorMessage: fmt.Sprintf(
-				"'description' is supported only for Elasticsearch v%s and above",
-				MinSupportedDescriptionVersion.String(),
-			),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs, typeutils.IsKnown(data.Description),
+		MinSupportedDescriptionVersion, "'description' is supported only for Elasticsearch v%s and above", MinSupportedDescriptionVersion.String())
 
-	if typeutils.IsKnown(data.RemoteIndices) && len(data.RemoteIndices.Elements()) > 0 {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion: *MinSupportedRemoteIndicesVersion,
-			ErrorMessage: fmt.Sprintf(
-				"'remote_indices' is supported only for Elasticsearch v%s and above",
-				MinSupportedRemoteIndicesVersion.String(),
-			),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs,
+		typeutils.IsKnown(data.RemoteIndices) && len(data.RemoteIndices.Elements()) > 0,
+		MinSupportedRemoteIndicesVersion, "'remote_indices' is supported only for Elasticsearch v%s and above", MinSupportedRemoteIndicesVersion.String())
 
 	return reqs, nil
 }

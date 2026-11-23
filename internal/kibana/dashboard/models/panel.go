@@ -54,6 +54,8 @@ type PanelModel struct {
 
 type PinnedPanelModel struct {
 	Type                     types.String                   `tfsdk:"type"`
+	Width                    types.String                   `tfsdk:"width"`
+	Grow                     types.Bool                     `tfsdk:"grow"`
 	TimeSliderControlConfig  *TimeSliderControlConfigModel  `tfsdk:"time_slider_control_config"`
 	EsqlControlConfig        *EsqlControlConfigModel        `tfsdk:"esql_control_config"`
 	OptionsListControlConfig *OptionsListControlConfigModel `tfsdk:"options_list_control_config"`

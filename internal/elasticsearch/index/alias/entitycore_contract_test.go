@@ -39,6 +39,14 @@ func TestResource_embedsElasticsearchResource(t *testing.T) {
 	require.Equal(t, reflect.TypeFor[*entitycore.ElasticsearchResource[tfModel]](), field.Type)
 }
 
+func TestAliasResource_ImplementsModifyPlan(t *testing.T) {
+	t.Parallel()
+
+	_, ok := any(newAliasResource()).(resource.ResourceWithModifyPlan)
+
+	require.True(t, ok)
+}
+
 func TestAliasResource_importState_passthroughCompoundID(t *testing.T) {
 	t.Parallel()
 

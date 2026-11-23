@@ -35,22 +35,21 @@ import (
 // Data is the Terraform state/plan model for the watch resource.
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String                                      `tfsdk:"id"`
-	ElasticsearchConnection types.List                                        `tfsdk:"elasticsearch_connection"`
-	WatchID                 types.String                                      `tfsdk:"watch_id"`
-	Active                  types.Bool                                        `tfsdk:"active"`
-	Trigger                 jsontypes.Normalized                              `tfsdk:"trigger"`
-	Input                   customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"input"`
-	Condition               customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"condition"`
-	Actions                 customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"actions"`
-	Metadata                jsontypes.Normalized                              `tfsdk:"metadata"`
-	Transform               customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"transform"`
-	ThrottlePeriodInMillis  types.Int64                                       `tfsdk:"throttle_period_in_millis"`
+	entitycore.ElasticsearchConnectionField
+	ID                     types.String                                      `tfsdk:"id"`
+	WatchID                types.String                                      `tfsdk:"watch_id"`
+	Active                 types.Bool                                        `tfsdk:"active"`
+	Trigger                jsontypes.Normalized                              `tfsdk:"trigger"`
+	Input                  customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"input"`
+	Condition              customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"condition"`
+	Actions                customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"actions"`
+	Metadata               jsontypes.Normalized                              `tfsdk:"metadata"`
+	Transform              customtypes.JSONWithDefaultsValue[map[string]any] `tfsdk:"transform"`
+	ThrottlePeriodInMillis types.Int64                                       `tfsdk:"throttle_period_in_millis"`
 }
 
-func (d Data) GetID() types.String                    { return d.ID }
-func (d Data) GetResourceID() types.String            { return d.WatchID }
-func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+func (d Data) GetID() types.String         { return d.ID }
+func (d Data) GetResourceID() types.String { return d.WatchID }
 
 // toPutModel converts the Terraform state into a models.PutWatch for the API.
 func (d *Data) toPutModel(_ context.Context) (*models.PutWatch, diag.Diagnostics) {

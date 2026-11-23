@@ -14,7 +14,7 @@ data "elasticstack_elasticsearch_ingest_processor_date" "example" {
   formats       = <required, list(string)> # Expected date formats (min 1 item)
   target_field  = <optional, string>       # Default: "@timestamp". Field to store the parsed date
   timezone      = <optional, string>       # Default: "UTC". Timezone for parsing
-  locale        = <optional, string>       # Default: "ENGLISH". Locale for parsing month/day names
+  locale        = <optional, string>       # Default: "en". Locale for parsing month/day names
   output_format = <optional, string>       # Default: "yyyy-MM-dd'T'HH:mm:ss.SSSXXX". Format for writing the date
 
   # Common processor fields
@@ -84,13 +84,13 @@ The data source SHALL require `field` (string) and `formats` (list of strings, m
 
 ### Requirement: timezone and locale defaults (REQ-006)
 
-`timezone` SHALL default to `"UTC"` and `locale` SHALL default to `"ENGLISH"`. Both SHALL be included in the serialized JSON when set to their default or explicitly configured values. When omitted from config, the model field uses `omitempty`, so they are only serialized when non-empty; defaults set in the schema ensure they are always included.
+`timezone` SHALL default to `"UTC"` and `locale` SHALL default to `"en"`. Both SHALL be included in the serialized JSON when set to their default or explicitly configured values. When omitted from config, the model field uses `omitempty`, so they are only serialized when non-empty; defaults set in the schema ensure they are always included.
 
 #### Scenario: Default timezone and locale
 
 - GIVEN `timezone` and `locale` are not explicitly configured
 - WHEN the data source is read
-- THEN the serialized JSON SHALL include `"timezone": "UTC"` and `"locale": "ENGLISH"`
+- THEN the serialized JSON SHALL include `"timezone": "UTC"` and `"locale": "en"`
 
 ### Requirement: output_format default (REQ-007)
 

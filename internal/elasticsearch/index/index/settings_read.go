@@ -198,7 +198,7 @@ func jsonRawToNormalized(raw json.RawMessage) (jsontypes.Normalized, bool) {
 }
 
 func hydrateQueryDefaultFieldFromRaw(ctx context.Context, model *tfModel, raw json.RawMessage) {
-	elems := extractStringSliceFromFlatRaw(raw)
+	elems, _ := typeutils.StringSliceFromRawJSON(raw)
 	if len(elems) == 0 {
 		return
 	}
@@ -210,16 +210,6 @@ func hydrateQueryDefaultFieldFromRaw(ctx context.Context, model *tfModel, raw js
 	model.QueryDefaultField = fieldSet
 }
 
-// extractStringSliceFromFlatRaw extracts string values from a flat-settings JSON
-// value (scalar string or JSON array).
-func extractStringSliceFromFlatRaw(raw json.RawMessage) []string {
-	var v any
-	if err := json.Unmarshal(raw, &v); err != nil {
-		return nil
-	}
-	return stringSliceFromAny(v)
-}
-
 func setFlatSettingOnModel(ctx context.Context, model *tfModel, tfFieldKey string, raw json.RawMessage, modelType reflect.Type) {
 	value, ok := model.getFieldValueByTagValue(tfFieldKey, modelType)
 	if !ok {
@@ -227,34 +217,18 @@ func setFlatSettingOnModel(ctx context.Context, model *tfModel, tfFieldKey strin
 	}
 
 	switch value.(type) {
-	case types.Int64:
-		var s string
-		if err := json.Unmarshal(raw, &s); err != nil {
+	case types.Int64, types.Bool, types.String:
+		decoded := parseFlatSettingJSONValue(raw)
+		if decoded == nil {
 			return
 		}
-		i, err := strconv.ParseInt(s, 10, 64)
-		if err != nil {
+		attrValue, diags := typeutils.DecodeAnyToAttrValue(ctx, value.Type(ctx), decoded)
+		if diags.HasError() {
 			return
 		}
-		setTFModelField(model, tfFieldKey, types.Int64Value(i))
-	case types.Bool:
-		var s string
-		if err := json.Unmarshal(raw, &s); err != nil {
-			return
-		}
-		b, err := strconv.ParseBool(s)
-		if err != nil {
-			return
-		}
-		setTFModelField(model, tfFieldKey, types.BoolValue(b))
-	case types.String:
-		var s string
-		if err := json.Unmarshal(raw, &s); err != nil {
-			return
-		}
-		setTFModelField(model, tfFieldKey, types.StringValue(s))
+		setTFModelField(model, tfFieldKey, attrValue)
 	case types.Set:
-		elems := extractStringSliceFromFlatRaw(raw)
+		elems, _ := typeutils.StringSliceFromRawJSON(raw)
 		if len(elems) == 0 {
 			return
 		}
@@ -264,7 +238,7 @@ func setFlatSettingOnModel(ctx context.Context, model *tfModel, tfFieldKey strin
 		}
 		setTFModelField(model, tfFieldKey, fieldSet)
 	case types.List:
-		elems := extractStringSliceFromFlatRaw(raw)
+		elems, _ := typeutils.StringSliceFromRawJSON(raw)
 		if len(elems) == 0 {
 			return
 		}
@@ -277,20 +251,7 @@ func setFlatSettingOnModel(ctx context.Context, model *tfModel, tfFieldKey strin
 }
 
 func setTFModelField(model *tfModel, tfFieldKey string, value attr.Value) {
-	rv := reflect.ValueOf(model).Elem()
-	rt := rv.Type()
-	for i := range rt.NumField() {
-		field := rt.Field(i)
-		if field.Tag.Get("tfsdk") != tfFieldKey {
-			continue
-		}
-		fieldVal := rv.Field(i)
-		valReflect := reflect.ValueOf(value)
-		if valReflect.Type().AssignableTo(fieldVal.Type()) {
-			fieldVal.Set(valReflect)
-		}
-		return
-	}
+	typeutils.SetFieldValueByTagValue(reflect.ValueOf(model), reflect.TypeFor[tfModel](), tfFieldKey, value)
 }
 
 // populateOperationalDefaults sets provider-side defaults when each field is null.
@@ -313,7 +274,6 @@ func populateOperationalDefaults(model *tfModel) {
 // are absent from configuration after import hydration.
 func pruneImportHydratedPlanFields(ctx context.Context, plan, config *tfModel) {
 	modelType := reflect.TypeFor[tfModel]()
-	planVal := reflect.ValueOf(plan).Elem()
 
 	for _, fieldKey := range importHydrationPrunableFieldKeys {
 		configField, ok := config.getFieldValueByTagValue(fieldKey, modelType)
@@ -321,40 +281,11 @@ func pruneImportHydratedPlanFields(ctx context.Context, plan, config *tfModel) {
 			continue
 		}
 
-		for i := range modelType.NumField() {
-			field := modelType.Field(i)
-			if field.Tag.Get("tfsdk") != fieldKey {
-				continue
-			}
-			planField := planVal.Field(i)
-			planAttr, ok := reflect.TypeAssert[attr.Value](planField)
-			if !ok {
-				break
-			}
-			nullVal := nullAttrValueForField(ctx, planAttr)
-			if nullVal != nil {
-				planField.Set(reflect.ValueOf(nullVal))
-			}
-			break
+		planField, found := plan.getFieldValueByTagValue(fieldKey, modelType)
+		if !found {
+			continue
 		}
-	}
-}
 
-func nullAttrValueForField(ctx context.Context, v attr.Value) attr.Value {
-	switch val := v.(type) {
-	case types.Int64:
-		return types.Int64Null()
-	case types.Bool:
-		return types.BoolNull()
-	case types.String:
-		return types.StringNull()
-	case types.Set:
-		return types.SetNull(val.ElementType(ctx))
-	case types.List:
-		return types.ListNull(val.ElementType(ctx))
-	case jsontypes.Normalized:
-		return jsontypes.NewNormalizedNull()
-	default:
-		return nil
+		setTFModelField(plan, fieldKey, typeutils.NullValueForType(planField.Type(ctx)))
 	}
 }

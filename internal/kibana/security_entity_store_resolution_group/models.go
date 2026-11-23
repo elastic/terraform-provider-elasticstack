@@ -38,11 +38,14 @@ var minKibanaEntityStoreResolutionVersion = version.Must(version.NewVersion("9.1
 
 type resolutionGroupModel struct {
 	entitycore.KibanaConnectionField
-	ID                  types.String         `tfsdk:"id"`
-	SpaceID             types.String         `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	EntityID            types.String         `tfsdk:"entity_id"`
 	ResolutionGroupJSON jsontypes.Normalized `tfsdk:"resolution_group_json"`
 }
+
+func (model resolutionGroupModel) GetID() types.String         { return model.ID }
+func (model resolutionGroupModel) GetResourceID() types.String { return model.EntityID }
 
 func (model resolutionGroupModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return entitycore.SingleVersionRequirement(
@@ -55,7 +58,7 @@ func (model resolutionGroupModel) GetVersionRequirements(_ context.Context) ([]e
 func (model *resolutionGroupModel) populateFromAPI(spaceID string, body []byte) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: model.EntityID.ValueString()}).String())
+	model.ID = clients.CompositeIDValue(spaceID, model.EntityID.ValueString())
 	model.SpaceID = types.StringValue(spaceID)
 	model.ResolutionGroupJSON = jsontypes.NewNormalizedValue(string(body))
 

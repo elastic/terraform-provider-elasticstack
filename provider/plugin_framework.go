@@ -41,7 +41,9 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/ilm"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/index"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexmappings"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indexsettings"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/indices"
+	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/rolloverindexseries"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/template"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/index/templateilmattachment"
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/inference/inferenceendpoint"
@@ -74,6 +76,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/elasticsearch/watcher/watch"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentdownloadsource"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicy"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/agentpolicyds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/customintegration"
 	elasticdefendintegrationpolicy "github.com/elastic/terraform-provider-elasticstack/internal/fleet/elastic_defend_integration_policy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/enrollmenttokens"
@@ -85,11 +88,15 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/outputds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/proxy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhost"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/spacesettings"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderagent"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderskill"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuildertool"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderworkflow"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrule"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/alertingrules"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/casefielddefinition"
+	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/casetemplate"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/connectors"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dataview"
@@ -254,6 +261,8 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		agentbuilderskill.NewResource,
 		agentbuildertool.NewResource,
 		agentbuilderworkflow.NewResource,
+		casefielddefinition.NewResource,
+		casetemplate.NewResource,
 		integration.NewResource,
 		integrationpolicy.NewResource,
 		customintegration.NewResource,
@@ -262,6 +271,7 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		output.NewResource,
 		agentdownloadsource.NewResource,
 		serverhost.NewResource,
+		spacesettings.NewResource,
 		proxy.NewResource,
 		systemuser.NewSystemUserResource,
 		securityuser.NewUserResource,
@@ -281,7 +291,9 @@ func (p *Provider) resources(_ context.Context) []func() resource.Resource {
 		ingest.NewIngestPipelineResource,
 		rolemapping.NewRoleMappingResource,
 		alias.NewAliasResource,
+		rolloverindexseries.NewRolloverIndexSeriesResource,
 		indexmappings.NewIndexMappingsResource,
+		indexsettings.NewIndexSettingsResource,
 		templateilmattachment.NewResource,
 		datafeed.NewDatafeedResource,
 		anomalydetectionjob.NewAnomalyDetectionJobResource,
@@ -329,6 +341,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		indices.NewDataSource,
 		template.NewDataSource,
 		spaces.NewDataSource,
+		alertingrules.NewDataSource,
 		security_role.NewDataSource,
 		securityentitystoreresolutiongroup.NewDataSource,
 		securityentitystore.NewDataSource,
@@ -341,6 +354,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		agentbuilderworkflow.NewDataSource,
 		exportsavedobjects.NewDataSource,
 		enrollmenttokens.NewDataSource,
+		agentpolicyds.NewDataSource,
 		integrationds.NewDataSource,
 		enrich.NewEnrichPolicyDataSource,
 		synonyms.NewSynonymSetDataSource,

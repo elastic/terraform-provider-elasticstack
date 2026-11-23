@@ -40,8 +40,8 @@ import (
 // declared exactly once rather than duplicated across both models.
 type workflowDataSourceModel struct {
 	entitycore.KibanaConnectionField
-	ID                types.String                    `tfsdk:"id"`
-	SpaceID           types.String                    `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	WorkflowID        types.String                    `tfsdk:"workflow_id"`
 	ConfigurationYaml customtypes.NormalizedYamlValue `tfsdk:"configuration_yaml"`
 }
@@ -55,6 +55,12 @@ func (workflowDataSourceModel) GetVersionRequirements(_ context.Context) ([]enti
 
 var _ entitycore.WithVersionRequirements = workflowDataSourceModel{}
 
+// GetID, GetResourceID and GetSpaceID expose the lookup identity. The required
+// `id` attribute is the lookup key (plain workflow id or composite
+// `<space>/<workflow>`); `workflow_id` is computed on the data source.
+func (m workflowDataSourceModel) GetID() types.String         { return m.ID }
+func (m workflowDataSourceModel) GetResourceID() types.String { return m.ID }
+
 type workflowModel struct {
 	entitycore.ResourceTimeoutsField
 	workflowDataSourceModel
@@ -66,7 +72,6 @@ type workflowModel struct {
 
 func (model workflowModel) GetID() types.String         { return model.ID }
 func (model workflowModel) GetResourceID() types.String { return model.WorkflowID }
-func (model workflowModel) GetSpaceID() types.String    { return model.SpaceID }
 
 var _ entitycore.KibanaResourceModel = workflowModel{}
 var _ entitycore.WithVersionRequirements = workflowModel{}
@@ -78,7 +83,7 @@ func (model *workflowModel) populateFromAPI(_ context.Context, spaceID string, d
 
 	spaceID = clients.EffectiveSpaceID(spaceID)
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.ID = clients.CompositeIDValue(spaceID, data.ID)
 	model.WorkflowID = types.StringValue(data.ID)
 	model.SpaceID = types.StringValue(spaceID)
 	model.ConfigurationYaml = customtypes.NewNormalizedYamlValue(data.Yaml)

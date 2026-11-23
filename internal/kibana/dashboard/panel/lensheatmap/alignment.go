@@ -46,6 +46,7 @@ func alignHeatmapAxisStateFromPlan(plan, state *models.HeatmapAxesModel) {
 	if plan.X != nil && state.X != nil {
 		if plan.X.Labels != nil && state.X.Labels != nil {
 			lenscommon.PreserveNullIfStateEquals(plan.X.Labels.Visible, &state.X.Labels.Visible, types.BoolValue(true))
+			lenscommon.PreserveNullIfStateEquals(plan.X.Labels.Orientation, &state.X.Labels.Orientation, types.StringValue("horizontal"))
 		}
 		// Kibana reports axis.title.visible=false when the practitioner omits it.
 		if plan.X.Title != nil && state.X.Title != nil {
@@ -82,6 +83,7 @@ func alignHeatmapLegendStateFromPlan(plan *models.HeatmapLegendModel, state **mo
 	// Kibana renders the legend by default; preserve the null plan when the
 	// API read-back returns the default "visible" value.
 	lenscommon.PreserveNullIfStateEquals(plan.Visibility, &(*state).Visibility, types.StringValue("visible"))
+	lenscommon.PreserveNullIfStateEquals(plan.TruncateAfterLines, &(*state).TruncateAfterLines, types.Int64Value(1))
 	lenscommon.PreserveKnownTfValueIfStateNull(plan.Visibility, &(*state).Visibility)
 	lenscommon.PreserveKnownTfValueIfStateNull(plan.Size, &(*state).Size)
 	lenscommon.PreserveKnownTfValueIfStateNull(plan.TruncateAfterLines, &(*state).TruncateAfterLines)

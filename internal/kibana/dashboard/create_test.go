@@ -53,8 +53,8 @@ func testDashboardPlanModel(dashboardID types.String) models.DashboardModel {
 			Value: types.Int64Value(90000),
 		},
 		Query: &models.DashboardQueryModel{
-			Language: types.StringValue("kql"),
-			Text:     types.StringValue(""),
+			Language:   types.StringValue("kql"),
+			Expression: types.StringValue(""),
 		},
 	}
 }

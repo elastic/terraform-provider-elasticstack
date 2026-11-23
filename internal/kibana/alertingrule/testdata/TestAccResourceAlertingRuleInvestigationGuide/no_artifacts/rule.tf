@@ -29,10 +29,4 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
   interval     = "1m"
   enabled      = false
 
-  lifecycle {
-    ignore_changes = [
-      last_execution_date,
-      last_execution_status,
-    ]
-  }
 }

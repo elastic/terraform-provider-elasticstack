@@ -24,6 +24,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/kbschema"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 )
 
 func getDataSourceSchema(_ context.Context) dsschema.Schema {
@@ -86,5 +87,5 @@ func getDataSourceSchema(_ context.Context) dsschema.Schema {
 }
 
 func getOutputItemElemType(ctx context.Context) attr.Type {
-	return getDataSourceSchema(ctx).Attributes["outputs"].GetType().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getDataSourceSchema(ctx).Attributes["outputs"].GetType())
 }

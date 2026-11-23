@@ -155,8 +155,8 @@ func applyIndexSettingsToAPI(numberOfShards types.Int64, numberOfReplicas types.
 type streamModel struct {
 	entitycore.ResourceTimeoutsField
 	entitycore.KibanaConnectionField
-	ID            types.String        `tfsdk:"id"`
-	SpaceID       types.String        `tfsdk:"space_id"`
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
 	Name          types.String        `tfsdk:"name"`
 	Description   types.String        `tfsdk:"description"`
 	WiredConfig   *wiredConfigModel   `tfsdk:"wired_config"`
@@ -178,7 +178,6 @@ type streamQueryModel struct {
 
 func (m streamModel) GetID() types.String         { return m.ID }
 func (m streamModel) GetResourceID() types.String { return m.Name }
-func (m streamModel) GetSpaceID() types.String    { return m.SpaceID }
 
 var streamsMinVersion = version.Must(version.NewVersion("9.4.0-SNAPSHOT"))
 
@@ -214,8 +213,7 @@ func (m *streamModel) streamType() string {
 func (m *streamModel) populateFromAPI(ctx context.Context, resp *kibanaoapi.StreamResponse, name, spaceID string) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	resourceID := clients.CompositeID{ClusterID: spaceID, ResourceID: name}
-	m.ID = types.StringValue(resourceID.String())
+	m.ID = clients.CompositeIDValue(spaceID, name)
 	m.Name = types.StringValue(name)
 	m.SpaceID = types.StringValue(spaceID)
 	m.Description = types.StringValue(resp.Stream.Description)

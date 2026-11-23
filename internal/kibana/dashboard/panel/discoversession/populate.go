@@ -409,21 +409,7 @@ func discoverSessionSortSliceFromAPI[D ~string](api []struct {
 	return out
 }
 
-func discoverSessionOverridesFromAPI(ctx context.Context, api struct {
-	ColumnOrder    *[]string `json:"column_order,omitempty"`
-	ColumnSettings *map[string]struct {
-		Width *float32 `json:"width,omitempty"`
-	} `json:"column_settings,omitempty"`
-	Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity             `json:"density,omitempty"`
-	HeaderRowHeight *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight `json:"header_row_height,omitempty"`
-	RowHeight       *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight       `json:"row_height,omitempty"`
-	RowsPerPage     *float32                                                                                     `json:"rows_per_page,omitempty"`
-	SampleSize      *float32                                                                                     `json:"sample_size,omitempty"`
-	Sort            *[]struct {
-		Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
-		Name      string                                                                                `json:"name"`
-	} `json:"sort,omitempty"`
-}) (*models.DiscoverSessionOverridesModel, diag.Diagnostics) {
+func discoverSessionOverridesFromAPI(ctx context.Context, api discoverSessionOverridesAPI) (*models.DiscoverSessionOverridesModel, diag.Diagnostics) {
 	m := &models.DiscoverSessionOverridesModel{}
 	var diags diag.Diagnostics
 
@@ -584,12 +570,7 @@ func readDiscoverSessionDrilldownsFromConfig0(
 	prior []models.DiscoverSessionPanelDrilldown,
 ) []models.DiscoverSessionPanelDrilldown {
 	items := panelkit.BuildURLDrilldownItems(api, func(d discoverSessionConfig0APIDrilldown) panelkit.URLDrilldownAPIItemData {
-		return panelkit.URLDrilldownAPIItemData{
-			URL:          d.Url,
-			Label:        d.Label,
-			EncodeUrl:    d.EncodeUrl,
-			OpenInNewTab: d.OpenInNewTab,
-		}
+		return panelkit.URLDrilldownAPIItem(d.Url, d.Label, d.EncodeUrl, d.OpenInNewTab)
 	})
 	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
 }
@@ -608,12 +589,7 @@ func readDiscoverSessionDrilldownsFromConfig1(
 	prior []models.DiscoverSessionPanelDrilldown,
 ) []models.DiscoverSessionPanelDrilldown {
 	items := panelkit.BuildURLDrilldownItems(api, func(d discoverSessionConfig1APIDrilldown) panelkit.URLDrilldownAPIItemData {
-		return panelkit.URLDrilldownAPIItemData{
-			URL:          d.Url,
-			Label:        d.Label,
-			EncodeUrl:    d.EncodeUrl,
-			OpenInNewTab: d.OpenInNewTab,
-		}
+		return panelkit.URLDrilldownAPIItem(d.Url, d.Label, d.EncodeUrl, d.OpenInNewTab)
 	})
 	return panelkit.ReadDiscoverSessionDrilldownsFromAPI(items, prior)
 }
@@ -913,21 +889,12 @@ func discoverSessionPreserveESQLTabNullIntent(existing *models.DiscoverSessionES
 	}
 }
 
-func discoverSessionMergeOverridesFromAPI(ctx context.Context, existing *models.DiscoverSessionOverridesModel, prior *models.DiscoverSessionOverridesModel, api struct {
-	ColumnOrder    *[]string `json:"column_order,omitempty"`
-	ColumnSettings *map[string]struct {
-		Width *float32 `json:"width,omitempty"`
-	} `json:"column_settings,omitempty"`
-	Density         *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesDensity             `json:"density,omitempty"`
-	HeaderRowHeight *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_HeaderRowHeight `json:"header_row_height,omitempty"`
-	RowHeight       *kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSession_Config_1_Overrides_RowHeight       `json:"row_height,omitempty"`
-	RowsPerPage     *float32                                                                                     `json:"rows_per_page,omitempty"`
-	SampleSize      *float32                                                                                     `json:"sample_size,omitempty"`
-	Sort            *[]struct {
-		Direction kbapi.KibanaHTTPAPIsKbnDashboardPanelTypeDiscoverSessionConfig1OverridesSortDirection `json:"direction"`
-		Name      string                                                                                `json:"name"`
-	} `json:"sort,omitempty"`
-}) diag.Diagnostics {
+func discoverSessionMergeOverridesFromAPI(
+	ctx context.Context,
+	existing *models.DiscoverSessionOverridesModel,
+	prior *models.DiscoverSessionOverridesModel,
+	api discoverSessionOverridesAPI,
+) diag.Diagnostics {
 	var diags diag.Diagnostics
 
 	if prior != nil && typeutils.IsKnown(prior.ColumnOrder) && api.ColumnOrder != nil {

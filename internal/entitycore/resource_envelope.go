@@ -256,7 +256,14 @@ func NewElasticsearchResource[T ElasticsearchResourceModel](name string, opts El
 	return r
 }
 
-func resolveElasticsearchReadResourceID(model ElasticsearchResourceModel, writeFallback string) (string, diag.Diagnostics) {
+// elasticsearchIdentityModel is satisfied by resource and data source models
+// for shared read-identity resolution.
+type elasticsearchIdentityModel interface {
+	GetID() types.String
+	GetResourceID() types.String
+}
+
+func resolveElasticsearchReadResourceID(model elasticsearchIdentityModel, writeFallback string) (string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	if m, ok := any(model).(WithReadResourceID); ok {
 		if id := strings.TrimSpace(m.GetReadResourceID()); id != "" {
@@ -319,17 +326,24 @@ func (r *ElasticsearchResource[T]) runWrite(ctx context.Context, inv resourceWri
 		},
 		validateIdentity: func(plan T, _ *T, isUpdate bool) (string, string, diag.Diagnostics) {
 			var diags diag.Diagnostics
+			allowEmptyCreate := false
+			if opt, ok := any(plan).(WithOptionalWriteIdentity); ok {
+				allowEmptyCreate = opt.AllowsEmptyWriteIdentityOnCreate()
+			}
 			writeID := plan.GetResourceID()
 			if !typeutils.IsKnown(writeID) {
+				// On create, a resource that allows an empty write identity
+				// may plan this attribute as unknown (e.g. Computed with no
+				// prior state to pin it via UseStateForUnknown); treat that
+				// the same as an empty value and let the server generate one.
+				if !isUpdate && allowEmptyCreate {
+					return "", "", diags
+				}
 				diags.AddError(
 					"Invalid resource identifier",
 					"The resource write identity from configuration is unknown; cannot create or update.",
 				)
 				return "", "", diags
-			}
-			allowEmptyCreate := false
-			if opt, ok := any(plan).(WithOptionalWriteIdentity); ok {
-				allowEmptyCreate = opt.AllowsEmptyWriteIdentityOnCreate()
 			}
 			writeKey := writeID.ValueString()
 			if writeKey == "" && (isUpdate || !allowEmptyCreate) {

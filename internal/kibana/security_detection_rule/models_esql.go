@@ -67,44 +67,10 @@ func (d Data) toEsqlRuleCreateProps(ctx context.Context) (kbapi.SecurityDetectio
 		Severity:    kbapi.SecurityDetectionsAPISeverity(d.Severity.ValueString()),
 	}
 
-	d.setCommonCreateProps(ctx, &CommonCreateProps{
-		Actions:                           &esqlRule.Actions,
-		ResponseActions:                   &esqlRule.ResponseActions,
-		RuleID:                            &esqlRule.RuleId,
-		Enabled:                           &esqlRule.Enabled,
-		From:                              &esqlRule.From,
-		To:                                &esqlRule.To,
-		Interval:                          &esqlRule.Interval,
-		Index:                             nil, // ESQL rules don't use index patterns
-		Author:                            &esqlRule.Author,
-		Tags:                              &esqlRule.Tags,
-		FalsePositives:                    &esqlRule.FalsePositives,
-		References:                        &esqlRule.References,
-		License:                           &esqlRule.License,
-		Note:                              &esqlRule.Note,
-		Setup:                             &esqlRule.Setup,
-		MaxSignals:                        &esqlRule.MaxSignals,
-		Version:                           &esqlRule.Version,
-		ExceptionsList:                    &esqlRule.ExceptionsList,
-		AlertSuppression:                  &esqlRule.AlertSuppression,
-		RiskScoreMapping:                  &esqlRule.RiskScoreMapping,
-		SeverityMapping:                   &esqlRule.SeverityMapping,
-		RelatedIntegrations:               &esqlRule.RelatedIntegrations,
-		RequiredFields:                    &esqlRule.RequiredFields,
-		BuildingBlockType:                 &esqlRule.BuildingBlockType,
-		DataViewID:                        nil, // ESQL rules don't have DataViewID
-		Namespace:                         &esqlRule.Namespace,
-		RuleNameOverride:                  &esqlRule.RuleNameOverride,
-		TimestampOverride:                 &esqlRule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: &esqlRule.TimestampOverrideFallbackDisabled,
-		InvestigationFields:               &esqlRule.InvestigationFields,
-		Filters:                           nil, // ESQL rules don't support this field
-		Threat:                            &esqlRule.Threat,
-		TimelineID:                        &esqlRule.TimelineId,
-		TimelineTitle:                     &esqlRule.TimelineTitle,
-	}, &diags)
-
-	// ESQL rules don't use index patterns as they use FROM clause in the query
+	// ESQL rules don't use index patterns (they use the FROM clause in the query) and don't
+	// support DataViewID or Filters; buildCommonRuleProps leaves those nil automatically since
+	// esqlRule has no such fields.
+	d.setCommonCreateProps(ctx, buildCommonRuleProps(&esqlRule), &diags)
 
 	// Convert to union type
 	err := createProps.FromSecurityDetectionsAPIEsqlRuleCreateProps(esqlRule)
@@ -145,44 +111,10 @@ func (d Data) toEsqlRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectio
 		esqlRule.Id = nil // if rule_id is set, we cant send id
 	}
 
-	d.setCommonUpdateProps(ctx, &CommonUpdateProps{
-		Actions:                           &esqlRule.Actions,
-		ResponseActions:                   &esqlRule.ResponseActions,
-		RuleID:                            &esqlRule.RuleId,
-		Enabled:                           &esqlRule.Enabled,
-		From:                              &esqlRule.From,
-		To:                                &esqlRule.To,
-		Interval:                          &esqlRule.Interval,
-		Index:                             nil, // ESQL rules don't use index patterns
-		Author:                            &esqlRule.Author,
-		Tags:                              &esqlRule.Tags,
-		FalsePositives:                    &esqlRule.FalsePositives,
-		References:                        &esqlRule.References,
-		License:                           &esqlRule.License,
-		Note:                              &esqlRule.Note,
-		Setup:                             &esqlRule.Setup,
-		MaxSignals:                        &esqlRule.MaxSignals,
-		Version:                           &esqlRule.Version,
-		ExceptionsList:                    &esqlRule.ExceptionsList,
-		AlertSuppression:                  &esqlRule.AlertSuppression,
-		RiskScoreMapping:                  &esqlRule.RiskScoreMapping,
-		SeverityMapping:                   &esqlRule.SeverityMapping,
-		RelatedIntegrations:               &esqlRule.RelatedIntegrations,
-		RequiredFields:                    &esqlRule.RequiredFields,
-		BuildingBlockType:                 &esqlRule.BuildingBlockType,
-		DataViewID:                        nil, // ESQL rules don't have DataViewID
-		Namespace:                         &esqlRule.Namespace,
-		RuleNameOverride:                  &esqlRule.RuleNameOverride,
-		TimestampOverride:                 &esqlRule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: &esqlRule.TimestampOverrideFallbackDisabled,
-		InvestigationFields:               &esqlRule.InvestigationFields,
-		Filters:                           nil, // ESQL rules don't have Filters
-		Threat:                            &esqlRule.Threat,
-		TimelineID:                        &esqlRule.TimelineId,
-		TimelineTitle:                     &esqlRule.TimelineTitle,
-	}, &diags)
-
-	// ESQL rules don't use index patterns as they use FROM clause in the query
+	// ESQL rules don't use index patterns (they use the FROM clause in the query) and don't
+	// support DataViewID or Filters; buildCommonRuleProps leaves those nil automatically since
+	// esqlRule has no such fields.
+	d.setCommonUpdateProps(ctx, buildCommonRuleProps(&esqlRule), &diags)
 
 	// Convert to union type
 	err := updateProps.FromSecurityDetectionsAPIEsqlRuleUpdateProps(esqlRule)
@@ -198,53 +130,9 @@ func (d Data) toEsqlRuleUpdateProps(ctx context.Context) (kbapi.SecurityDetectio
 func (d *Data) updateFromEsqlRule(ctx context.Context, rule *kbapi.SecurityDetectionsAPIEsqlRule) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	// ESQL rules don't support DataViewId or Filters; pass nil so the common helper sets them to their zero values.
-	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, commonAPIRuleFields{
-		ResourceID:                        rule.Id.String(),
-		RuleID:                            rule.RuleId,
-		Name:                              rule.Name,
-		Type:                              string(rule.Type),
-		Enabled:                           rule.Enabled,
-		From:                              rule.From,
-		To:                                rule.To,
-		Interval:                          rule.Interval,
-		Description:                       rule.Description,
-		RiskScore:                         int64(rule.RiskScore),
-		Severity:                          string(rule.Severity),
-		MaxSignals:                        int64(rule.MaxSignals),
-		Version:                           int64(rule.Version),
-		Revision:                          int64(rule.Revision),
-		CreatedAt:                         rule.CreatedAt,
-		CreatedBy:                         rule.CreatedBy,
-		UpdatedAt:                         rule.UpdatedAt,
-		UpdatedBy:                         rule.UpdatedBy,
-		TimelineID:                        rule.TimelineId,
-		TimelineTitle:                     rule.TimelineTitle,
-		DataViewID:                        nil, // ESQL rules don't have DataViewId
-		Namespace:                         rule.Namespace,
-		RuleNameOverride:                  rule.RuleNameOverride,
-		TimestampOverride:                 rule.TimestampOverride,
-		TimestampOverrideFallbackDisabled: rule.TimestampOverrideFallbackDisabled,
-		BuildingBlockType:                 rule.BuildingBlockType,
-		License:                           rule.License,
-		Note:                              rule.Note,
-		Setup:                             rule.Setup,
-		Index:                             nil, // ESQL rules don't use index patterns
-		Author:                            rule.Author,
-		Tags:                              rule.Tags,
-		FalsePositives:                    rule.FalsePositives,
-		References:                        rule.References,
-		Actions:                           rule.Actions,
-		ExceptionsList:                    rule.ExceptionsList,
-		RiskScoreMapping:                  rule.RiskScoreMapping,
-		InvestigationFields:               rule.InvestigationFields,
-		Threat:                            rule.Threat,
-		SeverityMapping:                   rule.SeverityMapping,
-		RelatedIntegrations:               rule.RelatedIntegrations,
-		RequiredFields:                    rule.RequiredFields,
-		AlertSuppression:                  rule.AlertSuppression,
-		ResponseActions:                   rule.ResponseActions,
-	})...)
+	// ESQL rules don't support DataViewId or Filters; buildCommonAPIRuleFields leaves those
+	// zero-valued automatically since rule has no such fields.
+	diags.Append(d.updateCommonRuleFieldsFromAPI(ctx, buildCommonAPIRuleFields(rule.Id.String(), rule))...)
 
 	d.Query = types.StringValue(rule.Query)
 	d.Language = types.StringValue(string(rule.Language))

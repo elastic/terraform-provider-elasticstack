@@ -90,8 +90,6 @@ func (m *processorCommunityIDModel) MarshalBody() (any, diag.Diagnostics) {
 	}
 	body.IgnoreMissing = typeutils.BoolDefault(&m.IgnoreMissing, false)
 
-	typeutils.BoolDefault(&m.IgnoreFailure, false)
-
 	return body, diags
 }
 

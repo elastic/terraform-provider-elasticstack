@@ -13,42 +13,8 @@ resource "elasticstack_kibana_dashboard" "my_dashboard" {
   }
 
   query = {
-    language = "kql"
-    text     = "status:success"
-  }
-
-  # Optional tags
-  tags = ["production", "monitoring"]
-}
-
-# Example with JSON query (mutually exclusive with query.text)
-resource "elasticstack_kibana_dashboard" "my_dashboard_json" {
-  title       = "My Dashboard with JSON Query"
-  description = "A dashboard with a structured query"
-
-  time_range = {
-    from = "now-15m"
-    to   = "now"
-  }
-
-  refresh_interval = {
-    pause = false
-    value = 60000 # 60 seconds
-  }
-
-  query = {
-    language = "kql"
-    json = jsonencode({
-      bool = {
-        must = [
-          {
-            match = {
-              status = "success"
-            }
-          }
-        ]
-      }
-    })
+    language   = "kql"
+    expression = "status:success"
   }
 
   # Optional tags
@@ -61,7 +27,7 @@ resource "elasticstack_kibana_dashboard" "vis_typed_by_value" {
   description      = "Example: metric via vis_config.by_value.metric_chart_config"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [{
     type = "vis"
@@ -96,7 +62,7 @@ resource "elasticstack_kibana_dashboard" "markdown_by_value" {
   description      = "Example: markdown_config.by_value with settings"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [{
     type = "markdown"
@@ -121,7 +87,7 @@ resource "elasticstack_kibana_dashboard" "markdown_by_reference" {
   description      = "Example: markdown_config.by_reference with a placeholder ref_id"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [{
     type = "markdown"

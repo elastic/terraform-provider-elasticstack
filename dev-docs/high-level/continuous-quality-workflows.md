@@ -16,13 +16,13 @@ For label-triggered factories that react to human-raised issues, see [`factory-w
 | Semantic Function Refactor | Daily | Issue → `code-factory` | [`semantic-function-refactor.md`](../../.github/workflows/semantic-function-refactor.md) |
 | Schema Coverage Rotation | Daily | Issue → `code-factory` | [`schema-coverage-rotation.md`](../../.github/workflows/schema-coverage-rotation.md) |
 | Flaky Test Catcher | Daily | Issue → `code-factory` | [`flaky-test-catcher.md`](../../.github/workflows/flaky-test-catcher.md) |
-| Kibana Spec Impact | Weekly Mon + push to `generated/kbapi/**` or `internal/clients/kibanaoapi/**` | Issue (manual handoff) | [`kibana-spec-impact.md`](../../.github/workflows/kibana-spec-impact.md) |
+| Kibana API Gap Scanner | Daily + push to `generated/kbapi/**` | Issue → `research-factory` | [`kibana-api-gap-scanner.md`](../../.github/workflows/kibana-api-gap-scanner.md) |
 | Dead-code Removal Rotation | Daily | Direct cleanup PR | [`ci-deadcode-removal-rotation.md`](../../.github/workflows/ci-deadcode-removal-rotation.md) |
 | Security Role Docs Drift | Weekly Mon + push to `generated/kbapi/**` | Direct cleanup PR | [`security-role-docs-drift.md`](../../.github/workflows/security-role-docs-drift.md) |
 
 ## The dispatch chain
 
-Four of the scheduled workflows file issues and immediately dispatch `code-factory` for each one. They share the helper at [`.github/workflows/shared/dispatch-code-factory.md`](../../.github/workflows/shared/dispatch-code-factory.md), which adds a `dispatch-code-factory` safe-outputs job to the workflow. After the agent creates issues via the `create-issue` safe output, that job runs [`producer-dispatch.js`](../../.github/scripts/workflows/lib/producer-dispatch.js) to call `gh workflow run code-factory-issue.lock.yml` once per created issue, passing both `issue_number` and a `source_workflow` provenance tag.
+Four of the scheduled workflows file issues and immediately dispatch `code-factory` for each one (the Kibana API Gap Scanner dispatches `research-factory` instead, below). They share the helper at [`.github/workflows/shared/dispatch-code-factory.md`](../../.github/workflows/shared/dispatch-code-factory.md), which adds a `dispatch-code-factory` safe-outputs job to the workflow. After the agent creates issues via the `create-issue` safe output, that job runs [`producer-dispatch.js`](../../.github/scripts/workflows/lib/producer-dispatch.js) to call `gh workflow run code-factory-issue.lock.yml` once per created issue, passing both `issue_number` and a `source_workflow` provenance tag.
 
 ```mermaid
 flowchart LR
@@ -34,7 +34,9 @@ flowchart LR
   CF --> PR[Implementation PR]
 ```
 
-The auto-created issues are pre-labelled `triaged` so the issue classifier skips them. Each scanner also adds a specific topic label (e.g. `duplicate-code`, `semantic-refactor`) used by its slot-cap computation.
+The Kibana API Gap Scanner follows the same shape but dispatches `research-factory` (via [`shared/dispatch-research-factory.md`](../../.github/workflows/shared/dispatch-research-factory.md)) instead of `code-factory`, because its issues describe unused API fields that need design research before implementation.
+
+The auto-created issues are pre-labelled `triaged` so the issue classifier skips them; the Duplicate Code Detector, Semantic Function Refactor, Schema Coverage Rotation, Flaky Test Catcher, and Kibana API Gap Scanner all apply it. Each scanner also adds a specific topic label (e.g. `duplicate-code`, `semantic-refactor`) used by its slot-cap computation.
 
 ## Issue slots: backpressure
 
@@ -46,9 +48,9 @@ Each scanner runs a pre-activation step that counts how many of its own open iss
 | Semantic Function Refactor | `semantic-refactor` | 3 | `ISSUE_SLOTS_CAP` env var |
 | Schema Coverage Rotation | `schema-coverage` | 3 | `ISSUE_SLOTS_CAP` env var |
 | Flaky Test Catcher | `flaky-test` | computed from CI failures | Pre-activation script |
-| Kibana Spec Impact | `kibana`, `generated-clients`, `terraform-provider` | 5 (`issue_cap`) | Pre-activation script |
+| Kibana API Gap Scanner | `kibana-api-gap` | 3 | `ISSUE_SLOTS_CAP` env var |
 
-The three scanners using a fixed `ISSUE_SLOTS_CAP` share the helper at [`.github/scripts/workflows/issue-slots/compute.js`](../../.github/scripts/workflows/issue-slots/compute.js). Flaky Test Catcher computes its own slots in [`.github/scripts/workflows/flaky-test-catcher/catch.js`](../../.github/scripts/workflows/flaky-test-catcher/catch.js) (it needs to weigh CI-failure history in the same step), and Kibana Spec Impact uses the Go pre-activation command at [`scripts/kibana-spec-impact`](../../scripts/kibana-spec-impact). All three paths publish `issue_slots_available`, and the workflow's job-level `if:` short-circuits when it is zero.
+The four scanners using a fixed `ISSUE_SLOTS_CAP` share the helper at [`.github/scripts/workflows/issue-slots/compute.js`](../../.github/scripts/workflows/issue-slots/compute.js). Flaky Test Catcher computes its own slots in [`.github/scripts/workflows/flaky-test-catcher/catch.js`](../../.github/scripts/workflows/flaky-test-catcher/catch.js) (it needs to weigh CI-failure history in the same step). Both paths publish `issue_slots_available`, and the workflow's job-level `if:` short-circuits when it is zero.
 
 ## Scanners that hand off to `code-factory`
 
@@ -59,9 +61,9 @@ Each scanner's heuristics, thresholds, and issue body shape live in its workflow
 - **Schema Coverage Rotation** ([source](../../.github/workflows/schema-coverage-rotation.md), skill: [`schema-coverage`](../../.agents/skills/schema-coverage/SKILL.md)) — rotates coverage analysis across Terraform entities by least-recently-analysed; persists rotation state in a [repo-memory branch](#repo-memory-branches).
 - **Flaky Test Catcher** ([source](../../.github/workflows/flaky-test-catcher.md), skill: [`flaky-test-catcher`](../../.agents/skills/flaky-test-catcher/SKILL.md)) — inspects recent `test.yml` failures on `main`, classifies by fail-rate, deduplicates against open `flaky-test` issues.
 
-## Scanners that file issues for human handoff
+## Scanners that hand off to `research-factory`
 
-- **Kibana Spec Impact** ([source](../../.github/workflows/kibana-spec-impact.md)) — diffs generated `kbapi` symbols against a baseline in the [repo-memory branch](#repo-memory-branches) and maps high-confidence changes to impacted Terraform entities. Does **not** dispatch `code-factory`; maintainer triages and decides between `change-factory` and `code-factory`.
+- **Kibana API Gap Scanner** ([source](../../.github/workflows/kibana-api-gap-scanner.md)) — the Go tool at [`scripts/kibana-api-gaps`](../../scripts/kibana-api-gaps) deterministically finds request fields in the generated Kibana client that a resource's code never uses, and queues them (at most 15 groups per run, never-triaged resources first). An LLM triages the queue and may only suppress a group, not invent one; it files issues from pre-rendered bodies up to the available slots, then requests one `research-factory` dispatch per created issue. Verdicts and fingerprints are persisted in the [repo-memory branch](#repo-memory-branches) so covered groups are skipped on later runs.
 
 ## Workflows that open cleanup PRs directly
 
@@ -76,7 +78,7 @@ Several scanners persist state on dedicated orphan branches under `memory/` so r
 |--------|---------|----------------|
 | `memory/schema-coverage-rotation` | Schema Coverage Rotation | Per-entity last-analysed timestamps |
 | `memory/ci-deadcode-removal-rotation` | Dead-code Removal Rotation | Candidate attempts, filtered candidates, outcome reasons |
-| `memory/kibana-spec-impact` | Kibana Spec Impact | Analysed baseline SHA and per-entity dedupe fingerprints |
+| `memory/kibana-api-gap-scanner` | Kibana API Gap Scanner | Triage verdicts (`file` / `suppress` with reasons), fingerprints, and last-triaged timestamps per gap group |
 
 Branches are read via the `repo-memory` tool config in each workflow and written either by helper Go programs under `scripts/<rotation-name>/` or by inline `record` invocations the agent runs near the end of its task. The pattern means the next run begins from durable state rather than re-deriving it.
 

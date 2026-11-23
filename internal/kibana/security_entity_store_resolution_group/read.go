@@ -26,36 +26,34 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanautil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func readResolutionGroup(ctx context.Context, client *clients.KibanaScopedClient, config resolutionGroupModel) (resolutionGroupModel, diag.Diagnostics) {
+func readResolutionGroup(ctx context.Context, client *clients.KibanaScopedClient, resourceID, spaceID string, config resolutionGroupModel) (resolutionGroupModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	spaceID := clients.EffectiveSpaceID(config.SpaceID.ValueString())
+	spaceID = clients.EffectiveSpaceID(spaceID)
+	config.EntityID = types.StringValue(resourceID)
 
 	resp, err := client.GetKibanaOapiClient().API.GetSecurityEntityStoreResolutionGroupWithResponse(
 		ctx,
-		&kbapi.GetSecurityEntityStoreResolutionGroupParams{EntityId: config.EntityID.ValueString()},
+		&kbapi.GetSecurityEntityStoreResolutionGroupParams{EntityId: resourceID},
 		kibanautil.SpaceAwarePathRequestEditor(spaceID),
 	)
 	if err != nil {
 		diags.AddError("Failed to read resolution group", err.Error())
-		return config, diags
+		return config, false, diags
 	}
 
 	if resp.StatusCode() == http.StatusNotFound {
-		diags.AddError(
-			"Resolution group not found",
-			"The specified entity does not exist or has no resolution group.",
-		)
-		return config, diags
+		return config, false, diags
 	}
 	if d := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); d.HasError() {
 		diags.Append(d...)
-		return config, diags
+		return config, false, diags
 	}
 
 	result := config
 	diags.Append(result.populateFromAPI(spaceID, resp.Body)...)
-	return result, diags
+	return result, !diags.HasError(), diags
 }

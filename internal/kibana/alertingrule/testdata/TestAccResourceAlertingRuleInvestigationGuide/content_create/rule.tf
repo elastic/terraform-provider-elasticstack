@@ -39,10 +39,4 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
     }
   }
 
-  lifecycle {
-    ignore_changes = [
-      last_execution_date,
-      last_execution_status,
-    ]
-  }
 }

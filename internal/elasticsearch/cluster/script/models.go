@@ -25,15 +25,14 @@ import (
 
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	ScriptID                types.String         `tfsdk:"script_id"`
-	Lang                    types.String         `tfsdk:"lang"`
-	Source                  types.String         `tfsdk:"source"`
-	Params                  jsontypes.Normalized `tfsdk:"params"`
-	Context                 types.String         `tfsdk:"context"`
+	entitycore.ElasticsearchConnectionField
+	ID       types.String         `tfsdk:"id"`
+	ScriptID types.String         `tfsdk:"script_id"`
+	Lang     types.String         `tfsdk:"lang"`
+	Source   types.String         `tfsdk:"source"`
+	Params   jsontypes.Normalized `tfsdk:"params"`
+	Context  types.String         `tfsdk:"context"`
 }
 
-func (d Data) GetID() types.String                    { return d.ID }
-func (d Data) GetResourceID() types.String            { return d.ScriptID }
-func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+func (d Data) GetID() types.String         { return d.ID }
+func (d Data) GetResourceID() types.String { return d.ScriptID }

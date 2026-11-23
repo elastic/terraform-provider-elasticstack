@@ -5,7 +5,7 @@ subcategory: "Kibana"
 description: |-
   Manages Kibana dashboards https://www.elastic.co/docs/api/doc/kibana. This functionality is in technical preview and may be changed or removed in a future release.
   Notes
-  Image file_id: image_config.src.file.file_id is an opaque Kibana file asset id. Uploading or lifecycle-managing that file is outside this resource for now; prepare the id outside Terraform (for example via Kibana UI or HTTP upload). A future elasticstack_kibana_file resource may cover uploads.discover_session data_source_json: Must be JSON matching the Kibana Dashboard API tab payload — the polymorphic data source for DSL tabs (data_view_reference, data_view_spec, etc.) and the ES|QL branch for tab.esql. Follow the OpenAPI shapes published with the Kibana REST API https://www.elastic.co/docs/api/doc/kibana (kbn-dashboard-panel-type-discover_session). For data_view_reference, use ref_id (not id) for the linked data view.Single Discover tab: discover_session_config.by_value.tab is one object because the API currently allows a single tab entry; a future tabs list could be added without breaking existing configs if Kibana lifts the limit.
+  Image file_id: image_config.src.file.file_id is an opaque Kibana file asset id. Uploading or lifecycle-managing that file is outside this resource for now; prepare the id outside Terraform (for example via Kibana UI or HTTP upload). A future elasticstack_kibana_file resource may cover uploads.discover_session data_source_json: Must be JSON matching the Kibana Dashboard API tab payload — the polymorphic data source for DSL tabs (data_view_reference, data_view_spec, etc.) and the ES|QL branch for tab.esql. Follow the OpenAPI shapes published with the Kibana REST API https://www.elastic.co/docs/api/doc/kibana (kbn-dashboard-panel-type-discover_session). For data_view_reference, use ref_id (not id) for the linked data view.Single Discover tab: discover_session_config.by_value.tab is one object because the API currently allows a single tab entry; a future tabs list could be added without breaking existing configs if Kibana lifts the limit.Optional root blocks: Only title is required. time_range, refresh_interval, and query are optional and Kibana applies no defaults for them. Removing one of these blocks from configuration clears it in Kibana (the dashboard update is a full replace) rather than resetting it to a default.
 ---
 
 # elasticstack_kibana_dashboard (Resource)
@@ -17,6 +17,7 @@ Manages Kibana [dashboards](https://www.elastic.co/docs/api/doc/kibana). This fu
 - **Image `file_id`**: `image_config.src.file.file_id` is an opaque Kibana file asset id. Uploading or lifecycle-managing that file is outside this resource for now; prepare the id outside Terraform (for example via Kibana UI or HTTP upload). A future `elasticstack_kibana_file` resource may cover uploads.
 - **`discover_session` `data_source_json`**: Must be JSON matching the Kibana Dashboard API tab payload — the polymorphic data source for DSL tabs (`data_view_reference`, `data_view_spec`, etc.) and the ES|QL branch for `tab.esql`. Follow the OpenAPI shapes published with the [Kibana REST API](https://www.elastic.co/docs/api/doc/kibana) (`kbn-dashboard-panel-type-discover_session`). For `data_view_reference`, use **`ref_id`** (not `id`) for the linked data view.
 - **Single Discover tab**: `discover_session_config.by_value.tab` is one object because the API currently allows a single tab entry; a future `tabs` list could be added without breaking existing configs if Kibana lifts the limit.
+- **Optional root blocks**: Only `title` is required. `time_range`, `refresh_interval`, and `query` are optional and Kibana applies no defaults for them. Removing one of these blocks from configuration clears it in Kibana (the dashboard update is a full replace) rather than resetting it to a default.
 
 ## See also
 
@@ -42,42 +43,8 @@ resource "elasticstack_kibana_dashboard" "my_dashboard" {
   }
 
   query = {
-    language = "kql"
-    text     = "status:success"
-  }
-
-  # Optional tags
-  tags = ["production", "monitoring"]
-}
-
-# Example with JSON query (mutually exclusive with query.text)
-resource "elasticstack_kibana_dashboard" "my_dashboard_json" {
-  title       = "My Dashboard with JSON Query"
-  description = "A dashboard with a structured query"
-
-  time_range = {
-    from = "now-15m"
-    to   = "now"
-  }
-
-  refresh_interval = {
-    pause = false
-    value = 60000 # 60 seconds
-  }
-
-  query = {
-    language = "kql"
-    json = jsonencode({
-      bool = {
-        must = [
-          {
-            match = {
-              status = "success"
-            }
-          }
-        ]
-      }
-    })
+    language   = "kql"
+    expression = "status:success"
   }
 
   # Optional tags
@@ -90,7 +57,7 @@ resource "elasticstack_kibana_dashboard" "vis_typed_by_value" {
   description      = "Example: metric via vis_config.by_value.metric_chart_config"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [{
     type = "vis"
@@ -125,7 +92,7 @@ resource "elasticstack_kibana_dashboard" "markdown_by_value" {
   description      = "Example: markdown_config.by_value with settings"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [{
     type = "markdown"
@@ -150,7 +117,7 @@ resource "elasticstack_kibana_dashboard" "markdown_by_reference" {
   description      = "Example: markdown_config.by_reference with a placeholder ref_id"
   time_range       = { from = "now-15m", to = "now" }
   refresh_interval = { pause = true, value = 0 }
-  query            = { language = "kql", text = "" }
+  query            = { language = "kql", expression = "" }
 
   panels = [{
     type = "markdown"
@@ -170,9 +137,6 @@ resource "elasticstack_kibana_dashboard" "markdown_by_reference" {
 
 ### Required
 
-- `query` (Attributes) Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus exactly one of `text` (string branch) or `json` (object branch). (see [below for nested schema](#nestedatt--query))
-- `refresh_interval` (Attributes) Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object. (see [below for nested schema](#nestedatt--refresh_interval))
-- `time_range` (Attributes) Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object. (see [below for nested schema](#nestedatt--time_range))
 - `title` (String) A human-readable title for the dashboard.
 
 ### Optional
@@ -187,49 +151,17 @@ resource "elasticstack_kibana_dashboard" "markdown_by_reference" {
 - `pinned_panels` (Attributes List) Ordered dashboard-level pinned controls (Kibana’s control bar above the grid). Each element uses the same typed `*_control_config` shapes as `panels[]` for these control kinds, without a `grid` block.
 
 When omitted from configuration and Kibana returns an empty list, Terraform keeps this attribute unset (see dashboard resource unset-vs-empty semantics). When set, order is preserved for API requests and read back in API order. (see [below for nested schema](#nestedatt--pinned_panels))
+- `query` (Attributes) Dashboard-level query. Aligns with the Kibana Dashboard API `query` object: `language` plus `expression`. Optional; removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--query))
+- `refresh_interval` (Attributes) Auto-refresh settings for the dashboard. Aligns with the Kibana Dashboard API `refresh_interval` object. Optional; removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--refresh_interval))
 - `sections` (Attributes List) Sections organize panels into collapsible groups. This is a technical preview feature. (see [below for nested schema](#nestedatt--sections))
 - `space_id` (String) An identifier for the space. If space_id is not provided, the default space is used.
 - `tags` (List of String) An array of tag IDs applied to this dashboard.
+- `time_range` (Attributes) Dashboard time selection (`from`, `to`, optional `mode`). Aligns with the Kibana Dashboard API `time_range` object. Optional; removing the block clears it in Kibana rather than resetting it to a default. (see [below for nested schema](#nestedatt--time_range))
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
 
 - `id` (String) Generated composite identifier for the dashboard.
-
-<a id="nestedatt--query"></a>
-### Nested Schema for `query`
-
-Required:
-
-- `language` (String) Query language (`kql` or `lucene`).
-
-Optional:
-
-- `json` (String) Query as normalized JSON for the object branch of the API union. Exactly one of `text` or `json` must be set.
-- `text` (String) Query string for KQL or Lucene. Exactly one of `text` or `json` must be set.
-
-
-<a id="nestedatt--refresh_interval"></a>
-### Nested Schema for `refresh_interval`
-
-Required:
-
-- `pause` (Boolean) When true, auto-refresh is paused.
-- `value` (Number) Refresh interval in milliseconds when not paused.
-
-
-<a id="nestedatt--time_range"></a>
-### Nested Schema for `time_range`
-
-Required:
-
-- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
-- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
-
-Optional:
-
-- `mode` (String) Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior `time_range.mode` from configuration or state.
-
 
 <a id="nestedatt--access_control"></a>
 ### Nested Schema for `access_control`
@@ -256,6 +188,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.
@@ -3876,7 +3809,7 @@ Optional:
 
 Required:
 
-- `config_json` (String) Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition.
+- `config_json` (String) Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition. A format with type "duration" that also sets decimals and/or compact requires Elastic Stack 9.5.2 or later.
 
 
 
@@ -3898,7 +3831,7 @@ Optional:
 
 Optional:
 
-- `axis` (String) Which axis the reference line applies to. Valid values: 'left', 'right'.
+- `axis` (String) Which axis the reference line is drawn on. Valid values: `x` (the chart's X axis), `y` (the primary Y axis), `y2` (the secondary Y axis). Defaults to `y` when omitted.
 - `color_json` (String) Color for the reference line. Can be a static color string or dynamic color configuration as JSON.
 - `column` (String) Column to use (for ES|QL layers).
 - `fill` (String) Fill direction for reference line. Valid values: 'none', 'above', 'below'.
@@ -4036,6 +3969,7 @@ Optional:
 - `esql_control_config` (Attributes) These blocks apply to the dashboard pinned control bar rather than an in-grid panel. Attribute definitions match the corresponding `panels[]` control configs for the same block names.
 
 Configuration for an ES|QL control. Binds ES|QL variables for the dashboard. Mutually exclusive with `time_slider_control_config`, `options_list_control_config`, `range_slider_control_config`. (see [below for nested schema](#nestedatt--pinned_panels--esql_control_config))
+- `grow` (Boolean) Whether the control expands to fill the available horizontal space. When omitted, Kibana applies its default (`false`). After `terraform import`, an entry whose `grow` was not configured shows Kibana's default (`false`).
 - `options_list_control_config` (Attributes) These blocks apply to the dashboard pinned control bar rather than an in-grid panel. Attribute definitions match the corresponding `panels[]` control configs for the same block names.
 
 Configuration for an options list control. Provides a dropdown or multi-select filter based on a field in a data view (`by_field`) or an ES|QL query (`by_esql`). Exactly one of `by_field` or `by_esql` must be set. Mutually exclusive with `time_slider_control_config`, `esql_control_config`, `range_slider_control_config`. (see [below for nested schema](#nestedatt--pinned_panels--options_list_control_config))
@@ -4045,6 +3979,7 @@ Configuration for a range slider control. Provides a min/max range filter source
 - `time_slider_control_config` (Attributes) These blocks apply to the dashboard pinned control bar rather than an in-grid panel. Attribute definitions match the corresponding `panels[]` control configs for the same block names.
 
 Configuration for a time slider control. Controls the visible time window within the dashboard's global time range. Mutually exclusive with `esql_control_config`, `options_list_control_config`, `range_slider_control_config`. (see [below for nested schema](#nestedatt--pinned_panels--time_slider_control_config))
+- `width` (String) Width of the control in the control bar. Valid values are `small`, `medium`, and `large`. When omitted, Kibana applies its default (`medium`). After `terraform import`, an entry whose `width` was not configured shows Kibana's default (`medium`).
 
 <a id="nestedatt--pinned_panels--esql_control_config"></a>
 ### Nested Schema for `pinned_panels.esql_control_config`
@@ -4226,6 +4161,24 @@ Optional:
 - `is_anchored` (Boolean) Whether the start of the time window is anchored (fixed), so only the end slides.
 - `start_percentage_of_time_range` (Number) Start of the visible time window as a fraction of the dashboard global range (0.0–1.0). Float32 in state matches the Kibana API and avoids refresh drift.
 
+
+
+<a id="nestedatt--query"></a>
+### Nested Schema for `query`
+
+Required:
+
+- `expression` (String) Query expression in KQL or Lucene syntax. The value is compared as an exact string, so Kibana-side normalization of the expression shows up as a diff.
+- `language` (String) Query language (`kql` or `lucene`).
+
+
+<a id="nestedatt--refresh_interval"></a>
+### Nested Schema for `refresh_interval`
+
+Required:
+
+- `pause` (Boolean) When true, auto-refresh is paused.
+- `value` (Number) Refresh interval in milliseconds when not paused.
 
 
 <a id="nestedatt--sections"></a>
@@ -7851,7 +7804,7 @@ Optional:
 
 Required:
 
-- `config_json` (String) Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition.
+- `config_json` (String) Y-axis metric configuration as JSON. For ES|QL: axis, color, column, and operation. For standard: axis, color, and metric definition. A format with type "duration" that also sets decimals and/or compact requires Elastic Stack 9.5.2 or later.
 
 
 
@@ -7873,7 +7826,7 @@ Optional:
 
 Optional:
 
-- `axis` (String) Which axis the reference line applies to. Valid values: 'left', 'right'.
+- `axis` (String) Which axis the reference line is drawn on. Valid values: `x` (the chart's X axis), `y` (the primary Y axis), `y2` (the secondary Y axis). Defaults to `y` when omitted.
 - `color_json` (String) Color for the reference line. Can be a static color string or dynamic color configuration as JSON.
 - `column` (String) Column to use (for ES|QL layers).
 - `fill` (String) Fill direction for reference line. Valid values: 'none', 'above', 'below'.
@@ -7998,6 +7951,19 @@ Optional:
 
 
 
+
+
+<a id="nestedatt--time_range"></a>
+### Nested Schema for `time_range`
+
+Required:
+
+- `from` (String) Start of the time range (e.g., 'now-15m', '2023-01-01T00:00:00Z').
+- `to` (String) End of the time range (e.g., 'now', '2023-12-31T23:59:59Z').
+
+Optional:
+
+- `mode` (String) Time range mode. Valid values are `absolute` or `relative`. When the GET API omits `mode`, the provider preserves the prior `time_range.mode` from configuration or state.
 
 
 <a id="nestedatt--timeouts"></a>

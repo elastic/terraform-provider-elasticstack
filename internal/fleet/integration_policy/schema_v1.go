@@ -302,5 +302,5 @@ func getSchemaV1() *schema.Schema {
 }
 
 func getInputTypeV1() attr.Type {
-	return getSchemaV1().Blocks["input"].Type().(attr.TypeWithElementType).ElementType()
+	return typeutils.ElementTypeOf(getSchemaV1().Blocks["input"].Type())
 }

@@ -289,45 +289,6 @@ func (v Condition) ValidateObject(ctx context.Context, request validator.ObjectR
 	response.Diagnostics.Append(v.validate(ctx, request.Config, request.ConfigValue, request.Path)...)
 }
 
-// DependantPathOneOf creates a condition that validates a dependent path's value is one of the allowed values.
-// It returns a condition that checks if the value at dependentPath matches any of the provided allowedValues.
-// If the dependent field does not have an allowed value, it generates a diagnostic error indicating
-// which values are permitted and what the current value is.
-//
-// Parameters:
-//   - dependentPath: The path to the attribute that must have one of the allowed values
-//   - allowedValues: A slice of strings representing the valid values for the dependent path
-//
-// Returns:
-//   - condition: A condition struct that can be used for validation
-func DependantPathOneOf(dependentPath path.Path, allowedValues []string) Condition {
-	return Condition{
-		dependentPath: &dependentPath,
-		allowedValues: allowedValues,
-		description: func() string {
-			return fmt.Sprintf("Attribute '%v' is not one of %s",
-				dependentPath,
-				allowedValues,
-			)
-		},
-		validateValue: func(dependentFieldHasAllowedValue bool, dependentEval dependentEvaluation, _ attr.Value, p path.Path) diag.Diagnostics {
-			if !dependentFieldHasAllowedValue {
-				var diags diag.Diagnostics
-				diags.AddAttributeError(p, "Invalid Configuration", fmt.Sprintf("Attribute '%s' is not one of %v, %s is %q",
-					dependentPath,
-					allowedValues,
-					dependentPath,
-					dependentEval.valueStr,
-				))
-
-				return diags
-			}
-
-			return nil
-		},
-	}
-}
-
 // oneOfClause renders the singular/plural clause shared by the descriptions and error
 // messages of allowedIfOneOf, requiredIfOneOf, and forbiddenIfOneOf: e.g.
 // `can only be set when protocol equals "https"` when there is a single allowed value,

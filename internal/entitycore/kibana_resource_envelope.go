@@ -70,6 +70,9 @@ type KibanaWriteRequest[T KibanaResourceModel] struct {
 	Config  T
 	WriteID string
 	SpaceID string
+	// Private is the framework response Private field (typically
+	// *internal/privatestate.Data). Nil when the callback does not need it.
+	Private PrivateStateStorage
 }
 
 // KibanaWriteResult is returned by write callbacks; the envelope read-after-write
@@ -224,14 +227,33 @@ func NewKibanaResource[T KibanaResourceModel](
 	return r
 }
 
+// kibanaIdentityModel is satisfied by resource and data source models for
+// shared read-identity resolution.
+type kibanaIdentityModel interface {
+	GetID() types.String
+	GetResourceID() types.String
+	GetSpaceID() types.String
+}
+
 // resolveKibanaResourceIdentity uses the composite-ID-or-fallback rule to
 // determine the resourceID and spaceID for a model. It attempts to parse
-// GetID() as a composite ID; on failure (nil result) it falls back to
-// GetResourceID() and GetSpaceID(). Composite-parse diagnostics are discarded.
-func resolveKibanaResourceIdentity[T KibanaResourceModel](model T) (resourceID string, spaceID string) {
+// GetID() as a composite ID; on failure it tries GetResourceID() as a
+// composite (common for data sources that accept composite lookup keys);
+// otherwise it falls back to plain GetResourceID() and GetSpaceID().
+// Composite-parse diagnostics are discarded.
+func resolveKibanaResourceIdentity(model kibanaIdentityModel) (resourceID string, spaceID string) {
 	compID, _ := clients.CompositeIDFromStr(model.GetID().ValueString())
 	if compID != nil {
 		return compID.ResourceID, compID.ClusterID
+	}
+	if usesCompositeResourceID(model) {
+		if compID, _ = clients.CompositeIDFromStr(model.GetResourceID().ValueString()); compID != nil {
+			spaceID = model.GetSpaceID().ValueString()
+			if spaceID == "" {
+				spaceID = compID.ClusterID
+			}
+			return compID.ResourceID, spaceID
+		}
 	}
 	return model.GetResourceID().ValueString(), model.GetSpaceID().ValueString()
 }
@@ -331,7 +353,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 		hasReadFunc: func() bool { return r.readFunc != nil },
 		invokeWrite: func(
 			ctx context.Context, client *clients.KibanaScopedClient, plan, config T, prior *T, writeID, spaceID string,
-			_ PrivateStateStorage, isUpdate bool,
+			private PrivateStateStorage, isUpdate bool,
 		) (T, bool, diag.Diagnostics) {
 			writeFn := r.createFunc
 			if isUpdate {
@@ -343,6 +365,7 @@ func (r *KibanaResource[T]) runKibanaWrite(ctx context.Context, inv resourceWrit
 				Config:  config,
 				WriteID: writeID,
 				SpaceID: spaceID,
+				Private: private,
 			})
 			return written.Model, written.SkipReadAfterWrite, diags
 		},

@@ -163,7 +163,7 @@ func globalDataTagsRawFromModel(ctx context.Context, tags types.Map, diags *diag
 // varsJSONFromAny builds a policyshape.VarsJSONValue from any mapped-format
 // vars value (a bare-value union map from either the create response or the
 // Format=Simplified package-policy response), integration-scoped via
-// lookupCachedPackageInfo so unset package-declared defaults are filled in on
+// policyshape.LookupPackageInfo so unset package-declared defaults are filled in on
 // read, matching internal/fleet/integration_policy/models.go's populateFromAPI.
 func varsJSONFromAny(raw any, packageName, packageVersion string, diags *diag.Diagnostics) policyshape.VarsJSONValue {
 	varsMap := policyshape.VarsAnyToMap(raw)
@@ -177,7 +177,7 @@ func varsJSONFromAny(raw any, packageName, packageVersion string, diags *diag.Di
 		return policyshape.NewVarsJSONNull()
 	}
 
-	v, d := policyshape.NewVarsJSONWithIntegration(string(b), packageName, packageVersion, lookupCachedPackageInfo)
+	v, d := policyshape.NewVarsJSONWithIntegration(string(b), packageName, packageVersion, policyshape.LookupPackageInfo)
 	diags.Append(d...)
 	return v
 }
@@ -198,7 +198,22 @@ func inputsKnownKeySet(inputs policyshape.InputsValue) map[string]struct{} {
 // varsUnionToMap decodes a managed-integration vars map (typed union values,
 // keyed by var name) into a plain map for Normalized JSON encoding. It is
 // generic over the anonymous per-property union type kbapi emits, so the same
-// logic serves both input-level and stream-level vars.
+// logic serves both input-level and stream-level vars. Delegates the
+// marshal/unmarshal round trip to policyshape.VarsAnyToMap, the shared home
+// for vars-shaped conversions (see integration_policy/models.go for another
+// caller).
+//
+// The nil/empty pre-check below is intentionally kept rather than delegated
+// to policyshape.VarsAnyToMap: a nil *map[string]*T passed as vars still
+// marshals to the JSON literal "null" (a typed nil pointer boxed in the
+// `any` parameter is not itself `== nil`), and an empty-but-non-nil map
+// marshals to "{}", which unmarshals back to a non-nil empty map. Either
+// path would fall through to VarsAnyToMap's own nil handling differently
+// than intended here: without this pre-check, a nil vars pointer would make
+// VarsAnyToMap return nil and this function would then (incorrectly) raise
+// an attribute error, and an empty vars map would return an empty map
+// instead of nil. Returning nil directly for the nil/empty case, with no
+// diagnostic, preserves the existing "no vars" behavior exactly.
 //
 // Malformed union payloads are rejected when kbapi unmarshals the HTTP
 // response; json.Marshal here only fails on unsupported Go types, which the
@@ -208,18 +223,9 @@ func varsUnionToMap[T any](vars *map[string]*T, attrPath path.Path, diags *diag.
 	if vars == nil || len(*vars) == 0 {
 		return nil
 	}
-	b, err := json.Marshal(vars)
-	if err != nil {
-		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", err.Error())
-		return nil
-	}
-	if len(b) == 0 || string(b) == "null" {
-		return nil
-	}
-	var out map[string]any
-	if err := json.Unmarshal(b, &out); err != nil {
-		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", err.Error())
-		return nil
+	out := policyshape.VarsAnyToMap(vars)
+	if out == nil {
+		diags.AddAttributeError(attrPath, "Failed to decode vars from API response", "vars did not decode to a JSON object")
 	}
 	return out
 }
@@ -600,7 +606,7 @@ func (m *managedIntegrationModel) populateFromManagedIntegration(ctx context.Con
 		return diags
 	}
 
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: item.Id}).String())
+	m.ID = clients.CompositeIDValue(spaceID, item.Id)
 	m.PolicyID = types.StringValue(item.Id)
 
 	if spaceIDs != nil && len(*spaceIDs) > 0 {

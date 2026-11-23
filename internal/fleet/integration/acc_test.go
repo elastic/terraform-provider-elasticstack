@@ -426,7 +426,39 @@ func TestAccResourceIntegrationWithAllParameters(t *testing.T) {
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "force"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "prerelease"),
 					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "allow_outdated_version"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_integration.test_integration_all_params", "id"),
+				),
+			},
+			// Step 7 (Kibana >= 9.6.0): allow_outdated_version = true is accepted and
+			// round-trips; force/ignore_constraints are left unset to isolate it.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(integration.MinVersionAllowOutdatedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_params_step6"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "name", "tcp"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "allow_outdated_version", "true"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "force"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "ignore_constraints"),
+				),
+			},
+			// Step 8 (Kibana >= 9.6.0): explicit false is accepted and round-trips.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(integration.MinVersionAllowOutdatedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_params_step7"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "allow_outdated_version", "false"),
+				),
+			},
+			// Step 9 (Kibana >= 9.6.0): removing the attribute clears it from state.
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(integration.MinVersionAllowOutdatedVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("all_params_step5"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_integration.test_integration_all_params", "allow_outdated_version"),
 				),
 			},
 		},

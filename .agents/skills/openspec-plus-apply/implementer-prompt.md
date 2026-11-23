@@ -14,13 +14,12 @@ Dispatch an implementer subagent for one OpenSpec change slice.
 
 > type-general-purpose dispatch: Claude Code `Agent(general-purpose)` · Devin/Windsurf `run_subagent(subagent_general)` · OpenCode `@general` · Codex `spawn_agent` (`multi_agent=true`) · Antigravity `invoke_subagent(self)` · Pi `subagent` · unlisted → self-assess; no dispatch tool → main agent chooses inline.
 
-> **MAIN AGENT:** Copy the `prompt:` block below verbatim — substitute ONLY `{PLACEHOLDER}` tokens. Do NOT summarize, shorten, or drop any line. The urge to "tighten" this is the failure mode.
+> **MAIN AGENT:** Dispatch a subagent with description "Implement only one vertical slice {SLICE_NUMBER}: {SLICE_NAME} under strict TDD via the `openspec-plus-tdd` skill". Its prompt argument MUST be EXACTLY the fenced text below, copied verbatim — substitute ONLY `{PLACEHOLDER}` tokens, drop no line. Nothing above this line is part of the prompt argument.
 
 ```
-Dispatch subagent of type general-purpose (use your subagent/task tool):
-  description: "Implement only one vertical slice {SLICE_NUMBER}: {SLICE_NAME} under strict TDD via the `openspec-plus-tdd` skill"
-  prompt: |
-    You are implementing slice {SLICE_NUMBER} ("{SLICE_NAME}") of an OpenSpec change.
+You are implementing slice {SLICE_NUMBER} ("{SLICE_NAME}") of an OpenSpec change.
+
+MUST implement this slice yourself. MUST NOT dispatch a subagent, invoke this orchestrator, or create a task/thread/session.
 
     ## Slice Tasks
 

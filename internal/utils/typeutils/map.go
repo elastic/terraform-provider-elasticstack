@@ -92,15 +92,6 @@ func PointerInterfaceMapFromAnyMap(input map[string]any) map[string]*any {
 	return output
 }
 
-// FlipMap returns a new map with keys and values swapped.
-func FlipMap[K comparable, V comparable](m map[K]V) map[V]K {
-	inv := make(map[V]K)
-	for k, v := range m {
-		inv[v] = k
-	}
-	return inv
-}
-
 // FlattenMap recursively flattens a nested map into a single-level map with dot-separated keys.
 // For example, {"index": {"key": 1}} becomes {"index.key": 1}.
 func FlattenMap(m map[string]any) map[string]any {

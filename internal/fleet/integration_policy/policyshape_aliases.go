@@ -83,20 +83,16 @@ var (
 )
 
 // NewVarsJSONWithIntegration creates a VarsJSONValue with a known value and
-// an integration context, using this resource's package-info cache
-// (knownPackages, populated by getPackageInfo) to resolve defaults.
+// an integration context, using the shared package-info cache
+// (populated by getPackageInfo) to resolve defaults.
 func NewVarsJSONWithIntegration(value string, name, version string) (VarsJSONValue, diag.Diagnostics) {
-	return policyshape.NewVarsJSONWithIntegration(value, name, version, lookupCachedPackageInfo)
+	return policyshape.NewVarsJSONWithIntegration(value, name, version, policyshape.LookupPackageInfo)
 }
 
-// varsAnyToMap and varsMapToTypedMap are generic (or need not be, but are
-// kept as thin wrappers for symmetry), so they can't be aliased via a
-// package-level var; see the file comment above. (policyshape.VarsMapToUnionWrapper
-// has no local wrapper: this package has no caller for it.)
-func varsAnyToMap(v any) map[string]any {
-	return policyshape.VarsAnyToMap(v)
-}
-
+// varsMapToTypedMap is generic, so it can't be aliased via a package-level
+// var; see the file comment above. (policyshape.VarsMapToUnionWrapper has no
+// local wrapper: this package has no caller for it. policyshape.VarsAnyToMap
+// is called directly by callers in this package since it is not generic.)
 func varsMapToTypedMap[T any](m map[string]any) *map[string]*T {
 	return policyshape.VarsMapToTypedMap[T](m)
 }

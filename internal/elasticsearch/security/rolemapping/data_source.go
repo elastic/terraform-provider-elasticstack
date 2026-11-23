@@ -19,7 +19,6 @@ package rolemapping
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -43,6 +42,9 @@ type roleMappingDataSourceModel struct {
 	RoleTemplates jsontypes.Normalized `tfsdk:"role_templates"`
 	Metadata      jsontypes.Normalized `tfsdk:"metadata"`
 }
+
+func (m roleMappingDataSourceModel) GetID() types.String         { return m.ID }
+func (m roleMappingDataSourceModel) GetResourceID() types.String { return m.Name }
 
 func (m roleMappingDataSourceModel) toData() Data {
 	return Data{
@@ -74,8 +76,10 @@ func NewRoleMappingDataSource() datasource.DataSource {
 	return entitycore.NewElasticsearchDataSource[roleMappingDataSourceModel](
 		entitycore.ComponentElasticsearch,
 		"security_role_mapping",
-		getDataSourceSchema,
-		readDataSource,
+		entitycore.ElasticsearchDataSourceOptions[roleMappingDataSourceModel]{
+			Schema: getDataSourceSchema,
+			Read:   readDataSource,
+		},
 	)
 }
 
@@ -119,32 +123,27 @@ func getDataSourceSchema(_ context.Context) schema.Schema {
 	}
 }
 
-func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, config roleMappingDataSourceModel) (roleMappingDataSourceModel, diag.Diagnostics) {
+func readDataSource(ctx context.Context, esClient *clients.ElasticsearchScopedClient, resourceID string, config roleMappingDataSourceModel) (roleMappingDataSourceModel, bool, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	roleMappingName := config.Name.ValueString()
 
 	stateData := config.toData()
 
-	id, idDiags := esClient.ID(ctx, roleMappingName)
+	id, idDiags := esClient.ID(ctx, resourceID)
 	diags.Append(idDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 	stateData.ID = types.StringValue(id.String())
 
-	readData, readDiags := readRoleMapping(ctx, stateData, roleMappingName, esClient)
+	readData, readDiags := readRoleMapping(ctx, stateData, resourceID, esClient)
 	diags.Append(readDiags...)
 	if diags.HasError() {
-		return config, diags
+		return config, false, diags
 	}
 
 	if readData == nil {
-		diags.AddError(
-			"Role mapping not found",
-			fmt.Sprintf("Role mapping '%s' not found", roleMappingName),
-		)
-		return config, diags
+		return config, false, diags
 	}
 
-	return roleMappingDataSourceModelFromData(*readData), diags
+	return roleMappingDataSourceModelFromData(*readData), true, diags
 }

@@ -44,9 +44,9 @@ import (
 // data source schema.
 type toolBaseModel struct {
 	entitycore.KibanaConnectionField
-	ID            types.String         `tfsdk:"id"`
-	ToolID        types.String         `tfsdk:"tool_id"`
-	SpaceID       types.String         `tfsdk:"space_id"`
+	ID     types.String `tfsdk:"id"`
+	ToolID types.String `tfsdk:"tool_id"`
+	entitycore.SpaceIDField
 	Type          types.String         `tfsdk:"type"`
 	Description   types.String         `tfsdk:"description"`
 	Tags          types.Set            `tfsdk:"tags"`
@@ -62,7 +62,6 @@ func (toolBaseModel) GetVersionRequirements(_ context.Context) ([]entitycore.Ver
 
 func (model toolBaseModel) GetID() types.String         { return model.ID }
 func (model toolBaseModel) GetResourceID() types.String { return model.ToolID }
-func (model toolBaseModel) GetSpaceID() types.String    { return model.SpaceID }
 
 // toolModel is the model for the Agent Builder tool resource. It embeds the
 // shared base plus the timeouts attribute that only the resource exposes.
@@ -88,6 +87,11 @@ type toolDataSourceModel struct {
 
 var _ entitycore.WithVersionRequirements = toolDataSourceModel{}
 
+// GetResourceID returns the data source lookup key: the required `id`
+// attribute (plain tool id or composite `<space>/<tool>`). `tool_id` is
+// computed on the data source and is unset in configuration.
+func (model toolDataSourceModel) GetResourceID() types.String { return model.ID }
+
 func (model *toolBaseModel) populateFromAPI(ctx context.Context, spaceID string, data *models.Tool) diag.Diagnostics {
 	if data == nil {
 		return nil
@@ -98,13 +102,13 @@ func (model *toolBaseModel) populateFromAPI(ctx context.Context, spaceID string,
 
 	spaceID = clients.EffectiveSpaceID(spaceID)
 
-	model.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: data.ID}).String())
+	model.ID = clients.CompositeIDValue(spaceID, data.ID)
 	model.ToolID = types.StringValue(data.ID)
 	model.SpaceID = types.StringValue(spaceID)
 	model.Type = types.StringValue(data.Type)
 	model.Description = typeutils.NonEmptyStringOrNull(data.Description)
 
-	model.Tags, d = typeutils.StringSetOrNull(ctx, data.Tags)
+	model.Tags, d = typeutils.SetFromAPIStringsPreserveKnownEmpty(ctx, &data.Tags, model.Tags)
 	diags.Append(d...)
 
 	jsonStr, ok, d := marshalToolConfigurationJSON(data.Configuration)
@@ -176,8 +180,8 @@ func (model toolModel) toAPICreateModel(ctx context.Context) (kbapi.PostAgentBui
 		body.Description = &desc
 	}
 
-	tags := typeutils.SetTypeAs[string](ctx, model.Tags, path.Empty(), &diags)
-	if len(tags) > 0 {
+	if !model.Tags.IsNull() {
+		tags := typeutils.SetTypeAs[string](ctx, model.Tags, path.Empty(), &diags)
 		body.Tags = &tags
 	}
 
@@ -203,8 +207,8 @@ func (model toolModel) toAPIUpdateModel(ctx context.Context) (kbapi.PutAgentBuil
 		body.Description = &desc
 	}
 
-	tags := typeutils.SetTypeAs[string](ctx, model.Tags, path.Empty(), &diags)
-	if len(tags) > 0 {
+	if !model.Tags.IsNull() {
+		tags := typeutils.SetTypeAs[string](ctx, model.Tags, path.Empty(), &diags)
 		body.Tags = &tags
 	}
 

@@ -34,7 +34,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanelTypeMetric)
+	return string(kbapi.KibanaHTTPAPIsVisMetricNoESQLByValuePanelTypeMetric)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -56,9 +56,9 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 
 	return lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.MetricChartConfig, priorConfig,
-		attrs.AsKibanaHTTPAPIsMetricNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsMetricESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsMetricNoESQLByValuePanel) bool {
+		attrs.AsKibanaHTTPAPIsVisMetricNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsVisMetricESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsVisMetricNoESQLByValuePanel) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
 		metricChartConfigFromAPIVariant0,

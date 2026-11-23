@@ -25,19 +25,19 @@ import (
 )
 
 // PartitionLegendFromPieLegend maps API pie legend into Terraform partition legend model.
-func PartitionLegendFromPieLegend(m *models.PartitionLegendModel, api *kbapi.KibanaHTTPAPIsPieLegend) {
+func PartitionLegendFromPieLegend(m *models.PartitionLegendModel, api *kbapi.KibanaHTTPAPIsVisPieLegend) {
 	if api == nil {
 		m.Nested = types.BoolNull()
-		m.Size = types.StringValue(string(kbapi.KibanaHTTPAPIsLegendSizeAuto))
+		m.Size = types.StringValue(string(kbapi.KibanaHTTPAPIsVisLegendSizeAuto))
 		m.TruncateAfterLine = types.Int64Null()
-		m.Visible = types.StringValue(string(kbapi.KibanaHTTPAPIsPieLegendVisibilityAuto))
+		m.Visible = types.StringValue(string(kbapi.KibanaHTTPAPIsVisPieLegendVisibilityAuto))
 		return
 	}
 	m.Nested = types.BoolPointerValue(api.Nested)
 	if api.Size != nil && *api.Size != "" {
 		m.Size = types.StringValue(string(*api.Size))
 	} else {
-		m.Size = types.StringValue(string(kbapi.KibanaHTTPAPIsLegendSizeAuto))
+		m.Size = types.StringValue(string(kbapi.KibanaHTTPAPIsVisLegendSizeAuto))
 	}
 	if api.TruncateAfterLines != nil {
 		m.TruncateAfterLine = types.Int64Value(int64(*api.TruncateAfterLines))
@@ -48,14 +48,14 @@ func PartitionLegendFromPieLegend(m *models.PartitionLegendModel, api *kbapi.Kib
 		m.Visible = types.StringValue(string(*api.Visibility))
 	} else {
 		// Align with pie_chart_config.legend schema default (visible = auto) when Kibana omits the field.
-		m.Visible = types.StringValue(string(kbapi.KibanaHTTPAPIsPieLegendVisibilityAuto))
+		m.Visible = types.StringValue(string(kbapi.KibanaHTTPAPIsVisPieLegendVisibilityAuto))
 	}
 }
 
 // PartitionLegendToPieLegend maps Terraform partition legend model to API pie legend.
-func PartitionLegendToPieLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsPieLegend {
-	size := kbapi.KibanaHTTPAPIsLegendSize(m.Size.ValueString())
-	legend := &kbapi.KibanaHTTPAPIsPieLegend{Size: &size}
+func PartitionLegendToPieLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsVisPieLegend {
+	size := kbapi.KibanaHTTPAPIsVisLegendSize(m.Size.ValueString())
+	legend := &kbapi.KibanaHTTPAPIsVisPieLegend{Size: &size}
 	if typeutils.IsKnown(m.Nested) {
 		legend.Nested = new(m.Nested.ValueBool())
 	}
@@ -63,7 +63,7 @@ func PartitionLegendToPieLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTT
 		legend.TruncateAfterLines = new(float32(m.TruncateAfterLine.ValueInt64()))
 	}
 	if typeutils.IsKnown(m.Visible) {
-		v := kbapi.KibanaHTTPAPIsPieLegendVisibility(m.Visible.ValueString())
+		v := kbapi.KibanaHTTPAPIsVisPieLegendVisibility(m.Visible.ValueString())
 		legend.Visibility = &v
 	}
 	return legend
@@ -91,7 +91,7 @@ func populatePartitionLegendFromAPI(m *models.PartitionLegendModel, nested *bool
 }
 
 // PartitionLegendFromTreemapLegend maps API treemap legend into Terraform partition legend model.
-func PartitionLegendFromTreemapLegend(m *models.PartitionLegendModel, api *kbapi.KibanaHTTPAPIsTreemapLegend) {
+func PartitionLegendFromTreemapLegend(m *models.PartitionLegendModel, api *kbapi.KibanaHTTPAPIsVisTreemapLegend) {
 	if api == nil {
 		m.Nested = types.BoolNull()
 		m.Size = types.StringNull()
@@ -110,7 +110,7 @@ func PartitionLegendFromTreemapLegend(m *models.PartitionLegendModel, api *kbapi
 }
 
 // PartitionLegendFromMosaicLegend maps API mosaic legend into Terraform partition legend model.
-func PartitionLegendFromMosaicLegend(m *models.PartitionLegendModel, api *kbapi.KibanaHTTPAPIsMosaicLegend) {
+func PartitionLegendFromMosaicLegend(m *models.PartitionLegendModel, api *kbapi.KibanaHTTPAPIsVisMosaicLegend) {
 	if api == nil {
 		m.Nested = types.BoolNull()
 		m.Size = types.StringNull()
@@ -152,39 +152,39 @@ func populatePartitionLegendToAPI(m *models.PartitionLegendModel) partitionLegen
 }
 
 // PartitionLegendToTreemapLegend maps Terraform partition legend model to API treemap legend.
-func PartitionLegendToTreemapLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsTreemapLegend {
+func PartitionLegendToTreemapLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsVisTreemapLegend {
 	fields := populatePartitionLegendToAPI(m)
-	size := kbapi.KibanaHTTPAPIsLegendSize(fields.Size)
-	legend := &kbapi.KibanaHTTPAPIsTreemapLegend{
+	size := kbapi.KibanaHTTPAPIsVisLegendSize(fields.Size)
+	legend := &kbapi.KibanaHTTPAPIsVisTreemapLegend{
 		Size:               &size,
 		Nested:             fields.Nested,
 		TruncateAfterLines: fields.TruncateAfterLines,
 	}
 	if fields.Visibility != nil {
-		v := kbapi.KibanaHTTPAPIsTreemapLegendVisibility(*fields.Visibility)
+		v := kbapi.KibanaHTTPAPIsVisTreemapLegendVisibility(*fields.Visibility)
 		legend.Visibility = &v
 	}
 	return legend
 }
 
 // PartitionLegendToMosaicLegend maps Terraform partition legend model to API mosaic legend.
-func PartitionLegendToMosaicLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsMosaicLegend {
+func PartitionLegendToMosaicLegend(m *models.PartitionLegendModel) *kbapi.KibanaHTTPAPIsVisMosaicLegend {
 	fields := populatePartitionLegendToAPI(m)
-	size := kbapi.KibanaHTTPAPIsLegendSize(fields.Size)
-	legend := &kbapi.KibanaHTTPAPIsMosaicLegend{
+	size := kbapi.KibanaHTTPAPIsVisLegendSize(fields.Size)
+	legend := &kbapi.KibanaHTTPAPIsVisMosaicLegend{
 		Size:               &size,
 		Nested:             fields.Nested,
 		TruncateAfterLines: fields.TruncateAfterLines,
 	}
 	if fields.Visibility != nil {
-		v := kbapi.KibanaHTTPAPIsMosaicLegendVisibility(*fields.Visibility)
+		v := kbapi.KibanaHTTPAPIsVisMosaicLegendVisibility(*fields.Visibility)
 		legend.Visibility = &v
 	}
 	return legend
 }
 
 // PartitionValueDisplayFromAPI maps API value display styling into Terraform model.
-func PartitionValueDisplayFromAPI(m *models.PartitionValueDisplay, api *kbapi.KibanaHTTPAPIsValueDisplay) {
+func PartitionValueDisplayFromAPI(m *models.PartitionValueDisplay, api *kbapi.KibanaHTTPAPIsVisValueDisplay) {
 	if api == nil {
 		m.Mode = types.StringNull()
 		m.PercentDecimals = types.Float64Null()
@@ -199,10 +199,10 @@ func PartitionValueDisplayFromAPI(m *models.PartitionValueDisplay, api *kbapi.Ki
 }
 
 // PartitionValueDisplayToAPI maps Terraform partition value display model to API.
-func PartitionValueDisplayToAPI(m *models.PartitionValueDisplay) *kbapi.KibanaHTTPAPIsValueDisplay {
-	vd := &kbapi.KibanaHTTPAPIsValueDisplay{}
+func PartitionValueDisplayToAPI(m *models.PartitionValueDisplay) *kbapi.KibanaHTTPAPIsVisValueDisplay {
+	vd := &kbapi.KibanaHTTPAPIsVisValueDisplay{}
 	if typeutils.IsKnown(m.Mode) {
-		mode := kbapi.KibanaHTTPAPIsValueDisplayMode(m.Mode.ValueString())
+		mode := kbapi.KibanaHTTPAPIsVisValueDisplayMode(m.Mode.ValueString())
 		vd.Mode = &mode
 	}
 	if typeutils.IsKnown(m.PercentDecimals) {

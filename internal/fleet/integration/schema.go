@@ -67,6 +67,11 @@ set ` + "`skip_destroy` to `true`.",
 				Description: "Set to true to ignore constraint errors during package installation.",
 				Optional:    true,
 			},
+			"allow_outdated_version": schema.BoolAttribute{
+				Description: "Set to true to allow installing a version older than the latest available. Bypasses only the out-of-date version check. " +
+					"Setting this attribute, even to `false`, requires server version 9.6.0 or higher.",
+				Optional: true,
+			},
 			"skip_destroy": fleetschema.SkipDestroyAttribute(false, nil),
 			"space_id": kbschema.ResourceSpaceIDAttributeNoDefault(
 				stringplanmodifier.RequiresReplace(),

@@ -20,7 +20,6 @@ package clients
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/elastic/go-elasticsearch/v8/typedapi/core/info"
@@ -30,46 +29,6 @@ import (
 	"github.com/hashicorp/go-version"
 	fwdiags "github.com/hashicorp/terraform-plugin-framework/diag"
 )
-
-type CompositeID struct {
-	ClusterID  string
-	ResourceID string
-}
-
-const ServerlessFlavor = "serverless"
-
-// CompositeIDFromStr parses an ID as <cluster_uuid>/<resource_identifier>. Only the first "/"
-// separates cluster from resource, so resource_identifier may contain further slashes (for example
-// ML calendar events "<calendar_id>/<event_id>" after the cluster segment).
-//
-// For backward compatibility, an ID with an empty cluster segment and a non-empty resource
-// segment (for example "/<synthetics_monitor_id>" from legacy [CompositeID.String] formatting) is
-// accepted; an empty resource segment (including a trailing slash after the cluster) is rejected.
-func CompositeIDFromStr(id string) (*CompositeID, fwdiags.Diagnostics) {
-	parts := strings.SplitN(id, "/", 2)
-	if len(parts) != 2 || parts[1] == "" {
-		return nil, fwdiags.Diagnostics{
-			fwdiags.NewErrorDiagnostic(
-				"Wrong resource ID.",
-				"Resource ID must have following format: <cluster_uuid>/<resource identifier>",
-			),
-		}
-	}
-	if parts[0] == "" {
-		return &CompositeID{
-			ClusterID:  "",
-			ResourceID: parts[1],
-		}, nil
-	}
-	return &CompositeID{
-		ClusterID:  parts[0],
-		ResourceID: parts[1],
-	}, nil
-}
-
-func (c *CompositeID) String() string {
-	return fmt.Sprintf("%s/%s", c.ClusterID, c.ResourceID)
-}
 
 // apiClient is the internal broad client that holds all configured service
 // clients built from the provider configuration block. It is unexported;

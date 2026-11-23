@@ -161,18 +161,3 @@ func NewFieldAttrsNull(elemType attr.Type) FieldAttrsValue {
 		MapValue: basetypes.NewMapNull(elemType),
 	}
 }
-
-// NewFieldAttrsUnknown creates a FieldAttrsValue with an unknown value.
-func NewFieldAttrsUnknown(elemType attr.Type) FieldAttrsValue {
-	return FieldAttrsValue{
-		MapValue: basetypes.NewMapUnknown(elemType),
-	}
-}
-
-// NewFieldAttrsValueFrom creates a FieldAttrsValue from a map of Go values.
-func NewFieldAttrsValueFrom(ctx context.Context, elemType attr.Type, elements any) (FieldAttrsValue, diag.Diagnostics) {
-	mapValue, diags := basetypes.NewMapValueFrom(ctx, elemType, elements)
-	return FieldAttrsValue{
-		MapValue: mapValue,
-	}, diags
-}

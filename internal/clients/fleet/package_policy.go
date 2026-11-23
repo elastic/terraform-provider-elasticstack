@@ -55,13 +55,18 @@ func GetDefendPackagePolicy(ctx context.Context, client *Client, id string, spac
 }
 
 // CreatePackagePolicy creates a new package policy.
-func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
+func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, req kbapi.PackagePolicyRequestMappedInputs) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PostFleetPackagePoliciesParams{
 		Format: new(kbapi.PostFleetPackagePoliciesParamsFormatSimplified),
 	}
 
+	var unionReq kbapi.PackagePolicyCreateRequest
+	if err := unionReq.FromPackagePolicyRequestMappedInputs(req); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
 	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.PackagePolicy, int, diag.Diagnostics) {
-		resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		resp, err := client.API.PostFleetPackagePoliciesWithResponse(ctx, &params, unionReq, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
@@ -74,9 +79,9 @@ func CreatePackagePolicy(ctx context.Context, client *Client, spaceID string, re
 // CreateDefendPackagePolicy creates a new Elastic Defend package policy using
 // the typed-input request body without requesting the simplified format. This
 // is used for the Defend bootstrap create step.
-func CreateDefendPackagePolicy(ctx context.Context, client *Client, spaceID string, req kbapi.PackagePolicyRequestTypedInputs) (*kbapi.PackagePolicy, diag.Diagnostics) {
-	var unionReq kbapi.PackagePolicyRequest
-	if err := unionReq.FromPackagePolicyRequestTypedInputs(req); err != nil {
+func CreateDefendPackagePolicy(ctx context.Context, client *Client, spaceID string, req kbapi.PackagePolicyCreateRequestTypedInputs) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	var unionReq kbapi.PackagePolicyCreateRequest
+	if err := unionReq.FromPackagePolicyCreateRequestTypedInputs(req); err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 
@@ -92,13 +97,18 @@ func CreateDefendPackagePolicy(ctx context.Context, client *Client, spaceID stri
 }
 
 // UpdatePackagePolicy updates an existing package policy.
-func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyRequest) (*kbapi.PackagePolicy, diag.Diagnostics) {
+func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyRequestMappedInputs) (*kbapi.PackagePolicy, diag.Diagnostics) {
 	params := kbapi.PutFleetPackagePoliciesPackagepolicyidParams{
 		Format: new(kbapi.PutFleetPackagePoliciesPackagepolicyidParamsFormatSimplified),
 	}
 
+	var unionReq kbapi.PackagePolicyUpdateRequest
+	if err := unionReq.FromPackagePolicyRequestMappedInputs(req); err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+
 	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.PackagePolicy, int, diag.Diagnostics) {
-		resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+		resp, err := client.API.PutFleetPackagePoliciesPackagepolicyidWithResponse(ctx, id, &params, unionReq, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
 			return nil, 0, diagutil.FrameworkDiagFromError(err)
 		}
@@ -112,9 +122,9 @@ func UpdatePackagePolicy(ctx context.Context, client *Client, id string, spaceID
 // using the typed-input request body without requesting the simplified format.
 // The request body must include the top-level "version" token from the last
 // successful read so Kibana can perform optimistic concurrency control.
-func UpdateDefendPackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyRequestTypedInputs) (*kbapi.PackagePolicy, diag.Diagnostics) {
-	var unionReq kbapi.PackagePolicyRequest
-	if err := unionReq.FromPackagePolicyRequestTypedInputs(req); err != nil {
+func UpdateDefendPackagePolicy(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PackagePolicyUpdateRequestTypedInputs) (*kbapi.PackagePolicy, diag.Diagnostics) {
+	var unionReq kbapi.PackagePolicyUpdateRequest
+	if err := unionReq.FromPackagePolicyUpdateRequestTypedInputs(req); err != nil {
 		return nil, diagutil.FrameworkDiagFromError(err)
 	}
 

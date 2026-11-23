@@ -22,7 +22,6 @@ import (
 	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -47,24 +46,22 @@ type logExtractionModel struct {
 
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
-	ID                    types.String         `tfsdk:"id"`
-	KibanaConnection      types.List           `tfsdk:"kibana_connection"`
-	SpaceID               types.String         `tfsdk:"space_id"`
-	EntityTypes           types.Set            `tfsdk:"entity_types"`
-	AllowEntityTypeShrink types.Bool           `tfsdk:"allow_entity_type_shrink"`
-	Started               types.Bool           `tfsdk:"started"`
-	HistorySnapshot       types.Object         `tfsdk:"history_snapshot"`
-	LogExtraction         types.Object         `tfsdk:"log_extraction"`
-	StatusJSON            jsontypes.Normalized `tfsdk:"status_json"`
+	entitycore.KibanaConnectionField
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
+	EntityTypes           types.Set       `tfsdk:"entity_types"`
+	AllowEntityTypeShrink types.Bool      `tfsdk:"allow_entity_type_shrink"`
+	Started               types.Bool      `tfsdk:"started"`
+	HistorySnapshot       types.Object    `tfsdk:"history_snapshot"`
+	LogExtraction         types.Object    `tfsdk:"log_extraction"`
+	StatusJSON            StatusJSONValue `tfsdk:"status_json"`
 }
 
 var _ entitycore.KibanaResourceModel = tfModel{}
 var _ entitycore.WithVersionRequirements = (*tfModel)(nil)
 
-func (model tfModel) GetID() types.String             { return model.ID }
-func (model tfModel) GetSpaceID() types.String        { return model.SpaceID }
-func (model tfModel) GetKibanaConnection() types.List { return model.KibanaConnection }
-func (model tfModel) GetResourceID() types.String     { return types.StringValue(resourceID) }
+func (model tfModel) GetID() types.String         { return model.ID }
+func (model tfModel) GetResourceID() types.String { return types.StringValue(resourceID) }
 
 func (*tfModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return entitycore.SingleVersionRequirement(

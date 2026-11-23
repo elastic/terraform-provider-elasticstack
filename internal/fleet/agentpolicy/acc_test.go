@@ -20,8 +20,10 @@ package agentpolicy_test
 import (
 	"context"
 	_ "embed"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"regexp"
 	"testing"
 
@@ -36,6 +38,7 @@ import (
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
+	"github.com/stretchr/testify/require"
 )
 
 var minVersionAgentPolicy = version.Must(version.NewVersion("8.6.0"))
@@ -939,6 +942,9 @@ func TestAccResourceAgentPolicyWithRequiredVersions(t *testing.T) {
 	})
 }
 
+// agentInternalYAML is the YAML written by the agent_*_set and on-create acceptance configs (heredoc output).
+const agentInternalYAML = "agent:\n  monitoring:\n    http:\n      enabled: true\n    # trailing comment\n  logging:\n    level: info\n"
+
 func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
 
@@ -1087,7 +1093,209 @@ func TestAccResourceAgentPolicyWithAdvancedSettings(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.monitoring_runtime_experimental", ""),
 				),
 			},
+			// Step 8: set advanced_settings.internal (9.3.0+)
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionAgentInternal),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_internal_set"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", agentInternalYAML),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled"),
+				),
+			},
+			// Step 9: add features_disable_policy_change_acks_enabled (9.4.0+)
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_acks_set"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", agentInternalYAML),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "true"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled"),
+				),
+			},
+			// Step 10: reformatted-but-equivalent internal YAML applies cleanly and leaves no persistent diff (the harness
+			// asserts an empty post-apply plan); semantic equality absorbs any server-side normalisation on refresh
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_internal_reformatted"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "true"),
+					resource.TestMatchResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", regexp.MustCompile(`reformatted but semantically equal`)),
+				),
+			},
+			// Step 11: import round-trips internal and acks toggle
+			agentFeatureImportStep("agent_acks_set", agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled, policyName),
+			// Step 12: add features_include_tags_in_events_enabled (9.6.0+)
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_features_set"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", agentInternalYAML),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled", "true"),
+				),
+			},
+			// Step 13: import round-trips all three new fields
+			agentFeatureImportStep("agent_features_set", agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled, policyName),
+			// Step 14: flip toggles to false and change internal YAML
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_features_update"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal", "agent:\n  logging:\n    level: debug\n"),
+				),
+			},
+			// Step 15: omit the three new fields; they clear without a persistent diff
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionAgentInternal),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_features_removed"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.logging_level", "info"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled"),
+					resource.TestCheckNoResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.internal"),
+				),
+			},
+			// Step 16: set the acks toggle explicitly to false from unset, then import
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_acks_false"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "false"),
+				),
+			},
+			agentFeatureImportStep("agent_acks_false", agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled, policyName),
+			// Step 17: set both toggles explicitly to false from unset, then import
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("agent_toggles_false"),
+				ConfigVariables: config.Variables{
+					"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_disable_policy_change_acks_enabled", "false"),
+					resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings.features_include_tags_in_events_enabled", "false"),
+				),
+			},
+			agentFeatureImportStep("agent_toggles_false", agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled, policyName),
 		},
+	})
+}
+
+// The OnCreate tests set each new advanced_settings field on the initial POST (not via update)
+// and verify read-back and import.
+func TestAccResourceAgentPolicyAgentInternalOnCreate(t *testing.T) {
+	testAccAgentFeatureOnCreate(t, "internal", agentpolicy.MinVersionAgentInternal, "internal", agentInternalYAML)
+}
+
+func TestAccResourceAgentPolicyAgentAcksOnCreate(t *testing.T) {
+	testAccAgentFeatureOnCreate(t, "acks", agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled,
+		"features_disable_policy_change_acks_enabled", "true")
+}
+
+func TestAccResourceAgentPolicyAgentTagsOnCreate(t *testing.T) {
+	testAccAgentFeatureOnCreate(t, "tags", agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled,
+		"features_include_tags_in_events_enabled", "true")
+}
+
+// agentFeatureImportStep returns an import-verify step for the named testdata directory, gated on minVersion.
+func agentFeatureImportStep(dir string, minVersion *version.Version, policyName string) resource.TestStep {
+	return resource.TestStep{
+		ProtoV6ProviderFactories: acctest.Providers,
+		SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersion),
+		ConfigDirectory:          acctest.NamedTestCaseDirectory(dir),
+		ConfigVariables: config.Variables{
+			"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+		},
+		ResourceName:            "elasticstack_fleet_agent_policy.test_policy",
+		ImportState:             true,
+		ImportStateVerify:       true,
+		ImportStateVerifyIgnore: []string{"skip_destroy"},
+	}
+}
+
+func testAccAgentFeatureOnCreate(t *testing.T, dir string, minVersion *version.Version, attr, want string) {
+	t.Helper()
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	vars := config.Variables{"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName))}
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory(dir),
+				ConfigVariables:          vars,
+				Check:                    resource.TestCheckResourceAttr("elasticstack_fleet_agent_policy.test_policy", "advanced_settings."+attr, want),
+			},
+			agentFeatureImportStep(dir, minVersion, policyName),
+		},
+	})
+}
+
+func TestAccResourceAgentPolicyAgentFeaturesVersionGate(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, agentpolicy.MinVersionAdvancedSettings, versionutils.FlavorAny)
+
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+
+	gated := []struct {
+		dir        string
+		minVersion *version.Version
+	}{
+		{"internal", agentpolicy.MinVersionAgentInternal},
+		{"features_disable_policy_change_acks_enabled", agentpolicy.MinVersionFeaturesDisablePolicyChangeAcksEnabled},
+		{"features_include_tags_in_events_enabled", agentpolicy.MinVersionFeaturesIncludeTagsInEventsEnabled},
+	}
+
+	var steps []resource.TestStep
+	for _, g := range gated {
+		steps = append(steps, resource.TestStep{
+			ProtoV6ProviderFactories: acctest.Providers,
+			SkipFunc:                 versionutils.CheckIfVersionIsSupported(g.minVersion),
+			ConfigDirectory:          acctest.NamedTestCaseDirectory(g.dir),
+			ConfigVariables: config.Variables{
+				"policy_name": config.StringVariable(fmt.Sprintf("Policy %s", policyName)),
+			},
+			ExpectError: regexp.MustCompile(`Unsupported server version[\s\S]*` + g.dir + `\s+is\s+only\s+supported`),
+		})
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps:        steps,
 	})
 }
 
@@ -1411,6 +1619,101 @@ func TestAccResourceAgentPolicyKibanaConnection(t *testing.T) {
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_agent_policy.test_policy", "kibana_connection.0.endpoints.0"),
 					resource.TestCheckResourceAttrSet("elasticstack_fleet_agent_policy.test_policy", "policy_id"),
 				}, acctest.KibanaConnectionAuthChecks("elasticstack_fleet_agent_policy.test_policy")...)...),
+			},
+		},
+	})
+}
+
+// checkAgentPolicyOutputsOnServer asserts the data and monitoring output IDs
+// Fleet stored, so a change that quietly sets or clears them on the server
+// cannot pass on the strength of Terraform state alone. It checks
+// elasticstack_fleet_agent_policy.test_policy.
+func checkAgentPolicyOutputsOnServer(want string) resource.TestCheckFunc {
+	const resourceName = "elasticstack_fleet_agent_policy.test_policy"
+	return func(s *terraform.State) error {
+		rs, ok := s.RootModule().Resources[resourceName]
+		if !ok {
+			return fmt.Errorf("resource %q not found in state", resourceName)
+		}
+
+		client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+		if err != nil {
+			return err
+		}
+
+		policy, diags := fleet.GetAgentPolicy(context.Background(), client.GetFleetClient(), rs.Primary.ID, "")
+		if diags.HasError() {
+			return diagutil.FwDiagsAsError(diags)
+		}
+		if policy == nil {
+			return fmt.Errorf("agent policy id=%v not found", rs.Primary.ID)
+		}
+
+		for name, got := range map[string]*string{
+			"data_output_id":       policy.DataOutputId,
+			"monitoring_output_id": policy.MonitoringOutputId,
+		} {
+			if got == nil || *got != want {
+				return fmt.Errorf("%s on the server = %v, want %q", name, got, want)
+			}
+		}
+		return nil
+	}
+}
+
+// TestAccResourceAgentPolicy_outputSetOutsideTerraform covers data_output_id and
+// monitoring_output_id assigned outside Terraform (e.g. in the Kibana UI) while
+// the configuration leaves them unset: apply must succeed, state must stay null
+// and the server must keep the assigned output.
+func TestAccResourceAgentPolicy_outputSetOutsideTerraform(t *testing.T) {
+	versionutils.SkipIfUnsupported(t, minVersionAgentPolicy, versionutils.FlavorAny)
+
+	const resourceName = "elasticstack_fleet_agent_policy.test_policy"
+	policyName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	outputID := policyName + "-output"
+	vars := func(description string) config.Variables {
+		return config.Variables{
+			"policy_name": config.StringVariable(policyName),
+			"description": config.StringVariable(description),
+		}
+	}
+	var agentPolicyID string
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAgentPolicyDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars("created"),
+				Check: func(s *terraform.State) error {
+					agentPolicyID = s.RootModule().Resources[resourceName].Primary.ID
+					return nil
+				},
+			},
+			{
+				// The description change forces an update while the outputs are assigned on the server.
+				PreConfig: func() {
+					body, err := json.Marshal(map[string]any{
+						"name":                 "Policy " + policyName,
+						"namespace":            "default",
+						"data_output_id":       outputID,
+						"monitoring_output_id": outputID,
+					})
+					require.NoError(t, err)
+					_, err = acctest.FleetAPIRequest(http.MethodPut, "/api/fleet/agent_policies/"+agentPolicyID, string(body))
+					require.NoError(t, err)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars("updated"),
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(resourceName, "description", "updated"),
+					resource.TestCheckNoResourceAttr(resourceName, "data_output_id"),
+					resource.TestCheckNoResourceAttr(resourceName, "monitoring_output_id"),
+					checkAgentPolicyOutputsOnServer(outputID),
+				),
 			},
 		},
 	})

@@ -434,7 +434,7 @@ func TestToCreateBody_varsJSON(t *testing.T) {
 	ctx := context.Background()
 
 	m := baseTestModel(t)
-	varsJSON, diags := policyshape.NewVarsJSONWithIntegration(`{"posture":"cspm","deployment":"aws"}`, "cloud_security_posture", "3.4.0", lookupCachedPackageInfo)
+	varsJSON, diags := policyshape.NewVarsJSONWithIntegration(`{"posture":"cspm","deployment":"aws"}`, "cloud_security_posture", "3.4.0", policyshape.LookupPackageInfo)
 	require.False(t, diags.HasError())
 	m.VarsJSON = varsJSON
 
@@ -994,7 +994,7 @@ func TestBuildUpdateBody(t *testing.T) {
 	plan := prior
 	plan.Description = types.StringValue("new description")
 
-	varsJSON, diags := policyshape.NewVarsJSONWithIntegration(`{"posture":"cspm","deployment":"gcp"}`, "cloud_security_posture", "3.4.0", lookupCachedPackageInfo)
+	varsJSON, diags := policyshape.NewVarsJSONWithIntegration(`{"posture":"cspm","deployment":"gcp"}`, "cloud_security_posture", "3.4.0", policyshape.LookupPackageInfo)
 	require.False(t, diags.HasError())
 	plan.VarsJSON = varsJSON
 
@@ -1161,7 +1161,7 @@ func TestBuildUpdateBody_partialVarsRemovalDropsOnlyMissingKeys(t *testing.T) {
 	plan := prior
 	plan.Description = types.StringValue("old description")
 
-	varsJSON, diags := policyshape.NewVarsJSONWithIntegration(`{"posture":"cspm"}`, "cloud_security_posture", "3.4.0", lookupCachedPackageInfo)
+	varsJSON, diags := policyshape.NewVarsJSONWithIntegration(`{"posture":"cspm"}`, "cloud_security_posture", "3.4.0", policyshape.LookupPackageInfo)
 	require.False(t, diags.HasError())
 	plan.VarsJSON = varsJSON
 

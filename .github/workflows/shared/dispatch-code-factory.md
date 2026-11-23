@@ -22,7 +22,7 @@ safe-outputs:
             sparse-checkout-cone-mode: true
             fetch-depth: 1
         - name: Download safe-outputs artifact
-          uses: actions/download-artifact@v8.0.1
+          uses: actions/download-artifact@v8.0.2
           with:
             name: safe-outputs-items
             path: /tmp/gh-aw/safe-outputs

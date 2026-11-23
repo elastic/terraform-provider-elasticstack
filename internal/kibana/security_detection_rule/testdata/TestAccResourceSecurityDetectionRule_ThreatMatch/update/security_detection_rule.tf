@@ -28,7 +28,7 @@ resource "elasticstack_kibana_security_detection_rule" "test" {
   tags    = ["test", "threat-match", "automation"]
   license = "Elastic License v2"
 
-  threat_indicator_path = "threat.indicator"
+  threat_indicator_path = "threat.indicator.ip"
   concurrent_searches   = 2
   items_per_search      = 25
 

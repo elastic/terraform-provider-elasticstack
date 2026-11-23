@@ -42,3 +42,6 @@ type trainedModelData struct {
 	MetadataJSON         jsontypes.Normalized `tfsdk:"metadata_json"`
 	DefaultFieldMap      types.Map            `tfsdk:"default_field_map"`
 }
+
+func (d trainedModelData) GetID() types.String         { return d.ID }
+func (d trainedModelData) GetResourceID() types.String { return d.ModelID }

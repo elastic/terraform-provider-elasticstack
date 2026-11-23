@@ -19,6 +19,9 @@ package fleet
 
 import (
 	"context"
+	"fmt"
+	"io"
+	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/kibanaoapi"
@@ -50,17 +53,50 @@ func CreateFleetServerHost(ctx context.Context, client *Client, spaceID string, 
 	})
 }
 
-// UpdateFleetServerHost updates an existing fleet server host.
-func UpdateFleetServerHost(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
-	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.ServerHost, int, diag.Diagnostics) {
-		resp, err := client.API.PutFleetFleetServerHostsItemidWithResponse(ctx, id, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+// PutFleetServerHost sends an update for an existing fleet server host without
+// reading the host back.
+//
+// The raw request is used instead of the typed response wrapper because Kibana
+// returns the ssl object of a PUT response as a JSON-encoded string (for example
+// "ssl":"{}") rather than an object, which the generated response type cannot
+// decode.
+func PutFleetServerHost(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) diag.Diagnostics {
+	_, diags := kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (struct{}, int, diag.Diagnostics) {
+		resp, err := client.API.PutFleetFleetServerHostsItemid(ctx, id, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 		if err != nil {
-			return nil, 0, diagutil.FrameworkDiagFromError(err)
+			return struct{}{}, 0, diagutil.FrameworkDiagFromError(err)
 		}
+		defer resp.Body.Close()
 
-		result, diags := kibanaoapi.HandleMutateTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
-		return result, resp.StatusCode(), diags
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return struct{}{}, resp.StatusCode, diagutil.FrameworkDiagFromError(err)
+		}
+		if resp.StatusCode != http.StatusOK {
+			return struct{}{}, resp.StatusCode, diagutil.ReportUnknownHTTPError(resp.StatusCode, body)
+		}
+		return struct{}{}, resp.StatusCode, nil
 	})
+	return diags
+}
+
+// UpdateFleetServerHost updates an existing fleet server host and returns the
+// host as read back after the update.
+func UpdateFleetServerHost(ctx context.Context, client *Client, id string, spaceID string, req kbapi.PutFleetFleetServerHostsItemidJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
+	diags := PutFleetServerHost(ctx, client, id, spaceID, req)
+	if diags.HasError() {
+		return nil, diags
+	}
+
+	host, diags := GetFleetServerHost(ctx, client, id, spaceID)
+	if diags.HasError() {
+		return nil, diags
+	}
+	if host == nil {
+		diags.AddError("Fleet server host not found after update", fmt.Sprintf("Fleet server host %q was not found when reading it back after the update.", id))
+		return nil, diags
+	}
+	return host, diags
 }
 
 // DeleteFleetServerHost deletes an existing fleet server host.

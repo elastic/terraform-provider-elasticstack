@@ -1036,6 +1036,43 @@ func TestAccResourceAnomalyDetectionJobCustomSettingsOwnedThenOmitted(t *testing
 	})
 }
 
+// TestAccResourceAnomalyDetectionJobNestedCustomSettings guards the update path
+// for jobs whose custom_settings contain a nested object. The generated
+// updatejob.Response types custom_settings as map[string]string, so decoding the
+// update response used to fail after Elasticsearch had already applied the
+// change. Terraform reported an error, never saved the new state, and every
+// later plan showed the same diff again.
+func TestAccResourceAnomalyDetectionJobNestedCustomSettings(t *testing.T) {
+	jobID := fmt.Sprintf("test-ad-cs-nested-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	addr := testResourceAddr
+	vars := config.Variables{"job_id": config.StringVariable(jobID)}
+	nested := fmt.Sprintf(`{"metadata":{"datafeed_id":"datafeed-%s","job_state":"opened"}}`, jobID)
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "description", "Anomaly job with nested custom_settings"),
+					testAccCheckMLJobCustomSettingsEquals(jobID, nested),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("update"),
+				ConfigVariables:          vars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(addr, "description", "Anomaly job with nested custom_settings (updated)"),
+					testAccCheckMLJobCustomSettingsEquals(jobID, nested),
+				),
+			},
+		},
+	})
+}
+
 //go:embed testdata/TestAccResourceAnomalyDetectionJobFrom0_12_2/create/main.tf
 var sdkCreateConfig string
 

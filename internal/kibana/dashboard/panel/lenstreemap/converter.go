@@ -37,7 +37,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanelTypeTreemap)
+	return string(kbapi.KibanaHTTPAPIsVisTreemapNoESQLByValuePanelTypeTreemap)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -97,9 +97,9 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	prior := lenscommon.SnapshotAndResetBlock(&blocks.TreemapConfig)
 	return lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.TreemapConfig, prior,
-		attrs.AsKibanaHTTPAPIsTreemapNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsTreemapESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel) bool {
+		attrs.AsKibanaHTTPAPIsVisTreemapNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsVisTreemapESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsVisTreemapNoESQLByValuePanel) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
 		treemapConfigFromAPINoESQL,
@@ -117,7 +117,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignTreemapStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignTreemapConfigStateFromPlan(ctx, plan.TreemapConfig, state.TreemapConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

@@ -18,9 +18,7 @@
 package dashboard
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
@@ -41,8 +39,7 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	data := resp.JSON200
 
 	// Set composite ID
-	resourceID := clients.CompositeID{ClusterID: spaceID, ResourceID: dashboardID}
-	m.ID = types.StringValue(resourceID.String())
+	m.ID = clients.CompositeIDValue(spaceID, dashboardID)
 	m.DashboardID = types.StringValue(dashboardID)
 	m.SpaceID = types.StringValue(spaceID)
 
@@ -95,22 +92,8 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	// Map query (KbnAsCodeQuery: language + expression string)
 	if data.Data.Query != nil {
 		q := &models.DashboardQueryModel{
-			Language: types.StringValue(string(data.Data.Query.Language)),
-		}
-		expr := data.Data.Query.Expression
-		trimmed := bytes.TrimSpace([]byte(expr))
-		if len(trimmed) > 0 && trimmed[0] == '{' {
-			var obj map[string]any
-			if err := json.Unmarshal(trimmed, &obj); err == nil {
-				q.Text = types.StringNull()
-				q.JSON = jsontypes.NewNormalizedValue(string(trimmed))
-			} else {
-				q.Text = types.StringValue(expr)
-				q.JSON = jsontypes.NewNormalizedNull()
-			}
-		} else {
-			q.Text = types.StringValue(expr)
-			q.JSON = jsontypes.NewNormalizedNull()
+			Language:   types.StringValue(string(data.Data.Query.Language)),
+			Expression: types.StringValue(data.Data.Query.Expression),
 		}
 		m.Query = q
 	} else {
@@ -118,10 +101,12 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	}
 	dashboardMapDashboardFiltersFromAPI(ctx, m, &data.Data, &diags)
 
-	// Map tags
+	// Map tags: preserve any known prior plan/state value (including a known-empty
+	// list and null) when the API returns a nil or empty tags value (REQ-009).
 	if data.Data.Tags != nil && len(*data.Data.Tags) > 0 {
 		m.Tags = typeutils.SliceToListTypeString(ctx, *data.Data.Tags, path.Root("tags"), &diags)
-	} else {
+	} else if m.Tags.IsUnknown() {
+		// No prior plan/state intent to preserve: normalize to null.
 		m.Tags = types.ListNull(types.StringType)
 	}
 
@@ -149,22 +134,39 @@ func dashboardPopulateFromAPI(ctx context.Context, m *models.DashboardModel, res
 	return diags
 }
 
+// refreshIntervalToAPI maps the refresh_interval block, returning nil when it is unset.
+func refreshIntervalToAPI(m *models.RefreshIntervalModel) *kbapi.KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema {
+	if m == nil {
+		return nil
+	}
+	return &kbapi.KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema{
+		Pause: m.Pause.ValueBool(),
+		Value: float32(m.Value.ValueInt64()),
+	}
+}
+
+// timeRangeToAPI maps the time_range block (including mode), returning nil when it is unset.
+func timeRangeToAPI(m *models.TimeRangeModel) *kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema {
+	if m == nil {
+		return nil
+	}
+	tr := &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
+		From: m.From.ValueString(),
+		To:   m.To.ValueString(),
+	}
+	if typeutils.IsKnown(m.Mode) {
+		mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(m.Mode.ValueString())
+		tr.Mode = &mode
+	}
+	return tr
+}
+
 // toAPICreateRequest converts the Terraform model to an API create request
 func dashboardToAPICreateRequest(ctx context.Context, m *models.DashboardModel, diags *diag.Diagnostics) kbapi.PostDashboardsJSONRequestBody {
 	req := kbapi.PostDashboardsJSONRequestBody{
 		Title: m.Title.ValueString()}
-	if m.RefreshInterval != nil {
-		req.RefreshInterval = &kbapi.KibanaHTTPAPIsKbnDataServiceServerRefreshIntervalSchema{
-			Pause: m.RefreshInterval.Pause.ValueBool(),
-			Value: float32(m.RefreshInterval.Value.ValueInt64()),
-		}
-	}
-	if m.TimeRange != nil {
-		req.TimeRange = &kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchema{
-			From: m.TimeRange.From.ValueString(),
-			To:   m.TimeRange.To.ValueString(),
-		}
-	}
+	req.RefreshInterval = refreshIntervalToAPI(m.RefreshInterval)
+	req.TimeRange = timeRangeToAPI(m.TimeRange)
 
 	// Set description
 	if typeutils.IsKnown(m.Description) {
@@ -172,16 +174,7 @@ func dashboardToAPICreateRequest(ctx context.Context, m *models.DashboardModel, 
 		req.Description = &desc
 	}
 
-	// Set time range mode
-	if req.TimeRange != nil && typeutils.IsKnown(m.TimeRange.Mode) {
-		mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(m.TimeRange.Mode.ValueString())
-		req.TimeRange.Mode = &mode
-	}
-
-	// Set query text - Query is a union type with json.RawMessage
-	queryModel, queryDiags := dashboardQueryToAPI(m)
-	diags.Append(queryDiags...)
-	req.Query = queryModel
+	req.Query = dashboardQueryToAPI(m)
 
 	// Set tags
 	if typeutils.IsKnown(m.Tags) {
@@ -216,14 +209,8 @@ func dashboardToAPICreateRequest(ctx context.Context, m *models.DashboardModel, 
 func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, diags *diag.Diagnostics) kbapi.PutDashboardsIdJSONRequestBody {
 	req := kbapi.PutDashboardsIdJSONRequestBody{
 		Title: m.Title.ValueString()}
-	if m.RefreshInterval != nil {
-		req.RefreshInterval.Pause = m.RefreshInterval.Pause.ValueBool()
-		req.RefreshInterval.Value = float32(m.RefreshInterval.Value.ValueInt64())
-	}
-	if m.TimeRange != nil {
-		req.TimeRange.From = m.TimeRange.From.ValueString()
-		req.TimeRange.To = m.TimeRange.To.ValueString()
-	}
+	req.RefreshInterval = refreshIntervalToAPI(m.RefreshInterval)
+	req.TimeRange = timeRangeToAPI(m.TimeRange)
 
 	// Set description
 	if typeutils.IsKnown(m.Description) {
@@ -231,18 +218,7 @@ func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, 
 		req.Description = &desc
 	}
 
-	// Set time range mode
-	if m.TimeRange != nil && typeutils.IsKnown(m.TimeRange.Mode) {
-		mode := kbapi.KibanaHTTPAPIsKbnEsQueryServerTimeRangeSchemaMode(m.TimeRange.Mode.ValueString())
-		req.TimeRange.Mode = &mode
-	}
-
-	// Set query text - Query is a union type with json.RawMessage
-	queryModel, queryDiags := dashboardQueryToAPI(m)
-	diags.Append(queryDiags...)
-	if queryModel != nil {
-		req.Query = *queryModel
-	}
+	req.Query = dashboardQueryToAPI(m)
 
 	// Set tags
 	if typeutils.IsKnown(m.Tags) {
@@ -255,9 +231,7 @@ func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, 
 	// Set options
 	options, optionsDiags := dashboardOptionsToAPI(m)
 	diags.Append(optionsDiags...)
-	if options != nil {
-		req.Options = *options
-	}
+	req.Options = options
 
 	// Set panels.
 	panels, panelsDiags := dashboardPanelsToAPI(ctx, m)
@@ -276,32 +250,14 @@ func dashboardToAPIUpdateRequest(ctx context.Context, m *models.DashboardModel, 
 	return req
 }
 
-func dashboardQueryToAPI(m *models.DashboardModel) (*kbapi.KibanaHTTPAPIsKbnAsCodeQuery, diag.Diagnostics) {
+func dashboardQueryToAPI(m *models.DashboardModel) *kbapi.KibanaHTTPAPIsKbnAsCodeQuery {
 	if m.Query == nil {
-		return nil, nil
+		return nil
 	}
-	query := &kbapi.KibanaHTTPAPIsKbnAsCodeQuery{}
-	query.Language = kbapi.KibanaHTTPAPIsKbnAsCodeQueryLanguage(m.Query.Language.ValueString())
-	textKnown := typeutils.IsKnown(m.Query.Text)
-	jsonKnown := typeutils.IsKnown(m.Query.JSON)
-
-	if textKnown == jsonKnown {
-		var diags diag.Diagnostics
-		diags.AddError(
-			"Invalid dashboard query",
-			"Exactly one of `query.text` or `query.json` must be set.",
-		)
-		return query, diags
+	return &kbapi.KibanaHTTPAPIsKbnAsCodeQuery{
+		Language:   kbapi.KibanaHTTPAPIsKbnAsCodeQueryLanguage(m.Query.Language.ValueString()),
+		Expression: m.Query.Expression.ValueString(),
 	}
-
-	switch {
-	case textKnown:
-		query.Expression = m.Query.Text.ValueString()
-	case jsonKnown:
-		query.Expression = m.Query.JSON.ValueString()
-	}
-
-	return query, nil
 }
 
 func dashboardRootSavedFiltersElementType() types.ObjectType {

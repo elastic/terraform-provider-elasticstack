@@ -26,6 +26,75 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func Test_alignHeatmapAxisStateFromPlan_preservesNullXLabelOrientationWhenKibanaInjectsHorizontal(t *testing.T) {
+	t.Parallel()
+
+	plan := &models.HeatmapAxesModel{
+		X: &models.HeatmapXAxisModel{
+			Labels: &models.HeatmapXAxisLabelsModel{
+				Orientation: types.StringNull(),
+			},
+		},
+	}
+	state := &models.HeatmapAxesModel{
+		X: &models.HeatmapXAxisModel{
+			Labels: &models.HeatmapXAxisLabelsModel{
+				Orientation: types.StringValue("horizontal"),
+			},
+		},
+	}
+
+	alignHeatmapAxisStateFromPlan(plan, state)
+
+	require.NotNil(t, state.X)
+	require.NotNil(t, state.X.Labels)
+	assert.True(t, state.X.Labels.Orientation.IsNull())
+}
+
+func Test_alignHeatmapAxisStateFromPlan_doesNotOverwriteExplicitNonHorizontalOrientation(t *testing.T) {
+	t.Parallel()
+
+	plan := &models.HeatmapAxesModel{
+		X: &models.HeatmapXAxisModel{
+			Labels: &models.HeatmapXAxisLabelsModel{
+				Orientation: types.StringValue("vertical"),
+			},
+		},
+	}
+	state := &models.HeatmapAxesModel{
+		X: &models.HeatmapXAxisModel{
+			Labels: &models.HeatmapXAxisLabelsModel{
+				Orientation: types.StringValue("vertical"),
+			},
+		},
+	}
+
+	alignHeatmapAxisStateFromPlan(plan, state)
+
+	require.NotNil(t, state.X)
+	require.NotNil(t, state.X.Labels)
+	assert.Equal(t, "vertical", state.X.Labels.Orientation.ValueString())
+}
+
+func Test_alignHeatmapLegendStateFromPlan_preservesNullTruncateWhenKibanaInjectsDefault(t *testing.T) {
+	t.Parallel()
+
+	plan := &models.HeatmapLegendModel{
+		Size:               types.StringValue("m"),
+		TruncateAfterLines: types.Int64Null(),
+	}
+	state := &models.HeatmapLegendModel{
+		Size:               types.StringValue("m"),
+		Visibility:         types.StringValue("visible"),
+		TruncateAfterLines: types.Int64Value(1),
+	}
+
+	alignHeatmapLegendStateFromPlan(plan, &state)
+
+	require.NotNil(t, state)
+	assert.True(t, state.TruncateAfterLines.IsNull())
+}
+
 func Test_alignHeatmapLegendStateFromPlan(t *testing.T) {
 	t.Run("clones plan legend when state is nil", func(t *testing.T) {
 		t.Parallel()

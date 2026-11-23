@@ -34,7 +34,11 @@ func createAgentDownloadSource(ctx context.Context, client *fleet.Client, plan m
 	// Determine space from plan (first space_ids entry) for CREATE.
 	spaceID := fleetutils.SpaceIDFromSet(plan.SpaceIDs)
 
-	body := plan.toAPICreateModel(ctx)
+	body, bodyDiags := plan.toAPICreateModel(ctx)
+	diags.Append(bodyDiags...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[model]{}, diags
+	}
 
 	createResp, createDiags := fleet.CreateAgentDownloadSource(ctx, client, spaceID, body)
 	diags.Append(createDiags...)

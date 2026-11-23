@@ -34,10 +34,10 @@ import (
 
 type proxyModel struct {
 	entitycore.ResourceTimeoutsField
+	entitycore.KibanaConnectionField
+	entitycore.SpaceIDField
 	ID                     types.String `tfsdk:"id"`
-	KibanaConnection       types.List   `tfsdk:"kibana_connection"`
 	ProxyID                types.String `tfsdk:"proxy_id"`
-	SpaceID                types.String `tfsdk:"space_id"`
 	Name                   types.String `tfsdk:"name"`
 	URL                    types.String `tfsdk:"url"`
 	Certificate            types.String `tfsdk:"certificate"`
@@ -49,10 +49,8 @@ type proxyModel struct {
 
 var proxyMinVersion = version.Must(version.NewVersion("8.7.1"))
 
-func (m proxyModel) GetID() types.String             { return m.ID }
-func (m proxyModel) GetResourceID() types.String     { return m.ProxyID }
-func (m proxyModel) GetSpaceID() types.String        { return m.SpaceID }
-func (m proxyModel) GetKibanaConnection() types.List { return m.KibanaConnection }
+func (m proxyModel) GetID() types.String         { return m.ID }
+func (m proxyModel) GetResourceID() types.String { return m.ProxyID }
 
 func (m proxyModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return entitycore.SingleVersionRequirement(
@@ -64,7 +62,7 @@ func (m proxyModel) GetVersionRequirements(_ context.Context) ([]entitycore.Vers
 func (m *proxyModel) populateFromAPI(spaceID string, item kbapi.FleetProxyItem) diag.Diagnostics {
 	var diags diag.Diagnostics
 
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: item.Id}).String())
+	m.ID = clients.CompositeIDValue(spaceID, item.Id)
 	m.ProxyID = types.StringValue(item.Id)
 	m.SpaceID = types.StringValue(spaceID)
 	m.Name = types.StringValue(item.Name)

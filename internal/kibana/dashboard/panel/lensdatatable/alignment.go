@@ -40,7 +40,7 @@ func alignDatatableNoESQLStateFromPlan(plan, state *models.DatatableNoESQLConfig
 	// empty_as_null, format.{decimals,compact}). Treat as semantically equal.
 	n := min(len(plan.Metrics), len(state.Metrics))
 	for i := range n {
-		lenscommon.PreservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual(plan.Metrics[i].ConfigJSON, &state.Metrics[i].ConfigJSON, lenscommon.PopulateLensMetricDefaults)
+		lenscommon.PreservePlanNormalizedJSONWithDefaultsIfSemanticallyEqual(plan.Metrics[i].ConfigJSON, &state.Metrics[i].ConfigJSON, lenscommon.PopulateDatatableMetricDefaults)
 	}
 	r := min(len(plan.Rows), len(state.Rows))
 	for i := range r {

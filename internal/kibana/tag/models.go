@@ -33,9 +33,9 @@ import (
 
 type tagBaseModel struct {
 	entitycore.KibanaConnectionField
-	ID          types.String `tfsdk:"id"`
-	TagID       types.String `tfsdk:"tag_id"`
-	SpaceID     types.String `tfsdk:"space_id"`
+	ID    types.String `tfsdk:"id"`
+	TagID types.String `tfsdk:"tag_id"`
+	entitycore.SpaceIDField
 	Name        types.String `tfsdk:"name"`
 	Color       types.String `tfsdk:"color"`
 	Description types.String `tfsdk:"description"`
@@ -59,12 +59,10 @@ const tagMinVersionErrorMessage = "Kibana tags require Elastic Stack v9.5.0 or l
 
 func (m tagBaseModel) GetID() types.String         { return m.ID }
 func (m tagBaseModel) GetResourceID() types.String { return m.TagID }
-func (m tagBaseModel) GetSpaceID() types.String    { return m.SpaceID }
 
 func (m *tagBaseModel) setCompositeIdentity(spaceID, tagID string) {
-	m.ID = types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: tagID}).String())
+	m.ID, m.SpaceID = clients.CompositeIdentityValues(spaceID, tagID)
 	m.TagID = types.StringValue(tagID)
-	m.SpaceID = types.StringValue(spaceID)
 }
 
 func (tagBaseModel) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {

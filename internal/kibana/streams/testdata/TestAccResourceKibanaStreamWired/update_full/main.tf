@@ -22,8 +22,8 @@ resource "elasticstack_kibana_dashboard" "test" {
   }
 
   query = {
-    language = "kql"
-    text     = ""
+    language   = "kql"
+    expression = ""
   }
 }
 

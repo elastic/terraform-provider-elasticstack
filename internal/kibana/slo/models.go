@@ -50,14 +50,12 @@ var (
 
 type tfModel struct {
 	entitycore.ResourceTimeoutsField
-
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-
-	SloID        types.String `tfsdk:"slo_id"`
-	Name         types.String `tfsdk:"name"`
-	Description  types.String `tfsdk:"description"`
-	SpaceID      types.String `tfsdk:"space_id"`
+	entitycore.KibanaConnectionField
+	ID          types.String `tfsdk:"id"`
+	SloID       types.String `tfsdk:"slo_id"`
+	Name        types.String `tfsdk:"name"`
+	Description types.String `tfsdk:"description"`
+	entitycore.SpaceIDField
 	BudgetMethod types.String `tfsdk:"budgeting_method"`
 	Enabled      types.Bool   `tfsdk:"enabled"`
 
@@ -83,22 +81,7 @@ func (m tfModel) GetID() types.String {
 }
 
 func (m tfModel) GetResourceID() types.String {
-	if m.ID.IsNull() || m.ID.IsUnknown() {
-		return types.StringNull()
-	}
-	compID, _ := clients.CompositeIDFromStr(m.ID.ValueString())
-	if compID != nil {
-		return types.StringValue(compID.ResourceID)
-	}
-	return m.ID // fallback
-}
-
-func (m tfModel) GetSpaceID() types.String {
-	return m.SpaceID
-}
-
-func (m tfModel) GetKibanaConnection() types.List {
-	return m.KibanaConnection
+	return clients.ResourceIDFromComposite(m.ID, m.ID)
 }
 
 // GetVersionRequirements satisfies [entitycore.WithVersionRequirements].
@@ -112,21 +95,14 @@ func (m tfModel) GetVersionRequirements(_ context.Context) ([]entitycore.Version
 		if diags.HasError() {
 			return nil, diags
 		}
-		if typeutils.IsKnown(settingsModel.PreventInitialBackfill) && settingsModel.PreventInitialBackfill.ValueBool() {
-			reqs = append(reqs, entitycore.VersionRequirement{
-				MinVersion: *SLOSupportsPreventInitialBackfillMinVersion,
-				ErrorMessage: "The 'prevent_initial_backfill' setting requires Elastic Stack version " +
-					SLOSupportsPreventInitialBackfillMinVersion.String() + " or higher.",
-			})
-		}
+		reqs = entitycore.AppendVersionRequirementIf(reqs,
+			typeutils.IsKnown(settingsModel.PreventInitialBackfill) && settingsModel.PreventInitialBackfill.ValueBool(),
+			SLOSupportsPreventInitialBackfillMinVersion,
+			"The 'prevent_initial_backfill' setting requires Elastic Stack version %s or higher.", SLOSupportsPreventInitialBackfillMinVersion.String())
 	}
 
-	if m.hasDataViewID() {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *SLOSupportsDataViewIDMinVersion,
-			ErrorMessage: "data_view_id is not supported on Elastic Stack versions < " + SLOSupportsDataViewIDMinVersion.String(),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs, m.hasDataViewID(),
+		SLOSupportsDataViewIDMinVersion, "data_view_id is not supported on Elastic Stack versions < %s", SLOSupportsDataViewIDMinVersion.String())
 
 	return reqs, diags
 }

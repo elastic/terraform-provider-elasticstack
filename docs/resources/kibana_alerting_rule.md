@@ -4,6 +4,7 @@ page_title: "elasticstack_kibana_alerting_rule Resource - terraform-provider-ela
 subcategory: "Kibana"
 description: |-
   Creates a Kibana rule. See the create rule API documentation https://www.elastic.co/guide/en/kibana/master/create-rule-api.html for more details.
+  Execution status and date are available from the elasticstack_kibana_alerting_rules ../data-sources/kibana_alerting_rules data source.
   NOTE: api_key authentication is only supported for alerting rule resources from version 8.8.0 of the Elastic stack. Using an api_key will result in an error message like:
   
   Could not create API key - Unsupported scheme "ApiKey" for granting API Key
@@ -12,6 +13,8 @@ description: |-
 # elasticstack_kibana_alerting_rule (Resource)
 
 Creates a Kibana rule. See the [create rule API documentation](https://www.elastic.co/guide/en/kibana/master/create-rule-api.html) for more details.
+
+Execution status and date are available from the [`elasticstack_kibana_alerting_rules`](../data-sources/kibana_alerting_rules) data source.
 
 **NOTE:** `api_key` authentication is only supported for alerting rule resources from version 8.8.0 of the Elastic stack. Using an `api_key` will result in an error message like:
 
@@ -79,8 +82,6 @@ Kibana cannot clear this deprecated rule-level value via the update API: once se
 ### Read-Only
 
 - `id` (String) Generated ID for the alerting rule.
-- `last_execution_date` (String) Date of the last execution of this rule.
-- `last_execution_status` (String) Status of the last execution of this rule.
 - `scheduled_task_id` (String) ID of the scheduled task that will execute the alert.
 
 <a id="nestedblock--actions"></a>
@@ -177,6 +178,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

@@ -36,7 +36,7 @@ func init() {
 type converter struct{}
 
 func (converter) VizType() string {
-	return string(kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanelTypeRegionMap)
+	return string(kbapi.KibanaHTTPAPIsVisRegionMapNoESQLByValuePanelTypeRegionMap)
 }
 
 func (converter) HandlesBlocks(blocks *models.LensByValueChartBlocks) bool {
@@ -72,9 +72,9 @@ func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.Lens
 	prior := lenscommon.SnapshotAndResetBlock(&blocks.RegionMapConfig)
 	return lenscommon.PopulateFromNoESQLOrESQL(
 		ctx, blocks.RegionMapConfig, prior,
-		attrs.AsKibanaHTTPAPIsRegionMapNoESQLByValuePanel,
-		attrs.AsKibanaHTTPAPIsRegionMapESQLByValuePanel,
-		func(v kbapi.KibanaHTTPAPIsRegionMapNoESQLByValuePanel) bool {
+		attrs.AsKibanaHTTPAPIsVisRegionMapNoESQLByValuePanel,
+		attrs.AsKibanaHTTPAPIsVisRegionMapESQLByValuePanel,
+		func(v kbapi.KibanaHTTPAPIsVisRegionMapNoESQLByValuePanel) bool {
 			return !lenscommon.IsNoESQLCandidateActuallyESQL(v.DataSource)
 		},
 		regionMapConfigFromAPINoESQL,
@@ -92,7 +92,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignRegionMapStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignRegionMapConfigStateFromPlan(ctx, plan.RegionMapConfig, state.RegionMapConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

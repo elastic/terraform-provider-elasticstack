@@ -17,7 +17,7 @@ The `elasticstack_elasticsearch_synonym_set` resource SHALL use `PUT /_synonyms/
 
 - GIVEN a `synonym_set_id` that does not exist in Elasticsearch
 - WHEN the data source reads
-- THEN diagnostics SHALL include an error indicating the synonym set was not found
+- THEN the read callback SHALL return `found == false`, the envelope SHALL append a standardized not-found error diagnostic, and Terraform state SHALL NOT be set
 
 ### Requirement: Identity (REQ-002)
 

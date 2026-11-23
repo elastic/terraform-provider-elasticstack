@@ -38,3 +38,13 @@ resource "elasticstack_kibana_agentbuilder_agent" "space_agent" {
   space_id = elasticstack_kibana_space.my_space.space_id
   name     = "Space-Scoped Agent"
 }
+
+# Agent with access control (requires Elastic Stack 9.5.0+)
+resource "elasticstack_kibana_agentbuilder_agent" "shared_agent" {
+  agent_id = "shared-agent"
+  name     = "Shared Agent"
+
+  access_control = {
+    access_mode = "shared"
+  }
+}

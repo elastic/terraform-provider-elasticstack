@@ -28,7 +28,7 @@ steps:
       echo "TERRAFORM_BIN=$GITHUB_WORKSPACE/bin/terraform" >> "$GITHUB_ENV"
       echo "PATH=$GITHUB_WORKSPACE/bin:$PATH" >> "$GITHUB_ENV"
   - name: Setup Node.js
-    uses: actions/setup-node@v7.0.0
+    uses: actions/setup-node@v7.1.0
     with:
       node-version-file: package.json
   - name: Setup repository dependencies

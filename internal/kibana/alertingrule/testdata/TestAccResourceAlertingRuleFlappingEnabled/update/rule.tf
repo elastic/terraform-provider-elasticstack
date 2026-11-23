@@ -65,12 +65,4 @@ resource "elasticstack_kibana_alerting_rule" "test_rule" {
     enabled                 = false
   }
 
-  # Volatile computed attributes from Kibana rule execution; ignore in acc tests so
-  # post-apply no-refresh plans stay empty (terraform-plugin-testing perpetual diff check).
-  lifecycle {
-    ignore_changes = [
-      last_execution_date,
-      last_execution_status,
-    ]
-  }
 }

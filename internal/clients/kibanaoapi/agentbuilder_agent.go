@@ -37,6 +37,20 @@ func GetAgent(ctx context.Context, client *Client, spaceID, agentID string) (*mo
 	return HandleGetRawResponse[models.Agent](resp.StatusCode(), resp.Body)
 }
 
+// GetAgentAccessControl reads the access control of a specific agent from the
+// dedicated sub-resource endpoint. A nil result means the agent was not found.
+func GetAgentAccessControl(ctx context.Context, client *Client, spaceID, agentID string) (*models.AgentAccessControl, diag.Diagnostics) {
+	resp, err := client.API.GetAgentBuilderAgentsIdAccessControlWithResponse(ctx, agentID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	body, diags := HandleGetRawResponse[models.AgentAccessControlResponse](resp.StatusCode(), resp.Body)
+	if diags.HasError() || body == nil {
+		return nil, diags
+	}
+	return &body.AccessControl, diags
+}
+
 // CreateAgent creates a new agent.
 func CreateAgent(ctx context.Context, client *Client, spaceID string, req kbapi.PostAgentBuilderAgentsJSONRequestBody) (*models.Agent, diag.Diagnostics) {
 	resp, err := client.API.PostAgentBuilderAgentsWithResponse(ctx, req, kibanautil.SpaceAwarePathRequestEditor(spaceID))

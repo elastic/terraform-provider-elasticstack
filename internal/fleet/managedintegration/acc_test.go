@@ -1097,7 +1097,7 @@ func createTestCloudConnector(t *testing.T, externalIDPlaintext string) (string,
 	name := fmt.Sprintf("tf-acc-managed-integration-%s", sdkacctest.RandStringFromCharSet(8, sdkacctest.CharSetAlphaNum))
 	body := kbapi.PostFleetCloudConnectorsJSONRequestBody{
 		Name:          name,
-		CloudProvider: kbapi.Aws,
+		CloudProvider: kbapi.PostFleetCloudConnectorsJSONBodyCloudProviderAws,
 		AccountType:   &accountType,
 		Vars: map[string]kbapi.PostFleetCloudConnectorsJSONBody_Vars_AdditionalProperties{
 			"role_arn":    roleArnVar,

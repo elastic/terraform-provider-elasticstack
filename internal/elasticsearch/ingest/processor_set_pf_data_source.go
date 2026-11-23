@@ -64,8 +64,6 @@ func (m *processorSetModel) MarshalBody() (any, diag.Diagnostics) {
 	body.IgnoreEmptyValue = typeutils.BoolDefault(&m.IgnoreEmptyValue, false)
 	body.MediaType = typeutils.StringDefault(&m.MediaType, "application/json")
 
-	typeutils.BoolDefault(&m.IgnoreFailure, false)
-
 	return body, diags
 }
 

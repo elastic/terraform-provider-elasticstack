@@ -30,7 +30,7 @@ import (
 
 func TestConverter_VizType(t *testing.T) {
 	var c converter
-	require.Equal(t, string(kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanelTypeTreemap), c.VizType())
+	require.Equal(t, string(kbapi.KibanaHTTPAPIsVisTreemapNoESQLByValuePanelTypeTreemap), c.VizType())
 }
 
 func TestConverter_HandlesBlocks(t *testing.T) {
@@ -59,11 +59,11 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 		"metrics": [{"operation":"count"}],
 		"group_by": ` + groupBy + `
 	}`
-	var api kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanel
+	var api kbapi.KibanaHTTPAPIsVisTreemapNoESQLByValuePanel
 	require.NoError(t, json.Unmarshal([]byte(apiJSON), &api))
 
 	var attrs lenscommon.VisByValueConfig0
-	require.NoError(t, attrs.FromKibanaHTTPAPIsTreemapNoESQLByValuePanel(api))
+	require.NoError(t, attrs.FromKibanaHTTPAPIsVisTreemapNoESQLByValuePanel(api))
 
 	var c converter
 	blocks := &models.LensByValueChartBlocks{}
@@ -74,8 +74,8 @@ func TestConverter_roundTrip_NoESQL(t *testing.T) {
 	attrs2, diags := c.BuildAttributes(blocks)
 	require.False(t, diags.HasError(), "%v", diags)
 
-	noESQL2, err := attrs2.AsKibanaHTTPAPIsTreemapNoESQLByValuePanel()
+	noESQL2, err := attrs2.AsKibanaHTTPAPIsVisTreemapNoESQLByValuePanel()
 	require.NoError(t, err)
 	assert.Equal(t, "Treemap NoESQL Round-Trip", *noESQL2.Title)
-	assert.Equal(t, kbapi.KibanaHTTPAPIsTreemapNoESQLByValuePanelTypeTreemap, noESQL2.Type)
+	assert.Equal(t, kbapi.KibanaHTTPAPIsVisTreemapNoESQLByValuePanelTypeTreemap, noESQL2.Type)
 }

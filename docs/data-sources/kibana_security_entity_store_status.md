@@ -26,7 +26,7 @@ Reads Elastic Security Entity Store status for a Kibana space.
 - `engines` (Attributes List) Per-engine status details. (see [below for nested schema](#nestedatt--engines))
 - `installed` (Boolean) True when the Entity Store is installed.
 - `overall_status` (String) The overall operational status of the Entity Store.
-- `status_json` (String) Normalized JSON of the full status response.
+- `status_json` (String) Raw JSON of the full status response. The order of the engines array is ignored when comparing this attribute for semantic equality.
 
 <a id="nestedblock--kibana_connection"></a>
 ### Nested Schema for `kibana_connection`
@@ -37,6 +37,7 @@ Optional:
 - `bearer_token` (String, Sensitive) Bearer Token to use for authentication to Kibana
 - `ca_certs` (List of String) A list of paths to CA certificates to validate the certificate presented by the Kibana server.
 - `endpoints` (List of String, Sensitive) A comma-separated list of endpoints where the terraform provider will point to, this must include the http(s) schema and port number.
+- `headers` (Map of String, Sensitive) A map of headers to be sent with each request to Kibana. Custom header values may appear in provider debug logs: Authorization is masked, but arbitrary custom proxy-token headers are not generally redacted.
 - `insecure` (Boolean) Disable TLS certificate validation
 - `password` (String, Sensitive) Password to use for API authentication to Kibana.
 - `username` (String) Username to use for API authentication to Kibana.

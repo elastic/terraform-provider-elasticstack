@@ -36,6 +36,11 @@ func createDashboard(
 	var diags diag.Diagnostics
 	planModel := req.Plan
 
+	diags.Append(enforceDurationFormatParamsVersion(ctx, client, planModel)...)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[models.DashboardModel]{}, diags
+	}
+
 	kibanaClient := client.GetKibanaOapiClient()
 	spaceID := req.SpaceID
 

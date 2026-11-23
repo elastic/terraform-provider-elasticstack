@@ -168,11 +168,9 @@ func TestFinishOsquerySavedQueryDataSourceRead_notFound(t *testing.T) {
 	t.Parallel()
 
 	config := dataSourceModel{SavedQueryID: types.StringValue("missing-query")}
-	_, diags := finishOsquerySavedQueryDataSourceRead(context.Background(), config, nil, "default")
-	require.True(t, diags.HasError())
-	assert.Equal(t, "Osquery saved query not found", diags.Errors()[0].Summary())
-	assert.Contains(t, diags.Errors()[0].Detail(), "missing-query")
-	assert.Contains(t, diags.Errors()[0].Detail(), "default")
+	_, found, diags := finishOsquerySavedQueryDataSourceRead(context.Background(), config, nil, "default")
+	require.False(t, diags.HasError())
+	assert.False(t, found, "not found is reported to the envelope via found=false")
 }
 
 func TestFinishOsquerySavedQueryDataSourceRead_successWithDefaultSpace(t *testing.T) {
@@ -201,8 +199,9 @@ func TestFinishOsquerySavedQueryDataSourceRead_successWithDefaultSpace(t *testin
 		SpaceID:      types.StringNull(),
 	}
 
-	result, diags := finishOsquerySavedQueryDataSourceRead(ctx, config, entity, clients.DefaultSpaceID)
+	result, found, diags := finishOsquerySavedQueryDataSourceRead(ctx, config, entity, clients.DefaultSpaceID)
 	require.False(t, diags.HasError())
+	require.True(t, found)
 	assert.Equal(t, clients.DefaultSpaceID, result.SpaceID.ValueString())
 	assert.Equal(t, "default/list_processes", result.ID.ValueString())
 	assert.Equal(t, "saved-object-123", result.SavedObjectID.ValueString())

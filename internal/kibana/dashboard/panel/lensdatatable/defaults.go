@@ -23,7 +23,7 @@ func populateDatatableLensAttributes(attrs map[string]any) map[string]any {
 	if !lenscommon.InitLensAttrs(attrs) {
 		return attrs
 	}
-	lenscommon.PopulateMapSliceDefaults(attrs, "metrics", lenscommon.PopulateLensMetricDefaults)
+	lenscommon.PopulateMapSliceDefaults(attrs, "metrics", lenscommon.PopulateDatatableMetricDefaults)
 	lenscommon.PopulateMapSliceDefaults(attrs, "rows", lenscommon.PopulateLensGroupByDefaults)
 	lenscommon.PopulateMapSliceDefaults(attrs, "split_metrics_by", lenscommon.PopulateLensGroupByDefaults)
 	return attrs

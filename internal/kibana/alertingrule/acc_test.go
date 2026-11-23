@@ -27,7 +27,9 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest"
 	"github.com/elastic/terraform-provider-elasticstack/internal/acctest/checks"
@@ -77,6 +79,7 @@ func TestAccResourceAlertingRule(t *testing.T) {
 	ruleIDMain := uuid.New().String()
 	ruleIDLogs := uuid.New().String()
 	ruleIDNoFreq := uuid.New().String()
+	ruleIDDefaultGroup := uuid.New().String()
 
 	resource.ParallelTest(t, resource.TestCase{
 		PreCheck:     func() { acctest.PreCheck(t) },
@@ -99,6 +102,7 @@ func TestAccResourceAlertingRule(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "enabled", "true"),
 					resource.TestCheckResourceAttrSet("elasticstack_kibana_alerting_rule.test_rule", "scheduled_task_id"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "space_id", "default"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "id", "default/"+ruleIDMain),
 				),
 			},
 			// ImportState testing
@@ -108,8 +112,7 @@ func TestAccResourceAlertingRule(t *testing.T) {
 				ImportState:              true,
 				ImportStateVerify:        true,
 				// notify_when may not be returned by the API in newer versions where it's deprecated
-				// last_execution_date and last_execution_status change as Kibana executes the rule
-				ImportStateVerifyIgnore: []string{"notify_when", "last_execution_date", "last_execution_status"},
+				ImportStateVerifyIgnore: []string{"notify_when"},
 				ConfigDirectory:         acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(ruleName),
@@ -261,6 +264,40 @@ func TestAccResourceAlertingRule(t *testing.T) {
 			},
 			{
 				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAlertsFilterVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("alerts_filter_kql_update"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleIDLogs),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleIDLogs),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.group", "logs.threshold.fired"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.kql", `kibana.alert.action_group: "slo.burnRate.high"`),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAlertsFilterVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("alerts_filter_timeframe_update"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleIDLogs),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleIDLogs),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.group", "logs.threshold.fired"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.timeframe.days.0", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.timeframe.timezone", "Africa/Accra"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.timeframe.hours_start", "02:30"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.timeframe.hours_end", "07:00"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.alerts_filter.kql"),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
 				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedAlertDelayVersion),
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("alert_delay_create"),
 				ConfigVariables: config.Variables{
@@ -337,6 +374,62 @@ func TestAccResourceAlertingRule(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.1.group", "recovered"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.1.params", `{"documents":[{"message":"Recovered","rule_id":"{{rule.id}}","rule_name":"{{rule.name}}"}]}`),
 				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				SkipFunc:                 versionutils.CheckIfVersionIsUnsupported(minSupportedFrequencyVersion),
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("actions_default_group"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleIDDefaultGroup),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleIDDefaultGroup),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "enabled", "true"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.#", "1"),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.group", "default"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAlertingRuleInSpace(t *testing.T) {
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+	spaceID := "test-" + strings.ToLower(sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("in_space"),
+				ConfigVariables: config.Variables{
+					"name":     config.StringVariable(ruleName),
+					"rule_id":  config.StringVariable(ruleID),
+					"space_id": config.StringVariable(spaceID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "name", ruleName),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "rule_id", ruleID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "space_id", spaceID),
+					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "id", spaceID+"/"+ruleID),
+				),
+			},
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ResourceName:             "elasticstack_kibana_alerting_rule.test_rule",
+				ImportState:              true,
+				ImportStateVerify:        true,
+				ImportStateVerifyIgnore:  []string{"notify_when"},
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("in_space"),
+				ConfigVariables: config.Variables{
+					"name":     config.StringVariable(ruleName),
+					"rule_id":  config.StringVariable(ruleID),
+					"space_id": config.StringVariable(spaceID),
+				},
 			},
 		},
 	})
@@ -690,7 +783,7 @@ func TestAccResourceAlertingRuleFlapping(t *testing.T) {
 				ResourceName:             "elasticstack_kibana_alerting_rule.test_rule",
 				ImportState:              true,
 				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"notify_when", "last_execution_date", "last_execution_status"},
+				ImportStateVerifyIgnore:  []string{"notify_when"},
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(ruleName),
@@ -822,7 +915,7 @@ func TestAccResourceAlertingRuleInvestigationGuide(t *testing.T) {
 				ResourceName:             "elasticstack_kibana_alerting_rule.test_rule",
 				ImportState:              true,
 				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"notify_when", "last_execution_date", "last_execution_status"},
+				ImportStateVerifyIgnore:  []string{"notify_when"},
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("content_create"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(ruleName),
@@ -943,7 +1036,7 @@ func TestAccResourceAlertingRuleArtifactsDashboards(t *testing.T) {
 				ResourceName:             "elasticstack_kibana_alerting_rule.test_rule",
 				ImportState:              true,
 				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"notify_when", "last_execution_date", "last_execution_status"},
+				ImportStateVerifyIgnore:  []string{"notify_when"},
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":          config.StringVariable(ruleName),
@@ -987,7 +1080,7 @@ func TestAccResourceAlertingRuleFlappingEnabled(t *testing.T) {
 				ResourceName:             "elasticstack_kibana_alerting_rule.test_rule",
 				ImportState:              true,
 				ImportStateVerify:        true,
-				ImportStateVerifyIgnore:  []string{"notify_when", "last_execution_date", "last_execution_status"},
+				ImportStateVerifyIgnore:  []string{"notify_when"},
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"name":    config.StringVariable(ruleName),
@@ -1186,6 +1279,194 @@ func TestAccResourceAlertingRuleThrottle(t *testing.T) {
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.#", "1"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.notify_when", "onActionGroupChange"),
 					resource.TestCheckResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "actions.0.frequency.throttle", "10m"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceAlertingRulePlanAfterExecution(t *testing.T) {
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+	configVars := config.Variables{
+		"name":    config.StringVariable(ruleName),
+		"rule_id": config.StringVariable(ruleID),
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          configVars,
+			},
+			{
+				PreConfig: func() {
+					executeAlertingRuleSinceApply(t, clients.DefaultSpaceID, ruleID)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          configVars,
+				PlanOnly:                 true,
+			},
+		},
+	})
+}
+
+func executeAlertingRuleSinceApply(t *testing.T, spaceID, ruleID string) {
+	t.Helper()
+
+	client, err := clients.NewAcceptanceTestingKibanaScopedClient()
+	if err != nil {
+		t.Fatalf("kibana client: %v", err)
+	}
+	oapi := client.GetKibanaOapiClient()
+	ctx := context.Background()
+
+	before, diags := kibanaoapi.GetAlertingRule(ctx, oapi, spaceID, ruleID)
+	if diags.HasError() || before == nil {
+		t.Fatalf("get rule before execution: %v", diags)
+	}
+	var beforeExecution time.Time
+	if before.ExecutionStatus.LastExecutionDate != nil {
+		beforeExecution = *before.ExecutionStatus.LastExecutionDate
+	}
+
+	deadline := time.Now().Add(3 * time.Minute)
+	for time.Now().Before(deadline) {
+		rule, diags := kibanaoapi.GetAlertingRule(ctx, oapi, spaceID, ruleID)
+		if diags.HasError() || rule == nil {
+			t.Fatalf("get rule after execution: %v", diags)
+		}
+		executedAt := rule.ExecutionStatus.LastExecutionDate
+		if executedAt != nil && executedAt.After(beforeExecution) {
+			return
+		}
+		time.Sleep(2 * time.Second)
+	}
+	t.Fatal("Kibana did not execute the rule after the apply")
+}
+
+func TestAccResourceAlertingRulePriorStateDropsRemovedExecutionAttributes(t *testing.T) {
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+	workingDir := t.TempDir()
+	configVars := config.Variables{
+		"name":    config.StringVariable(ruleName),
+		"rule_id": config.StringVariable(ruleID),
+	}
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		WorkingDir:   workingDir,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          configVars,
+			},
+			{
+				PreConfig: func() {
+					injectPriorExecutionAttributes(t, workingDir)
+				},
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables:          configVars,
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "last_execution_status"),
+					resource.TestCheckNoResourceAttr("elasticstack_kibana_alerting_rule.test_rule", "last_execution_date"),
+				),
+			},
+		},
+	})
+}
+
+func injectPriorExecutionAttributes(t *testing.T, workingDir string) {
+	t.Helper()
+
+	matches, err := filepath.Glob(filepath.Join(workingDir, "work*", "terraform.tfstate"))
+	if err != nil {
+		t.Fatalf("find state: %v", err)
+	}
+	if len(matches) != 1 {
+		t.Fatalf("expected one terraform.tfstate under %s, found %v", workingDir, matches)
+	}
+
+	raw, err := os.ReadFile(matches[0])
+	if err != nil {
+		t.Fatalf("read state: %v", err)
+	}
+
+	var state map[string]any
+	if err := json.Unmarshal(raw, &state); err != nil {
+		t.Fatalf("decode state: %v", err)
+	}
+
+	resources, ok := state["resources"].([]any)
+	if !ok {
+		t.Fatal("state has no resources")
+	}
+
+	injected := false
+	for _, resourceAny := range resources {
+		resource, ok := resourceAny.(map[string]any)
+		if !ok || resource["type"] != "elasticstack_kibana_alerting_rule" {
+			continue
+		}
+		instances, ok := resource["instances"].([]any)
+		if !ok || len(instances) != 1 {
+			t.Fatal("alerting rule state instance missing")
+		}
+		instance, ok := instances[0].(map[string]any)
+		if !ok {
+			t.Fatal("alerting rule state instance is not an object")
+		}
+		schemaVersion, ok := instance["schema_version"].(float64)
+		if !ok || schemaVersion != 1 {
+			t.Fatalf("schema_version = %v, want 1", instance["schema_version"])
+		}
+		attributes, ok := instance["attributes"].(map[string]any)
+		if !ok {
+			t.Fatal("alerting rule state attributes missing")
+		}
+		attributes["last_execution_status"] = "ok"
+		attributes["last_execution_date"] = "2024-01-02 03:04:05.000 +0000 UTC"
+		injected = true
+	}
+	if !injected {
+		t.Fatal("alerting rule not found in state")
+	}
+
+	updated, err := json.MarshalIndent(state, "", "  ")
+	if err != nil {
+		t.Fatalf("encode state: %v", err)
+	}
+	if err := os.WriteFile(matches[0], append(updated, '\n'), 0o644); err != nil {
+		t.Fatalf("write state: %v", err)
+	}
+}
+
+func TestAccResourceAlertingRuleRemovedExecutionAttribute(t *testing.T) {
+	ruleName := sdkacctest.RandStringFromCharSet(22, sdkacctest.CharSetAlphaNum)
+	ruleID := uuid.New().String()
+
+	resource.ParallelTest(t, resource.TestCase{
+		PreCheck:     func() { acctest.PreCheck(t) },
+		CheckDestroy: checkResourceAlertingRuleDestroy,
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("reference_status"),
+				ConfigVariables: config.Variables{
+					"name":    config.StringVariable(ruleName),
+					"rule_id": config.StringVariable(ruleID),
+				},
+				PlanOnly: true,
+				ExpectError: regexp.MustCompile(
+					`(?s)This object has no argument, nested block, or exported attribute named\s+"last_execution_status"`,
 				),
 			},
 		},

@@ -60,7 +60,7 @@ func (converter) SchemaAttribute() schema.Attribute {
 }
 
 func (converter) PopulateFromAttributes(ctx context.Context, blocks *models.LensByValueChartBlocks, attrs lenscommon.VisByValueConfig0) diag.Diagnostics {
-	legacyMetric, err := attrs.AsKibanaHTTPAPIsLegacyMetricNoESQLByValuePanel()
+	legacyMetric, err := attrs.AsKibanaHTTPAPIsVisLegacyMetricNoESQLByValuePanel()
 	if err != nil {
 		return diagutil.FrameworkDiagFromError(err)
 	}
@@ -87,7 +87,10 @@ func (converter) BuildAttributes(blocks *models.LensByValueChartBlocks) (lenscom
 }
 
 func (converter) AlignStateFromPlan(ctx context.Context, plan, state *models.LensByValueChartBlocks) {
-	alignLegacyMetricStateFromPlan(ctx, plan, state)
+	if plan == nil || state == nil {
+		return
+	}
+	alignLegacyMetricConfigStateFromPlan(ctx, plan.LegacyMetricConfig, state.LegacyMetricConfig)
 }
 
 func (converter) PopulateJSONDefaults(attrs map[string]any) map[string]any {

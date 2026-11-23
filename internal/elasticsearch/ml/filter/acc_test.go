@@ -35,6 +35,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-testing/config"
 	sdkacctest "github.com/hashicorp/terraform-plugin-testing/helper/acctest"
 	"github.com/hashicorp/terraform-plugin-testing/helper/resource"
+	"github.com/hashicorp/terraform-plugin-testing/plancheck"
 	"github.com/hashicorp/terraform-plugin-testing/terraform"
 )
 
@@ -105,6 +106,30 @@ func TestAccResourceMLFilterNoItems(t *testing.T) {
 					resource.TestCheckResourceAttr(mlFilterResourceAddress, "description", "Empty filter"),
 					resource.TestCheckNoResourceAttr(mlFilterResourceAddress, "items.#"),
 					resource.TestCheckResourceAttrSet(mlFilterResourceAddress, "id"),
+				),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLFilterEmptyItemsList(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-emptyitems-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	t.Cleanup(func() {
+		deleteMLFilterBestEffort(t.Context(), t, filterID)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"filter_id": config.StringVariable(filterID),
+				},
+				Check: resource.ComposeTestCheckFunc(
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID),
+					resource.TestCheckResourceAttr(mlFilterResourceAddress, "items.#", "0"),
 				),
 			},
 		},
@@ -197,6 +222,11 @@ func TestAccResourceMLFilterFilterIDReplace(t *testing.T) {
 				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
 				ConfigVariables: config.Variables{
 					"filter_id": config.StringVariable(filterID2),
+				},
+				ConfigPlanChecks: resource.ConfigPlanChecks{
+					PreApply: []plancheck.PlanCheck{
+						plancheck.ExpectResourceAction(mlFilterResourceAddress, plancheck.ResourceActionDestroyBeforeCreate),
+					},
 				},
 				Check: resource.ComposeTestCheckFunc(
 					resource.TestCheckResourceAttr(mlFilterResourceAddress, "filter_id", filterID2),
@@ -361,6 +391,27 @@ func TestAccResourceMLFilterManyItems(t *testing.T) {
 	})
 }
 
+func TestAccResourceMLFilterTooManyItems(t *testing.T) {
+	filterID := fmt.Sprintf("test-filter-toomany-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
+	t.Cleanup(func() {
+		deleteMLFilterBestEffort(t.Context(), t, filterID)
+	})
+
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"filter_id": config.StringVariable(filterID),
+				},
+				ExpectError: regexp.MustCompile(`Invalid Attribute Value|at most 10000|10000`),
+			},
+		},
+	})
+}
+
 func TestAccResourceMLFilterDescriptionTooLong(t *testing.T) {
 	filterID := fmt.Sprintf("test-filter-longdesc-%s", sdkacctest.RandStringFromCharSet(10, sdkacctest.CharSetAlphaNum))
 	t.Cleanup(func() {
@@ -398,6 +449,22 @@ func TestAccResourceMLFilterEmptyDescription(t *testing.T) {
 					"filter_id": config.StringVariable(filterID),
 				},
 				ExpectError: regexp.MustCompile(`Invalid Attribute Value Length|between 1 and 4096|got: 0`),
+			},
+		},
+	})
+}
+
+func TestAccResourceMLFilterEmptyFilterID(t *testing.T) {
+	resource.Test(t, resource.TestCase{
+		PreCheck: func() { acctest.PreCheck(t) },
+		Steps: []resource.TestStep{
+			{
+				ProtoV6ProviderFactories: acctest.Providers,
+				ConfigDirectory:          acctest.NamedTestCaseDirectory("create"),
+				ConfigVariables: config.Variables{
+					"filter_id": config.StringVariable(""),
+				},
+				ExpectError: regexp.MustCompile(`Invalid Attribute Value Length|at least 1|got: 0`),
 			},
 		},
 	})

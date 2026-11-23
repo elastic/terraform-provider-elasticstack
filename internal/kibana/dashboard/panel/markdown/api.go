@@ -23,7 +23,6 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/diagutil"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/models"
-	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panel/iface"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/dashboard/panelkit"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
@@ -36,7 +35,9 @@ import (
 const panelType = "markdown"
 
 // Handler implements iface.Handler for markdown dashboard panels (typed `markdown_config` and/or panel `config_json`).
-type Handler struct{}
+type Handler struct {
+	panelkit.NoopHandlerBase
+}
 
 func (Handler) PanelType() string                 { return panelType }
 func (Handler) SchemaAttribute() schema.Attribute { return SchemaAttribute() }
@@ -69,12 +70,6 @@ func (Handler) PopulateJSONDefaults(config map[string]any) map[string]any {
 		}
 	}
 	return config
-}
-
-func (Handler) PinnedHandler() iface.PinnedHandler { return nil }
-
-func (Handler) AlignStateFromPlan(ctx context.Context, plan, state *models.PanelModel) {
-	_, _, _ = ctx, plan, state
 }
 
 // FromAPI populates Terraform panel state from a markdown panel API item.

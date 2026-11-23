@@ -25,23 +25,22 @@ import (
 
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID                      types.String         `tfsdk:"id"`
-	ElasticsearchConnection types.List           `tfsdk:"elasticsearch_connection"`
-	Username                types.String         `tfsdk:"username"`
-	Password                types.String         `tfsdk:"password"`
-	PasswordHash            types.String         `tfsdk:"password_hash"`
-	PasswordWo              types.String         `tfsdk:"password_wo"`
-	PasswordWoVersion       types.String         `tfsdk:"password_wo_version"`
-	FullName                types.String         `tfsdk:"full_name"`
-	Email                   types.String         `tfsdk:"email"`
-	Roles                   types.Set            `tfsdk:"roles"`
-	Metadata                jsontypes.Normalized `tfsdk:"metadata"`
-	Enabled                 types.Bool           `tfsdk:"enabled"`
+	entitycore.ElasticsearchConnectionField
+	ID                types.String         `tfsdk:"id"`
+	Username          types.String         `tfsdk:"username"`
+	Password          types.String         `tfsdk:"password"`
+	PasswordHash      types.String         `tfsdk:"password_hash"`
+	PasswordWo        types.String         `tfsdk:"password_wo"`
+	PasswordWoVersion types.String         `tfsdk:"password_wo_version"`
+	FullName          types.String         `tfsdk:"full_name"`
+	Email             types.String         `tfsdk:"email"`
+	Roles             types.Set            `tfsdk:"roles"`
+	Metadata          jsontypes.Normalized `tfsdk:"metadata"`
+	Enabled           types.Bool           `tfsdk:"enabled"`
 }
 
-func (d Data) GetID() types.String                    { return d.ID }
-func (d Data) GetResourceID() types.String            { return d.Username }
-func (d Data) GetElasticsearchConnection() types.List { return d.ElasticsearchConnection }
+func (d Data) GetID() types.String         { return d.ID }
+func (d Data) GetResourceID() types.String { return d.Username }
 
 // stringOrEmptyValue converts a pointer to a Terraform string, treating a nil pointer as
 // an empty string rather than null since email/full_name are never null in this schema.

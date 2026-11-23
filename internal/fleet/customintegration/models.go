@@ -19,7 +19,6 @@ package customintegration
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
@@ -54,13 +53,13 @@ func (m customIntegrationModel) GetID() types.String {
 		return m.ID
 	}
 	spaceID := m.GetSpaceID().ValueString()
-	return types.StringValue((&clients.CompositeID{ClusterID: spaceID, ResourceID: rawID}).String())
+	return clients.CompositeIDValue(spaceID, rawID)
 }
 
 func (m customIntegrationModel) GetResourceID() types.String {
 	if typeutils.IsKnown(m.PackageName) &&
 		typeutils.IsKnown(m.PackageVersion) {
-		return types.StringValue(getPackageID(m.PackageName.ValueString(), m.PackageVersion.ValueString()))
+		return types.StringValue(typeutils.SlashJoinedPackageID(m.PackageName.ValueString(), m.PackageVersion.ValueString()))
 	}
 	return m.ID
 }
@@ -83,8 +82,4 @@ var customIntegrationVersionReqs = []entitycore.VersionRequirement{{
 
 func (m customIntegrationModel) GetVersionRequirements(_ context.Context) ([]entitycore.VersionRequirement, diag.Diagnostics) {
 	return customIntegrationVersionReqs, nil
-}
-
-func getPackageID(name string, version string) string {
-	return fmt.Sprintf("%s/%s", name, version)
 }

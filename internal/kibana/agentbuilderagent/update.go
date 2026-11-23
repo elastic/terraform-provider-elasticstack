@@ -26,18 +26,34 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilder"
 	"github.com/elastic/terraform-provider-elasticstack/internal/models"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 )
 
 func updateAgent(ctx context.Context, client *clients.KibanaScopedClient, req entitycore.KibanaWriteRequest[agentModel]) (entitycore.KibanaWriteResult[agentModel], diag.Diagnostics) {
-	supportsSkillIDs, diags := client.EnforceMinVersion(ctx, agentbuilder.MinExtendedAPIVersion)
+	// Whether to send is decided from config; the mode itself is read from the
+	// plan, which equals config whenever config is non-null.
+	// Avatar fields are Optional+Computed with UseStateForUnknown, so the plan
+	// carries the prior value when config omits them; only send configured values.
+	send := updateSendFlags{
+		AccessControl: typeutils.IsKnown(req.Config.AccessControl),
+		AvatarColor:   typeutils.IsKnown(req.Config.AvatarColor),
+		AvatarSymbol:  typeutils.IsKnown(req.Config.AvatarSymbol),
+	}
+	diags := enforceAccessControlVersion(ctx, client, send.AccessControl)
+	if diags.HasError() {
+		return entitycore.KibanaWriteResult[agentModel]{}, diags
+	}
+
+	supportsSkillIDs, d := client.EnforceMinVersion(ctx, agentbuilder.MinExtendedAPIVersion)
+	diags.Append(d...)
 	if diags.HasError() {
 		return entitycore.KibanaWriteResult[agentModel]{}, diags
 	}
 
 	return entitycore.SimpleKibanaUpdate[agentModel, kbapi.PutAgentBuilderAgentsIdJSONRequestBody, models.Agent](
 		func(plan agentModel, ctx context.Context, _ string) (kbapi.PutAgentBuilderAgentsIdJSONRequestBody, diag.Diagnostics) {
-			return plan.toAPIUpdateModel(ctx, supportsSkillIDs)
+			return plan.toAPIUpdateModel(ctx, supportsSkillIDs, send)
 		},
 		kibanaoapi.UpdateAgent,
 		(*agentModel).setWriteSpaceID,

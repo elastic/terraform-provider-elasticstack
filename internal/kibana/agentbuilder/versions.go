@@ -23,6 +23,7 @@
 //   - 9.3.0 GA  – core resources: agents and tools
 //   - 9.4.0     – extended resources: skills, workflows, and advanced agent
 //     config (workflow_ids / skill_ids / plugin_ids on agents)
+//   - 9.5.0     – agent access control: the access_control sub-resource API
 package agentbuilder
 
 import semver "github.com/hashicorp/go-version"
@@ -36,4 +37,9 @@ var (
 	// Agent Builder extended resources: skills, workflows, and advanced agent
 	// config (workflow_ids, skill_ids, plugin_ids).
 	MinExtendedAPIVersion = semver.Must(semver.NewVersion("9.4.0-SNAPSHOT"))
+
+	// MinAccessControlAPIVersion is the minimum Kibana version required for the
+	// Agent Builder agent access-control sub-resource API and for writing
+	// access_control on agents.
+	MinAccessControlAPIVersion = semver.Must(semver.NewVersion("9.5.0"))
 )

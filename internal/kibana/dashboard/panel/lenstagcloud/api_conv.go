@@ -32,12 +32,12 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
-func tagcloudStylingToAPI(m *models.TagcloudConfigModel) *kbapi.KibanaHTTPAPIsTagcloudStyling {
-	var styling *kbapi.KibanaHTTPAPIsTagcloudStyling
+func tagcloudStylingToAPI(m *models.TagcloudConfigModel) *kbapi.KibanaHTTPAPIsVisTagcloudStyling {
+	var styling *kbapi.KibanaHTTPAPIsVisTagcloudStyling
 
 	if !m.Orientation.IsNull() {
 		orientation := kbapi.KibanaHTTPAPIsVisApiOrientation(m.Orientation.ValueString())
-		styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{Orientation: &orientation}
+		styling = &kbapi.KibanaHTTPAPIsVisTagcloudStyling{Orientation: &orientation}
 	}
 
 	if m.FontSize != nil {
@@ -54,7 +54,7 @@ func tagcloudStylingToAPI(m *models.TagcloudConfigModel) *kbapi.KibanaHTTPAPIsTa
 			fontSize.Max = &maxValue
 		}
 		if styling == nil {
-			styling = &kbapi.KibanaHTTPAPIsTagcloudStyling{}
+			styling = &kbapi.KibanaHTTPAPIsVisTagcloudStyling{}
 		}
 		styling.FontSize = &fontSize
 	}
@@ -65,7 +65,7 @@ func tagcloudStylingToAPI(m *models.TagcloudConfigModel) *kbapi.KibanaHTTPAPIsTa
 // tagcloudConfigApplyStylingFromAPI populates the typed `orientation` and `font_size`
 // attributes from a TagcloudStyling payload. Used by both NoESQL and ES|QL
 // reads so the two paths stay in lockstep.
-func tagcloudConfigApplyStylingFromAPI(m *models.TagcloudConfigModel, s *kbapi.KibanaHTTPAPIsTagcloudStyling) {
+func tagcloudConfigApplyStylingFromAPI(m *models.TagcloudConfigModel, s *kbapi.KibanaHTTPAPIsVisTagcloudStyling) {
 	if s == nil {
 		m.Orientation = types.StringNull()
 		m.FontSize = nil
@@ -97,7 +97,7 @@ func tagcloudConfigFromAPI(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
 	prior *models.TagcloudConfigModel,
-	api kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel,
+	api kbapi.KibanaHTTPAPIsVisTagcloudNoESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 	_ = ctx
@@ -145,7 +145,7 @@ func tagcloudConfigFromAPIESQL(
 	ctx context.Context,
 	m *models.TagcloudConfigModel,
 	prior *models.TagcloudConfigModel,
-	api kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel,
+	api kbapi.KibanaHTTPAPIsVisTagcloudESQLByValuePanel,
 ) diag.Diagnostics {
 	var diags diag.Diagnostics
 
@@ -206,24 +206,24 @@ func tagcloudConfigToAPI(m *models.TagcloudConfigModel) (lenscommon.VisByValueCo
 	}
 	return lenscommon.DispatchByQueryMode(
 		lenscommon.ConfigUsesESQL(m.Query),
-		func() (kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel, diag.Diagnostics) {
+		func() (kbapi.KibanaHTTPAPIsVisTagcloudESQLByValuePanel, diag.Diagnostics) {
 			return tagcloudConfigToAPIESQL(m)
 		},
-		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsTagcloudESQLByValuePanel,
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsVisTagcloudESQLByValuePanel,
 		"Failed to create tagcloud ES|QL attributes",
-		func() (kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel, diag.Diagnostics) {
+		func() (kbapi.KibanaHTTPAPIsVisTagcloudNoESQLByValuePanel, diag.Diagnostics) {
 			return tagcloudConfigToAPINoESQL(m)
 		},
-		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsTagcloudNoESQLByValuePanel,
+		(*lenscommon.VisByValueConfig0).FromKibanaHTTPAPIsVisTagcloudNoESQLByValuePanel,
 		"Failed to create tagcloud attributes",
 	)
 }
 
-func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel, diag.Diagnostics) {
+func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsVisTagcloudNoESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel
+	var api kbapi.KibanaHTTPAPIsVisTagcloudNoESQLByValuePanel
 
-	api.Type = kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanelTypeTagCloud
+	api.Type = kbapi.KibanaHTTPAPIsVisTagcloudNoESQLByValuePanelTypeTagCloud
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -268,17 +268,17 @@ func tagcloudConfigToAPINoESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPA
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudNoESQLByValuePanel_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsVisTagcloudNoESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 
 	return api, diags
 }
 
-func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel, diag.Diagnostics) {
+func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPIsVisTagcloudESQLByValuePanel, diag.Diagnostics) {
 	var diags diag.Diagnostics
-	var api kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel
-	api.Type = kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanelTypeTagCloud
+	var api kbapi.KibanaHTTPAPIsVisTagcloudESQLByValuePanel
+	api.Type = kbapi.KibanaHTTPAPIsVisTagcloudESQLByValuePanelTypeTagCloud
 
 	api.Title, api.Description, api.IgnoreGlobalFilters, api.Sampling = lenscommon.LensChartBaseFieldsForAPI(m.LensChartBaseTFModel)
 
@@ -333,7 +333,7 @@ func tagcloudConfigToAPIESQL(m *models.TagcloudConfigModel) (kbapi.KibanaHTTPAPI
 		return api, diags
 	}
 
-	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsTagcloudESQLByValuePanel_Drilldowns_Item](
+	diags.Append(lenscommon.ApplyLensChartPresentationWrites[kbapi.KibanaHTTPAPIsVisTagcloudESQLByValuePanel_Drilldowns_Item](
 		writes, &api.TimeRange, &api.HideTitle, &api.HideBorder, &api.References, &api.Drilldowns,
 	)...)
 

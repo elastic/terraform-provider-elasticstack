@@ -26,18 +26,28 @@ import (
 )
 
 func deleteAlias(ctx context.Context, client *clients.ElasticsearchScopedClient, resourceID string, state tfModel) diag.Diagnostics {
+	if state.isVirtualState(ctx) {
+		return nil
+	}
+
 	aliasName := resourceID
 
-	currentConfigs, diags := state.toAliasConfigs(ctx)
+	currentIndices, diags := elasticsearch.GetAlias(ctx, client, aliasName)
 	if diags.HasError() {
 		return diags
 	}
 
-	var actions []elasticsearch.AliasAction
-	for _, config := range currentConfigs {
+	currentConfigs, configDiags := currentAliasConfigs(aliasName, currentIndices)
+	diags.Append(configDiags...)
+	if diags.HasError() {
+		return diags
+	}
+
+	actions := make([]elasticsearch.AliasAction, 0, len(currentConfigs))
+	for indexName := range currentConfigs {
 		actions = append(actions, elasticsearch.AliasAction{
 			Type:  "remove",
-			Index: config.Name,
+			Index: indexName,
 			Alias: aliasName,
 		})
 	}

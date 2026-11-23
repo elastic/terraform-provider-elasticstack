@@ -33,8 +33,8 @@ resource "elasticstack_kibana_dashboard" "getting_started" {
   }
 
   query = {
-    language = "kql"
-    text     = ""
+    language   = "kql"
+    expression = ""
   }
 
   panels = [

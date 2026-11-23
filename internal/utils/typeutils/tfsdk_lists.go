@@ -122,21 +122,6 @@ func SliceToListTypeString(ctx context.Context, value []string, p path.Path, dia
 	return ListValueFrom(ctx, value, types.StringType, p, diags)
 }
 
-// ListTypeToMap converts a types.List first into a tfsdk aware []T1
-// and transforms the result into a map[string]T2.
-func ListTypeToMap[T1 any, T2 any](ctx context.Context, value types.List, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta ListMeta) (key string, elem T2)) map[string]T2 {
-	if !IsKnown(value) {
-		return nil
-	}
-
-	items := ListTypeAs[T1](ctx, value, p, diags)
-	if diags.HasError() {
-		return nil
-	}
-
-	return TransformSliceToMap(ctx, items, p, diags, iteratee)
-}
-
 // ListTypeToSlice converts a types.List first into a tfsdk aware []T1 and transforms
 // the result into a []T2.
 func ListTypeToSlice[T1 any, T2 any](ctx context.Context, value types.List, p path.Path, diags *diag.Diagnostics, iteratee func(item T1, meta ListMeta) T2) []T2 {

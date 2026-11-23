@@ -19,12 +19,10 @@ package securitydetectionrule
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
-	"github.com/elastic/terraform-provider-elasticstack/internal/utils/customtypes"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/google/uuid"
 	"github.com/hashicorp/go-version"
@@ -42,19 +40,19 @@ var (
 
 type Data struct {
 	entitycore.ResourceTimeoutsField
-	ID               types.String `tfsdk:"id"`
-	KibanaConnection types.List   `tfsdk:"kibana_connection"`
-	SpaceID          types.String `tfsdk:"space_id"`
-	RuleID           types.String `tfsdk:"rule_id"`
-	Name             types.String `tfsdk:"name"`
-	Type             types.String `tfsdk:"type"`
-	Query            types.String `tfsdk:"query"`
-	Language         types.String `tfsdk:"language"`
-	Index            types.List   `tfsdk:"index"`
-	Enabled          types.Bool   `tfsdk:"enabled"`
-	From             types.String `tfsdk:"from"`
-	To               types.String `tfsdk:"to"`
-	Interval         types.String `tfsdk:"interval"`
+	entitycore.KibanaConnectionField
+	ID types.String `tfsdk:"id"`
+	entitycore.SpaceIDField
+	RuleID   types.String `tfsdk:"rule_id"`
+	Name     types.String `tfsdk:"name"`
+	Type     types.String `tfsdk:"type"`
+	Query    types.String `tfsdk:"query"`
+	Language types.String `tfsdk:"language"`
+	Index    types.List   `tfsdk:"index"`
+	Enabled  types.Bool   `tfsdk:"enabled"`
+	From     types.String `tfsdk:"from"`
+	To       types.String `tfsdk:"to"`
+	Interval types.String `tfsdk:"interval"`
 
 	// Rule content
 	Description         types.String `tfsdk:"description"`
@@ -84,7 +82,9 @@ type Data struct {
 	Revision  types.Int64  `tfsdk:"revision"`
 
 	// EQL-specific fields
-	TiebreakerField types.String `tfsdk:"tiebreaker_field"`
+	TiebreakerField       types.String `tfsdk:"tiebreaker_field"`
+	EventCategoryOverride types.String `tfsdk:"event_category_override"`
+	TimestampField        types.String `tfsdk:"timestamp_field"`
 
 	// Machine Learning-specific fields
 	AnomalyThreshold     types.Int64 `tfsdk:"anomaly_threshold"`
@@ -162,149 +162,6 @@ type TfDataItemEntry struct {
 	Field types.String `tfsdk:"field"`
 	Type  types.String `tfsdk:"type"`
 	Value types.String `tfsdk:"value"`
-}
-
-type ThresholdModel struct {
-	Field       types.List  `tfsdk:"field"`
-	Value       types.Int64 `tfsdk:"value"`
-	Cardinality types.List  `tfsdk:"cardinality"`
-}
-
-type AlertSuppressionModel struct {
-	GroupBy               types.List           `tfsdk:"group_by"`
-	Duration              customtypes.Duration `tfsdk:"duration"`
-	MissingFieldsStrategy types.String         `tfsdk:"missing_fields_strategy"`
-}
-
-type CardinalityModel struct {
-	Field types.String `tfsdk:"field"`
-	Value types.Int64  `tfsdk:"value"`
-}
-
-type ActionModel struct {
-	ActionTypeID types.String         `tfsdk:"action_type_id"`
-	ID           types.String         `tfsdk:"id"`
-	Params       jsontypes.Normalized `tfsdk:"params"`
-	Group        types.String         `tfsdk:"group"`
-	UUID         types.String         `tfsdk:"uuid"`
-	AlertsFilter types.Object         `tfsdk:"alerts_filter"`
-	Frequency    types.Object         `tfsdk:"frequency"`
-}
-
-type ActionAlertsFilterModel struct {
-	Query     types.Object `tfsdk:"query"`
-	Timeframe types.Object `tfsdk:"timeframe"`
-}
-
-type ActionAlertsFilterQueryModel struct {
-	Kql         types.String         `tfsdk:"kql"`
-	FiltersJSON jsontypes.Normalized `tfsdk:"filters_json"`
-}
-
-type ActionAlertsFilterTimeframeModel struct {
-	Days       types.List   `tfsdk:"days"`
-	Timezone   types.String `tfsdk:"timezone"`
-	HoursStart types.String `tfsdk:"hours_start"`
-	HoursEnd   types.String `tfsdk:"hours_end"`
-}
-
-type ActionFrequencyModel struct {
-	NotifyWhen types.String `tfsdk:"notify_when"`
-	Summary    types.Bool   `tfsdk:"summary"`
-	Throttle   types.String `tfsdk:"throttle"`
-}
-
-type ResponseActionModel struct {
-	ActionTypeID types.String `tfsdk:"action_type_id"`
-	Params       types.Object `tfsdk:"params"`
-}
-
-type ResponseActionParamsModel struct {
-	// Osquery params
-	Query        types.String `tfsdk:"query"`
-	PackID       types.String `tfsdk:"pack_id"`
-	SavedQueryID types.String `tfsdk:"saved_query_id"`
-	Timeout      types.Int64  `tfsdk:"timeout"`
-	EcsMapping   types.Map    `tfsdk:"ecs_mapping"`
-	Queries      types.List   `tfsdk:"queries"`
-
-	// Endpoint params
-	Command types.String `tfsdk:"command"`
-	Comment types.String `tfsdk:"comment"`
-	Config  types.Object `tfsdk:"config"`
-}
-
-type OsqueryQueryModel struct {
-	ID         types.String `tfsdk:"id"`
-	Query      types.String `tfsdk:"query"`
-	Platform   types.String `tfsdk:"platform"`
-	Version    types.String `tfsdk:"version"`
-	Removed    types.Bool   `tfsdk:"removed"`
-	Snapshot   types.Bool   `tfsdk:"snapshot"`
-	EcsMapping types.Map    `tfsdk:"ecs_mapping"`
-}
-
-type EndpointProcessConfigModel struct {
-	Field     types.String `tfsdk:"field"`
-	Overwrite types.Bool   `tfsdk:"overwrite"`
-}
-
-type ExceptionsListModel struct {
-	ID            types.String `tfsdk:"id"`
-	ListID        types.String `tfsdk:"list_id"`
-	NamespaceType types.String `tfsdk:"namespace_type"`
-	Type          types.String `tfsdk:"type"`
-}
-
-type RiskScoreMappingModel struct {
-	Field     types.String `tfsdk:"field"`
-	Operator  types.String `tfsdk:"operator"`
-	Value     types.String `tfsdk:"value"`
-	RiskScore types.Int64  `tfsdk:"risk_score"`
-}
-
-type RelatedIntegrationModel struct {
-	Package     types.String `tfsdk:"package"`
-	Version     types.String `tfsdk:"version"`
-	Integration types.String `tfsdk:"integration"`
-}
-
-type RequiredFieldModel struct {
-	Name types.String `tfsdk:"name"`
-	Type types.String `tfsdk:"type"`
-	Ecs  types.Bool   `tfsdk:"ecs"`
-}
-
-type SeverityMappingModel struct {
-	Field    types.String `tfsdk:"field"`
-	Operator types.String `tfsdk:"operator"`
-	Value    types.String `tfsdk:"value"`
-	Severity types.String `tfsdk:"severity"`
-}
-
-type ThreatModel struct {
-	Framework types.String `tfsdk:"framework"`
-	Tactic    types.Object `tfsdk:"tactic"`
-	Technique types.List   `tfsdk:"technique"`
-}
-
-type ThreatTacticModel struct {
-	ID        types.String `tfsdk:"id"`
-	Name      types.String `tfsdk:"name"`
-	Reference types.String `tfsdk:"reference"`
-}
-
-type ThreatTechniqueModel struct {
-	ID           types.String `tfsdk:"id"`
-	Name         types.String `tfsdk:"name"`
-	Reference    types.String `tfsdk:"reference"`
-	Subtechnique types.List   `tfsdk:"subtechnique"`
-}
-
-type ThreatSubtechniqueModel struct {
-	ID        types.String `tfsdk:"id"`
-	Name      types.String `tfsdk:"name"`
-	Reference types.String `tfsdk:"reference"`
 }
 
 // CommonRuleProps holds all the field pointers for setting common rule properties.
@@ -593,13 +450,8 @@ func (d Data) setCommonUpdateProps(
 // Helper function to initialize fields that should be set to default values for all rule types
 func (d Data) GetID() types.String { return d.ID }
 func (d Data) GetResourceID() types.String {
-	if compID, _ := clients.CompositeIDFromStr(d.ID.ValueString()); compID != nil {
-		return types.StringValue(compID.ResourceID)
-	}
-	return d.RuleID
+	return clients.ResourceIDFromComposite(d.ID, d.RuleID)
 }
-func (d Data) GetSpaceID() types.String        { return d.SpaceID }
-func (d Data) GetKibanaConnection() types.List { return d.KibanaConnection }
 
 var _ entitycore.KibanaResourceModel = Data{}
 
@@ -607,12 +459,8 @@ func (d Data) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionR
 	var diags diag.Diagnostics
 	var reqs []entitycore.VersionRequirement
 
-	if typeutils.IsKnown(d.ResponseActions) && len(d.ResponseActions.Elements()) > 0 {
-		reqs = append(reqs, entitycore.VersionRequirement{
-			MinVersion:   *MinVersionResponseActions,
-			ErrorMessage: fmt.Sprintf("Response actions require server version %s or higher", MinVersionResponseActions.String()),
-		})
-	}
+	reqs = entitycore.AppendVersionRequirementIf(reqs, typeutils.IsKnown(d.ResponseActions) && len(d.ResponseActions.Elements()) > 0,
+		MinVersionResponseActions, "Response actions require server version %s or higher", MinVersionResponseActions.String())
 
 	if typeutils.IsKnown(d.Actions) && len(d.Actions.Elements()) > 0 {
 		var actions []ActionModel
@@ -620,15 +468,15 @@ func (d Data) GetVersionRequirements(ctx context.Context) ([]entitycore.VersionR
 		if diags.HasError() {
 			return nil, diags
 		}
+		hasAlertsFilter := false
 		for _, action := range actions {
 			if typeutils.IsKnown(action.AlertsFilter) {
-				reqs = append(reqs, entitycore.VersionRequirement{
-					MinVersion:   *MinVersionAlertsFilter,
-					ErrorMessage: "actions.alerts_filter is only supported for Kibana v8.9 or higher",
-				})
+				hasAlertsFilter = true
 				break
 			}
 		}
+		reqs = entitycore.AppendVersionRequirementIf(reqs, hasAlertsFilter,
+			MinVersionAlertsFilter, "actions.alerts_filter is only supported for Kibana v8.9 or higher")
 	}
 
 	return reqs, diags
@@ -802,6 +650,12 @@ func (d *Data) initializeTypeSpecificFieldsToDefaults() {
 	// EQL-specific fields
 	if !typeutils.IsKnown(d.TiebreakerField) {
 		d.TiebreakerField = types.StringNull()
+	}
+	if !typeutils.IsKnown(d.EventCategoryOverride) {
+		d.EventCategoryOverride = types.StringNull()
+	}
+	if !typeutils.IsKnown(d.TimestampField) {
+		d.TimestampField = types.StringNull()
 	}
 
 	// Machine Learning-specific fields

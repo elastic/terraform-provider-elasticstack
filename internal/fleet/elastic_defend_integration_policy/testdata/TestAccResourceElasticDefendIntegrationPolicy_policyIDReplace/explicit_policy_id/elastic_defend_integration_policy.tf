@@ -3,6 +3,11 @@ variable "policy_name" {
   type        = string
 }
 
+variable "policy_id" {
+  description = "The explicit integration policy ID"
+  type        = string
+}
+
 provider "elasticstack" {
   elasticsearch {}
   kibana {}
@@ -20,10 +25,7 @@ resource "elasticstack_fleet_elastic_defend_integration_policy" "test" {
   enabled             = true
   integration_version = "8.14.0"
   preset              = "EDRComplete"
-  # Explicitly configuring policy_id with a different value than the
-  # server-assigned one currently in state must force a replace, since
-  # policy_id carries the RequiresReplace plan modifier.
-  policy_id = "explicit-policy-id-does-not-match-state"
+  policy_id           = var.policy_id
 
   policy = {
     windows = {

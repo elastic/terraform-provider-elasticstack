@@ -18,6 +18,7 @@
 package debugutils
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"net/http/httputil"
@@ -52,24 +53,38 @@ func NewDebugTransport(name string, transport http.RoundTripper) http.RoundTripp
 func (d *debugRoundTripper) RoundTrip(r *http.Request) (*http.Response, error) {
 
 	ctx := r.Context()
-	reqData, err := httputil.DumpRequestOut(r, true)
-	if err == nil {
-		tflog.Debug(ctx, fmt.Sprintf(logReqMsg, d.name, PrettyPrintJSONLines(reqData)))
-	} else {
-		tflog.Debug(ctx, fmt.Sprintf("%s API request dump error: %#v", d.name, err))
-	}
+	LogHTTPRequest(ctx, d.name, r)
 
 	resp, err := d.transport.RoundTrip(r)
 	if err != nil {
 		return resp, err
 	}
 
-	respData, err := httputil.DumpResponse(resp, true)
-	if err == nil {
-		tflog.Debug(ctx, fmt.Sprintf(logRespMsg, d.name, PrettyPrintJSONLines(respData)))
-	} else {
-		tflog.Debug(ctx, fmt.Sprintf("%s API response dump error: %#v", d.name, err))
-	}
+	LogHTTPResponse(ctx, d.name, resp)
 
 	return resp, nil
+}
+
+// LogHTTPRequest dumps an outgoing HTTP request and emits it via tflog.Debug,
+// pretty-printing any JSON body. name identifies the API/client the request
+// belongs to and is used to label the log entry.
+func LogHTTPRequest(ctx context.Context, name string, req *http.Request) {
+	reqData, err := httputil.DumpRequestOut(req, true)
+	if err == nil {
+		tflog.Debug(ctx, fmt.Sprintf(logReqMsg, name, PrettyPrintJSONLines(reqData)))
+	} else {
+		tflog.Debug(ctx, fmt.Sprintf("%s API request dump error: %#v", name, err))
+	}
+}
+
+// LogHTTPResponse dumps an HTTP response and emits it via tflog.Debug,
+// pretty-printing any JSON body. name identifies the API/client the response
+// belongs to and is used to label the log entry.
+func LogHTTPResponse(ctx context.Context, name string, resp *http.Response) {
+	respData, err := httputil.DumpResponse(resp, true)
+	if err == nil {
+		tflog.Debug(ctx, fmt.Sprintf(logRespMsg, name, PrettyPrintJSONLines(respData)))
+	} else {
+		tflog.Debug(ctx, fmt.Sprintf("%s API response dump error: %#v", name, err))
+	}
 }

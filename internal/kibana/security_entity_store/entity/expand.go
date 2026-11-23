@@ -25,7 +25,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
-	"github.com/hashicorp/terraform-plugin-framework/types/basetypes"
 )
 
 // setBlockOrJSON writes key into body from a typed block, falling back to a
@@ -95,13 +94,8 @@ func modelToAPIBody(ctx context.Context, model tfModel) (map[string]any, diag.Di
 }
 
 func entityBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnostics) map[string]any {
-	if obj.IsNull() || obj.IsUnknown() {
-		return nil
-	}
-	var model entityBlockModel
-	d := obj.As(ctx, &model, basetypes.ObjectAsOptions{})
-	diags.Append(d...)
-	if diags.HasError() {
+	model, ok := decodeObjectField[entityBlockModel](ctx, obj, diags)
+	if !ok {
 		return nil
 	}
 
@@ -118,67 +112,52 @@ func entityBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnos
 	if typeutils.IsKnown(model.Source) {
 		appendStringSetToMap(m, "source", model.Source)
 	}
-	if typeutils.IsKnown(model.Attributes) {
-		var attr entityAttributesBlockModel
-		d := model.Attributes.As(ctx, &attr, basetypes.ObjectAsOptions{})
-		diags.Append(d...)
-		if !diags.HasError() {
-			am := make(map[string]any)
-			if !attr.Asset.IsNull() {
-				am[attrAsset] = attr.Asset.ValueBool()
-			}
-			if !attr.Managed.IsNull() {
-				am["managed"] = attr.Managed.ValueBool()
-			}
-			if !attr.Privileged.IsNull() {
-				am["privileged"] = attr.Privileged.ValueBool()
-			}
-			if !attr.MfaEnabled.IsNull() {
-				am["mfa_enabled"] = attr.MfaEnabled.ValueBool()
-			}
-			if len(am) > 0 {
-				m["attributes"] = am
-			}
+	if attr, ok := decodeObjectField[entityAttributesBlockModel](ctx, model.Attributes, diags); ok {
+		am := make(map[string]any)
+		if !attr.Asset.IsNull() {
+			am[attrAsset] = attr.Asset.ValueBool()
+		}
+		if !attr.Managed.IsNull() {
+			am["managed"] = attr.Managed.ValueBool()
+		}
+		if !attr.Privileged.IsNull() {
+			am["privileged"] = attr.Privileged.ValueBool()
+		}
+		if !attr.MfaEnabled.IsNull() {
+			am["mfa_enabled"] = attr.MfaEnabled.ValueBool()
+		}
+		if len(am) > 0 {
+			m["attributes"] = am
 		}
 	}
-	if typeutils.IsKnown(model.Behaviors) {
-		var beh entityBehaviorsBlockModel
-		d := model.Behaviors.As(ctx, &beh, basetypes.ObjectAsOptions{})
-		diags.Append(d...)
-		if !diags.HasError() {
-			bm := make(map[string]any)
-			if !beh.BruteForceVictim.IsNull() {
-				bm["brute_force_victim"] = beh.BruteForceVictim.ValueBool()
-			}
-			if !beh.NewCountryLogin.IsNull() {
-				bm["new_country_login"] = beh.NewCountryLogin.ValueBool()
-			}
-			if !beh.UsedUsbDevice.IsNull() {
-				bm["used_usb_device"] = beh.UsedUsbDevice.ValueBool()
-			}
-			if len(bm) > 0 {
-				m["behaviors"] = bm
-			}
+	if beh, ok := decodeObjectField[entityBehaviorsBlockModel](ctx, model.Behaviors, diags); ok {
+		bm := make(map[string]any)
+		if !beh.BruteForceVictim.IsNull() {
+			bm["brute_force_victim"] = beh.BruteForceVictim.ValueBool()
+		}
+		if !beh.NewCountryLogin.IsNull() {
+			bm["new_country_login"] = beh.NewCountryLogin.ValueBool()
+		}
+		if !beh.UsedUsbDevice.IsNull() {
+			bm["used_usb_device"] = beh.UsedUsbDevice.ValueBool()
+		}
+		if len(bm) > 0 {
+			m["behaviors"] = bm
 		}
 	}
-	if typeutils.IsKnown(model.Lifecycle) {
-		var lc entityLifecycleBlockModel
-		d := model.Lifecycle.As(ctx, &lc, basetypes.ObjectAsOptions{})
-		diags.Append(d...)
-		if !diags.HasError() {
-			lm := make(map[string]any)
-			if !lc.FirstSeen.IsNull() {
-				lm["first_seen"] = lc.FirstSeen.ValueString()
-			}
-			if !lc.LastSeen.IsNull() {
-				lm["last_seen"] = lc.LastSeen.ValueString()
-			}
-			if !lc.LastActivity.IsNull() {
-				lm["last_activity"] = lc.LastActivity.ValueString()
-			}
-			if len(lm) > 0 {
-				m["lifecycle"] = lm
-			}
+	if lc, ok := decodeObjectField[entityLifecycleBlockModel](ctx, model.Lifecycle, diags); ok {
+		lm := make(map[string]any)
+		if !lc.FirstSeen.IsNull() {
+			lm["first_seen"] = lc.FirstSeen.ValueString()
+		}
+		if !lc.LastSeen.IsNull() {
+			lm["last_seen"] = lc.LastSeen.ValueString()
+		}
+		if !lc.LastActivity.IsNull() {
+			lm["last_activity"] = lc.LastActivity.ValueString()
+		}
+		if len(lm) > 0 {
+			m["lifecycle"] = lm
 		}
 	}
 	if typeutils.IsKnown(model.Risk) {
@@ -186,38 +165,28 @@ func entityBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnos
 			m[attrRisk] = rm
 		}
 	}
-	if typeutils.IsKnown(model.Relationships) {
-		var rel entityRelationshipsBlockModel
-		d := model.Relationships.As(ctx, &rel, basetypes.ObjectAsOptions{})
-		diags.Append(d...)
-		if !diags.HasError() {
-			rm := make(map[string]any)
-			appendStringSetToMap(rm, "owned_by", rel.OwnedBy)
-			appendStringSetToMap(rm, "owns", rel.Owns)
-			appendStringSetToMap(rm, "supervised_by", rel.SupervisedBy)
-			appendStringSetToMap(rm, "supervises", rel.Supervises)
-			appendStringSetToMap(rm, "depends_on", rel.DependsOn)
-			appendStringSetToMap(rm, "dependent_of", rel.DependentOf)
-			appendStringSetToMap(rm, "communicates_with", rel.CommunicatesWith)
-			appendStringSetToMap(rm, "accesses_frequently", rel.AccessesFrequently)
-			appendStringSetToMap(rm, "accessed_frequently_by", rel.AccessedFrequentlyBy)
-			appendStringSetToMap(rm, "accesses_infrequently", rel.AccessesInfrequently)
-			if len(rm) > 0 {
-				m["relationships"] = rm
-			}
+	if rel, ok := decodeObjectField[entityRelationshipsBlockModel](ctx, model.Relationships, diags); ok {
+		rm := make(map[string]any)
+		appendStringSetToMap(rm, "owned_by", rel.OwnedBy)
+		appendStringSetToMap(rm, "owns", rel.Owns)
+		appendStringSetToMap(rm, "supervised_by", rel.SupervisedBy)
+		appendStringSetToMap(rm, "supervises", rel.Supervises)
+		appendStringSetToMap(rm, "depends_on", rel.DependsOn)
+		appendStringSetToMap(rm, "dependent_of", rel.DependentOf)
+		appendStringSetToMap(rm, "communicates_with", rel.CommunicatesWith)
+		appendStringSetToMap(rm, "accesses_frequently", rel.AccessesFrequently)
+		appendStringSetToMap(rm, "accessed_frequently_by", rel.AccessedFrequentlyBy)
+		appendStringSetToMap(rm, "accesses_infrequently", rel.AccessesInfrequently)
+		if len(rm) > 0 {
+			m["relationships"] = rm
 		}
 	}
 	return m
 }
 
 func riskBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnostics) map[string]any {
-	if obj.IsNull() || obj.IsUnknown() {
-		return nil
-	}
-	var model entityRiskBlockModel
-	d := obj.As(ctx, &model, basetypes.ObjectAsOptions{})
-	diags.Append(d...)
-	if diags.HasError() {
+	model, ok := decodeObjectField[entityRiskBlockModel](ctx, obj, diags)
+	if !ok {
 		return nil
 	}
 	m := make(map[string]any)
@@ -234,13 +203,8 @@ func riskBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnosti
 }
 
 func hostBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnostics) map[string]any {
-	if obj.IsNull() || obj.IsUnknown() {
-		return nil
-	}
-	var model hostBlockModel
-	d := obj.As(ctx, &model, basetypes.ObjectAsOptions{})
-	diags.Append(d...)
-	if diags.HasError() {
+	model, ok := decodeObjectField[hostBlockModel](ctx, obj, diags)
+	if !ok {
 		return nil
 	}
 	m := map[string]any{attrName: model.Name.ValueString()}
@@ -251,36 +215,31 @@ func hostBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnosti
 	appendStringSetToMap(m, "mac", model.Mac)
 	appendStringSetToMap(m, attrType, model.Type)
 	appendStringSetToMap(m, "architecture", model.Architecture)
-	if typeutils.IsKnown(model.Os) {
-		var osModel hostOsBlockModel
-		d := model.Os.As(ctx, &osModel, basetypes.ObjectAsOptions{})
-		diags.Append(d...)
-		if !diags.HasError() {
-			om := make(map[string]any)
-			if !osModel.Family.IsNull() {
-				om["family"] = osModel.Family.ValueString()
-			}
-			if !osModel.Full.IsNull() {
-				om["full"] = osModel.Full.ValueString()
-			}
-			if !osModel.Kernel.IsNull() {
-				om["kernel"] = osModel.Kernel.ValueString()
-			}
-			if !osModel.Name.IsNull() {
-				om[attrName] = osModel.Name.ValueString()
-			}
-			if !osModel.Platform.IsNull() {
-				om["platform"] = osModel.Platform.ValueString()
-			}
-			if !osModel.Type.IsNull() {
-				om[attrType] = osModel.Type.ValueString()
-			}
-			if !osModel.Version.IsNull() {
-				om["version"] = osModel.Version.ValueString()
-			}
-			if len(om) > 0 {
-				m["os"] = om
-			}
+	if osModel, ok := decodeObjectField[hostOsBlockModel](ctx, model.Os, diags); ok {
+		om := make(map[string]any)
+		if !osModel.Family.IsNull() {
+			om["family"] = osModel.Family.ValueString()
+		}
+		if !osModel.Full.IsNull() {
+			om["full"] = osModel.Full.ValueString()
+		}
+		if !osModel.Kernel.IsNull() {
+			om["kernel"] = osModel.Kernel.ValueString()
+		}
+		if !osModel.Name.IsNull() {
+			om[attrName] = osModel.Name.ValueString()
+		}
+		if !osModel.Platform.IsNull() {
+			om["platform"] = osModel.Platform.ValueString()
+		}
+		if !osModel.Type.IsNull() {
+			om[attrType] = osModel.Type.ValueString()
+		}
+		if !osModel.Version.IsNull() {
+			om["version"] = osModel.Version.ValueString()
+		}
+		if len(om) > 0 {
+			m["os"] = om
 		}
 	}
 	if typeutils.IsKnown(model.Risk) {
@@ -292,13 +251,8 @@ func hostBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnosti
 }
 
 func userBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnostics) map[string]any {
-	if obj.IsNull() || obj.IsUnknown() {
-		return nil
-	}
-	var model userBlockModel
-	d := obj.As(ctx, &model, basetypes.ObjectAsOptions{})
-	diags.Append(d...)
-	if diags.HasError() {
+	model, ok := decodeObjectField[userBlockModel](ctx, obj, diags)
+	if !ok {
 		return nil
 	}
 	m := map[string]any{attrName: model.Name.ValueString()}
@@ -317,13 +271,8 @@ func userBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnosti
 }
 
 func serviceBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnostics) map[string]any {
-	if obj.IsNull() || obj.IsUnknown() {
-		return nil
-	}
-	var model serviceBlockModel
-	d := obj.As(ctx, &model, basetypes.ObjectAsOptions{})
-	diags.Append(d...)
-	if diags.HasError() {
+	model, ok := decodeObjectField[serviceBlockModel](ctx, obj, diags)
+	if !ok {
 		return nil
 	}
 	m := map[string]any{attrName: model.Name.ValueString()}
@@ -336,13 +285,8 @@ func serviceBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagno
 }
 
 func orchestratorBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnostics) map[string]any {
-	if obj.IsNull() || obj.IsUnknown() {
-		return nil
-	}
-	var model orchestratorBlockModel
-	d := obj.As(ctx, &model, basetypes.ObjectAsOptions{})
-	diags.Append(d...)
-	if diags.HasError() {
+	model, ok := decodeObjectField[orchestratorBlockModel](ctx, obj, diags)
+	if !ok {
 		return nil
 	}
 	m := make(map[string]any)
@@ -377,13 +321,8 @@ func orchestratorBlockToMap(ctx context.Context, obj types.Object, diags *diag.D
 }
 
 func cloudBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnostics) map[string]any {
-	if obj.IsNull() || obj.IsUnknown() {
-		return nil
-	}
-	var model cloudBlockModel
-	d := obj.As(ctx, &model, basetypes.ObjectAsOptions{})
-	diags.Append(d...)
-	if diags.HasError() {
+	model, ok := decodeObjectField[cloudBlockModel](ctx, obj, diags)
+	if !ok {
 		return nil
 	}
 	m := make(map[string]any)
@@ -412,13 +351,8 @@ func cloudBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnost
 }
 
 func eventBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnostics) map[string]any {
-	if obj.IsNull() || obj.IsUnknown() {
-		return nil
-	}
-	var model eventBlockModel
-	d := obj.As(ctx, &model, basetypes.ObjectAsOptions{})
-	diags.Append(d...)
-	if diags.HasError() {
+	model, ok := decodeObjectField[eventBlockModel](ctx, obj, diags)
+	if !ok {
 		return nil
 	}
 	m := make(map[string]any)
@@ -468,13 +402,8 @@ func eventBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnost
 }
 
 func assetBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnostics) map[string]any {
-	if obj.IsNull() || obj.IsUnknown() {
-		return nil
-	}
-	var model assetBlockModel
-	d := obj.As(ctx, &model, basetypes.ObjectAsOptions{})
-	diags.Append(d...)
-	if diags.HasError() {
+	model, ok := decodeObjectField[assetBlockModel](ctx, obj, diags)
+	if !ok {
 		return nil
 	}
 	m := make(map[string]any)
@@ -484,44 +413,34 @@ func assetBlockToMap(ctx context.Context, obj types.Object, diags *diag.Diagnost
 	if !model.Value.IsNull() {
 		m[attrValue] = model.Value.ValueFloat64()
 	}
-	if typeutils.IsKnown(model.CriticalityFeedback) {
-		var fb assetCriticalityFeedbackBlockModel
-		d := model.CriticalityFeedback.As(ctx, &fb, basetypes.ObjectAsOptions{})
-		diags.Append(d...)
-		if !diags.HasError() {
-			fbm := make(map[string]any)
-			if !fb.Notes.IsNull() {
-				fbm["notes"] = fb.Notes.ValueString()
-			}
-			if !fb.Reason.IsNull() {
-				fbm[attrReason] = fb.Reason.ValueString()
-			}
-			if len(fbm) > 0 {
-				m["criticality_feedback"] = fbm
-			}
+	if fb, ok := decodeObjectField[assetCriticalityFeedbackBlockModel](ctx, model.CriticalityFeedback, diags); ok {
+		fbm := make(map[string]any)
+		if !fb.Notes.IsNull() {
+			fbm["notes"] = fb.Notes.ValueString()
+		}
+		if !fb.Reason.IsNull() {
+			fbm[attrReason] = fb.Reason.ValueString()
+		}
+		if len(fbm) > 0 {
+			m["criticality_feedback"] = fbm
 		}
 	}
-	if typeutils.IsKnown(model.Owner) {
-		var owner assetOwnerBlockModel
-		d := model.Owner.As(ctx, &owner, basetypes.ObjectAsOptions{})
-		diags.Append(d...)
-		if !diags.HasError() {
-			om := make(map[string]any)
-			if !owner.Name.IsNull() {
-				om[attrName] = owner.Name.ValueString()
-			}
-			if !owner.Department.IsNull() {
-				om["department"] = owner.Department.ValueString()
-			}
-			if !owner.Email.IsNull() {
-				om[attrEmail] = owner.Email.ValueString()
-			}
-			if !owner.Ext.IsNull() {
-				om["ext"] = owner.Ext.ValueString()
-			}
-			if len(om) > 0 {
-				m["owner"] = om
-			}
+	if owner, ok := decodeObjectField[assetOwnerBlockModel](ctx, model.Owner, diags); ok {
+		om := make(map[string]any)
+		if !owner.Name.IsNull() {
+			om[attrName] = owner.Name.ValueString()
+		}
+		if !owner.Department.IsNull() {
+			om["department"] = owner.Department.ValueString()
+		}
+		if !owner.Email.IsNull() {
+			om[attrEmail] = owner.Email.ValueString()
+		}
+		if !owner.Ext.IsNull() {
+			om["ext"] = owner.Ext.ValueString()
+		}
+		if len(om) > 0 {
+			m["owner"] = om
 		}
 	}
 	return m

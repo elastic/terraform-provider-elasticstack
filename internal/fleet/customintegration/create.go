@@ -25,6 +25,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/clients/fleet"
 	"github.com/elastic/terraform-provider-elasticstack/internal/entitycore"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/fileutil"
+	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 )
@@ -72,7 +73,7 @@ func createCustomIntegration(
 	plan.PackageName = types.StringValue(result.PackageName)
 	plan.PackageVersion = types.StringValue(result.PackageVersion)
 	plan.Checksum = types.StringValue(checksum)
-	plan.ID = types.StringValue(getPackageID(result.PackageName, result.PackageVersion))
+	plan.ID = types.StringValue(typeutils.SlashJoinedPackageID(result.PackageName, result.PackageVersion))
 
 	if plan.SpaceID.IsUnknown() {
 		plan.SpaceID = types.StringNull()

@@ -190,7 +190,7 @@ func (s *KibanaSpaceImporter) SeedState(ctx context.Context, resp *resource.Impo
 			return
 		case s.defaultSpaceID != "":
 			spaceID = s.defaultSpaceID
-			idValue = (&clients.CompositeID{ClusterID: spaceID, ResourceID: composite.ResourceID}).String()
+			idValue = clients.CompositeIDValue(spaceID, composite.ResourceID).ValueString()
 		}
 	}
 

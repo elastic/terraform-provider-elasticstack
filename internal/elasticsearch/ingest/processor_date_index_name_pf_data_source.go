@@ -65,8 +65,6 @@ func (m *processorDateIndexNameModel) MarshalBody() (any, diag.Diagnostics) {
 	body.Locale = typeutils.StringDefault(&m.Locale, "ENGLISH")
 	body.IndexNameFormat = typeutils.StringDefault(&m.IndexNameFormat, "yyyy-MM-dd")
 
-	typeutils.BoolDefault(&m.IgnoreFailure, false)
-
 	return body, diags
 }
 
