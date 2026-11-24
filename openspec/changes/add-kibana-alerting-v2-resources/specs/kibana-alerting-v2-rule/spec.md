@@ -23,7 +23,7 @@ resource "elasticstack_kibana_alerting_v2_rule" "example" {
   time_field = <optional, computed, string>  # default "@timestamp"; 1-256 chars
 
   metadata = {                                # required
-    name         = <required, string>         # 1-256 chars; unique within the space
+    name         = <required, string>         # 1-256 chars; does not have to be unique
     description  = <optional, string>         # 1-1024 chars
     tags         = <optional, list(string)>   # 1-20 items, each 1-128 chars
     routing_tags = <optional, list(string)>   # 1-20 items, each 1-128 chars; kind = "alert" only
@@ -603,12 +603,6 @@ Transport failures, unexpected HTTP statuses, and `GET` or `PUT` responses that 
 - **GIVEN** a request the server rejects with HTTP 400 and a JSON error body
 - **WHEN** the operation completes
 - **THEN** the diagnostic SHALL include the server's `message`
-
-#### Scenario: Duplicate rule name surfaced from the server
-
-- **GIVEN** a rule whose `metadata.name` already belongs to another rule in the same space
-- **WHEN** apply runs and the server answers HTTP 409
-- **THEN** the provider SHALL return an error diagnostic including the server's `code` and `message`
 
 #### Scenario: Scoped connection is honoured
 

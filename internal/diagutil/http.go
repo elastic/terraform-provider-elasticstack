@@ -103,11 +103,18 @@ func HandleStatusResponse(statusCode int, body []byte, successCodes ...int) fwdi
 // UnwrapJSON200 returns val when non-nil, or an error diagnostic when val is nil.
 // entityName is used in the error message (e.g. "list", "list item").
 func UnwrapJSON200[T any](val *T, entityName string) (*T, fwdiag.Diagnostics) {
+	return UnwrapJSONStatus(val, entityName, http.StatusOK)
+}
+
+// UnwrapJSONStatus returns val when non-nil, or an error diagnostic naming the
+// given status code when val is nil. Use it over UnwrapJSON200 when a non-200
+// success code (e.g. 201 Created) must be reported accurately.
+func UnwrapJSONStatus[T any](val *T, entityName string, statusCode int) (*T, fwdiag.Diagnostics) {
 	if val == nil {
 		return nil, fwdiag.Diagnostics{
 			fwdiag.NewErrorDiagnostic(
 				"Failed to parse "+entityName+" response",
-				"API returned 200 but response body was nil",
+				fmt.Sprintf("API returned %d but response body was nil", statusCode),
 			),
 		}
 	}
