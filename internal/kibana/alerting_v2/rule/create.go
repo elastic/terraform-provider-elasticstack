@@ -61,9 +61,12 @@ func createRule(ctx context.Context, client *clients.KibanaScopedClient, req ent
 	created, _, putDiags := putRule(ctx, client, req.SpaceID, ruleID, plan)
 	diags.Append(putDiags...)
 	if diags.HasError() {
-		// The write may have created the rule even though its response was
-		// unusable (for example an empty 201 body). Remove that orphan.
-		if created && generatedID {
+		// Roll back on any write error, not only when the server reported the
+		// rule created. A transport error reports created=false yet Kibana may
+		// have committed the PUT before the connection dropped. The id was
+		// confirmed absent above, so an idempotent DELETE (404 is success) is
+		// safe whether or not the write committed.
+		if generatedID {
 			diags.Append(rollbackOrphanedRule(ctx, client, req.SpaceID, ruleID)...)
 		}
 		return entitycore.KibanaWriteResult[Model]{}, diags
@@ -79,17 +82,19 @@ func createRule(ctx context.Context, client *clients.KibanaScopedClient, req ent
 	// unchanged.
 	state, found, readDiags := readRule(ctx, client, ruleID, req.SpaceID, plan)
 	diags.Append(readDiags...)
-	if diags.HasError() {
+	if diags.HasError() || !found {
+		// A read error or a rule that is unexpectedly absent after a successful
+		// create both leave no usable state. Roll the orphan back so a retry of
+		// a generated id does not create a duplicate.
 		if generatedID {
 			diags.Append(rollbackOrphanedRule(ctx, client, req.SpaceID, ruleID)...)
 		}
-		return entitycore.KibanaWriteResult[Model]{}, diags
-	}
-	if !found {
-		diags.AddError(
-			"Alerting v2 rule not found after creation",
-			"The rule \""+importID+"\" was created but could not be read back. It may have been deleted concurrently; run a new plan to reconcile.",
-		)
+		if !found && !readDiags.HasError() {
+			diags.AddError(
+				"Alerting v2 rule not found after creation",
+				"The rule \""+importID+"\" was created but could not be read back. It may have been deleted concurrently; run a new plan to reconcile.",
+			)
+		}
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 

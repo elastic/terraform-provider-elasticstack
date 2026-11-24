@@ -459,7 +459,8 @@ func TestModel_toAPIPutBody_preservesLargeArtifactNumbers(t *testing.T) {
 	t.Parallel()
 
 	// map[string]interface{} would decode these as float64 and round them; the
-	// request must carry the exact bytes.
+	// request must carry the exact bytes. 1e400 is outside float64 range and a
+	// float64 decode would fail on it entirely.
 	model := Model{
 		Kind:     types.StringValue("signal"),
 		Enabled:  types.BoolValue(true),
@@ -469,14 +470,20 @@ func TestModel_toAPIPutBody_preservesLargeArtifactNumbers(t *testing.T) {
 		Artifacts: []artifactModel{{
 			ID:   types.StringValue("a"),
 			Type: types.StringValue("dashboard"),
-			Data: jsontypes.NewNormalizedValue(`{"id":9007199254740993,"ratio":1.0000000000000002,"big":1e308}`),
+			Data: jsontypes.NewNormalizedValue(`{"id":9007199254740993,"ratio":1.0000000000000002,"big":1e400}`),
 		}},
 	}
 
 	body, diags := model.toAPIPutBody(context.Background())
 	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
 
+	// Assert exact numeric tokens rather than JSONEq, which decodes through
+	// float64 and would treat 9007199254740993 and the rounded 9007199254740992
+	// as equal.
 	raw, err := json.Marshal((*body.Artifacts)[0].Data)
 	require.NoError(t, err)
-	require.JSONEq(t, `{"id":9007199254740993,"ratio":1.0000000000000002,"big":1e308}`, string(raw))
+	for _, token := range []string{"9007199254740993", "1.0000000000000002", "1e400"} {
+		require.Contains(t, string(raw), token, "exact number must survive the write")
+	}
+	require.NotContains(t, string(raw), "9007199254740992", "number must not be rounded")
 }

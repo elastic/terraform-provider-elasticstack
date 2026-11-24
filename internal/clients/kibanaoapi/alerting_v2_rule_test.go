@@ -290,23 +290,36 @@ func TestGetAlertingV2Rule_nonJSONErrorBodyFallsBackToRawBody(t *testing.T) {
 func TestGetAlertingV2Rule_preservesLargeArtifactNumbers(t *testing.T) {
 	t.Parallel()
 
-	// The generated Data type is map[string]interface{}, which rounds integers
-	// above 2^53 to float64. The wrapper must restore the exact bytes from the
-	// raw response.
-	body := `{
-		"id": "my-rule", "kind": "alert", "enabled": true, "version": 1,
-		"metadata": {"name": "n"}, "schedule": {"every": "1m"},
-		"query": {"base": "FROM logs-*"},
-		"recovery": {"strategy": "no_breach"}, "no_data": {"strategy": "ignore"},
-		"artifacts": [{"id": "a", "type": "dashboard", "data": {"id": 9007199254740993, "big": 1e308}}]
-	}`
-	client := newAlertingV2Client(t, http.StatusOK, body, nil)
+	// The generated Data type is map[string]interface{}, which decodes numbers
+	// as float64: it rounds integers above 2^53 and fails outright on a value
+	// outside float64 range. 1e400 exercises the latter. The assertions check
+	// the exact numeric token, not JSONEq, which itself decodes through float64
+	// and would treat the rounded value as equal.
+	for name, value := range map[string]struct{ token, rounded string }{
+		"integer above 2^53":          {token: "9007199254740993", rounded: "9007199254740992"},
+		"number beyond float64 range": {token: "1e400"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			body := `{
+				"id": "my-rule", "kind": "alert", "enabled": true, "version": 1,
+				"metadata": {"name": "n"}, "schedule": {"every": "1m"},
+				"query": {"base": "FROM logs-*"},
+				"recovery": {"strategy": "no_breach"}, "no_data": {"strategy": "ignore"},
+				"artifacts": [{"id": "a", "type": "dashboard", "data": {"n": ` + value.token + `}}]
+			}`
+			client := newAlertingV2Client(t, http.StatusOK, body, nil)
 
-	rule, diags := kibanaoapi.GetAlertingV2Rule(context.Background(), client, "default", "my-rule")
+			rule, diags := kibanaoapi.GetAlertingV2Rule(context.Background(), client, "default", "my-rule")
 
-	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
-	require.NotNil(t, rule.Artifacts)
-	raw, err := json.Marshal((*rule.Artifacts)[0].Data)
-	require.NoError(t, err)
-	require.JSONEq(t, `{"id":9007199254740993,"big":1e308}`, string(raw))
+			require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+			require.NotNil(t, rule.Artifacts)
+			raw, err := json.Marshal((*rule.Artifacts)[0].Data)
+			require.NoError(t, err)
+			require.Contains(t, string(raw), value.token, "exact number must survive the read")
+			if value.rounded != "" {
+				require.NotContains(t, string(raw), value.rounded, "number must not be rounded")
+			}
+		})
+	}
 }

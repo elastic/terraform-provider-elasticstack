@@ -18,8 +18,10 @@
 package kibanaoapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -30,51 +32,49 @@ import (
 
 // GetAlertingV2Rule reads an Alerting v2 rule. A nil result without error
 // diagnostics means the rule does not exist.
+//
+// It uses the raw request and decodes the body itself with json.Number instead
+// of the generated typed helper. The generated Data field is
+// map[string]interface{}, so the typed decoder turns every artifacts[].data
+// number into a float64: it rounds integers above 2^53 and fails outright on a
+// value outside float64 range (for example 1e400). Decoding with UseNumber
+// keeps artifacts[].data as json.Number, so arbitrary JSON round-trips exactly.
 func GetAlertingV2Rule(ctx context.Context, client *Client, spaceID, ruleID string) (*kbapi.KibanaHTTPAPIsAlertingRuleResponse, diag.Diagnostics) {
-	resp, err := client.API.GetAlertingV2RulesIdWithResponse(ctx, ruleID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	resp, err := client.API.GetAlertingV2RulesId(ctx, ruleID, kibanautil.SpaceAwarePathRequestEditor(spaceID))
 	if err != nil {
 		return nil, diagutil.ErrDiag("Unable to get alerting v2 rule", err)
 	}
+	defer resp.Body.Close()
 
-	switch resp.StatusCode() {
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, diagutil.ErrDiag("Unable to read alerting v2 rule response", err)
+	}
+
+	switch resp.StatusCode {
 	case http.StatusOK:
-		rule, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting v2 rule")
-		if diags.HasError() {
-			return nil, diags
+		rule, decodeDiags := decodeRulePreservingNumbers(body)
+		if decodeDiags.HasError() {
+			return nil, decodeDiags
 		}
-		restoreArtifactDataPrecision(rule, resp.Body)
-		return rule, diags
+		return rule, nil
 	case http.StatusNotFound:
 		return nil, nil
 	default:
-		return nil, alertingV2ErrorDiagnostics(resp.StatusCode(), resp.Body)
+		return nil, alertingV2ErrorDiagnostics(resp.StatusCode, body)
 	}
 }
 
-// restoreArtifactDataPrecision re-reads artifacts[].data from the raw response
-// body as json.RawMessage and writes it back onto the parsed rule. The
-// generated Data type is map[string]any, so the client has already
-// decoded numbers as float64 and rounded any integer above 2^53; re-reading
-// the raw bytes restores arbitrary JSON before it is marshalled back to state.
-func restoreArtifactDataPrecision(rule *kbapi.KibanaHTTPAPIsAlertingRuleResponse, body []byte) {
-	if rule == nil || rule.Artifacts == nil || len(body) == 0 {
-		return
+// decodeRulePreservingNumbers decodes a rule response with json.Number so that
+// artifacts[].data keeps arbitrary-precision numbers instead of lossy float64.
+func decodeRulePreservingNumbers(body []byte) (*kbapi.KibanaHTTPAPIsAlertingRuleResponse, diag.Diagnostics) {
+	decoder := json.NewDecoder(bytes.NewReader(body))
+	decoder.UseNumber()
+	var rule kbapi.KibanaHTTPAPIsAlertingRuleResponse
+	if err := decoder.Decode(&rule); err != nil {
+		return nil, diagutil.ErrDiag("Failed to parse alerting v2 rule response", err)
 	}
-	var raw struct {
-		Artifacts []struct {
-			Data map[string]json.RawMessage `json:"data"`
-		} `json:"artifacts"`
-	}
-	if err := json.Unmarshal(body, &raw); err != nil || len(raw.Artifacts) != len(*rule.Artifacts) {
-		return
-	}
-	for i := range *rule.Artifacts {
-		precise := make(map[string]any, len(raw.Artifacts[i].Data))
-		for key, value := range raw.Artifacts[i].Data {
-			precise[key] = value
-		}
-		(*rule.Artifacts)[i].Data = precise
-	}
+	return &rule, nil
 }
 
 // PutAlertingV2Rule creates or replaces an Alerting v2 rule and reports

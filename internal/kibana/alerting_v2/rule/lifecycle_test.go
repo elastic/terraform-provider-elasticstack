@@ -52,6 +52,10 @@ const ruleResponseJSON = `{
 type scriptedResponse struct {
 	status int
 	body   string
+	// dropConnection simulates an ambiguous transport failure: the request is
+	// recorded (as if the server committed it) but the connection is closed
+	// without a response, so the client sees a transport error.
+	dropConnection bool
 }
 
 type scriptedServer struct {
@@ -82,6 +86,14 @@ func newScriptedClient(t *testing.T, responses map[string][]scriptedResponse) (*
 		}
 		next := queue[0]
 		script.responses[queueKey] = queue[1:]
+		if next.dropConnection {
+			if hj, ok := w.(http.Hijacker); ok {
+				if conn, _, err := hj.Hijack(); err == nil {
+					_ = conn.Close()
+				}
+			}
+			return
+		}
 		if next.body != "" {
 			w.Header().Set("Content-Type", "application/json")
 		}
@@ -505,4 +517,61 @@ func TestCreateRule_suppliedIDWriteFailureDoesNotRollBack(t *testing.T) {
 
 	require.True(t, diags.HasError())
 	require.Equal(t, 0, deleteCount(script, "team-a", "my-rule"), "a supplied id must not be rolled back, got %v", script.requests)
+}
+
+func TestCreateRule_rollsBackAmbiguousTransportError(t *testing.T) {
+	t.Parallel()
+
+	// The PUT connection drops without a response. Kibana may have committed it,
+	// so a generated id must be rolled back even though the client reports no
+	// success. The existence check confirmed the id absent, so the DELETE is a
+	// safe no-op if nothing was committed.
+	client, script := newScriptedClient(t, map[string][]scriptedResponse{
+		"GET *":    {{status: http.StatusNotFound, body: `{"code":"RULE_NOT_FOUND","error":"Not Found","message":"gone"}`}},
+		"PUT *":    {{dropConnection: true}},
+		"DELETE *": {{status: http.StatusNoContent}},
+	})
+
+	_, diags := createRule(context.Background(), client, entitycore.KibanaWriteRequest[Model]{
+		Plan:    minimalPlan(""),
+		SpaceID: "team-a",
+	})
+
+	require.True(t, diags.HasError())
+	var deletes int
+	for _, r := range script.requests {
+		if strings.HasPrefix(r, "DELETE ") {
+			deletes++
+		}
+	}
+	require.Equal(t, 1, deletes, "an ambiguous generated-id PUT must be rolled back, got %v", script.requests)
+}
+
+func TestCreateRule_rollsBackOnReadAfterWriteNotFound(t *testing.T) {
+	t.Parallel()
+
+	// PUT succeeds (201) but the read-after-write reports the rule absent: roll
+	// the generated id back so a retry does not duplicate.
+	client, script := newScriptedClient(t, map[string][]scriptedResponse{
+		"GET *": {
+			{status: http.StatusNotFound, body: `{"code":"RULE_NOT_FOUND","error":"Not Found","message":"gone"}`},
+			{status: http.StatusNotFound, body: `{"code":"RULE_NOT_FOUND","error":"Not Found","message":"gone"}`},
+		},
+		"PUT *":    {{status: http.StatusCreated, body: ruleResponseJSON}},
+		"DELETE *": {{status: http.StatusNoContent}},
+	})
+
+	_, diags := createRule(context.Background(), client, entitycore.KibanaWriteRequest[Model]{
+		Plan:    minimalPlan(""),
+		SpaceID: "team-a",
+	})
+
+	require.True(t, diags.HasError())
+	var deletes int
+	for _, r := range script.requests {
+		if strings.HasPrefix(r, "DELETE ") {
+			deletes++
+		}
+	}
+	require.Equal(t, 1, deletes, "a not-found read-after-write on a generated id must roll back, got %v", script.requests)
 }
