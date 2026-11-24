@@ -21,7 +21,7 @@ package apikey
 const (
 	// CurrentSchemaVersion is the resource schema version. It is bumped when a
 	// state upgrader is added to handle a breaking schema change.
-	CurrentSchemaVersion int64 = 2
+	CurrentSchemaVersion int64 = 3
 
 	// RESTAPIKeyType is the value the `type` attribute takes for standard API
 	// keys.
