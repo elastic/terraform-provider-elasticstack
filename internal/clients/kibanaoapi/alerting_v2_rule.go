@@ -19,6 +19,7 @@ package kibanaoapi
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
@@ -37,11 +38,42 @@ func GetAlertingV2Rule(ctx context.Context, client *Client, spaceID, ruleID stri
 
 	switch resp.StatusCode() {
 	case http.StatusOK:
-		return diagutil.UnwrapJSON200(resp.JSON200, "alerting v2 rule")
+		rule, diags := diagutil.UnwrapJSON200(resp.JSON200, "alerting v2 rule")
+		if diags.HasError() {
+			return nil, diags
+		}
+		restoreArtifactDataPrecision(rule, resp.Body)
+		return rule, diags
 	case http.StatusNotFound:
 		return nil, nil
 	default:
 		return nil, alertingV2ErrorDiagnostics(resp.StatusCode(), resp.Body)
+	}
+}
+
+// restoreArtifactDataPrecision re-reads artifacts[].data from the raw response
+// body as json.RawMessage and writes it back onto the parsed rule. The
+// generated Data type is map[string]any, so the client has already
+// decoded numbers as float64 and rounded any integer above 2^53; re-reading
+// the raw bytes restores arbitrary JSON before it is marshalled back to state.
+func restoreArtifactDataPrecision(rule *kbapi.KibanaHTTPAPIsAlertingRuleResponse, body []byte) {
+	if rule == nil || rule.Artifacts == nil || len(body) == 0 {
+		return
+	}
+	var raw struct {
+		Artifacts []struct {
+			Data map[string]json.RawMessage `json:"data"`
+		} `json:"artifacts"`
+	}
+	if err := json.Unmarshal(body, &raw); err != nil || len(raw.Artifacts) != len(*rule.Artifacts) {
+		return
+	}
+	for i := range *rule.Artifacts {
+		precise := make(map[string]any, len(raw.Artifacts[i].Data))
+		for key, value := range raw.Artifacts[i].Data {
+			precise[key] = value
+		}
+		(*rule.Artifacts)[i].Data = precise
 	}
 }
 

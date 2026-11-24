@@ -18,8 +18,11 @@
 package rule
 
 import (
+	"encoding/json"
+
 	"github.com/elastic/terraform-provider-elasticstack/generated/kbapi"
 	"github.com/elastic/terraform-provider-elasticstack/internal/utils/typeutils"
+	"github.com/hashicorp/terraform-plugin-framework-jsontypes/jsontypes"
 	"github.com/hashicorp/terraform-plugin-framework/diag"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -34,10 +37,31 @@ func artifactsToAPI(artifacts []artifactModel, diags *diag.Diagnostics) *[]kbapi
 		out = append(out, kbapi.KibanaHTTPAPIsAlertingRuleArtifact{
 			Id:   artifact.ID.ValueString(),
 			Type: artifact.Type.ValueString(),
-			Data: typeutils.NormalizedTypeToMap[any](artifact.Data, artifactDataPath(i), diags),
+			Data: artifactDataToAPI(artifact.Data, artifactDataPath(i), diags),
 		})
 	}
 	return &out
+}
+
+// artifactDataToAPI decodes the artifact data object while keeping each value
+// as raw JSON. The generated Data type is map[string]any, into which a
+// plain json.Unmarshal would decode numbers as float64 and round integers
+// above 2^53. Storing json.RawMessage values makes the request encoder emit
+// them verbatim, so arbitrary JSON (large integers included) round-trips.
+func artifactDataToAPI(data jsontypes.Normalized, p path.Path, diags *diag.Diagnostics) map[string]any {
+	if !typeutils.IsKnown(data) {
+		return nil
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(data.ValueString()), &raw); err != nil {
+		diags.AddAttributeError(p, "Invalid artifact data", err.Error())
+		return nil
+	}
+	out := make(map[string]any, len(raw))
+	for key, value := range raw {
+		out[key] = value
+	}
+	return out
 }
 
 func artifactsFromAPI(artifacts *[]kbapi.KibanaHTTPAPIsAlertingRuleArtifact, diags *diag.Diagnostics) []artifactModel {

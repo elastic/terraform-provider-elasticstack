@@ -36,8 +36,14 @@ func createRule(ctx context.Context, client *clients.KibanaScopedClient, req ent
 	plan := req.Plan
 	var diags diag.Diagnostics
 
+	// A generated id is the dangerous case: if the create cannot be completed
+	// and no state is saved, a retry mints a new id and creates a second,
+	// unmanaged rule. For those, roll the orphan back so a retry stays safe. A
+	// supplied id needs no rollback: a retry hits the existence check below and
+	// is told to import.
+	generatedID := !typeutils.IsKnown(plan.RuleID)
 	ruleID := plan.RuleID.ValueString()
-	if !typeutils.IsKnown(plan.RuleID) {
+	if generatedID {
 		ruleID = uuid.NewString()
 	}
 	importID := clients.CompositeIDValue(req.SpaceID, ruleID).ValueString()
@@ -52,9 +58,14 @@ func createRule(ctx context.Context, client *clients.KibanaScopedClient, req ent
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	created, written, putDiags := putRule(ctx, client, req.SpaceID, ruleID, plan)
+	created, _, putDiags := putRule(ctx, client, req.SpaceID, ruleID, plan)
 	diags.Append(putDiags...)
 	if diags.HasError() {
+		// The write may have created the rule even though its response was
+		// unusable (for example an empty 201 body). Remove that orphan.
+		if created && generatedID {
+			diags.Append(rollbackOrphanedRule(ctx, client, req.SpaceID, ruleID)...)
+		}
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 	if !created {
@@ -62,7 +73,45 @@ func createRule(ctx context.Context, client *clients.KibanaScopedClient, req ent
 		return entitycore.KibanaWriteResult[Model]{}, diags
 	}
 
-	return entitycore.KibanaWriteResult[Model]{Model: written}, diags
+	// Own the read-after-write so a read failure on a generated id can be
+	// compensated before the envelope discards the unsaved state. This replaces
+	// the envelope's own read (SkipReadAfterWrite), so the call count is
+	// unchanged.
+	state, found, readDiags := readRule(ctx, client, ruleID, req.SpaceID, plan)
+	diags.Append(readDiags...)
+	if diags.HasError() {
+		if generatedID {
+			diags.Append(rollbackOrphanedRule(ctx, client, req.SpaceID, ruleID)...)
+		}
+		return entitycore.KibanaWriteResult[Model]{}, diags
+	}
+	if !found {
+		diags.AddError(
+			"Alerting v2 rule not found after creation",
+			"The rule \""+importID+"\" was created but could not be read back. It may have been deleted concurrently; run a new plan to reconcile.",
+		)
+		return entitycore.KibanaWriteResult[Model]{}, diags
+	}
+
+	return entitycore.KibanaWriteResult[Model]{Model: state, SkipReadAfterWrite: true}, diags
+}
+
+// rollbackOrphanedRule deletes a rule left behind by a create that could not be
+// completed, so a retry does not create a duplicate. A failed rollback is
+// reported as its own error because the rule then survives unmanaged and the
+// user must act on it.
+func rollbackOrphanedRule(ctx context.Context, client *clients.KibanaScopedClient, spaceID, ruleID string) diag.Diagnostics {
+	if delDiags := kibanaoapi.DeleteAlertingV2Rule(ctx, client.GetKibanaOapiClient(), spaceID, ruleID); delDiags.HasError() {
+		importID := clients.CompositeIDValue(spaceID, ruleID).ValueString()
+		var out diag.Diagnostics
+		out.AddError(
+			"Failed to roll back a partially created Alerting v2 rule",
+			"The rule \""+importID+"\" was created but the create could not be completed, and the automatic cleanup also failed, so it now exists unmanaged. "+
+				"Delete it manually or import it with `terraform import`, then retry.",
+		)
+		return out
+	}
+	return nil
 }
 
 // putRule issues the create-or-replace write. created reports whether the server answered 201 (created) rather than 200 (replaced).
@@ -74,14 +123,14 @@ func putRule(ctx context.Context, client *clients.KibanaScopedClient, spaceID, r
 	}
 
 	created, putDiags := kibanaoapi.PutAlertingV2Rule(ctx, client.GetKibanaOapiClient(), spaceID, ruleID, body)
-	// Prefix the write diagnostics with the composite id, as readRule does.
-	// A PUT that reaches the server but returns an empty or malformed body
-	// errors here after the rule was created; without the id (which may be a
-	// generated UUID) the user cannot import the orphan, and a retry creates a
-	// second rule.
+	// Prefix the write diagnostics with the composite id, as readRule does, so
+	// a failed write still names the rule to import. created is returned even
+	// on error: a PUT that reaches the server but returns an empty or malformed
+	// body errors here after the rule was created, and the caller needs that
+	// signal to roll the orphan back.
 	diags.Append(withCompositeID(putDiags, spaceID, ruleID)...)
 	if diags.HasError() {
-		return false, plan, diags
+		return created, plan, diags
 	}
 
 	plan.ID, plan.SpaceID = clients.CompositeIdentityValues(spaceID, ruleID)

@@ -19,6 +19,7 @@ package kibanaoapi_test
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -284,4 +285,28 @@ func TestGetAlertingV2Rule_nonJSONErrorBodyFallsBackToRawBody(t *testing.T) {
 	require.True(t, diags.HasError())
 	require.Contains(t, diags[0].Summary(), "502")
 	require.Equal(t, "upstream unavailable", diags[0].Detail())
+}
+
+func TestGetAlertingV2Rule_preservesLargeArtifactNumbers(t *testing.T) {
+	t.Parallel()
+
+	// The generated Data type is map[string]interface{}, which rounds integers
+	// above 2^53 to float64. The wrapper must restore the exact bytes from the
+	// raw response.
+	body := `{
+		"id": "my-rule", "kind": "alert", "enabled": true, "version": 1,
+		"metadata": {"name": "n"}, "schedule": {"every": "1m"},
+		"query": {"base": "FROM logs-*"},
+		"recovery": {"strategy": "no_breach"}, "no_data": {"strategy": "ignore"},
+		"artifacts": [{"id": "a", "type": "dashboard", "data": {"id": 9007199254740993, "big": 1e308}}]
+	}`
+	client := newAlertingV2Client(t, http.StatusOK, body, nil)
+
+	rule, diags := kibanaoapi.GetAlertingV2Rule(context.Background(), client, "default", "my-rule")
+
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+	require.NotNil(t, rule.Artifacts)
+	raw, err := json.Marshal((*rule.Artifacts)[0].Data)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"id":9007199254740993,"big":1e308}`, string(raw))
 }

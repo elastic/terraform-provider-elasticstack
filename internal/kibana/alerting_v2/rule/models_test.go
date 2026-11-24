@@ -454,3 +454,29 @@ func TestModel_populateFromAPI_toleratesStoredAlertNoDataStrategy(t *testing.T) 
 	require.Equal(t, "alert", model.NoData.Strategy.ValueString())
 	require.Equal(t, "FROM logs-* | STATS c = COUNT()", model.NoData.Query.ValueString())
 }
+
+func TestModel_toAPIPutBody_preservesLargeArtifactNumbers(t *testing.T) {
+	t.Parallel()
+
+	// map[string]interface{} would decode these as float64 and round them; the
+	// request must carry the exact bytes.
+	model := Model{
+		Kind:     types.StringValue("signal"),
+		Enabled:  types.BoolValue(true),
+		Metadata: &metadataModel{Name: types.StringValue("n")},
+		Schedule: &scheduleModel{Every: types.StringValue("1m")},
+		Query:    &queryModel{Base: types.StringValue("FROM logs-*")},
+		Artifacts: []artifactModel{{
+			ID:   types.StringValue("a"),
+			Type: types.StringValue("dashboard"),
+			Data: jsontypes.NewNormalizedValue(`{"id":9007199254740993,"ratio":1.0000000000000002,"big":1e308}`),
+		}},
+	}
+
+	body, diags := model.toAPIPutBody(context.Background())
+	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+
+	raw, err := json.Marshal((*body.Artifacts)[0].Data)
+	require.NoError(t, err)
+	require.JSONEq(t, `{"id":9007199254740993,"ratio":1.0000000000000002,"big":1e308}`, string(raw))
+}

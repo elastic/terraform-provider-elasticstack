@@ -170,7 +170,10 @@ func TestCreateRule_putsAfterFreeIDCheckAndSetsIdentity(t *testing.T) {
 	t.Parallel()
 
 	client, script := newScriptedClient(t, map[string][]scriptedResponse{
-		"GET /s/team-a/api/alerting/v2/rules/my-rule": {{status: http.StatusNotFound, body: `{"code":"RULE_NOT_FOUND","error":"Not Found","message":"gone"}`}},
+		"GET /s/team-a/api/alerting/v2/rules/my-rule": {
+			{status: http.StatusNotFound, body: `{"code":"RULE_NOT_FOUND","error":"Not Found","message":"gone"}`},
+			{status: http.StatusOK, body: ruleResponseJSON},
+		},
 		"PUT /s/team-a/api/alerting/v2/rules/my-rule": {{status: http.StatusCreated, body: ruleResponseJSON}},
 	})
 
@@ -181,12 +184,14 @@ func TestCreateRule_putsAfterFreeIDCheckAndSetsIdentity(t *testing.T) {
 	})
 
 	require.False(t, diags.HasError(), "unexpected diagnostics: %v", diags)
+	require.True(t, result.SkipReadAfterWrite, "create owns the read-after-write")
 	require.Equal(t, "team-a/my-rule", result.Model.ID.ValueString())
 	require.Equal(t, "my-rule", result.Model.RuleID.ValueString())
 	require.Equal(t, "team-a", result.Model.SpaceID.ValueString())
 	require.Equal(t, []string{
 		"GET /s/team-a/api/alerting/v2/rules/my-rule",
 		"PUT /s/team-a/api/alerting/v2/rules/my-rule",
+		"GET /s/team-a/api/alerting/v2/rules/my-rule",
 	}, script.requests)
 	require.JSONEq(t, `{
 		"kind": "alert",
@@ -245,7 +250,10 @@ func TestCreateRule_generatesUUIDWhenRuleIDOmitted(t *testing.T) {
 	t.Parallel()
 
 	client, script := newScriptedClient(t, map[string][]scriptedResponse{
-		"GET *": {{status: http.StatusNotFound, body: `{"code":"RULE_NOT_FOUND","error":"Not Found","message":"gone"}`}},
+		"GET *": {
+			{status: http.StatusNotFound, body: `{"code":"RULE_NOT_FOUND","error":"Not Found","message":"gone"}`},
+			{status: http.StatusOK, body: ruleResponseJSON},
+		},
 		"PUT *": {{status: http.StatusCreated, body: ruleResponseJSON}},
 	})
 
@@ -261,6 +269,7 @@ func TestCreateRule_generatesUUIDWhenRuleIDOmitted(t *testing.T) {
 	require.Equal(t, []string{
 		"GET /s/team-a/api/alerting/v2/rules/" + generated.String(),
 		"PUT /s/team-a/api/alerting/v2/rules/" + generated.String(),
+		"GET /s/team-a/api/alerting/v2/rules/" + generated.String(),
 	}, script.requests)
 }
 
@@ -381,4 +390,119 @@ func TestReadRule_mappingErrorDiagnosticsCarryCompositeID(t *testing.T) {
 	require.True(t, diags.HasError())
 	require.Contains(t, diags[0].Detail(), "team-a/my-rule")
 	require.Contains(t, diags[0].Detail(), "teleport")
+}
+
+// deleteCount tallies DELETE calls to a specific rule, for asserting
+// compensating cleanup.
+func deleteCount(script *scriptedServer, spaceID, ruleID string) int {
+	n := 0
+	for _, r := range script.requests {
+		if r == "DELETE /s/"+spaceID+"/api/alerting/v2/rules/"+ruleID {
+			n++
+		}
+	}
+	return n
+}
+
+func TestCreateRule_rollsBackOrphanOnWriteFailure(t *testing.T) {
+	t.Parallel()
+
+	// rule_id omitted (generated) and the PUT creates the rule but returns an
+	// empty body: the create cannot complete, so the orphan must be deleted.
+	client, script := newScriptedClient(t, map[string][]scriptedResponse{
+		"GET *":    {{status: http.StatusNotFound, body: `{"code":"RULE_NOT_FOUND","error":"Not Found","message":"gone"}`}},
+		"PUT *":    {{status: http.StatusCreated, body: ""}},
+		"DELETE *": {{status: http.StatusNoContent}},
+	})
+
+	_, diags := createRule(context.Background(), client, entitycore.KibanaWriteRequest[Model]{
+		Plan:    minimalPlan(""),
+		SpaceID: "team-a",
+	})
+
+	require.True(t, diags.HasError())
+	var deletes int
+	for _, r := range script.requests {
+		if strings.HasPrefix(r, "DELETE ") {
+			deletes++
+		}
+	}
+	require.Equal(t, 1, deletes, "the orphaned generated-id rule must be deleted, got requests %v", script.requests)
+}
+
+func TestCreateRule_rollsBackOnReadAfterWriteFailure(t *testing.T) {
+	t.Parallel()
+
+	// PUT succeeds but the read-after-write fails: for a generated id the
+	// orphan must still be removed so a retry does not duplicate. The existence
+	// GET returns 404; the read-after-write GET returns 500.
+	client, script := newScriptedClient(t, map[string][]scriptedResponse{
+		"GET *": {
+			{status: http.StatusNotFound, body: `{"code":"RULE_NOT_FOUND","error":"Not Found","message":"gone"}`},
+			{status: http.StatusInternalServerError, body: `{"code":"INTERNAL","error":"Internal Server Error","message":"boom"}`},
+		},
+		"PUT *":    {{status: http.StatusCreated, body: ruleResponseJSON}},
+		"DELETE *": {{status: http.StatusNoContent}},
+	})
+
+	_, diags := createRule(context.Background(), client, entitycore.KibanaWriteRequest[Model]{
+		Plan:    minimalPlan(""),
+		SpaceID: "team-a",
+	})
+
+	require.True(t, diags.HasError())
+	var deletes int
+	for _, r := range script.requests {
+		if strings.HasPrefix(r, "DELETE ") {
+			deletes++
+		}
+	}
+	require.Equal(t, 1, deletes, "read-after-write failure on a generated id must roll the orphan back, got %v", script.requests)
+}
+
+func TestCreateRule_reportsRollbackFailureSeparately(t *testing.T) {
+	t.Parallel()
+
+	// The write fails and the compensating delete also fails: the user must be
+	// told the rule survives unmanaged.
+	client, _ := newScriptedClient(t, map[string][]scriptedResponse{
+		"GET *":    {{status: http.StatusNotFound, body: `{"code":"RULE_NOT_FOUND","error":"Not Found","message":"gone"}`}},
+		"PUT *":    {{status: http.StatusCreated, body: ""}},
+		"DELETE *": {{status: http.StatusInternalServerError, body: `{"code":"INTERNAL","error":"Internal Server Error","message":"delete boom"}`}},
+	})
+
+	_, diags := createRule(context.Background(), client, entitycore.KibanaWriteRequest[Model]{
+		Plan:    minimalPlan(""),
+		SpaceID: "team-a",
+	})
+
+	require.True(t, diags.HasError())
+	var sawRollbackFailure bool
+	for _, d := range diags {
+		if strings.Contains(d.Summary(), "Failed to roll back") {
+			sawRollbackFailure = true
+		}
+	}
+	require.True(t, sawRollbackFailure, "a failed rollback must be reported separately, got %v", diags)
+}
+
+func TestCreateRule_suppliedIDWriteFailureDoesNotRollBack(t *testing.T) {
+	t.Parallel()
+
+	// With a supplied id a retry hits the existence check and is told to
+	// import, so the rule must not be deleted.
+	client, script := newScriptedClient(t, map[string][]scriptedResponse{
+		"GET /s/team-a/api/alerting/v2/rules/my-rule":    {{status: http.StatusNotFound, body: `{"code":"RULE_NOT_FOUND","error":"Not Found","message":"gone"}`}},
+		"PUT /s/team-a/api/alerting/v2/rules/my-rule":    {{status: http.StatusCreated, body: ""}},
+		"DELETE /s/team-a/api/alerting/v2/rules/my-rule": {{status: http.StatusNoContent}},
+	})
+
+	_, diags := createRule(context.Background(), client, entitycore.KibanaWriteRequest[Model]{
+		Plan:    minimalPlan("my-rule"),
+		SpaceID: "team-a",
+		WriteID: "my-rule",
+	})
+
+	require.True(t, diags.HasError())
+	require.Equal(t, 0, deleteCount(script, "team-a", "my-rule"), "a supplied id must not be rolled back, got %v", script.requests)
 }
