@@ -19,6 +19,16 @@ When extending dashboard API coverage:
 
 Do not recreate a schema-merging `dashboards.json`-style overlay unless upstream explicitly requires it.
 
+## `advanced-settings-paths.json` (paths-only overlay)
+
+The upstream Kibana spec does not describe the advanced settings routes. `generated/kbapi/advanced-settings-paths.json` is a **paths-only** supplement that injects `GET` and `POST /api/kibana/settings` (operation IDs `get-kibana-settings` and `post-kibana-settings`) via `injectAdvancedSettingsAPIPaths` in `transform_schema.go`. Request and response schemas are inline, so the overlay adds no component schemas and the change to `kibana.gen.go` is purely additive.
+
+The paths are unprefixed. Callers apply the space at request time with `kibanautil.SpaceAwarePathRequestEditor`, as dashboards do.
+
+Kibana does not declare these routes public, and from 9.0 it rejects requests to internal routes that lack the `x-elastic-internal-origin: Kibana` header. The generated client does not add that header, so callers must (see `internal/clients/kibanaoapi/advanced_settings.go`).
+
+Remove the overlay once the upstream spec describes these routes.
+
 ## Adding new endpoints
 
 There's more detail on the full process below, this section aims to provide a tl;dr to what's required to cover new endpoints in the generated client.

@@ -1007,6 +1007,97 @@ func TestFixControlValuesSourceSchemas(t *testing.T) {
 	}
 }
 
+func TestInjectAdvancedSettingsAPIPathsAddsGetAndPostOperations(t *testing.T) {
+	schema := &Schema{Paths: map[string]*Path{}}
+
+	injectAdvancedSettingsAPIPaths(schema)
+
+	settings := schema.GetPath("/api/kibana/settings")
+	if settings == nil {
+		t.Fatal("expected /api/kibana/settings to be injected")
+	}
+	if got := settings.Get["operationId"]; got != "get-kibana-settings" {
+		t.Fatalf("GET operationId = %v, want get-kibana-settings", got)
+	}
+	if got := settings.Post["operationId"]; got != "post-kibana-settings" {
+		t.Fatalf("POST operationId = %v, want post-kibana-settings", got)
+	}
+}
+
+func TestInjectAdvancedSettingsAPIPathsPostBodyAcceptsAnyValuePerKey(t *testing.T) {
+	schema := &Schema{Paths: map[string]*Path{}}
+
+	injectAdvancedSettingsAPIPaths(schema)
+
+	body, ok := schema.MustGetPath("/api/kibana/settings").Post.GetMap("requestBody.content.application/json.schema")
+	if !ok {
+		t.Fatal("expected POST to declare a JSON request body schema")
+	}
+	wantBody := Map{
+		"type": "object",
+		"properties": Map{
+			"changes": Map{
+				"type":                 "object",
+				"additionalProperties": true,
+			},
+		},
+		"required": []any{"changes"},
+	}
+	if !reflect.DeepEqual(body, wantBody) {
+		t.Fatalf("POST request body schema = %#v, want %#v", body, wantBody)
+	}
+	if len(schema.Components) != 0 {
+		t.Fatalf("expected no component schemas to be added, got %#v", schema.Components)
+	}
+}
+
+func TestInjectAdvancedSettingsAPIPathsResponsesDescribeUserSetValues(t *testing.T) {
+	schema := &Schema{Paths: map[string]*Path{}}
+
+	injectAdvancedSettingsAPIPaths(schema)
+
+	wantResponse := Map{
+		"type": "object",
+		"properties": Map{
+			"settings": Map{
+				"type": "object",
+				"additionalProperties": Map{
+					"type": "object",
+					"properties": Map{
+						"userValue":    Map{},
+						"isOverridden": Map{"type": "boolean"},
+					},
+					"required": []any{"userValue"},
+				},
+			},
+		},
+		"required": []any{"settings"},
+	}
+
+	settings := schema.MustGetPath("/api/kibana/settings")
+	for method, endpoint := range map[string]Map{"GET": settings.Get, "POST": settings.Post} {
+		t.Run(method, func(t *testing.T) {
+			got, ok := endpoint.GetMap("responses.200.content.application/json.schema")
+			if !ok {
+				t.Fatal("expected a JSON schema for the 200 response")
+			}
+			if !reflect.DeepEqual(got, wantResponse) {
+				t.Fatalf("200 response schema = %#v, want %#v", got, wantResponse)
+			}
+		})
+	}
+}
+
+func TestTransformersRegisterAdvancedSettingsOverlay(t *testing.T) {
+	want := reflect.ValueOf(injectAdvancedSettingsAPIPaths).Pointer()
+	for _, fn := range transformers {
+		if reflect.ValueOf(fn).Pointer() == want {
+			return
+		}
+	}
+	t.Fatal("injectAdvancedSettingsAPIPaths is not registered in transformers")
+}
+
 // deepCopyMap creates a deep copy of a Map for testing purposes
 func deepCopyMap(m Map) Map {
 	result := make(Map)
