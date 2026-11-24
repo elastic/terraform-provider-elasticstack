@@ -33,6 +33,7 @@ type providerWorkflow struct {
 }
 
 type providerJob struct {
+	Name     string                 `yaml:"name"`
 	Needs    yaml.Node              `yaml:"needs"`
 	If       string                 `yaml:"if"`
 	Outputs  map[string]string      `yaml:"outputs"`
@@ -73,7 +74,7 @@ func TestProviderWorkflow_testMatrixVersionLoadedFromLoadMatrix(t *testing.T) {
 		if strings.Contains(step.Uses, "actions/checkout@") {
 			hasCheckout = true
 		}
-		if step.ID == "load" && step.Run == "go run ./scripts/version-matrix load-matrix" {
+		if step.ID == "load" && strings.HasPrefix(step.Run, "go run ./scripts/version-matrix load-matrix") {
 			ranLoadMatrix = true
 		}
 	}
@@ -85,18 +86,20 @@ func TestProviderWorkflow_testMatrixVersionLoadedFromLoadMatrix(t *testing.T) {
 	test, ok := wf.Jobs["test"]
 	require.True(t, ok, "missing test job")
 	assert.ElementsMatch(t, []string{"classify", "build", "load-matrix"}, providerNeeds(t, test))
-	assert.Equal(t, "${{ fromJson(needs['load-matrix'].outputs.versions) }}", test.Strategy.Matrix["version"])
-	assert.Equal(t, "${{ fromJson(needs['load-matrix'].outputs.shards) }}", test.Strategy.Matrix["shard"])
+	assert.Equal(t, "needs.classify.outputs.provider_changes == 'true'", test.If)
+	assert.NotContains(t, test.Strategy.Matrix, "version")
+	assert.NotContains(t, test.Strategy.Matrix, "shard")
 }
 
-func TestProviderWorkflow_testStrategyHasNoIncludeOverrides(t *testing.T) {
+func TestProviderWorkflow_testStrategyUsesOnlyPreparedEntries(t *testing.T) {
 	t.Parallel()
 
 	wf := loadProviderWorkflow(t)
 	test, ok := wf.Jobs["test"]
 	require.True(t, ok, "missing test job")
-	_, hasInclude := test.Strategy.Matrix["include"]
-	assert.False(t, hasInclude)
+	require.Len(t, test.Strategy.Matrix, 1)
+	assert.Equal(t, "${{ fromJson(needs['load-matrix'].outputs.entries) }}", test.Strategy.Matrix["include"])
+	assert.Equal(t, "${{ steps.load.outputs.entries }}", wf.Jobs["load-matrix"].Outputs["entries"])
 }
 
 func TestProviderWorkflow_derivedFlagsReplaceMatrixRunnerAndFleetImage(t *testing.T) {
@@ -213,7 +216,7 @@ func TestProviderWorkflow_testJobRunsPreparedPackages(t *testing.T) {
 	assert.Contains(t, tfAcceptance.Run,
 		`make targeted-testacc TARGETED_PKGS="$TARGETED_PKGS"`)
 	assert.NotContains(t, tfAcceptance.Run, "go run ./scripts/targeted-testacc")
-	assert.Contains(t, tfAcceptance.Run, "make testacc ACCTEST_TOTAL_SHARDS=2")
+	assert.Contains(t, tfAcceptance.Run, "ACCTEST_TOTAL_SHARDS=${{ matrix.total_shards }}")
 	assert.Contains(t, tfAcceptance.Run, "ACCTEST_SHARD_INDEX=${{ matrix.shard }}")
 	assert.Equal(
 		t,
@@ -222,7 +225,7 @@ func TestProviderWorkflow_testJobRunsPreparedPackages(t *testing.T) {
 	)
 }
 
-func TestProviderWorkflow_nonPullRequestRunsFixedFullSuiteShards(t *testing.T) {
+func TestProviderWorkflow_nonPullRequestRunsPreparedFullSuiteAssignment(t *testing.T) {
 	t.Parallel()
 
 	wf := loadProviderWorkflow(t)
@@ -242,9 +245,11 @@ func TestProviderWorkflow_nonPullRequestRunsFixedFullSuiteShards(t *testing.T) {
 	assert.NotContains(t, prBranch, "go run ./scripts/targeted-testacc",
 		"selection is prepared once before matrix fan-out")
 
-	// Push, workflow-dispatch, and merge-group events keep the pre-change
-	// fixed two-shard full-suite invocation, untouched by targeted planning.
-	assert.Contains(t, fullSuiteBranch, "make testacc ACCTEST_TOTAL_SHARDS=2")
+	assert.Contains(t, test.Name, "${{ matrix.version }}")
+	assert.Contains(t, test.Name, "${{ matrix.suite }}")
+	assert.Contains(t, test.Name, "${{ matrix.shard }}")
+	assert.Contains(t, fullSuiteBranch, "make testacc ACCTEST_SUITE=${{ matrix.suite }}")
+	assert.Contains(t, fullSuiteBranch, "ACCTEST_TOTAL_SHARDS=${{ matrix.total_shards }}")
 	assert.Contains(t, fullSuiteBranch, "ACCTEST_SHARD_INDEX=${{ matrix.shard }}")
 	assert.NotContains(t, fullSuiteBranch, "TARGETED_PKGS",
 		"non-pull-request events must not use targeted planning")
@@ -301,13 +306,10 @@ func TestProviderWorkflow_fullSuiteFailureHandlingPreserved(t *testing.T) {
 	test, ok := wf.Jobs["test"]
 	require.True(t, ok, "missing test job")
 
-	// The matrix is non-fail-fast and fixed two-shard full-suite execution
-	// survives unchanged for push, workflow-dispatch, and merge-group events.
 	assert.False(t, test.Strategy.FailFast,
 		"matrix acceptance jobs must not fail fast")
-	assert.Equal(t, "${{ fromJson(needs['load-matrix'].outputs.shards) }}",
-		test.Strategy.Matrix["shard"],
-		"the shard axis comes from the prepared plan")
+	assert.Equal(t, "${{ fromJson(needs['load-matrix'].outputs.entries) }}",
+		test.Strategy.Matrix["include"])
 
 	tfAcceptance := providerWorkflowStepByID(t, test, "tf-acceptance")
 	assert.Equal(t, 60, tfAcceptance.TimeoutMinutes,
@@ -448,5 +450,20 @@ func providerNeeds(t *testing.T, job providerJob) []string {
 		return needs
 	default:
 		return nil
+	}
+}
+
+func TestProviderWorkflowPreparationUsesEventAndPreparedShards(t *testing.T) {
+	load := loadProviderWorkflow(t).Jobs["load-matrix"]
+	matrix := providerWorkflowStepByID(t, load, "load")
+	assert.Equal(t, "go run ./scripts/version-matrix load-matrix --event=\"$EVENT_NAME\" --shards=\"$SHARDS\"", matrix.Run)
+	assert.Equal(t, "${{ github.event_name }}", matrix.Env["EVENT_NAME"])
+	assert.Equal(t, "${{ steps.targeted.outputs.shards }}", matrix.Env["SHARDS"])
+	var previous string
+	for _, step := range load.Steps {
+		if step.ID == "load" {
+			assert.Equal(t, "targeted", previous)
+		}
+		previous = step.ID
 	}
 }
