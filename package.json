@@ -2,9 +2,9 @@
   "name": "terraform-provider-elasticstack-openspec",
   "private": true,
   "engines": {
-    "node": ">=24.0.0 <25"
+    "node": ">=24.0.0 <27"
   },
   "devDependencies": {
-    "@fission-ai/openspec": "1.16.1"
+    "@fission-ai/openspec": "2.1.0"
   }
 }
