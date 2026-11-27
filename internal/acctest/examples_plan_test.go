@@ -60,6 +60,8 @@ var planOnlySkippedEmbedPaths = []string{
 	"data-sources/elasticstack_fleet_enrollment_tokens/data-source.tf",
 	// Looks up a Fleet agent policy by name or policy_id, then reads that policy's enrollment tokens. Both reads 404 unless that policy already exists; names and UUIDs vary by stack.
 	"data-sources/elasticstack_fleet_agent_policy/data-source.tf",
+	// Looks up Fleet server hosts by name, host_id and default flag. The reads fail unless matching hosts already exist; names and IDs vary by stack.
+	"data-sources/elasticstack_fleet_server_host/data-source.tf",
 	// Requires the osquery_manager integration's prebuilt saved queries; matrix stacks may expose the API but return 500 without the integration data.
 	"data-sources/elasticstack_kibana_osquery_saved_query/data-source.tf",
 	// The data source errors when the model is missing, and the example's model ID is not present on every matrix stack version.

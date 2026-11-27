@@ -88,6 +88,7 @@ import (
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/outputds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/proxy"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhost"
+	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/serverhostds"
 	"github.com/elastic/terraform-provider-elasticstack/internal/fleet/spacesettings"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderagent"
 	"github.com/elastic/terraform-provider-elasticstack/internal/kibana/agentbuilderskill"
@@ -364,6 +365,7 @@ func (p *Provider) dataSources(_ context.Context) []func() datasource.DataSource
 		role.NewRoleDataSource,
 		securityuser.NewUserDataSource,
 		outputds.NewDataSource,
+		serverhostds.NewDataSource,
 		osquerypack.NewDataSource,
 		ingest.NewProcessorAppendDataSource,
 		ingest.NewProcessorBytesDataSource,

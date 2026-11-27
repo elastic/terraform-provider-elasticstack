@@ -40,6 +40,29 @@ func GetFleetServerHost(ctx context.Context, client *Client, id string, spaceID 
 	return kibanaoapi.HandleGetTypedResponse(resp.StatusCode(), resp.Body, func() *kbapi.ServerHost { return &resp.JSON200.Item })
 }
 
+// ListFleetServerHosts reads all fleet server hosts from the API. A response
+// that reports more hosts than it returns is an error.
+func ListFleetServerHosts(ctx context.Context, client *Client, spaceID string) ([]kbapi.ServerHost, diag.Diagnostics) {
+	resp, err := client.API.GetFleetFleetServerHostsWithResponse(ctx, kibanautil.SpaceAwarePathRequestEditor(spaceID))
+	if err != nil {
+		return nil, diagutil.FrameworkDiagFromError(err)
+	}
+	if diags := diagutil.HandleStatusResponse(resp.StatusCode(), resp.Body, http.StatusOK); diags.HasError() {
+		return nil, diags
+	}
+	list, diags := diagutil.UnwrapJSON200(resp.JSON200, "Fleet server host list")
+	if diags.HasError() {
+		return nil, diags
+	}
+	if int(list.Total) > len(list.Items) {
+		return nil, diag.Diagnostics{diag.NewErrorDiagnostic(
+			"Incomplete Fleet server host list",
+			fmt.Sprintf("the Fleet API returned %d of %g Fleet server hosts", len(list.Items), list.Total),
+		)}
+	}
+	return list.Items, nil
+}
+
 // CreateFleetServerHost creates a new fleet server host.
 func CreateFleetServerHost(ctx context.Context, client *Client, spaceID string, req kbapi.PostFleetFleetServerHostsJSONRequestBody) (*kbapi.ServerHost, diag.Diagnostics) {
 	return kibanautil.ConflictRetry(ctx, kibanautil.ConflictMaxAttempts, func() (*kbapi.ServerHost, int, diag.Diagnostics) {
